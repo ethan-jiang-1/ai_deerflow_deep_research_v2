@@ -157,6 +157,10 @@ ENV/
 env.bak/
 venv.bak/
 
+# Local runtime config (master template for profiles/; not committed)
+config.yaml
+config.yaml.bak
+
 # Spyder project settings
 .spyderproject
 .spyproject
