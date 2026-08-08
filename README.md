@@ -8,7 +8,6 @@
 deep_research_harness/    ★ 你的应用（deep research runtime，基于 deerflow 的 API 构建）
 deerflow/                 被 leverage 的框架（submodule @ ethan，含研究笔记 _digest/_faq），只读
 openspec/                 设计规格（openspec CLI 管理）
-skills/                   你的技能
 _backlog/                 任务账本
 .claude/skills/           grillme 技能集（grilling/tdd/code-review 等）
 ```

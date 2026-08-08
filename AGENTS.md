@@ -13,7 +13,6 @@ deerflow/                 被 leverage 的外部框架（submodule @ ethan），
 |------|--------|---------|
 | `deep_research_harness/` | **你的 deep research runtime 应用**（src/deerflow_deep_research，graph/runtime/agents/engine/domain） | ★ 主角。改代码、写测试、跑它 |
 | `openspec/` | 设计规格（specs / changes / governance） | 改设计时在这里写 spec，用 `openspec` CLI |
-| `skills/` | 你的技能 | 按需维护 |
 | `_backlog/` | 任务账本（bugs / plans / todos） | 任务追踪 |
 
 ## 框架：只 leverage，不修改
