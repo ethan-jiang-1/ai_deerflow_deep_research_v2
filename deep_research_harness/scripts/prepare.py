@@ -95,7 +95,7 @@ def upstream_command_contract(project_root: Path) -> UpstreamCommandContract:
     return UpstreamCommandContract(
         backend_sync_prefix=("uv", "sync", "--quiet", "--all-packages"),
         frontend_install=("pnpm", "install", "--silent"),
-        detect_extras_script=(root / "scripts/detect_uv_extras.py").resolve(),
+        detect_extras_script=(root / "deerflow" / "scripts" / "detect_uv_extras.py").resolve(),
         gateway_pythonpath=".",
     )
 
@@ -127,7 +127,7 @@ def _app_config_target(root: Path, env: Mapping[str, str]) -> Path:
         if not explicit.is_file():
             raise PrepareError("config_target_missing", "explicit AppConfig target does not exist")
         return explicit
-    for candidate in (root / "config.yaml", root / "backend/config.yaml"):
+    for candidate in (root / "config.yaml", root / "deerflow" / "backend" / "config.yaml"):
         if candidate.is_file():
             return candidate.resolve()
     raise PrepareError("config_target_missing", "AppConfig target does not exist")
@@ -137,7 +137,7 @@ def _upgrade_config_target(root: Path, env: Mapping[str, str]) -> Path:
     explicit = _absolute_env_path(env, "DEER_FLOW_CONFIG_PATH")
     if explicit is not None and explicit.is_file():
         return explicit
-    for candidate in (root / "backend/config.yaml", root / "config.yaml"):
+    for candidate in (root / "deerflow" / "backend" / "config.yaml", root / "config.yaml"):
         if candidate.is_file():
             return candidate.resolve()
     raise PrepareError("config_target_missing", "config-upgrade target does not exist")
@@ -149,7 +149,7 @@ def _extensions_target(root: Path, env: Mapping[str, str]) -> Path:
         if not explicit.is_file():
             raise PrepareError("extensions_target_missing", "explicit extensions target does not exist")
         return explicit
-    for candidate in (root / "extensions_config.json", root / "backend/extensions_config.json"):
+    for candidate in (root / "extensions_config.json", root / "deerflow" / "backend" / "extensions_config.json"):
         if candidate.is_file():
             return candidate.resolve()
     raise PrepareError("extensions_target_missing", "extensions target does not exist")
@@ -182,8 +182,8 @@ def resolve_preparation_context(
         raise PrepareError("project_root_mismatch", "DEER_FLOW_PROJECT_ROOT selects another project")
     effective["DEER_FLOW_PROJECT_ROOT"] = str(root)
 
-    backend_dir = (root / "backend").resolve(strict=True)
-    frontend_dir = (root / "frontend").resolve(strict=True)
+    backend_dir = (root / "deerflow" / "backend").resolve(strict=True)
+    frontend_dir = (root / "deerflow" / "frontend").resolve(strict=True)
     module_dir = (root / "deep_research_harness").resolve(strict=True)
     home = _absolute_env_path(effective, "DEER_FLOW_HOME") or (backend_dir / ".deer-flow").resolve()
     effective["DEER_FLOW_HOME"] = str(home)
@@ -270,7 +270,7 @@ def _version_tuple(value: str) -> tuple[int, int, int] | None:
 
 def validate_runtime_origins(context: PreparationContext, facts: RuntimeOriginFacts) -> None:
     version = _version_tuple(facts.harness_version)
-    harness_root = context.project_root / "backend/packages/harness/deerflow"
+    harness_root = context.project_root / "deerflow" / "backend" / "packages" / "harness" / "deerflow"
     module_root = context.project_root / "deep_research_harness/src/deerflow_deep_research"
     try:
         harness_ok = facts.harness_origin.resolve().is_relative_to(harness_root.resolve())

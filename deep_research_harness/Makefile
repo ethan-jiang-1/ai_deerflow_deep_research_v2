@@ -10,7 +10,7 @@ install:
 PROFILE_RUN = env -u VIRTUAL_ENV uv run --locked --no-sync --extra operations python scripts/local_profiles.py
 
 profile-setup:
-	$(MAKE) -C .. install
+	$(MAKE) -C ../deerflow install
 	env -u VIRTUAL_ENV uv sync --locked --extra operations
 
 profile-preflight:

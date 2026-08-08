@@ -11,6 +11,7 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
+DEERFLOW_ROOT = REPO_ROOT / "deerflow"
 PREPARE_PATH = REPO_ROOT / "deep_research_harness/scripts/prepare.py"
 
 
@@ -26,14 +27,14 @@ def _module():
 @pytest.fixture
 def project(tmp_path: Path) -> tuple[Path, dict[str, str]]:
     root = tmp_path / "repo"
-    (root / "backend/packages/harness/deerflow").mkdir(parents=True)
-    (root / "frontend").mkdir()
+    (root / "deerflow/backend/packages/harness/deerflow").mkdir(parents=True)
+    (root / "deerflow/frontend").mkdir()
     (root / "deep_research_harness/src/deerflow_deep_research").mkdir(parents=True)
-    (root / "scripts").mkdir()
-    (root / "skills").mkdir()
-    (root / "backend/packages/harness/deerflow/__init__.py").write_text("", encoding="utf-8")
+    (root / "deerflow/scripts").mkdir()
+    (root / "deerflow/skills").mkdir()
+    (root / "deerflow/backend/packages/harness/deerflow/__init__.py").write_text("", encoding="utf-8")
     (root / "deep_research_harness/src/deerflow_deep_research/__init__.py").write_text("", encoding="utf-8")
-    (root / "scripts/detect_uv_extras.py").write_text("", encoding="utf-8")
+    (root / "deerflow/scripts/detect_uv_extras.py").write_text("", encoding="utf-8")
     (root / "config.example.yaml").write_text("config_version: 19\n", encoding="utf-8")
     (root / "config.yaml").write_text(
         "config_version: 19\n"
@@ -49,7 +50,7 @@ def project(tmp_path: Path) -> tuple[Path, dict[str, str]]:
         "DEER_FLOW_CONFIG_PATH": str(root / "config.yaml"),
         "DEER_FLOW_EXTENSIONS_CONFIG_PATH": str(root / "extensions_config.json"),
         "DEER_FLOW_PROJECT_ROOT": str(root),
-        "DEER_FLOW_HOME": str(root / "backend/.deer-flow"),
+        "DEER_FLOW_HOME": str(root / "deerflow/backend/.deer-flow"),
     }
     return root, env
 
@@ -57,7 +58,7 @@ def project(tmp_path: Path) -> tuple[Path, dict[str, str]]:
 def _facts(module, root: Path, **overrides):
     values = {
         "harness_version": "2.1.0",
-        "harness_origin": root / "backend/packages/harness/deerflow/__init__.py",
+        "harness_origin": root / "deerflow/backend/packages/harness/deerflow/__init__.py",
         "module_origin": root / "deep_research_harness/src/deerflow_deep_research/__init__.py",
     }
     values.update(overrides)
@@ -67,11 +68,11 @@ def _facts(module, root: Path, **overrides):
 def test_current_upstream_command_tokens_are_pinned() -> None:
     module = _module()
     contract = module.upstream_command_contract(REPO_ROOT)
-    serve = (REPO_ROOT / "scripts/serve.sh").read_text(encoding="utf-8")
+    serve = (DEERFLOW_ROOT / "scripts/serve.sh").read_text(encoding="utf-8")
 
     assert contract.backend_sync_prefix == ("uv", "sync", "--quiet", "--all-packages")
     assert contract.frontend_install == ("pnpm", "install", "--silent")
-    assert contract.detect_extras_script == (REPO_ROOT / "scripts/detect_uv_extras.py").resolve()
+    assert contract.detect_extras_script == (DEERFLOW_ROOT / "scripts/detect_uv_extras.py").resolve()
     assert contract.gateway_pythonpath == "."
     assert "uv sync --quiet --all-packages $UV_EXTRAS_FLAGS" in serve
     assert "pnpm install --silent" in serve
@@ -99,11 +100,11 @@ def test_root_dotenv_and_runtime_path_defaults_match_local_gateway(project: tupl
     assert dotenv_context.deer_flow_home == dotenv_home.resolve()
     assert explicit_context.config_path == (root / "config.yaml").resolve()
     assert explicit_context.project_root == root.resolve()
-    assert explicit_context.backend_dir == (root / "backend").resolve()
+    assert explicit_context.backend_dir == (root / "deerflow" / "backend").resolve()
     assert explicit_context.gateway_cwd == explicit_context.backend_dir
-    assert explicit_context.deer_flow_home == (root / "backend/.deer-flow").resolve()
+    assert explicit_context.deer_flow_home == (root / "deerflow" / "backend" / ".deer-flow").resolve()
     assert explicit_context.environment["DEER_FLOW_PROJECT_ROOT"] == str(root.resolve())
-    assert explicit_context.environment["DEER_FLOW_HOME"] == str((root / "backend/.deer-flow").resolve())
+    assert explicit_context.environment["DEER_FLOW_HOME"] == str((root / "deerflow" / "backend" / ".deer-flow").resolve())
 
 
 def test_implicit_runtime_path_defaults_are_established(project: tuple[Path, dict[str, str]]) -> None:
@@ -111,14 +112,14 @@ def test_implicit_runtime_path_defaults_are_established(project: tuple[Path, dic
     context = _module().resolve_preparation_context(root, {})
 
     assert context.project_root == root.resolve()
-    assert context.deer_flow_home == (root / "backend/.deer-flow").resolve()
+    assert context.deer_flow_home == (root / "deerflow" / "backend" / ".deer-flow").resolve()
     assert context.config_path == (root / "config.yaml").resolve()
     assert context.extensions_path == (root / "extensions_config.json").resolve()
 
 
 def test_root_backend_shadow_disagreement_is_refused(project: tuple[Path, dict[str, str]]) -> None:
     root, _env = project
-    (root / "backend/config.yaml").write_text((root / "config.yaml").read_text(encoding="utf-8"), encoding="utf-8")
+    (root / "deerflow" / "backend" / "config.yaml").write_text((root / "config.yaml").read_text(encoding="utf-8"), encoding="utf-8")
     module = _module()
 
     with pytest.raises(module.PrepareError, match="config_target_disagreement"):
@@ -198,7 +199,7 @@ def test_sync_frontend_editable_install_origin_check_and_candidate_order(
 
     def candidate(context):
         events.append("candidate")
-        assert context.gateway_cwd == root / "backend"
+        assert context.gateway_cwd == root / "deerflow" / "backend"
         return f"v1:{'a' * 64}"
 
     result = module.prepare_environment(
@@ -218,22 +219,22 @@ def test_sync_frontend_editable_install_origin_check_and_candidate_order(
         "runtime_probe",
         "candidate",
     ]
-    assert specs[0].argv == (sys.executable, str(root / "scripts/detect_uv_extras.py"))
+    assert specs[0].argv == (sys.executable, str(root / "deerflow" / "scripts" / "detect_uv_extras.py"))
     assert specs[1].argv == ("uv", "sync", "--quiet", "--all-packages", "--extra", "postgres")
-    assert specs[1].cwd == root / "backend"
+    assert specs[1].cwd == root / "deerflow" / "backend"
     assert specs[2].argv == ("pnpm", "install", "--silent")
-    assert specs[2].cwd == root / "frontend"
+    assert specs[2].cwd == root / "deerflow" / "frontend"
     assert specs[3].argv == (
         "uv",
         "pip",
         "install",
         "--python",
-        str(root / "backend/.venv/bin/python"),
+        str(root / "deerflow" / "backend" / ".venv" / "bin" / "python"),
         "--no-deps",
         "--editable",
         str(root / "deep_research_harness"),
     )
-    assert specs[3].cwd == root / "backend"
+    assert specs[3].cwd == root / "deerflow" / "backend"
     assert all(spec.environment["PYTHONPATH"] == "." for spec in specs)
     assert result.machine == {"startup_fingerprint": f"v1:{'a' * 64}"}
 
@@ -284,7 +285,7 @@ def test_candidate_uses_gateway_cwd_for_relative_sqlite_and_is_secret_free(
 
     old_cwd = Path.cwd()
     try:
-        os.chdir(root / "backend")
+        os.chdir(root / "deerflow" / "backend")
         from deerflow.config.app_config import AppConfig
 
         from deerflow_deep_research.runtime.startup_snapshot import capture_startup_fingerprint
