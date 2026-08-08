@@ -1,0 +1,15 @@
+from deerflow_deep_research.domain.enums import NodePhase
+from deerflow_deep_research.domain.node_spec import NodeCapability, NodeContracts, NodeSpec, PolicyRef
+
+from .contracts import CONTRACTS as _CONTRACTS
+from .node import build_real as _build_real
+
+NODE_SPEC = NodeSpec(
+    logical_name="readiness",
+    phase=NodePhase.QUALITY,
+    policy=PolicyRef(name="skeleton-readiness", version="v1"),
+    contracts=NodeContracts(request_type=_CONTRACTS[0], result_type=_CONTRACTS[1]),
+    real_factory=_build_real,
+    capabilities=frozenset({NodeCapability.WORK_UNIT_CONTROLLER}),
+)
+__all__ = ["NODE_SPEC"]

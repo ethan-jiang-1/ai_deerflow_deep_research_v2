@@ -1,0 +1,171 @@
+> req: REA-001, REA-002, REA-004, REA-006, REA-007
+
+## MODIFIED Requirements
+
+### Requirement: Hard checks verify citation availability, provenance, HITL2 consumption, and admitted-evidence readability
+
+The readiness node SHALL run deterministic hard checks on pre-existing state: accepted
+submissions are non-empty (`check_citation_availability`) and all refs are canonical
+submission-ledger hashes (`check_provenance`). It SHALL NOT require a consumed HITL2
+request: an autonomous HITL2 continuation is neither missing evidence nor missing user
+authority. Before building a critic request, the node SHALL also fail closed when an
+accepted ledger record cannot be read as bounded synthesis evidence or fails its
+integrity check. It SHALL record only a closed structural `HardRuleFailure`, never the
+raw store exception, artifact path, or evidence content. Structural evidence or
+provenance failures SHALL route to `exhausted` with `BLOCKED` terminal status. (`REA-001`)
+
+#### Scenario: Autonomous continuation is not a readiness failure
+- **WHEN** accepted evidence and provenance are valid but no HITL2 request was consumed
+- **THEN** readiness does not produce `hitl2_not_consumed` and may continue to its
+  critic and normal route determination
+
+#### Scenario: No accepted evidence is a structural failure
+- **WHEN** `accepted_submission_refs` is empty
+- **THEN** the node produces a `citation_no_accepted_evidence` failure and routes to
+  `exhausted` with `terminal_status=BLOCKED`
+
+#### Scenario: Valid evidence passes citation availability
+- **WHEN** `accepted_submission_refs` contains at least one canonical `h_` submission-ledger record hash
+- **THEN** the citation availability check produces zero failures
+
+#### Scenario: Malformed ref is a provenance failure
+- **WHEN** an accepted submission ref is `"bad-format"` rather than a canonical ledger hash
+- **THEN** the node produces a `provenance_invalid_ref` failure with the malformed ref
+
+#### Scenario: Accepted evidence read failure is structural
+- **WHEN** a canonical accepted ref is missing, unreadable, or fails the ledger reader's
+  integrity check
+- **THEN** readiness records only its closed hard-rule failure, invokes no critic, and
+  routes to `exhausted` with the existing blocked terminal facts
+
+### Requirement: Semantic critic assesses answerability per must-answer question
+
+The real readiness node SHALL declare `NodeCapability.WORK_UNIT_CONTROLLER` and invoke
+one bounded zero-tool critic for each readiness visit. Before invocation, trusted code
+SHALL derive a bounded read-only evidence projection solely from the checkpointed
+must-answer questions, accepted submission references, and ledger-validated synthesis
+evidence read through that declared controller. The critic SHALL return exactly one
+typed verdict for every supplied question: `ready_substantive`,
+`ready_insufficient_judgment`, or `blocked_repair_required`. It SHALL receive no raw
+checkpoint, runtime authority, writable path, tool, or route instruction. Full-fake
+readiness SHALL remain fixture-controlled. (`REA-002`)
+
+#### Scenario: Complete candidate is admitted
+- **WHEN** the zero-tool critic returns one valid verdict for every supplied question
+- **THEN** the deterministic readiness boundary accepts the typed candidate for
+  report-plan materialization without granting the critic evidence or route authority
+
+#### Scenario: Candidate references cannot exceed the projection
+- **WHEN** a candidate names an unknown or duplicate question, or a backing reference
+  absent from the accepted evidence projection
+- **THEN** readiness rejects that candidate and projects conservative repair-required
+  verdicts without admitting the unknown identifier
+
+#### Scenario: Evidence projection is bounded and ledger-derived
+- **WHEN** real readiness prepares the critic request
+- **THEN** it includes only the approved questions and bounded evidence derived from
+  accepted ledger references, and does not expose arbitrary sandbox content
+
+#### Scenario: Full-fake readiness remains fixture-controlled
+- **WHEN** the full-fake graph reaches readiness
+- **THEN** it does not invoke the critic and retains its declared fixture route
+
+### Requirement: Node determines its own route based on hard-rule results and critic verdicts
+
+The readiness node SHALL write its own `route` field. Route determination SHALL retain
+this priority: structural hard-rule failures, including accepted-evidence reader
+failures, route to `exhausted` with `BLOCKED`; any admitted or conservatively projected
+`blocked_repair_required` verdict routes to `repair_targeted`; otherwise it routes to
+`pass`. A critic candidate SHALL NOT select, write, or bypass a route. (`REA-004`)
+
+#### Scenario: Admitted critic result routes through deterministic owner
+- **WHEN** hard rules pass and the admitted candidate contains a
+  `blocked_repair_required` verdict
+- **THEN** the readiness node writes `repair_targeted` and the critic writes no route
+
+#### Scenario: Insufficient judgment remains an honest pass projection
+- **WHEN** hard rules pass and all admitted verdicts are
+  `ready_substantive` or `ready_insufficient_judgment`
+- **THEN** the node writes `pass` and the report plan records each insufficiency as a
+  mandatory uncertainty
+
+#### Scenario: Structural failures still take priority
+- **WHEN** a structural hard-rule failure and any critic verdict are present
+- **THEN** the node writes `exhausted` with the existing blocked terminal facts
+
+### Requirement: Critic runs under bounded read-only policy
+
+The real readiness critic SHALL run through the existing bounded Node Agent path with
+one invocation, zero allowed tools, no writable roots, a finite model/token/wall-time
+budget, and a closed `ReadinessCriticOutput` candidate. Missing, malformed, duplicate,
+out-of-scope, incomplete, or failed execution output SHALL be deterministically
+projected to conservative `blocked_repair_required` verdicts for the affected supplied
+questions; it SHALL NOT silently use the all-ready fallback. (`REA-006`)
+
+The checkpointed critic summary SHALL contain only the admitted, bounded typed
+per-question projection consumed by the materializer. Raw provider output, prompt
+text, sandbox paths, rejected candidate content, and unused critic-only fields SHALL
+NOT be checkpointed. The critic contract SHALL bound retained field/cardinality values;
+the existing policy's structured-result byte budget remains a separate hard cap on raw
+bridge success output.
+
+#### Scenario: Invalid output fails closed to existing repair
+- **WHEN** the critic result is malformed or does not provide one valid verdict for
+  every supplied question
+- **THEN** readiness projects repair-required verdicts and follows the existing
+  `repair_targeted` route calculation
+
+#### Scenario: Execution failure cannot claim readiness
+- **WHEN** the bounded Node Agent reports timeout, configuration, provider, or policy
+  failure
+- **THEN** no question is projected as `ready_substantive` solely from that failure
+  and the existing repair path is the only legal next action
+
+#### Scenario: Tool posture is enforced
+- **WHEN** the readiness critic request and effective runtime policy are inspected
+- **THEN** they permit no web, sandbox, or other tool calls and no writable root
+
+#### Scenario: Rejected output is not retained as checkpoint authority
+- **WHEN** critic output fails admission
+- **THEN** checkpoint state records only the conservative projected verdicts and no
+  raw rejected output, provider diagnostic, or prompt text
+
+#### Scenario: Unused parseable critic fields are not retained
+- **WHEN** an otherwise admitted candidate includes critic-only limitations, synthesis
+  flaws, or contradiction identifiers that the report-plan materializer does not read
+- **THEN** `readiness_critic_summary` contains only the bounded admitted per-question
+  projection and none of those extra fields
+
+### Requirement: Mixed-graph integration with unchanged topology
+
+Real readiness SHALL require `hitl2=real` and the declared work-unit controller.
+Selecting `readiness=real` without `hitl2=real` SHALL fail before graph invocation.
+The graph wrapper and direct real factory SHALL fail with
+`work_unit_capability_missing` before model invocation when the declared controller is
+absent. The runtime dependency resolver SHALL construct and select a readiness-specific
+zero-tool bridge/policy for readiness rather than supplying an upstream node's bridge.
+Full-fake readiness SHALL remain unchanged (fixture gate provides route). Topology SHALL
+be unchanged. (`REA-007`)
+
+#### Scenario: Real readiness requires real hitl2
+- **WHEN** a recipe selects `readiness=real` without `hitl2=real`
+- **THEN** recipe construction fails with a typed dependency error
+
+#### Scenario: Missing declared controller fails before model invocation
+- **WHEN** real readiness is built or graph-invoked without the declared work-unit
+  controller
+- **THEN** it fails with `work_unit_capability_missing` before a readiness request,
+  model call, candidate, or route is created
+
+#### Scenario: Real readiness receives its own bridge policy
+- **WHEN** a runnable real-readiness recipe resolves the readiness dependencies
+- **THEN** the resolved bridge has the readiness-specific zero-tool policy and is not
+  the HITL1, topic-planning, or Wave2 synthesis bridge
+
+#### Scenario: Full-fake readiness unchanged
+- **WHEN** the full-fake graph reaches the readiness node
+- **THEN** it returns a no-op update with the fixture gate providing the route
+
+#### Scenario: Real readiness coexists with fake final_delivery
+- **WHEN** readiness is real while final_delivery is fake
+- **THEN** the graph routes `pass` to `final_delivery` and the fake final handles it

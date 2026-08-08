@@ -1,0 +1,7 @@
+name: deep-research
+description: Graph-controlled Deep Research
+tool_groups:
+  - deep-research-control
+  - file:read
+skills:
+  - deep-research-controller

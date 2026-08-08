@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "case": "cases/hitl1-brief-v1.json",
+      "contract": "contracts/hitl1-brief-v1.md",
+      "rubric": "rubrics/hitl1-brief-v1.json",
+      "protocol": "review_protocol-v1.md"
+    },
+    {
+      "case": "cases/hitl1-cognitive-program-v1.json",
+      "contract": "contracts/hitl1-cognitive-program-v1.md",
+      "rubric": "rubrics/hitl1-cognitive-program-v1.json",
+      "protocol": "review_protocol-v1.md"
+    },
+    {
+      "case": "cases/wave0-worker-v1.json",
+      "contract": "contracts/wave0-worker-v1.md",
+      "rubric": "rubrics/wave0-worker-v1.json",
+      "protocol": "review_protocol-v1.md"
+    },
+    {
+      "case": "cases/wave0-cognitive-program-v1.json",
+      "contract": "contracts/wave0-cognitive-program-v1.md",
+      "rubric": "rubrics/wave0-cognitive-program-v1.json",
+      "protocol": "review_protocol-v1.md"
+    },
+    {
+      "case": "cases/wave1-cognitive-program-v1.json",
+      "contract": "contracts/wave1-cognitive-program-v1.md",
+      "rubric": "rubrics/wave1-cognitive-program-v1.json",
+      "protocol": "review_protocol-v1.md"
+    },
+    {
+      "case": "cases/wave2-cognitive-program-v1.json",
+      "contract": "contracts/wave2-cognitive-program-v1.md",
+      "rubric": "rubrics/wave2-cognitive-program-v1.json",
+      "protocol": "review_protocol-v1.md"
+    },
+    {
+      "case": "cases/public-controller-direction-loop-v1.json",
+      "contract": "contracts/public-controller-direction-loop-v1.md",
+      "rubric": "rubrics/public-controller-direction-loop-v1.json",
+      "protocol": "review_protocol-v1.md"
+    },
+    {
+      "case": "cases/topic-planning-direction-loop-v1.json",
+      "contract": "contracts/topic-planning-direction-loop-v1.md",
+      "rubric": "rubrics/topic-planning-direction-loop-v1.json",
+      "protocol": "review_protocol-v1.md"
+    }
+  ]
+}

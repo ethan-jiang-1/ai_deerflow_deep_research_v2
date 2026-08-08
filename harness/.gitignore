@@ -1,0 +1,7 @@
+.deep-research-demo-runs/
+.reports/
+.pytest_cache/
+.ruff_cache/
+.node-prompt-review/
+evals/runs/
+.venv/

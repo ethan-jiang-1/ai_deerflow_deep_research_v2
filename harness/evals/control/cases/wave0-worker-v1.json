@@ -1,0 +1,8 @@
+{
+  "case_id": "wave0-worker",
+  "version": "v1",
+  "subject": "wave0_worker",
+  "fixture": {"topic_id": "topic:energy-storage", "question": "Find bounded primary sources on grid storage."},
+  "required_services": ["model", "web"],
+  "bounds": {"timeout_seconds": 900, "max_model_calls": 50, "max_tool_calls": 200}
+}

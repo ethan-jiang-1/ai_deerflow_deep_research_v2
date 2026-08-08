@@ -1,0 +1,471 @@
+#!/usr/bin/env python3
+"""Validate incident mappings against the deterministic pytest collection.
+
+@impl EVH-006
+@impl EVH-009
+@impl WFO-002
+@impl CPE-004
+@impl EVH-017
+@impl EVH-023
+"""
+
+from __future__ import annotations
+
+import json
+import subprocess
+import sys
+import tempfile
+from collections.abc import Mapping
+from pathlib import Path
+
+AGENT_ROOT = Path(__file__).resolve().parents[1]
+if str(AGENT_ROOT) not in sys.path:
+    sys.path.insert(0, str(AGENT_ROOT))
+
+from deerflow_deep_research.graph.registry import load_research_node_specs  # noqa: E402
+from deerflow_deep_research.graph.topology import LOGICAL_NODES  # noqa: E402
+from scripts.check_node_workflows import (  # noqa: E402
+    WorkflowReaderError,
+    load_reader_inventory,
+)
+from tests.assets.cognitive_program_board import (  # noqa: E402
+    COGNITIVE_PROGRAM_BOARD,
+    CognitiveProgramBoardError,
+    CognitiveProgramEvidenceBoard,
+    validate_cognitive_program_board,
+)
+from tests.assets.evidence import (  # noqa: E402
+    EVIDENCE_CLAIMS,
+    EvidenceClaimError,
+    FocusedSelection,
+    TestEvidenceClaim,
+    claim_index,
+    validate_claim_selections,
+    validate_inventory_claim_references,
+)
+from tests.assets.fault_matrix import CRITICAL_FAULTS, FaultMatrixError, validate_fault_matrix  # noqa: E402
+from tests.assets.inventory import INCIDENTS, CoverageError, validate_incident_coverage  # noqa: E402
+from tests.assets.node_agent_capabilities import (  # noqa: E402
+    COHORT_EVIDENCE,
+    CapabilityEvidenceRow,
+    validate_cohort_evidence,
+)
+from tests.assets.node_conformance import (  # noqa: E402
+    NODE_CONFORMANCE,
+    NodeConformance,
+    NodeConformanceError,
+    validate_node_conformance,
+)
+from tests.assets.provider_shapes import (  # noqa: E402
+    LIVE_DISCOVERY_DISPOSITIONS,
+    RELEASE_DISCOVERY_DISPOSITIONS_01_14,
+    RELEASE_DISCOVERY_DISPOSITIONS_15_25,
+    load_provider_shape_archive,
+    validate_provider_shape_catalog,
+)
+from tests.assets.requirement_evidence import (  # noqa: E402
+    CONSOLIDATION_DECISIONS,
+    REQUIREMENT_EVIDENCE_POLICY,
+    REQUIREMENT_IMPACTS,
+    ConsolidationDecision,
+    RequirementEvidenceError,
+    RequirementImpact,
+    collected_deterministic_impl_ids,
+    load_alive_requirement_ids,
+    load_known_requirement_ids,
+    validate_consolidation_decisions,
+    validate_requirement_evidence,
+    validate_requirement_impacts,
+)
+from tests.assets.selection import (  # noqa: E402
+    DETERMINISTIC_EXCLUDE,
+    FAST_EXPRESSION,
+    FAST_PATHS,
+    INTEGRATION_EXPRESSION,
+    INTEGRATION_PATHS,
+    LIVE_EXPRESSION,
+    LIVE_PATHS,
+    WORKFLOW_EXPRESSION,
+    WORKFLOW_PATHS,
+)
+from tests.assets.workflow_nodes import (  # noqa: E402
+    MODEL_WORKFLOW_COVERAGE,
+    ModelWorkflowCoverage,
+    WorkflowCoverageError,
+    discover_run_agent_owners,
+    validate_model_workflow_coverage,
+)
+from tests.scenarios.canaries import LIVE_CANARIES  # noqa: E402
+from tests.scenarios.evidence_intake_calibration import (  # noqa: E402
+    EVIDENCE_INTAKE_CALIBRATION_CASES,
+    validate_evidence_intake_calibration_cases,
+)
+from tests.scenarios.evidence_judgment_calibration import (  # noqa: E402
+    EVIDENCE_JUDGMENT_CALIBRATION_CASES,
+    validate_evidence_judgment_calibration_cases,
+)
+from tests.scenarios.final_composition_calibration import (  # noqa: E402
+    FINAL_COMPOSITION_CALIBRATION_CASES,
+    validate_final_composition_calibration_cases,
+)
+from tests.scenarios.governance import ScenarioGovernanceError, validate_real_scenario_catalog  # noqa: E402
+from tests.scenarios.intake_planning_calibration import (  # noqa: E402
+    CALIBRATION_CASES,
+    validate_calibration_cases,
+)
+from tests.scenarios.replays import (  # noqa: E402
+    FIRST_WAVE_CASES,
+    FIRST_WAVE_FAMILIES,
+    REQUIRED_FIRST_WAVE_FAMILY_IDS,
+)
+
+NODE_ROOT = AGENT_ROOT / "src/deerflow_deep_research/graph/nodes"
+PROVIDER_SHAPE_ROOT = AGENT_ROOT / "tests/fixtures/provider_shapes"
+PROVIDER_DISCOVERY_IDS = {
+    *(f"LIVE-20260717-{index:02d}" for index in range(1, 7)),
+    *(f"RELEASE-20260717-{index:02d}" for index in range(1, 26)),
+}
+PROVIDER_DISCOVERY_DISPOSITIONS = (
+    *LIVE_DISCOVERY_DISPOSITIONS,
+    *RELEASE_DISCOVERY_DISPOSITIONS_01_14,
+    *RELEASE_DISCOVERY_DISPOSITIONS_15_25,
+)
+DEFAULT_COLLECTION_COMMAND = (sys.executable,)
+CATALOG_SCRIPT = AGENT_ROOT / "scripts" / "collect_test_catalog.py"
+_CATALOG_CACHE: dict[tuple[Path, tuple[str, ...]], tuple[tuple[str, frozenset[str]], ...]] = {}
+_DIRECT_COLLECTION_CACHE: dict[tuple[Path, tuple[str, ...], str, tuple[str, ...], bool], frozenset[str]] = {}
+CALIBRATION_REGISTRIES = (
+    CALIBRATION_CASES,
+    EVIDENCE_INTAKE_CALIBRATION_CASES,
+    EVIDENCE_JUDGMENT_CALIBRATION_CASES,
+    FINAL_COMPOSITION_CALIBRATION_CASES,
+)
+
+
+class CognitiveEvidenceGateError(ValueError):
+    pass
+
+
+def reset_collection_cache() -> None:
+    """Clear successful selector collections for a test-owned process."""
+    _CATALOG_CACHE.clear()
+    _DIRECT_COLLECTION_CACHE.clear()
+
+
+def _catalog_for_project(*, agent_root: Path, command: tuple[str, ...]) -> tuple[tuple[str, frozenset[str]], ...]:
+    key = (agent_root.resolve(), command)
+    cached = _CATALOG_CACHE.get(key)
+    if cached is not None:
+        return cached
+    with tempfile.TemporaryDirectory(prefix="deep-research-test-catalog-") as directory:
+        output_path = Path(directory) / "catalog.json"
+        result = subprocess.run(
+            [*command, str(CATALOG_SCRIPT), "--output", str(output_path)],
+            cwd=agent_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.returncode != 0 or not output_path.is_file():
+            raise CoverageError(f"project pytest collection failed:\n{result.stderr or result.stdout}")
+        try:
+            raw_entries = json.loads(output_path.read_text(encoding="utf-8"))
+            catalog = tuple(
+                (entry["nodeid"], frozenset(entry["markers"]))
+                for entry in raw_entries
+                if isinstance(entry, dict)
+                and isinstance(entry.get("nodeid"), str)
+                and isinstance(entry.get("markers"), list)
+                and all(isinstance(marker, str) for marker in entry["markers"])
+            )
+        except (OSError, ValueError, TypeError, KeyError) as exc:
+            raise CoverageError(f"project pytest catalog invalid: {exc}") from exc
+    if not catalog:
+        raise CoverageError("project pytest catalog returned no selectors")
+    _CATALOG_CACHE[key] = catalog
+    return catalog
+
+
+def _matches_marker_expression(markers: frozenset[str], expression: str) -> bool:
+    tokens = expression.replace("(", " ( ").replace(")", " ) ").split()
+    index = 0
+
+    def parse_or() -> bool:
+        nonlocal index
+        value = parse_and()
+        while index < len(tokens) and tokens[index] == "or":
+            index += 1
+            right = parse_and()
+            value = value or right
+        return value
+
+    def parse_and() -> bool:
+        nonlocal index
+        value = parse_term()
+        while index < len(tokens) and tokens[index] == "and":
+            index += 1
+            right = parse_term()
+            value = value and right
+        return value
+
+    def parse_term() -> bool:
+        nonlocal index
+        if index >= len(tokens):
+            raise CoverageError(f"marker expression invalid: {expression}")
+        token = tokens[index]
+        index += 1
+        if token == "not":
+            return not parse_term()
+        if token == "(":
+            value = parse_or()
+            if index >= len(tokens) or tokens[index] != ")":
+                raise CoverageError(f"marker expression invalid: {expression}")
+            index += 1
+            return value
+        if token in {"and", "or", ")"}:
+            raise CoverageError(f"marker expression invalid: {expression}")
+        return token in markers
+
+    value = parse_or()
+    if index != len(tokens):
+        raise CoverageError(f"marker expression invalid: {expression}")
+    return value
+
+
+def _matches_paths(nodeid: str, paths: tuple[str, ...]) -> bool:
+    return any(nodeid == path or nodeid.startswith(f"{path}/") for path in paths)
+
+
+def collect_pytest_selectors(
+    *,
+    paths: tuple[str, ...],
+    expression: str,
+    label: str,
+    agent_root: Path = AGENT_ROOT,
+    command: tuple[str, ...] = DEFAULT_COLLECTION_COMMAND,
+    allow_empty: bool = False,
+) -> set[str]:
+    if agent_root.resolve() == AGENT_ROOT and command == DEFAULT_COLLECTION_COMMAND:
+        selectors = {
+            nodeid
+            for nodeid, markers in _catalog_for_project(agent_root=agent_root, command=command)
+            if _matches_paths(nodeid, paths) and _matches_marker_expression(markers, expression)
+        }
+        if not selectors and not allow_empty:
+            raise CoverageError(f"{label} pytest collection returned no selectors")
+        return selectors
+
+    key = (agent_root.resolve(), paths, expression, command, allow_empty)
+    cached = _DIRECT_COLLECTION_CACHE.get(key)
+    if cached is not None:
+        return set(cached)
+    result = subprocess.run(
+        [
+            *command,
+            "--collect-only",
+            "-q",
+            *paths,
+            "-m",
+            expression,
+        ],
+        cwd=agent_root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0 and not (allow_empty and result.returncode == 5):
+        raise CoverageError(f"{label} pytest collection failed:\n{result.stderr or result.stdout}")
+    selectors = {line.strip() for line in result.stdout.splitlines() if "::" in line and not line.startswith("=")}
+    if not selectors and not allow_empty:
+        raise CoverageError(f"{label} pytest collection returned no selectors")
+    _DIRECT_COLLECTION_CACHE[key] = frozenset(selectors)
+    return set(selectors)
+
+
+def collect_deterministic_selectors(agent_root: Path = AGENT_ROOT) -> set[str]:
+    return collect_pytest_selectors(
+        paths=("tests",),
+        expression=f"not ({DETERMINISTIC_EXCLUDE})",
+        label="deterministic aggregate",
+        agent_root=agent_root,
+    )
+
+
+def validate_cognitive_evidence_gate(
+    *,
+    board: CognitiveProgramEvidenceBoard,
+    logical_nodes: tuple[str, ...],
+    reader_records: tuple[object, ...],
+    cohort_rows: tuple[CapabilityEvidenceRow, ...],
+    workflow_coverage: tuple[ModelWorkflowCoverage, ...],
+    node_conformance: tuple[NodeConformance, ...],
+    claims: Mapping[str, TestEvidenceClaim],
+    requirement_impacts: tuple[RequirementImpact, ...],
+    calibration_registries: tuple[tuple[object, ...], ...],
+    consolidation_decisions: tuple[ConsolidationDecision, ...],
+    collected_selectors: set[str],
+) -> None:
+    """Run the complete offline cognitive-evidence joins over injected owners."""
+
+    if len(calibration_registries) != 4:
+        raise CognitiveEvidenceGateError("calibration registry invalid: expected four owning registries")
+    intake_planning, evidence_intake, evidence_judgment, final_composition = calibration_registries
+    try:
+        validate_calibration_cases(intake_planning)  # type: ignore[arg-type]
+        validate_evidence_intake_calibration_cases(evidence_intake)  # type: ignore[arg-type]
+        validate_evidence_judgment_calibration_cases(evidence_judgment)  # type: ignore[arg-type]
+        validate_final_composition_calibration_cases(final_composition)  # type: ignore[arg-type]
+    except ValueError as exc:
+        raise CognitiveEvidenceGateError(f"calibration registry invalid: {exc}") from exc
+
+    validate_cognitive_program_board(
+        board,
+        logical_nodes=logical_nodes,
+        reader_records=reader_records,
+        cohort_rows=cohort_rows,
+        workflow_coverage=workflow_coverage,
+        node_conformance=node_conformance,
+        claims=claims,
+        requirement_impacts=requirement_impacts,
+        calibration_cases=tuple(case for registry in calibration_registries for case in registry),
+        collected_selectors=collected_selectors,
+    )
+    validate_consolidation_decisions(
+        consolidation_decisions,
+        claims=tuple(claims.values()),
+        requirement_impacts=requirement_impacts,
+        collected_selectors=collected_selectors,
+    )
+
+
+def main() -> int:
+    try:
+        collected = collect_deterministic_selectors()
+        focused = {
+            FocusedSelection.FAST: collect_pytest_selectors(
+                paths=FAST_PATHS,
+                expression=FAST_EXPRESSION,
+                label="fast",
+            ),
+            FocusedSelection.INTEGRATION: collect_pytest_selectors(
+                paths=INTEGRATION_PATHS,
+                expression=INTEGRATION_EXPRESSION,
+                label="integration",
+            ),
+            FocusedSelection.WORKFLOW: collect_pytest_selectors(
+                paths=WORKFLOW_PATHS,
+                expression=WORKFLOW_EXPRESSION,
+                label="workflow",
+            ),
+            FocusedSelection.LIVE: collect_pytest_selectors(
+                paths=LIVE_PATHS,
+                expression=LIVE_EXPRESSION,
+                label="live",
+            ),
+        }
+        claims = claim_index(EVIDENCE_CLAIMS)
+        validate_claim_selections(EVIDENCE_CLAIMS, focused_selectors=focused)
+        validate_requirement_evidence(
+            policy=REQUIREMENT_EVIDENCE_POLICY,
+            claims=EVIDENCE_CLAIMS,
+            alive_requirement_ids=load_alive_requirement_ids(AGENT_ROOT.parent),
+            known_requirement_ids=load_known_requirement_ids(AGENT_ROOT.parent),
+            deterministic_impl_ids=collected_deterministic_impl_ids(AGENT_ROOT, collected),
+            collected_selectors=set().union(*focused.values()),
+        )
+        validate_requirement_impacts(
+            REQUIREMENT_IMPACTS,
+            claims=EVIDENCE_CLAIMS,
+            known_requirement_ids=load_known_requirement_ids(AGENT_ROOT.parent),
+            collected_selectors=set().union(*focused.values()),
+        )
+        validate_inventory_claim_references(
+            (
+                *((f"incident:{entry.incident_id}", entry.claim_ids) for entry in INCIDENTS),
+                *(
+                    (f"node:{entry.logical_name}", (entry.success_claim_id, entry.risk_claim_id))
+                    for entry in NODE_CONFORMANCE
+                ),
+                *((f"fault:{entry.fault.value}", (entry.claim_id,)) for entry in CRITICAL_FAULTS),
+                *((f"workflow:{entry.logical_name}", entry.referenced_claim_ids) for entry in MODEL_WORKFLOW_COVERAGE),
+            ),
+            claims=claims,
+        )
+        validate_cohort_evidence(
+            COHORT_EVIDENCE,
+            claims,
+            collected_selectors=set().union(*focused.values()),
+        )
+        validate_cognitive_evidence_gate(
+            board=COGNITIVE_PROGRAM_BOARD,
+            logical_nodes=LOGICAL_NODES,
+            reader_records=load_reader_inventory(AGENT_ROOT.parent),
+            cohort_rows=COHORT_EVIDENCE,
+            workflow_coverage=MODEL_WORKFLOW_COVERAGE,
+            node_conformance=NODE_CONFORMANCE,
+            claims=claims,
+            requirement_impacts=REQUIREMENT_IMPACTS,
+            calibration_registries=CALIBRATION_REGISTRIES,
+            consolidation_decisions=CONSOLIDATION_DECISIONS,
+            collected_selectors=set().union(*focused.values()),
+        )
+        validate_incident_coverage(INCIDENTS, claims, collected, excluded_selectors=set())
+        validate_node_conformance(
+            NODE_CONFORMANCE,
+            claims,
+            collected,
+            registered_names=set(load_research_node_specs()),
+        )
+        validate_fault_matrix(CRITICAL_FAULTS, claims, collected)
+        validate_model_workflow_coverage(
+            MODEL_WORKFLOW_COVERAGE,
+            claims=claims,
+            discovered_owners=discover_run_agent_owners(NODE_ROOT),
+            focused_selectors=focused,
+        )
+        validate_real_scenario_catalog(
+            FIRST_WAVE_FAMILIES,
+            FIRST_WAVE_CASES,
+            EVIDENCE_CLAIMS,
+            deterministic_selectors=collected,
+            workflow_selectors=focused[FocusedSelection.WORKFLOW],
+            required_family_ids=REQUIRED_FIRST_WAVE_FAMILY_IDS,
+        )
+        try:
+            validate_provider_shape_catalog(
+                PROVIDER_DISCOVERY_DISPOSITIONS,
+                cases=load_provider_shape_archive(PROVIDER_SHAPE_ROOT),
+                required_discovery_ids=PROVIDER_DISCOVERY_IDS,
+                claims=claims,
+                collected_selectors=set().union(*focused.values()),
+                live_case_ids={case.scenario_id for case in LIVE_CANARIES},
+            )
+        except ValueError as exc:
+            raise CoverageError(f"provider-shape catalog invalid: {exc}") from exc
+    except (
+        CoverageError,
+        CognitiveEvidenceGateError,
+        CognitiveProgramBoardError,
+        EvidenceClaimError,
+        FaultMatrixError,
+        NodeConformanceError,
+        ScenarioGovernanceError,
+        RequirementEvidenceError,
+        WorkflowCoverageError,
+        WorkflowReaderError,
+    ) as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    print(
+        f"Test asset coverage passed: {len(INCIDENTS)} incidents, "
+        f"{len(NODE_CONFORMANCE)} real nodes, {len(CRITICAL_FAULTS)} critical faults, "
+        f"{len(MODEL_WORKFLOW_COVERAGE)} model-workflow nodes, "
+        f"{len(EVIDENCE_CLAIMS)} central claims, {len(collected)} deterministic tests; "
+        + ", ".join(f"{selection.value}={len(focused[selection])}" for selection in FocusedSelection)
+        + "."
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

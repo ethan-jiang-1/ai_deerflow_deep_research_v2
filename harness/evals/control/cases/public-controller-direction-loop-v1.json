@@ -1,0 +1,247 @@
+{
+  "case_id": "public-controller-direction-loop",
+  "version": "v1",
+  "subject": "public_controller",
+  "fixture": {
+    "execution": {
+      "repeat_count": 3,
+      "runtime_controls": [
+        {
+          "name": "skill_digest",
+          "source_path": "config/public-skill/deep-research-controller/SKILL.md",
+          "digest": "c6978c10f4a52d72b35e14d09bbdc495bf45206cee1df1625c1072789ec2370c"
+        },
+        {
+          "name": "soul_digest",
+          "source_path": "config/agent-template/SOUL.md",
+          "digest": "e14784a7e4a85b0f37e41d928b96060d76cf5519e62edbcba97f5a21bb7c2419"
+        },
+        {
+          "name": "tool_schema_digest",
+          "source_path": "src/deerflow_deep_research/tool.py",
+          "digest": "c6428eb5184e9b80fc5717d08ac0a448197f6bc2bf67a5e1074d5e4d21f3a1d3"
+        }
+      ],
+      "required_resource_fields": [
+        "provider",
+        "model",
+        "composed_prompt_digest",
+        "skill_digest",
+        "soul_digest",
+        "tool_schema_digest",
+        "input_tokens",
+        "output_tokens",
+        "cost_usd",
+        "latency_ms"
+      ]
+    },
+    "scenarios": [
+      {
+        "scenario_id": "new-request",
+        "subject_state": "no_active_bundle",
+        "user_turn": "Investigate primary-source policy evidence for grid-storage safety.",
+        "expected_action": "start",
+        "expects_clarification": false,
+        "expected_result": "suspended",
+        "target_rule": "start carries no caller-selected bundle id",
+        "forbidden_calls": ["resume", "status", "cancel", "refine"],
+        "forbidden_effects": ["skip_committed_skill_read", "invent_bundle_id"],
+        "review_criteria": ["controller.load-before-select", "controller.new-request"]
+      },
+      {
+        "scenario_id": "correlated-answer",
+        "subject_state": "suspended_with_correlated_subject",
+        "user_turn": "Use an executive audience.",
+        "expected_action": "resume",
+        "expects_clarification": false,
+        "expected_result": "completed",
+        "target_rule": "use the visible correlated subject's selected bundle",
+        "forbidden_calls": ["start", "status", "cancel", "refine"],
+        "forbidden_effects": ["copy_answer_into_refinement", "create_second_bundle"],
+        "review_criteria": ["controller.load-before-select", "controller.correlated-answer"]
+      },
+      {
+        "scenario_id": "mid-suspension-direction",
+        "subject_state": "suspended_with_correlated_subject",
+        "user_turn": "For this run, prioritize primary regulatory sources.",
+        "expected_action": "refine",
+        "expects_clarification": false,
+        "expected_result": "refinement_pending",
+        "target_rule": "target the visible suspended bundle",
+        "forbidden_calls": ["start", "resume", "status", "cancel"],
+        "forbidden_effects": ["consume_pending_response", "claim_direction_applied"],
+        "review_criteria": ["controller.load-before-select", "controller.mid-suspension-direction"]
+      },
+      {
+        "scenario_id": "status",
+        "subject_state": "active_or_suspended_bundle",
+        "user_turn": "What is the current status?",
+        "expected_action": "status",
+        "expects_clarification": false,
+        "expected_result": "status",
+        "target_rule": "target the selected available bundle",
+        "forbidden_calls": ["start", "resume", "cancel", "refine"],
+        "forbidden_effects": ["invent_progress", "mutate_bundle"],
+        "review_criteria": ["controller.load-before-select", "controller.status"]
+      },
+      {
+        "scenario_id": "explicit-stop",
+        "subject_state": "suspended_with_queued_direction",
+        "user_turn": "Stop this research run.",
+        "expected_action": "cancel",
+        "expects_clarification": false,
+        "expected_result": "cancelled",
+        "target_rule": "target the selected available bundle",
+        "forbidden_calls": ["start", "resume", "status", "refine"],
+        "forbidden_effects": ["restart_queued_direction", "discard_queued_direction"],
+        "review_criteria": ["controller.load-before-select", "controller.explicit-stop"]
+      },
+      {
+        "scenario_id": "terminal-queued-direction-continuation",
+        "subject_state": "terminal_with_queued_direction",
+        "user_turn": "Continue that queued direction.",
+        "expected_action": "refine",
+        "expects_clarification": false,
+        "expected_result": "refinement_applied",
+        "target_rule": "use an explicit terminal bundle id and omit refinement text",
+        "forbidden_calls": ["start", "resume", "status", "cancel"],
+        "forbidden_effects": ["copy_stored_direction_text", "implicit_continuation"],
+        "review_criteria": ["controller.load-before-select", "controller.terminal-continuation"]
+      },
+      {
+        "scenario_id": "exhausted-terminal-no-direction",
+        "subject_state": "terminal_exhausted_without_queued_direction",
+        "user_turn": "Start a fresh independent research request.",
+        "expected_action": "start",
+        "expects_clarification": false,
+        "expected_result": "suspended",
+        "target_rule": "start a fresh bundle when terminal capacity is exhausted",
+        "forbidden_calls": ["resume", "status", "cancel", "refine"],
+        "forbidden_effects": ["reuse_exhausted_bundle", "claim_terminal_continuation"],
+        "review_criteria": ["controller.load-before-select", "controller.exhausted-terminal"]
+      },
+      {
+        "scenario_id": "exhausted-terminal-queued-direction",
+        "subject_state": "terminal_exhausted_with_queued_direction",
+        "user_turn": "Start a fresh independent research request.",
+        "expected_action": "start",
+        "expects_clarification": false,
+        "expected_result": "suspended",
+        "target_rule": "start a fresh bundle even when a terminal direction remains inspectable",
+        "forbidden_calls": ["resume", "status", "cancel", "refine"],
+        "forbidden_effects": ["restart_queued_direction", "reuse_exhausted_bundle"],
+        "review_criteria": ["controller.load-before-select", "controller.exhausted-terminal"]
+      },
+      {
+        "scenario_id": "ambiguous-terminal-follow-up",
+        "subject_state": "terminal_with_queued_direction",
+        "user_turn": "Can we do something about that?",
+        "expected_action": null,
+        "expects_clarification": true,
+        "expected_result": "clarification",
+        "target_rule": "do not infer an action or terminal target",
+        "forbidden_calls": ["start", "resume", "status", "cancel", "refine"],
+        "forbidden_effects": ["lifecycle_mutation", "implicit_continuation"],
+        "review_criteria": ["controller.load-before-select", "controller.ambiguity"]
+      },
+      {
+        "scenario_id": "ambiguous-criticism",
+        "subject_state": "active_bundle",
+        "user_turn": "This direction is not useful.",
+        "expected_action": null,
+        "expects_clarification": true,
+        "expected_result": "clarification",
+        "target_rule": "do not infer cancellation or a new direction",
+        "forbidden_calls": ["start", "resume", "status", "cancel", "refine"],
+        "forbidden_effects": ["lifecycle_mutation", "profile_note_mutation"],
+        "review_criteria": ["controller.load-before-select", "controller.ambiguity"]
+      },
+      {
+        "scenario_id": "profile-note-non-mutation",
+        "subject_state": "confirmed_profile_active_bundle",
+        "user_turn": "Save this as a profile note.",
+        "expected_action": null,
+        "expects_clarification": true,
+        "expected_result": "clarification",
+        "target_rule": "do not create a sixth note action or rewrite the confirmed profile",
+        "forbidden_calls": ["start", "resume", "status", "cancel", "refine"],
+        "forbidden_effects": ["profile_note_mutation", "lifecycle_mutation"],
+        "review_criteria": ["controller.load-before-select", "controller.profile-note-non-mutation"]
+      },
+      {
+        "scenario_id": "clarified-same-run-direction",
+        "subject_state": "confirmed_profile_active_bundle_after_clarification",
+        "user_turn": "Treat the note as a direction for this same run: prioritize regulator guidance.",
+        "expected_action": "refine",
+        "expects_clarification": false,
+        "expected_result": "refinement_pending",
+        "target_rule": "target the selected current bundle with bounded refinement text",
+        "forbidden_calls": ["start", "resume", "status", "cancel"],
+        "forbidden_effects": ["profile_note_mutation", "claim_direction_applied"],
+        "review_criteria": ["controller.load-before-select", "controller.profile-note-non-mutation"]
+      },
+      {
+        "scenario_id": "active-conflict",
+        "subject_state": "active_bundle_with_pending_direction",
+        "user_turn": "Also add a regional comparison.",
+        "expected_action": "refine",
+        "expects_clarification": false,
+        "expected_result": "refinement_conflict",
+        "target_rule": "target the selected active bundle without replacing the stored direction",
+        "forbidden_calls": ["start", "resume", "status", "cancel"],
+        "forbidden_effects": ["replace_pending_direction", "claim_direction_applied"],
+        "review_criteria": ["controller.load-before-select", "controller.pending-conflict"]
+      },
+      {
+        "scenario_id": "precommit-recovery-conflict",
+        "subject_state": "terminal_precommit_recovery_with_first_round_applied",
+        "user_turn": "Try a competing regional comparison.",
+        "expected_action": "refine",
+        "expects_clarification": false,
+        "expected_result": "refinement_conflict",
+        "target_rule": "target the selected bundle and explain the first committed round truthfully",
+        "forbidden_calls": ["start", "resume", "status", "cancel"],
+        "forbidden_effects": ["overwrite_recovered_round", "claim_competing_direction_applied"],
+        "review_criteria": ["controller.load-before-select", "controller.recovery-conflict"]
+      },
+      {
+        "scenario_id": "ended-explicit-target",
+        "subject_state": "terminal_available_bundle",
+        "user_turn": "Refine the ended run with comparative primary sources.",
+        "expected_action": "refine",
+        "expects_clarification": false,
+        "expected_result": "refinement_applied",
+        "target_rule": "use the explicit verified ended bundle target",
+        "forbidden_calls": ["start", "resume", "status", "cancel"],
+        "forbidden_effects": ["guess_stale_target", "create_second_bundle"],
+        "review_criteria": ["controller.load-before-select", "controller.ended-target"]
+      },
+      {
+        "scenario_id": "unavailable-target",
+        "subject_state": "unavailable_explicit_target",
+        "user_turn": "Check the unavailable research run.",
+        "expected_action": "status",
+        "expects_clarification": false,
+        "expected_result": "unavailable",
+        "target_rule": "use the explicit target and preserve the unavailable projection",
+        "forbidden_calls": ["start", "resume", "cancel", "refine"],
+        "forbidden_effects": ["recover_from_session", "recover_from_checkpoint", "invent_bundle_id"],
+        "review_criteria": ["controller.load-before-select", "controller.unavailable-target"]
+      },
+      {
+        "scenario_id": "mixed-answer-direction",
+        "subject_state": "suspended_with_correlated_subject",
+        "user_turn": "Use an executive audience, and focus the analysis on regulator guidance.",
+        "expected_action": "resume",
+        "expects_clarification": false,
+        "expected_result": "completed",
+        "target_rule": "the visible correlated answer remains a resume",
+        "forbidden_calls": ["start", "status", "cancel", "refine"],
+        "forbidden_effects": ["implicit_refinement", "consume_unrelated_subject"],
+        "review_criteria": ["controller.load-before-select", "controller.mixed-answer-direction"]
+      }
+    ]
+  },
+  "required_services": ["model"],
+  "bounds": {"timeout_seconds": 900, "max_model_calls": 18, "max_tool_calls": 54}
+}

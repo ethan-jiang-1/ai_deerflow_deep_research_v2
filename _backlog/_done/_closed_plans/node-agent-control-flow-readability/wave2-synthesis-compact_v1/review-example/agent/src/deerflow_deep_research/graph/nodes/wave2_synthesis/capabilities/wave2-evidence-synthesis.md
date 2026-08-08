@@ -1,0 +1,3 @@
+<!-- node-agent-capability: {"schema_version":1,"capability_id":"wave2-evidence-synthesis","role":"Accepted-evidence synthesis worker","method":"Synthesize only supplied accepted evidence into findings and gaps","authority_limit":"Never retrieve, accept evidence, materialize, or control graph routing","completion_condition":"Return evidence-backed findings or honest gaps","uncertainty_boundary":"Record gaps rather than inventing facts or support","tool_posture":{"kind":"forbidden"}} -->
+Synthesize only the accepted evidence supplied by the graph. Never use tools or invent
+facts, support, acceptance, materialization, retries, or routes. Report honest gaps.

@@ -1,0 +1,188 @@
+# wave2-synthesis-node Specification
+
+> req: WSN-001, WSN-002, WSN-003, WSN-004, WSN-005, WSN-006, WSN-007
+## Purpose
+Cross-topic synthesis agent with read-only policy, structured findings, and gap detection.
+
+## Requirements
+
+
+
+
+### Requirement: Read-only synthesis agent produces structured findings
+The synthesis agent SHALL read accepted evidence and critic verdicts and produce one or more structured findings with priority, affected topics, backing refs, confidence, and `search_required`, plus canonical gaps with priority, affected topics, and an explicit `search_required` value. Whenever accepted evidence is non-empty, a gaps-only result SHALL fail semantic validation and use the existing one-shot zero-tool repair; gaps SHALL NOT substitute for at least one backed finding. The agent SHALL run under zero-tool read-only policy. Prompt instructions and provider-shape normalization SHALL distinguish finding follow-up advice from gap routing authority and SHALL preserve the canonical gap value without inventing it from prose.
+
+#### Scenario: Agent produces findings from accepted evidence
+- **WHEN** wave2_synthesis runs after wave1 produced accepted submissions
+- **THEN** structured findings are produced with backing refs to accepted sources
+
+#### Scenario: Searchable gap retains routing authority
+- **WHEN** valid structured synthesis output marks a canonical gap `search_required=true`
+- **THEN** validation preserves that value in the `GapRecord` consumed by downstream projection and routing
+
+#### Scenario: Legacy gap remains non-searchable by default
+- **WHEN** a schema-version-1 synthesis artifact omits `search_required` from a gap
+- **THEN** validation accepts the gap with `search_required=false` rather than silently scheduling targeted work
+
+#### Scenario: Accepted evidence cannot produce gaps only
+- **WHEN** accepted evidence exists and the initial synthesis response has zero findings plus one or more valid gaps
+- **THEN** the node performs its existing one zero-tool repair and publishes no synthesis artifact or gate preview unless the repair contains at least one backed finding
+
+#### Scenario: Agent cannot call web tools
+- **WHEN** the synthesis agent attempts to call a web search tool
+- **THEN** the tool policy middleware blocks the call
+
+### Requirement: Deterministic materializer writes synthesis artifacts
+A deterministic materializer SHALL write findings, relations, gaps, summary, and every canonical `search_required` value to the sandbox as canonical JSON at `synthesis/findings.json`. The persisted artifact SHALL be the synthesis content authority. The Wave2 node SHALL derive a typed gate preview containing only bounded searchable gap ids from that validated result; it SHALL NOT put complete gap bodies in checkpoint state or permit model output to write gate authority directly.
+
+#### Scenario: Valid findings written deterministically
+- **WHEN** synthesis produces valid structured output
+- **THEN** canonical JSON is written to `synthesis/findings.json`
+
+#### Scenario: Gap routing value survives persistence
+- **WHEN** synthesis materializes a gap with `search_required=true`
+- **THEN** reading the canonical artifact yields the same gap identity and routing value and the typed gate preview contains that gap id
+
+### Requirement: Gate validates finding references
+The real Wave2 gate SHALL validate that every finding reference is backed by an accepted submission. Dangling or unbacked references SHALL fail. It SHALL additionally consume the typed preview derived from validated synthesis output, write the bounded searchable gap ids to the existing gate-owned `unresolved_gaps` control field, and route `evidence_needed` when that projection is non-empty and repair budget remains. A later successful synthesis with no searchable gap SHALL clear the projection and route `pass`. Repeated unresolved semantic gaps SHALL use the existing gate budget/fatigue contract and route `exhausted` to the typed blocked terminal.
+
+#### Scenario: Dangling reference fails gate
+- **WHEN** a finding references a source not in accepted submissions
+- **THEN** the gate routes repair
+
+#### Scenario: Searchable gap routes targeted evidence
+- **WHEN** validated Wave2 output produces a typed preview with one or more searchable gap ids
+- **THEN** the real gate records only those ids in `unresolved_gaps` and routes `evidence_needed`
+
+#### Scenario: No searchable gap clears prior projection
+- **WHEN** a later validated Wave2 output contains no `search_required=true` gap
+- **THEN** the real gate clears `unresolved_gaps` and routes `pass`
+
+#### Scenario: Repeated searchable gap exhausts convergence budget
+- **WHEN** targeted evidence returns through synthesis but the same searchable gap remains after the Wave2 repair budget is spent
+- **THEN** the real gate routes `exhausted` and the graph reaches the typed blocked terminal
+
+#### Scenario: Fabricated checkpoint gap cannot route
+- **WHEN** checkpoint input contains an unvalidated gap body or id that is absent from the current typed Wave2 gate preview
+- **THEN** the real gate ignores it as routing authority
+
+### Requirement: Mixed-graph integration
+Real wave2_synthesis SHALL require full real chain through wave1. Full-fake path unchanged.
+
+#### Scenario: Full real chain compiles
+- **WHEN** recipe selects wave2_synthesis=real with full chain
+- **THEN** graph compiles and preserves topology shape
+
+### Requirement: Wave2 synthesis retains direct invocation incidents through gate handling
+
+Wave2 synthesis SHALL normalize a non-successful initial or structured-output repair
+invocation before its phase/gate logic decides the route. A known invocation failure
+that terminally blocks SHALL retain a direct Wave2 incident; a failure eligible for
+an existing bounded phase repair SHALL record that disposition without treating it
+as successful synthesis. Raw exceptions and generic synthesis errors SHALL not
+replace a known safe provider or configuration category.
+
+#### Scenario: A Wave2 provider failure blocks with its known cause
+- **WHEN** the Wave2 synthesis invocation returns a known non-retryable provider
+  failure and no legal gate repair applies
+- **THEN** the lifecycle retains that category and `wave2_synthesis` phase in the
+  terminal incident instead of surfacing an opaque graph exception
+
+### Requirement: Wave2 capability admits only assigned accepted-evidence synthesis
+
+The real Wave2 synthesis and structured-repair requests SHALL retain their distinct
+forbidden local capabilities. An initial or repaired candidate SHALL derive findings,
+relations, and gaps only from the graph-assigned accepted evidence and trusted output
+contract. The candidate SHALL not retrieve, add evidence or references, materialize an
+artifact, publish a gap projection, or control routing. The existing parser,
+materializer, gate preview, and gate SHALL remain the only admission and outcome
+owners. (`WSN-005`)
+
+#### Scenario: Assigned evidence bounds a valid synthesis candidate
+- **WHEN** a scripted real Wave2 request receives accepted evidence and returns a
+  contract-valid finding/gap candidate
+- **THEN** deterministic validation admits only backed references, the model sees no
+  tool, and the existing materializer and gate derive any artifact or searchable-gap
+  projection
+
+#### Scenario: Repair cannot manufacture evidence or routing authority
+- **WHEN** an initial Wave2 draft is malformed, gaps-only, or contains an unassigned
+  evidence reference
+- **THEN** the zero-tool repair receives only the bounded draft, validation facts, and
+  assigned evidence; it either produces a contract-valid bounded candidate or follows
+  the existing non-publication or exhausted outcome without writing a route or gap
+  projection
+
+### Requirement: Wave2 runtime capabilities own bounded accepted-evidence synthesis cognition
+
+The real Wave2 initial synthesis and its existing one zero-tool structured repair
+SHALL bind distinct runtime-loaded local capability resources. Each activated
+resource SHALL contain the reusable method for its bounded task: accepted-evidence
+interpretation, evidence-grounded finding/relation or honest-gap judgment,
+untrusted-data handling, uncertainty, self-check, and completion condition. The
+final rendered context SHALL contain the exact activated body; the dynamic request
+outside that resource SHALL contain only the assigned topics/evidence references,
+closed output contract, repair category, and delimited untrusted evidence or draft.
+
+The synthesis and repair candidates SHALL remain unable to retrieve, add evidence or
+references, materialize an artifact, publish a searchable-gap projection, select a
+recovery, gate, route, or State outcome. The existing zero-tool runtime policy,
+parser, semantic validator, materializer, preview builder, Wave2 gate, and lifecycle
+owners SHALL retain their existing authority. An initial candidate may receive at
+most the existing one zero-tool repair before deterministic admission decides whether
+any artifact or preview can exist. (`WSN-008`)
+
+#### Scenario: Production rendering supplies one exact Wave2 method
+- **WHEN** real Wave2 prepares an initial synthesis or structured-repair invocation
+- **THEN** the rendered context contains the exact corresponding capability body and
+  forbidden posture while dynamic assignment, output contract, category, and
+  untrusted data remain bounded projections
+
+#### Scenario: Accepted evidence and uncertainty remain bounded candidate input
+- **WHEN** assigned evidence or an untrusted draft asks Wave2 to invent support,
+  materialize an artifact, publish a gap projection, or choose a route
+- **THEN** the request can produce only a bounded synthesis candidate or honest gap
+  and the existing deterministic owners retain admission, artifact, preview, gate,
+  and route authority
+
+#### Scenario: Repair is bounded before synthesis publication
+- **WHEN** an initial candidate fails the existing parser or semantic validation
+- **THEN** Wave2 invokes at most its existing one zero-tool repair with the same
+  assigned evidence, compact validation category, and untrusted draft, then rechecks
+  it through the existing deterministic path before any artifact or preview exists
+
+### Requirement: Wave2 calibration preserves accepted-evidence synthesis boundaries
+
+The Wave2 synthesis and its existing zero-tool repair SHALL make model-visible the bounded criteria
+for evidence-grounded findings, relations, uncertainty, and honest gaps. The initial request SHALL
+receive only graph-assigned topic context, accepted submission references/evidence, and the trusted
+output contract. A repair SHALL receive only the same bounded accepted-evidence assignment, its
+invalid draft as untrusted data, and a compact closed parser/semantic validation category; it SHALL
+not receive raw exceptions, retrieve, add evidence/references, or receive artifact, checkpoint, gate,
+route, or retry authority. A candidate gap SHALL remain distinct from the deterministic searchable-gap
+projection. Parser, semantic validator, materializer, preview builder, and Wave2 gate SHALL remain
+the only owners that admit content, persist artifacts, derive projections, or select outcomes.
+
+#### Scenario: Calibrated synthesis keeps unsupported claims as honest gaps
+- **WHEN** a valid Wave2 candidate proposes a finding or relation without support in graph-assigned
+  accepted evidence
+- **THEN** the policy requires omitting it or recording a bounded honest gap while deterministic
+  validation and materialization remain the only admission path
+
+#### Scenario: Repair cannot convert feedback into new evidence or routing authority
+- **WHEN** the existing Wave2 repair receives an invalid initial draft
+- **THEN** it uses only the same accepted-evidence assignment, bounded draft, and compact category
+  with no tools, and invalid repair publishes neither a synthesis artifact nor searchable-gap
+  projection or route
+
+### Requirement: Wave2 synthesis uses only accepted evidence in its selected Run Bundle
+
+Wave2 SHALL obtain accepted evidence, synthesis State, gaps, and materialized content
+only through the selected runtime-bound Run Bundle interfaces. It SHALL not derive a
+research identity, use an external checkpoint/session as a content source, or write
+synthesis artifacts outside that Bundle. Bundle loss SHALL prevent further synthesis
+materialization for that Run. (`WSN-007`)
+
+#### Scenario: Synthesis cannot materialize into a replacement root
+- **WHEN** the selected Bundle becomes unavailable after a synthesis candidate is produced
+- **THEN** Wave2 does not publish that candidate to a new directory or external lifecycle store

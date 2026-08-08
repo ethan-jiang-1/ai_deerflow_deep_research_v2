@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "case_id": "wave0-worker",
+  "version": "v1",
+  "criteria": ["uses the fixed WorkSpec", "retains bounded retrieval observations", "does not admit evidence outside the production controller"]
+}

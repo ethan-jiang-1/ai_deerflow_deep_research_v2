@@ -1,0 +1,478 @@
+#!/usr/bin/env python3
+"""Standalone Textual presentation adapter for Deep Research run updates.
+
+@impl RED-001
+@impl RED-002
+@impl RED-003
+@impl RED-004
+@impl DPL-002
+@impl WFO-001
+"""
+
+from __future__ import annotations
+
+import argparse
+import asyncio
+from dataclasses import dataclass
+from typing import Literal
+
+from _demo_core import (
+    PHASE_META,
+    DemoAdapter,
+    DemoLifecycleTransport,
+    build_demo_host,
+    demo_readiness_report,
+)
+from _terminal_failure_presentation import (
+    ProviderTerminalDetails,
+    SafeProviderObservation,
+    inspection_command,
+    is_provider_diagnostic,
+    provider_terminal_details,
+)
+from rich.table import Table
+from rich.text import Text
+from textual import work
+from textual.app import App, ComposeResult
+from textual.containers import Horizontal
+from textual.widgets import Button, Input, RichLog, Static
+
+from deerflow_deep_research.domain.run_experience import (
+    AnswerRun,
+    AwaitingInput,
+    CancelRun,
+    FailureCertainty,
+    Fault,
+    Ready,
+    RunFailure,
+    RunFailureCode,
+    RunUpdate,
+    SelectControlRun,
+    StartRun,
+    Terminal,
+    Working,
+)
+from deerflow_deep_research.runtime.run_diagnostics import DEFAULT_DEMO_DIAGNOSTIC_RELATIVE_PATH
+from deerflow_deep_research.runtime.run_experience import ResearchRunExperience
+
+
+@dataclass(frozen=True)
+class TuiRenderedUpdate:
+    heading: str
+    detail: str
+    placeholder: str
+    completed_trace: tuple[str, ...]
+    pending_phase: str | None
+    options: tuple[str, ...]
+    accepts_input: bool
+    show_cancel: bool
+    terminal: bool
+
+
+def _failure_detail(failure, *, snapshot: object | None = None) -> str:
+    provider_details = provider_terminal_details(failure=failure, snapshot=snapshot)
+    if provider_details is not None:
+        return _provider_failure_detail(provider_details)
+    lines = [failure.message, f"Next: {failure.next_action}"]
+    if failure.phase:
+        lines.append(f"Phase: {failure.phase}")
+    lines.append("Retryable" if failure.retryable else "Not retryable")
+    if failure.diagnostic_ref:
+        lines.append(f"Diagnostic: {failure.diagnostic_ref}")
+        lines.append(f"Local record: {DEFAULT_DEMO_DIAGNOSTIC_RELATIVE_PATH}")
+    if not failure.observation_record_created:
+        lines.append("No retained observation was created.")
+    return "\n".join(lines)
+
+
+def _provider_failure_detail(details: ProviderTerminalDetails) -> str:
+    lines = [f"Category: {details.category}"]
+    if details.phase:
+        lines.append(f"Phase: {details.phase}")
+    if details.worker_failure_category:
+        lines.append(f"Worker failure category: {details.worker_failure_category}")
+    if details.final_observation is not None:
+        lines.extend(_provider_observation_lines("Final service observation", details.final_observation))
+    if details.recovery is not None:
+        lines.extend(_provider_observation_lines("Retry trigger observation", details.recovery.trigger_observation))
+        lines.append(f"Model invocations: {details.recovery.model_attempts}")
+        lines.append(f"Automatic retries: {details.recovery.automatic_retries}")
+        lines.append(f"Recovery disposition: {details.recovery.disposition}")
+    if details.diagnostic_ref:
+        lines.append(f"Diagnostic: {details.diagnostic_ref}")
+    if details.diagnostic_location == "observation_store":
+        lines.append("Diagnostic location: observation_store")
+    elif details.diagnostic_location == "support_journal":
+        lines.append("Diagnostic location: support_journal")
+        lines.append(f"Local record: {DEFAULT_DEMO_DIAGNOSTIC_RELATIVE_PATH}")
+    elif details.diagnostic_location == "unavailable":
+        lines.append("Diagnostic location: unavailable")
+    lines.append(
+        "Retained observation created" if details.observation_record_created else "No retained observation was created."
+    )
+    if details.recovery_action == "fresh_start":
+        lines.append("Fresh run from deep_research_harness/: make demo-real")
+    else:
+        lines.append(f"Next: {_provider_next_step(details.category)}")
+    if details.inspection_bundle_id is not None:
+        command = inspection_command(details.inspection_bundle_id)
+        if command is not None:
+            lines.append(f"Read-only diagnosis from deep_research_harness/: {command}")
+    return "\n".join(lines)
+
+
+def _provider_observation_lines(label: str, observation: SafeProviderObservation) -> tuple[str, ...]:
+    lines: list[str] = []
+    if observation.configured_service_label:
+        lines.append(f"{label} service: {observation.configured_service_label}")
+    if observation.configured_endpoint_authority:
+        lines.append(f"{label} endpoint: {observation.configured_endpoint_authority}")
+    response = "no_response" if observation.response_kind == "no_response" else f"HTTP {observation.http_status}"
+    lines.append(f"{label} response: {response}")
+    if observation.timeout_origin is not None:
+        lines.append(f"{label} timeout origin: {observation.timeout_origin}")
+    return tuple(lines)
+
+
+def _provider_next_step(category: str) -> str:
+    if category == "provider.authentication_failed":
+        return "Check the model-service credential, then start a distinct run."
+    if category in {"provider.timeout", "provider.unavailable"}:
+        return "Check service availability, then start a distinct run."
+    return "Review the diagnostic reference before deciding whether to start a distinct run."
+
+
+def _bundle_detail(snapshot, *, suppress_inspection: bool = False) -> tuple[str, ...]:
+    bundle_id = snapshot.bundle_id
+    if bundle_id is None:
+        return ()
+    lines = [f"Run Bundle: {bundle_id}", f"Durability: {snapshot.durability}"]
+    observation = snapshot.observation
+    if observation is not None and observation.inspectability.value == "available" and not suppress_inspection:
+        command = inspection_command(bundle_id)
+        if command is not None:
+            lines.append(f"Inspect from deep_research_harness/: {command}")
+    else:
+        lines.append("Retained observation is unavailable; inspection is read-only.")
+    return tuple(lines)
+
+
+def _presentation_fault() -> Fault:
+    return Fault(
+        failure=RunFailure(
+            code=RunFailureCode.INTERNAL_UNEXPECTED,
+            certainty=FailureCertainty.UNKNOWN,
+            message="The local presentation adapter could not continue.",
+            next_action="Restart the standalone demo and provide a diagnostic reference if the issue repeats.",
+            retryable=False,
+            observation_record_created=False,
+        )
+    )
+
+
+def render_run_update(update: object) -> TuiRenderedUpdate:
+    """Return a native view model using only safe shared ``RunUpdate`` values."""
+    if isinstance(update, Ready):
+        return TuiRenderedUpdate(
+            heading="Enter a research question" if update.report.ready else "Readiness check failed",
+            detail=update.report.summary if update.report.ready else _failure_detail(update.report.failure),
+            placeholder="Research question",
+            completed_trace=(),
+            pending_phase=None,
+            options=(),
+            accepts_input=update.report.ready,
+            show_cancel=False,
+            terminal=not update.report.ready,
+        )
+    if isinstance(update, Working):
+        details = [update.message]
+        if update.snapshot.bundle_id:
+            details.append(f"Run Bundle: {update.snapshot.bundle_id}")
+        if update.snapshot.lifecycle_phase:
+            details.append(f"Last confirmed phase: {update.snapshot.lifecycle_phase}")
+        details.append(f"Local returned-only wait: {update.snapshot.elapsed_seconds:.1f}s")
+        return TuiRenderedUpdate(
+            heading="Waiting for lifecycle result",
+            detail="\n".join(details),
+            placeholder="",
+            completed_trace=update.snapshot.completed_trace,
+            pending_phase=update.snapshot.pending_input.pending_phase if update.snapshot.pending_input else None,
+            options=(),
+            accepts_input=False,
+            show_cancel=False,
+            terminal=False,
+        )
+    if isinstance(update, AwaitingInput):
+        prompt = update.prompt
+        details = [*_bundle_detail(update.snapshot), prompt.goal, *prompt.proposed_scope]
+        if prompt.interaction is not None and prompt.interaction.feedback is not None:
+            details.append(prompt.interaction.feedback.message)
+        if prompt.recognized_fields:
+            details.append("Recognized: " + ", ".join(prompt.recognized_fields))
+        if prompt.missing_fields:
+            details.append("Missing: " + ", ".join(prompt.missing_fields))
+        if prompt.rejection_category == "choice_input_invalid":
+            details.append("The last choice was invalid. Enter an advertised option ID, for example proceed.")
+        elif prompt.rejection_category:
+            details.append("The last response was not recognized. Use an advertised value or complete JSON.")
+        if prompt.accepted_rounds_remaining:
+            details.append(f"Accepted answers remaining: {prompt.accepted_rounds_remaining}")
+        if prompt.rejection_retries_remaining:
+            details.append(f"Unrecognized retries remaining: {prompt.rejection_retries_remaining}")
+        details.extend(prompt.body_lines)
+        details.extend(f"{control.label}: {control.consequence}" for control in prompt.visible_controls)
+        if prompt.answer_example:
+            details.append("Example: " + prompt.answer_example)
+        details.extend(f"{option.id}: {option.consequence}" for option in prompt.options)
+        return TuiRenderedUpdate(
+            heading=prompt.heading,
+            detail="\n".join(details),
+            placeholder="Type your response" if prompt.mode == "text" else "Choose an advertised option ID",
+            completed_trace=update.snapshot.completed_trace,
+            pending_phase=prompt.phase,
+            options=tuple(option.id for option in prompt.options),
+            accepts_input=True,
+            show_cancel=True,
+            terminal=False,
+        )
+    if isinstance(update, Terminal):
+        provider_diagnostic = update.failure is not None and is_provider_diagnostic(update.failure)
+        detail_lines = list(_bundle_detail(update.snapshot, suppress_inspection=provider_diagnostic))
+        detail_lines.append(
+            _failure_detail(update.failure, snapshot=update.snapshot)
+            if update.failure is not None
+            else f"Research {update.outcome}."
+        )
+        if update.snapshot.durability == "same_process":
+            detail_lines.append("Retained records are inspectable, but this run cannot continue after process exit.")
+        elif update.snapshot.durability == "restart_durable":
+            detail_lines.append("Authorized local session operations may inspect or continue this durable run.")
+        detail = "\n".join(detail_lines)
+        return TuiRenderedUpdate(
+            heading="Research complete" if update.outcome == "completed" else "Research ended",
+            detail=detail,
+            placeholder="",
+            completed_trace=update.snapshot.completed_trace,
+            pending_phase=None,
+            options=(),
+            accepts_input=False,
+            show_cancel=False,
+            terminal=True,
+        )
+    if isinstance(update, Fault):
+        snapshot = update.snapshot
+        return TuiRenderedUpdate(
+            heading="Research could not continue",
+            detail=_failure_detail(update.failure, snapshot=snapshot),
+            placeholder="",
+            completed_trace=snapshot.completed_trace if snapshot is not None else (),
+            pending_phase=None,
+            options=(),
+            accepts_input=False,
+            show_cancel=False,
+            terminal=True,
+        )
+    return TuiRenderedUpdate(
+        heading="Research could not continue",
+        detail="The application received an unsafe update.",
+        placeholder="",
+        completed_trace=(),
+        pending_phase=None,
+        options=(),
+        accepts_input=False,
+        show_cancel=False,
+        terminal=True,
+    )
+
+
+def _pipeline_tracker(completed: tuple[str, ...], pending: str | None) -> Table:
+    """Render only the verified returned trace and the shared pending prompt."""
+    table = Table(show_header=False, expand=True, padding=(0, 1))
+    table.add_column("marker", width=2)
+    table.add_column("phase", width=18)
+    table.add_column("description", width=28)
+    for phase in completed:
+        label, description = PHASE_META[phase]
+        table.add_row("[green]✓[/]", f"[dim green]{label}[/]", f"[dim green]{description}[/]")
+    if pending is not None:
+        label, description = PHASE_META[pending]
+        table.add_row("[bold yellow]⏸[/]", f"[bold yellow]{label}[/]", f"[bold yellow]{description}[/]")
+    return table
+
+
+class DeepResearchDemoTUI(App[None]):
+    """Textual adapter over one owned ``ResearchRunExperience`` instance."""
+
+    CSS = """
+    Screen { layout: vertical; background: #111827; color: #e5e7eb; }
+    #banner { height: 3; padding: 1 2; background: #164e63; color: #ecfeff; text-style: bold; }
+    #pipeline { height: auto; margin: 1 2; min-height: 3; }
+    #log { height: 1fr; border: round #475569; margin: 0 2; padding: 0 1; }
+    #prompt { height: auto; margin: 0 2; color: #fde68a; text-style: bold; }
+    #controls { height: 3; margin: 0 2 1 2; }
+    #composer { width: 1fr; }
+    #accept { width: 16; margin-left: 1; }
+    #cancel { width: 14; margin-left: 1; }
+    """
+
+    BINDINGS = [("ctrl+c", "quit", "Quit")]
+    _WORKER_GROUP = "research-lifecycle"
+    _EXAMPLE_QUESTION = "Compare renewable-energy storage approaches"
+
+    def __init__(self, *, mode: Literal["fake", "real"] = "real") -> None:
+        super().__init__()
+        self.mode = mode
+        self._adapter: DemoAdapter | None = None
+        self._transport = DemoLifecycleTransport()
+        self._experience = ResearchRunExperience(
+            transport=self._transport,
+            mode=mode,
+            readiness_provider=lambda: demo_readiness_report(mode=mode),
+        )
+        self.last_update: RunUpdate | None = None
+        self.last_view: TuiRenderedUpdate | None = None
+
+    def compose(self) -> ComposeResult:
+        yield Static(id="banner")
+        yield Static(id="pipeline")
+        yield RichLog(id="log", wrap=True, markup=False, max_lines=100)
+        yield Static(id="prompt")
+        with Horizontal(id="controls"):
+            yield Input(value=self._EXAMPLE_QUESTION, placeholder="Research question", id="composer")
+            yield Button("Start proposal", id="accept")
+            yield Button("Cancel", id="cancel", variant="error")
+
+    def on_mount(self) -> None:
+        mode_label = "full-fake" if self.mode == "fake" else "all-real"
+        self.query_one("#banner", Static).update(Text(f"Deep Research · {mode_label} demo", style="bold cyan"))
+        self._render_view(
+            TuiRenderedUpdate(
+                heading="Checking local readiness",
+                detail="Waiting for the local preflight result.",
+                placeholder="",
+                completed_trace=(),
+                pending_phase=None,
+                options=(),
+                accepts_input=False,
+                show_cancel=False,
+                terminal=False,
+            )
+        )
+        self._initialize()
+
+    def on_unmount(self) -> None:
+        self._close_adapter()
+
+    def _close_adapter(self) -> None:
+        if self._adapter is None:
+            return
+        adapter, self._adapter = self._adapter, None
+        adapter.close()
+
+    @work(group=_WORKER_GROUP, exclusive=True, exit_on_error=False)
+    async def _initialize(self) -> None:
+        report = await self._experience.preflight()
+        if not report.ready:
+            self.apply_run_update(Fault(failure=report.failure or _presentation_fault().failure))
+            return
+        try:
+            adapter = DemoAdapter()
+            host = build_demo_host()
+            self._transport.bind(adapter=adapter, host=host)
+            if hasattr(self._experience, "set_observation_publisher"):
+                self._experience.set_observation_publisher(adapter.observation_publisher)
+            self._adapter = adapter
+            self.apply_run_update(Ready(report=report))
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            self.apply_run_update(_presentation_fault())
+
+    def apply_run_update(self, update: RunUpdate) -> None:
+        """Public adapter seam: consume a shared update without lifecycle parsing."""
+        self.last_update = update
+        self._render_view(render_run_update(update))
+
+    def _render_view(self, view: TuiRenderedUpdate) -> None:
+        self.last_view = view
+        composer = self.query_one("#composer", Input)
+        cancel = self.query_one("#cancel", Button)
+        accept = self.query_one("#accept", Button)
+        self.query_one("#prompt", Static).update(Text(view.heading, style="bold yellow"))
+        self.query_one("#log", RichLog).clear()
+        if view.detail:
+            self.query_one("#log", RichLog).write(Text(view.detail))
+        pipeline = self.query_one("#pipeline", Static)
+        pipeline.display = bool(view.completed_trace or view.pending_phase)
+        if pipeline.display:
+            pipeline.update(_pipeline_tracker(view.completed_trace, view.pending_phase))
+        composer.disabled = not view.accepts_input
+        composer.placeholder = view.placeholder
+        cancel.display = view.show_cancel
+        cancel.disabled = not view.show_cancel
+        accept.display = bool(
+            isinstance(self.last_update, AwaitingInput)
+            and any(control.id == "accept_current_proposal" for control in self.last_update.prompt.visible_controls)
+        )
+        accept.disabled = not accept.display
+        if view.accepts_input:
+            composer.value = self._EXAMPLE_QUESTION if isinstance(self.last_update, Ready) else ""
+            composer.focus()
+
+    @work(group=_WORKER_GROUP, exclusive=True, exit_on_error=False)
+    async def _dispatch(self, intent) -> None:
+        try:
+            update = await self._experience.handle(intent, observer=self.apply_run_update)
+            self.apply_run_update(update)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            self.apply_run_update(_presentation_fault())
+
+    def _select_current_proposal(self) -> None:
+        if not isinstance(self.last_update, AwaitingInput) or not any(
+            control.id == "accept_current_proposal" for control in self.last_update.prompt.visible_controls
+        ):
+            return
+        self._dispatch(SelectControlRun(control_id="accept_current_proposal"))
+
+    async def on_input_submitted(self, event: Input.Submitted) -> None:
+        raw_value = event.value
+        value = raw_value.strip()
+        if not value:
+            return
+        if self.last_update is None:
+            return
+        if isinstance(self.last_update, Ready) and self.last_update.report.ready:
+            self._dispatch(StartRun(question=value))
+        elif isinstance(self.last_update, AwaitingInput):
+            self._dispatch(AnswerRun(value=value))
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "accept":
+            self._select_current_proposal()
+        elif event.button.id == "cancel" and isinstance(self.last_update, AwaitingInput):
+            self._dispatch(CancelRun())
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Run the standalone Deep Research Textual demo.",
+        epilog=(
+            "Preflight runs before a question can be submitted. Prompts and failures render only "
+            "safe shared run updates; diagnostic records are retained at "
+            f"{DEFAULT_DEMO_DIAGNOSTIC_RELATIVE_PATH}. A returned lifecycle record retains an "
+            "inspectable local bundle; inspection is not cross-process resume."
+        ),
+    )
+    parser.add_argument("--fake", action="store_true", help="Run the zero-credential full-fake lifecycle.")
+    args = parser.parse_args()
+    app = DeepResearchDemoTUI(mode="fake" if args.fake else "real")
+    try:
+        app.run()
+    finally:
+        app._close_adapter()
+
+
+if __name__ == "__main__":
+    main()

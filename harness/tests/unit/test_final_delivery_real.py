@@ -1,0 +1,398 @@
+"""Tests for bounded real final-delivery composition and publication handoff.
+
+@impl FID-001
+@impl FID-002
+@impl FID-003
+@impl FID-004
+@impl FID-005
+@impl EVH-022
+@impl WFO-001
+@impl WFO-002
+"""
+
+from __future__ import annotations
+
+import base64
+import hashlib
+import json
+import time
+from datetime import UTC, datetime
+
+import pytest
+
+from deerflow_deep_research.domain.bundle import BundleId, RunBundleRef, run_bundle_root
+from deerflow_deep_research.domain.context import GraphContextView, NodeAgentContext, NodeExecutionResult
+from deerflow_deep_research.domain.enums import NodeFinishReason
+from deerflow_deep_research.domain.failure_codes import FailureCode
+from deerflow_deep_research.domain.node_spec import NodeBuildDependencies
+from deerflow_deep_research.domain.state import ContentRef
+from deerflow_deep_research.domain.synthesis import SynthesisEvidence
+from deerflow_deep_research.domain.work_units import canonical_json_bytes
+from deerflow_deep_research.engine.gate_kernel import evaluate_gate, gate_result_to_state_update
+from deerflow_deep_research.engine.real_gates import build_final_delivery_real_gate_def
+from deerflow_deep_research.graph.nodes.final_delivery.composer import (
+    MAX_FINAL_DELIVERY_EVIDENCE_BYTES,
+    build_final_delivery_request,
+)
+from deerflow_deep_research.graph.nodes.final_delivery.contracts import (
+    FINAL_DELIVERY_GATE_VIEW_KEY,
+    FinalDeliveryGateView,
+)
+from deerflow_deep_research.graph.nodes.final_delivery.node import build_real
+from deerflow_deep_research.graph.nodes.readiness.contracts import ReadinessReportPlan
+from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
+from deerflow_deep_research.runtime.work_unit_store import WorkUnitStore
+
+BUNDLE = RunBundleRef(
+    bundle_id=BundleId("b_" + "A" * 43),
+    scope_bucket="s_" + "B" * 43,
+)
+_RID = BUNDLE.bundle_id.value
+_BUNDLE_ROOT = run_bundle_root(BUNDLE)
+_LEDGER_HASH = "h_" + "B" * 43
+
+
+def _ref(path: str, content: bytes, summary: str = "") -> ContentRef:
+    digest = base64.urlsafe_b64encode(hashlib.sha256(content).digest()).decode("ascii").rstrip("=")
+    return ContentRef(sandbox_path=path, content_hash=f"h_{digest}", short_summary=summary)
+
+
+def _plan() -> ReadinessReportPlan:
+    return ReadinessReportPlan.model_validate(
+        {
+            "writable_conclusions": [
+                {
+                    "question": "What is established?",
+                    "conclusion_text": "The approved conclusion is retained verbatim.",
+                    "backing_claim_ids": [_LEDGER_HASH],
+                }
+            ],
+            "mandatory_uncertainties": [
+                {"question": "What remains uncertain?", "limitation": "The approved limitation is retained verbatim."}
+            ],
+        }
+    )
+
+
+class ScriptedFinalBundle:
+    def __init__(
+        self,
+        *,
+        plan: ReadinessReportPlan | None = None,
+        evidence: tuple[SynthesisEvidence, ...] | None = None,
+    ) -> None:
+        self.plan = plan
+        self.plan_ref = (
+            _ref(
+                f"{_BUNDLE_ROOT}/review/readiness-report-plan.json",
+                canonical_json_bytes(plan.model_dump(mode="json")),
+            )
+            if plan is not None
+            else None
+        )
+        self.evidence = (
+            evidence
+            if evidence is not None
+            else (
+                SynthesisEvidence(
+                    submission_ref=_LEDGER_HASH,
+                    phase="wave1",
+                    result_contract="wave1.evidence-extraction",
+                    content='{"claim":"approved evidence"}',
+                ),
+            )
+        )
+        self.plan_reads = 0
+        self.evidence_reads = 0
+        self.final_reads = 0
+        self.final_artifacts: tuple[bytes, bytes] | None = None
+        self.fail_final_read = False
+        self.fail_publication = False
+
+    async def read_readiness_report_plan(self, ref: ContentRef) -> bytes:
+        self.plan_reads += 1
+        if self.plan_ref is None or ref != self.plan_ref:
+            raise ValueError("readiness_plan_hash_mismatch")
+        return canonical_json_bytes(self.plan.model_dump(mode="json"))
+
+    async def read_synthesis_evidence(self, accepted_refs: tuple[str, ...]) -> tuple[SynthesisEvidence, ...]:
+        self.evidence_reads += 1
+        if tuple(item.submission_ref for item in self.evidence) != accepted_refs:
+            raise ValueError("accepted_evidence_mismatch")
+        return self.evidence
+
+    async def read_final_artifacts(self, refs: tuple[ContentRef, ContentRef]) -> tuple[bytes, bytes]:
+        self.final_reads += 1
+        if self.final_artifacts is None or self.fail_final_read:
+            raise ValueError("final_artifact_readback_failed")
+        report, citation_map = self.final_artifacts
+        if refs != (
+            _ref(f"{_BUNDLE_ROOT}/final/report.md", report, "report.md"),
+            _ref(
+                f"{_BUNDLE_ROOT}/final/claim-citation-map.json",
+                citation_map,
+                "claim-citation-map.json",
+            ),
+        ):
+            raise ValueError("final_artifact_hash_mismatch")
+        return self.final_artifacts
+
+
+class ScriptedPublicationBundle:
+    def __init__(self, reader: ScriptedFinalBundle) -> None:
+        self.reader = reader
+        self.calls: list[tuple[bytes, bytes]] = []
+
+    async def publish_final(self, report: bytes, citation_map: bytes) -> tuple[ContentRef, ContentRef]:
+        self.calls.append((report, citation_map))
+        if self.reader.fail_publication:
+            raise ValueError("final_artifact_write_conflict")
+        self.reader.final_artifacts = (report, citation_map)
+        return (
+            _ref(f"{_BUNDLE_ROOT}/final/report.md", report, "report.md"),
+            _ref(
+                f"{_BUNDLE_ROOT}/final/claim-citation-map.json",
+                citation_map,
+                "claim-citation-map.json",
+            ),
+        )
+
+
+class ScriptedCapabilities:
+    def __init__(self, response: str | None = None, *, fails: bool = False) -> None:
+        self.response = response or json.dumps(
+            {"schema_version": 1, "conclusion_order": ["conclusion:0"], "uncertainty_order": ["uncertainty:0"]}
+        )
+        self.fails = fails
+        self.requests = []
+
+    async def run_agent(self, *, context, request) -> NodeExecutionResult:
+        self.requests.append((context, request))
+        if self.fails:
+            raise RuntimeError("provider failure")
+        return NodeExecutionResult(finish_reason=NodeFinishReason.SUCCESS, summary=self.response)
+
+
+def _deps(*, bundle: ScriptedFinalBundle, capabilities: ScriptedCapabilities | None = None) -> NodeBuildDependencies:
+    graph = GraphContextView(
+        research_scope_id=_RID,
+        workspace_root=f"/mnt/user-data/{_BUNDLE_ROOT}",
+        uploads_root="/mnt/user-data/uploads",
+        outputs_root="/mnt/user-data/outputs/deep-research",
+    )
+    return NodeBuildDependencies(
+        graph_context=graph,
+        agent_context=NodeAgentContext(
+            research_scope_id=graph.research_scope_id,
+            node_name="final_delivery",
+            attempt_id="g0-final_delivery-a1",
+            workspace_root=graph.workspace_root,
+            attempt_root=f"{graph.workspace_root}/final",
+            policy_name="final-delivery-composer",
+        ),
+        capabilities=capabilities or ScriptedCapabilities(),
+        publication_bundle=ScriptedPublicationBundle(bundle),
+        final_delivery_bundle=bundle,
+    )
+
+
+def _state(bundle: ScriptedFinalBundle, *, accepted_refs: tuple[str, ...] = (_LEDGER_HASH,)) -> dict[str, object]:
+    return {
+        "bundle_id": _RID,
+        "generation": 0,
+        "accepted_submission_refs": accepted_refs,
+        "readiness_report_plan": bundle.plan_ref,
+    }
+
+
+class TestRealFinalDelivery:
+    def test_composer_request_is_bounded_and_cannot_expose_tools_or_checkpoint_state(self) -> None:
+        request = build_final_delivery_request(
+            _plan(),
+            (
+                SynthesisEvidence(
+                    submission_ref=_LEDGER_HASH,
+                    phase="wave1",
+                    result_contract="wave1.evidence-extraction",
+                    content="x" * 20_000,
+                ),
+            ),
+        )
+
+        projection = request.objective.split("<untrusted-source-data>\n", 1)[1].split("\n</untrusted-source-data>", 1)[
+            0
+        ]
+        parsed = json.loads(projection)
+        assert parsed[0]["submission_ref"] == _LEDGER_HASH
+        assert len(parsed[0]["content"].encode("utf-8")) <= MAX_FINAL_DELIVERY_EVIDENCE_BYTES
+        assert request.tools_enabled is False
+        assert request.capability_ref.capability_id == "final-delivery-composer"
+        assert "readiness_report_plan" not in request.objective
+        assert "/mnt/user-data" not in request.objective
+
+    def test_real_gate_uses_only_the_current_attempt_view_and_owns_completion(self) -> None:
+        report = b"# Deep Research Report\n"
+        citation_map = b'{"schema_version":1,"claims":{}}'
+        refs = (
+            _ref(f"{_BUNDLE_ROOT}/final/report.md", report),
+            _ref(f"{_BUNDLE_ROOT}/final/claim-citation-map.json", citation_map),
+        )
+        gate = build_final_delivery_real_gate_def()
+        base_state = {"generation": 0, "gate_attempts_by_phase": {}, "repair_budget_by_phase": {}}
+
+        passed = evaluate_gate(
+            {
+                **base_state,
+                FINAL_DELIVERY_GATE_VIEW_KEY: FinalDeliveryGateView(
+                    published_refs=refs,
+                    accepted_evidence_present=True,
+                ),
+            },
+            "final_delivery",
+            gate,
+        )
+        assert passed.route == "pass"
+        completion = gate_result_to_state_update(passed, "final_delivery", base_state)
+        assert completion["terminal_status"] == "completed"
+
+        stale = evaluate_gate({**base_state, "report_refs": refs}, "final_delivery", gate)
+        assert stale.route == "repair"
+        evidence_blocked = evaluate_gate(
+            {
+                **base_state,
+                FINAL_DELIVERY_GATE_VIEW_KEY: FinalDeliveryGateView(
+                    accepted_evidence_present=False,
+                    failure_code=FailureCode.EVIDENCE_INSUFFICIENT,
+                ),
+            },
+            "final_delivery",
+            gate,
+        )
+        assert evidence_blocked.route == "evidence_blocked"
+        exhausted = evaluate_gate(
+            {
+                **base_state,
+                "repair_budget_by_phase": {"final_delivery": 0},
+                FINAL_DELIVERY_GATE_VIEW_KEY: FinalDeliveryGateView(
+                    accepted_evidence_present=True,
+                    failure_code=FailureCode.WORK_FAILED,
+                ),
+            },
+            "final_delivery",
+            gate,
+        )
+        assert exhausted.route == "exhausted"
+
+    @pytest.mark.asyncio
+    async def test_renders_only_plan_text_and_keeps_completion_gate_owned(self) -> None:
+        bundle = ScriptedFinalBundle(plan=_plan())
+        dependencies = _deps(bundle=bundle)
+
+        result = await build_real(dependencies)(_state(bundle))
+
+        assert "terminal_status" not in result
+        assert len(result["report_refs"]) == 2
+        report, citation_map = dependencies.publication_bundle.calls[0]  # type: ignore[union-attr]
+        assert b"The approved conclusion is retained verbatim." in report
+        assert b"The approved limitation is retained verbatim." in report
+        assert json.loads(citation_map) == {
+            "schema_version": 1,
+            "claims": {"conclusion:0": {"backing_refs": [_LEDGER_HASH]}},
+        }
+        view = result[FINAL_DELIVERY_GATE_VIEW_KEY]
+        assert isinstance(view, FinalDeliveryGateView)
+        assert view.published_refs == result["report_refs"]
+        assert bundle.final_reads == 1
+
+    @pytest.mark.asyncio
+    async def test_missing_or_divergent_plan_calls_neither_composer_nor_publisher(self) -> None:
+        bundle = ScriptedFinalBundle(plan=_plan())
+        capabilities = ScriptedCapabilities()
+        dependencies = _deps(bundle=bundle, capabilities=capabilities)
+        state = _state(bundle)
+        state["readiness_report_plan"] = None
+
+        result = await build_real(dependencies)(state)
+
+        assert capabilities.requests == []
+        assert dependencies.publication_bundle.calls == []  # type: ignore[union-attr]
+        assert result[FINAL_DELIVERY_GATE_VIEW_KEY].failure_code is FailureCode.WORK_FAILED
+
+    @pytest.mark.asyncio
+    async def test_empty_accepted_evidence_never_publishes(self) -> None:
+        bundle = ScriptedFinalBundle(plan=_plan())
+        capabilities = ScriptedCapabilities()
+        dependencies = _deps(bundle=bundle, capabilities=capabilities)
+
+        result = await build_real(dependencies)(_state(bundle, accepted_refs=()))
+
+        assert capabilities.requests == []
+        assert dependencies.publication_bundle.calls == []  # type: ignore[union-attr]
+        assert result[FINAL_DELIVERY_GATE_VIEW_KEY].failure_code is FailureCode.EVIDENCE_INSUFFICIENT
+
+    @pytest.mark.asyncio
+    async def test_rejected_layout_and_readback_failure_never_publish_a_pass_view(self) -> None:
+        rejected_candidate = json.dumps({"schema_version": 1, "conclusion_order": [], "uncertainty_order": []})
+        for response, readback_fails in (("not json", False), (rejected_candidate, False), (None, True)):
+            bundle = ScriptedFinalBundle(plan=_plan())
+            bundle.fail_final_read = readback_fails
+            dependencies = _deps(bundle=bundle, capabilities=ScriptedCapabilities(response))
+
+            result = await build_real(dependencies)(_state(bundle))
+
+            assert result[FINAL_DELIVERY_GATE_VIEW_KEY].failure_code is FailureCode.WORK_FAILED
+            if readback_fails:
+                assert len(dependencies.publication_bundle.calls) == 1  # type: ignore[union-attr]
+            else:
+                assert dependencies.publication_bundle.calls == []  # type: ignore[union-attr]
+
+    @pytest.mark.asyncio
+    async def test_bridge_and_publisher_failures_take_one_attempt_without_a_pass_view(self) -> None:
+        bridge_bundle = ScriptedFinalBundle(plan=_plan())
+        failed_capabilities = ScriptedCapabilities(fails=True)
+        bridge_dependencies = _deps(bundle=bridge_bundle, capabilities=failed_capabilities)
+
+        bridge_result = await build_real(bridge_dependencies)(_state(bridge_bundle))
+
+        assert len(failed_capabilities.requests) == 1
+        assert bridge_dependencies.publication_bundle.calls == []  # type: ignore[union-attr]
+        assert bridge_result[FINAL_DELIVERY_GATE_VIEW_KEY].failure_code is FailureCode.WORK_FAILED
+
+        publisher_bundle = ScriptedFinalBundle(plan=_plan())
+        publisher_bundle.fail_publication = True
+        publisher_dependencies = _deps(bundle=publisher_bundle)
+
+        publisher_result = await build_real(publisher_dependencies)(_state(publisher_bundle))
+
+        assert len(publisher_dependencies.publication_bundle.calls) == 1  # type: ignore[union-attr]
+        assert publisher_result[FINAL_DELIVERY_GATE_VIEW_KEY].failure_code is FailureCode.WORK_FAILED
+
+    def test_missing_declared_dependencies_fail_before_request_construction(self) -> None:
+        bundle = ScriptedFinalBundle(plan=_plan())
+        dependencies = _deps(bundle=bundle)
+        with pytest.raises(ValueError, match="final_delivery_bundle_capability_missing"):
+            build_real(
+                dependencies.__class__(
+                    graph_context=dependencies.graph_context,
+                    agent_context=dependencies.agent_context,
+                    capabilities=dependencies.capabilities,
+                    publication_bundle=dependencies.publication_bundle,
+                )
+            )
+
+    @pytest.mark.asyncio
+    async def test_publication_replay_is_idempotent_and_conflicting_content_fails_closed(self, tmp_path) -> None:
+        BundleLifecycle(workspace_host_path=tmp_path)._publish_sync(BUNDLE)
+        store = WorkUnitStore(
+            workspace_host_path=tmp_path,
+            bundle=BUNDLE,
+            clock=lambda: datetime(2026, 7, 30, tzinfo=UTC),
+            monotonic=time.monotonic,
+            lock_sleep=time.sleep,
+            token_factory=lambda: "a" * 32,
+            fault_hook=None,
+        )
+        first = await store.publish_final(b"report\n", b'{"claims":{}}')
+        assert await store.publish_final(b"report\n", b'{"claims":{}}') == first
+        with pytest.raises(ValueError, match="final_artifact_write_conflict"):
+            await store.publish_final(b"changed\n", b'{"claims":{}}')

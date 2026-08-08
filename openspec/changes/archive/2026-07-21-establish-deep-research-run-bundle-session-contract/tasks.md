@@ -1,0 +1,39 @@
+## 1. Domain Contracts And Safety Tests
+
+- [x] 1.1 Add red-before-green domain tests for frozen extra-forbid version-1 manifest, trace, diagnostic, publisher, and session-view contracts: record-bearing bind requires non-null id/status/phase/generation; trace sequence `1..2^31-1`; 8-KiB record, 2-MiB snapshot, and 256-record limits; content-layout, retention, inspectability, and durability states. (`RUS-001`, `RUS-002`, `RUS-003`, `RER-006`)
+- [x] 1.2 Add invalid-fixture and sentinel tests proving schema/reference/timestamp/enum bounds and that secrets, host paths, URLs, prompt/answer/provider bodies, exceptions, raw sources, and source-dependent diagnostic fingerprints cannot serialize. (`RUS-001`, `RUS-002`, `RER-003`)
+- [x] 1.3 Implement canonical frozen contracts under `agent/src/deerflow_deep_research/domain/run_session.py`, with `@impl RUS-001`, `@impl RUS-002`, and `@impl RUS-003` annotations and no runtime imports. (`RUS-001`, `RUS-002`, `RUS-003`, `PRS-006`)
+
+## 2. Runtime Session Store, Inspection, And Retention
+
+- [x] 2.1 Add red-before-green runtime store tests for record-bearing binding, denial/no-record id, malformed/status-less results, atomic contained manifest publication, real-marker classification, full-fake/failed-real metadata-only roots, repeated trace visits, per-file partial availability, and no checkpoint-control mutation. (`RUS-001`, `RUS-002`, `REG-014`)
+- [x] 2.2 Add red-before-green filesystem tests for owner-only `0700` directories and `0600` regular files, no-follow symlink/nonregular/broader-mode refusal, atomic replacement failure, and all retained-root work running off the event loop. (`RUS-001`, `RUS-002`)
+- [x] 2.3 Implement `runtime/run_session.py` as the runtime-owned contained store and projection writer. It accepts only typed record-bearing facts, checks the real bootstrap marker without following links, individually atomically writes diagnostic then trace then manifest, and never reads session records for routing, pending-input validation, checkpoint mutation, or evidence acceptance. (`RUS-001`, `RUS-002`, `REG-014`, `PRS-006`)
+- [x] 2.4 Add red-before-green retention/discovery tests for deterministic no-index lookup, root shared cleanup locks, per-bundle live locks, first-dispatch cleanup protection, crash-released-lock eligibility, 20-run/14-day/1-GiB eligible-candidate bounds, oldest-first pruning, corrupt/locked temporary overage, recursive contained size, and bounded skipped summaries. (`RUS-001`, `RUS-003`)
+- [x] 2.5 Add red-before-green list/inspect tests for exact whitelist output, maximum 20 entries and 20 skipped summaries, agent-relative paths only, unknown/traversal zero writes, no lock/staging/repair creation, no sandbox/provider/graph activity, malformed individual files, and arbitrary-content/path rejection. (`RUS-003`, `REG-014`)
+- [x] 2.6 Implement read-only developer list/inspect and bounded cleanup over the retained root with no-follow contained primitives, exclusive non-blocking root cleanup lock, per-bundle lock skipping, validated oldest-first pruning, and truthful bounded cleanup reports. (`RUS-001`, `RUS-003`)
+
+## 3. Shared Experience And Demo Adapter
+
+- [x] 3.1 Add red-before-green `ResearchRunExperience` tests for publisher ordering, shared `RunSessionView` projection, publication failure preserving valid pending/terminal/source-fault updates, post-bind local fault diagnostics, no-record global diagnostics, and local interruption retaining the last verified lifecycle record. (`RER-003`, `RER-006`, `RUS-002`)
+- [x] 3.2 Implement the runtime publisher protocol in `ResearchRunExperience` with `@impl RER-006`: await required publication/diagnostics before `handle()` returns; expose opaque reference, inspectability, retention, durability, and at most one closed observation category; keep I/O off the event loop. (`RER-003`, `RER-006`, `RUS-003`)
+- [x] 3.3 Add red-before-green `DemoAdapter` tests for retained-root workspace binding in fake/replayed-real modes, shared root cleanup lock around every dispatch, record-bearing post-result bundle lock acquisition, awaited finalization, and no bundle for preflight/denial/no-record outcomes. (`DPL-007`, `RUS-001`, `RER-006`)
+- [x] 3.4 Replace disposable `DemoAdapter` ownership with retained-root binding. Construct only the runtime publisher from the trusted envelope, hold root/bundle locks as specified, preserve injected isolated test roots, and migrate diagnostics so post-bind records go into the bundle while earlier records stay global with safe source-independent fingerprints. (`DPL-007`, `RER-003`, `RUS-001`, `RUS-002`)
+- [x] 3.5 Add end-to-end fake and scripted-replay tests that close the adapter, reopen by opaque reference, prove inspectability/partial-observation truth, cleanup bounds/live-lock protection, marker layout classification, and no fake lifecycle record on local interrupt. (`DPL-007`, `RUS-001`, `RUS-002`, `RUS-003`, `RER-006`)
+
+## 4. CLI, TUI, Structure, And Documentation
+
+- [x] 4.1 Add red-before-green command tests for exact `demo-sessions list|inspect <research_id>|cleanup`, fixed inspect whitelist, no host paths or raw content, no lifecycle/start/resume side effects, and explicit no-resume wording. (`RUS-003`, `REC-004`, `REG-014`)
+- [x] 4.2 Implement `agent/scripts/demo_sessions.py` and its `Makefile` target as thin adapters over the runtime operation, with help/output that distinguishes inspection from resume. (`RUS-003`, `REC-004`, `PRS-006`)
+- [x] 4.3 Update CLI rendering and integration tests so valid updates show opaque reference, exact inspect command, inspectability, durability, and no-resume truth; local EOF/interrupt renders only a presentation message and last-verified-state truth. (`REC-004`, `RER-006`)
+- [x] 4.4 Update Textual TUI rendering and integration tests to consume the same shared facts for HITL-1/HITL-2 and observation failures, without path inference/wire parsing or required asynchronous unmount work. (`RED-005`, `RER-006`)
+- [x] 4.5 Replace stale temporary/no-session wording in fake CLI, real CLI, and TUI preflight/help; test that preflight promises no reference and that an established session does not promise resume. (`REC-001`, `RER-004`, `DPL-007`)
+- [x] 4.6 Register `domain/run_session.py`, `runtime/run_session.py`, thin `scripts/demo_sessions.py`, and new owned `agent/.gitignore` in `openspec/governance/project-structure.toml`; render the generated `agent/AGENTS.md` block and add dependency-direction structural tests. (`PRS-006`)
+- [x] 4.7 Add `agent/.gitignore` containing only `.deep-research-demo-runs/`; update downstream `agent/README.md`/operational docs with beginner-safe commands, limits, fixed trace/diagnostic locations, and non-resume boundary, without modifying upstream-owned root files. (`DPL-007`, `REC-004`, `RUS-003`, `PRS-006`)
+- [x] 4.8 Extend test-evidence coverage with sentinel scans of manifest, trace, diagnostics, CLI/TUI, and inspect output; record deterministic verification and supplemental credentialed acceptance commands. (`RUS-001`, `RUS-002`, `REC-004`, `RED-005`)
+
+## 5. Verification
+
+- [x] 5.1 Run focused domain/runtime/demo/CLI/TUI tests, then from the repository root run `cd agent && UV_OFFLINE=1 make verify`; record protected-path baseline/final status and confirm `backend/` and `frontend/` remain untouched.
+- [x] 5.2 Run `openspec validate establish-deep-research-run-bundle-session-contract --strict`, applicable architecture/requirement governance checks, and `git diff HEAD --check` from the repository root.
+- [x] 5.3 When real-demo credentials and preflight are available, run scripted real start-to-HITL through the retained root, close it, and inspect by opaque reference. Otherwise record a safe preflight skip; this supplemental acceptance SHALL NOT block deterministic completion. (`DPL-007`, `RUS-001`, `RUS-002`, `RUS-003`, `REC-004`)

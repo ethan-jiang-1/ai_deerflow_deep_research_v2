@@ -1,0 +1,456 @@
+# Deep Research Product
+
+The Deep Research Product helps a person turn a research question into a useful
+research outcome. Its vocabulary distinguishes the person's intent from internal
+runtime and support details.
+
+## Participants
+
+**Primary User**:
+A person who brings a research question and is not expected to understand working
+directories, credentials, lifecycle phases, diagnostics, or implementation details.
+_Avoid_: operator, debugger, runtime client
+
+**User Decision**:
+A research choice whose meaning, preference, or tradeoff only the Primary User can
+authoritatively provide, such as research scope or a decision between alternatives.
+_Avoid_: infrastructure recovery, configuration repair, lifecycle routing
+
+**Research Confirmation**:
+A lightweight User Decision process in which the Primary User accepts or adjusts the
+system's proposed research approach before active research begins. It produces either
+Accepted Research Facts or one current User Decision that remains to be made.
+_Avoid_: service setup, operational recovery, an internal lifecycle phase
+
+**Model-Led Research Interaction**:
+The free-text conversation in which Deep Research proposes, explains, or clarifies a
+research approach with the Primary User. Model interpretations remain candidates until
+the User's choice becomes an Accepted Research Fact.
+_Avoid_: menu-first intake, model-authorized research fact
+
+**Accepted Research Fact**:
+A fact that may direct active research because the Primary User stated it in the
+research question or explicitly supplied or confirmed it. System proposals, model
+interpretations, and unstated defaults remain advisory until accepted.
+_Avoid_: model assumption, prompt default, inferred preference
+
+**Research Outcome**:
+The useful result the Primary User seeks after giving a research question: a readable
+final report with an answer or recommendation, key evidence and sources, stated scope
+and assumptions, and material limitations or uncertainty. It is not evidence that an
+internal graph or provider executed.
+_Avoid_: successful node execution, retained Run Bundle
+
+## System Boundary
+
+**Deep Research Harness**:
+The stable downstream execution environment that creates and coordinates independent
+Deep Research Runs. It remains when an individual Run Bundle is deleted, owns no
+durable Run state, and is distinct from the generic DeerFlow Harness.
+_Avoid_: DeerFlow Harness, Run Bundle, Research State
+
+**Deep Research Run**:
+One isolated execution of a research request by the Deep Research Harness. Its
+durable state and materials belong to exactly one Run Bundle; one conversation has at
+most one active Run, while ended Runs may coexist. A Run is active while its available
+Bundle-local Research State is non-terminal, including while it waits for User input;
+it is ended when its current Refinement Round is terminal. A Primary User may explicitly
+reactivate an available ended Bundle for another Refinement Round. Bundle Loss makes a
+Run unavailable, not ended, and an unavailable or lost Bundle cannot be reactivated.
+_Avoid_: Deep Research Harness, Durable Research Session, another Run
+
+**Run Refinement**:
+A Primary User-directed adjustment to an active Deep Research Run, such as narrowing
+scope, adding a question, or changing the requested delivery. It continues the same
+Run and Run Bundle rather than creating another Run. Its direction form carries bounded
+nonblank text and is distinct from both a Correlated Research Response and an Accepted
+Profile Note.
+_Avoid_: note, a new Deep Research Run, a second active Bundle, an unscoped message
+
+**Accepted Profile Note**:
+A bounded contextual preference or scope constraint accepted during Research
+Confirmation as part of the research profile. It is not a general Run inbox and does
+not independently start a later Refinement Round.
+_Avoid_: Run Refinement, generic note, conversation memory
+
+**Correlated Research Response**:
+A Primary User answer to the one current research-confirmation or decision subject. It
+may resolve only that subject and cannot also create an unstated Run Refinement.
+_Avoid_: Run Refinement, unscoped follow-up, note
+
+**Refinement Round**:
+One bounded period of active work within a Deep Research Run. Creating a Bundle starts
+its first Round; an explicit capacity-legal refinement of an available ended Bundle
+starts a later Round in that same Bundle. A pending direction from an active Run takes
+effect only at the completed terminal boundary of the current Round. `STOPPED`,
+`CANCELLED`, and `BLOCKED` preserve a pending direction but never consume it
+automatically. Earlier reports and materials remain retained for inspection.
+_Avoid_: a new Run Bundle, a replacement for the retained Run history
+
+**Refinement Admission**:
+The acceptance of a Run Refinement into its active Run Bundle. A Primary User may submit
+it at any time, but only one pending direction may exist in a Bundle. It takes effect
+only at the next safe durable control point and does not rewrite State beneath an
+in-flight writer or replace a pending Correlated Research Response.
+_Avoid_: a requirement to wait for a prearranged HITL prompt, immediate concurrent State mutation
+
+**Refinement Continuation**:
+The explicit textless `refine` form for an available terminal Bundle that already has a
+pending Run Refinement. It names that `bundle_id`, supplies no replacement direction or
+operation identity, and can consume only the stored direction when capacity permits. It
+is never inferred from conversation memory, a profile note, a Handle, or a terminal
+status alone.
+_Avoid_: automatic restart, a generic retry, a hidden text recovery, a new lifecycle action
+
+**Run Bundle**:
+The retained, inspectable, and independently deletable durable record of one Deep
+Research Run. It contains that Run's Research State, evidence, and content; it may be
+deleted externally at any time, making that Run unavailable without affecting the
+Harness or another Run.
+_Avoid_: disposable temp directory, shared workspace, Deep Research Harness
+
+**Run Bundle ID**:
+The fresh opaque identity and locating handle created with one Run Bundle. It identifies
+that Run only while its Bundle exists; it is not derived from a conversation and cannot
+recover a deleted Run.
+_Avoid_: outer conversation id, shared research id, checkpoint key
+
+**Current Bundle Handle**:
+The transient Run Bundle ID retained in a current conversation to locate the Run being
+worked on next. It may direct a refinement to that Bundle, but does not establish the
+Bundle's existence, lifecycle status, or authority; its absence permits Run Discovery
+within the trusted conversation scope.
+_Avoid_: durable active-Bundle pointer, Run registry, replacement Research State
+
+**Public Controller Workflow**:
+The focused public Markdown program the recommended dedicated Agent reads through the
+effective operator-owned `file:read` group before it proposes a Deep Research lifecycle
+call on an ordinary relevant turn. The full configured read group remains the permission
+boundary; the workflow is advisory, while tool schema, trusted runtime, and Bundle-local
+State admit effects.
+_Avoid_: a copied prompt, an `allowed-tools` workaround, a lifecycle authority, a path-only reader
+
+**Run Discovery**:
+The recovery of retained Runs by inspecting Bundle directories and the State contained
+inside them within the trusted conversation scope. The Harness keeps no durable active
+Bundle pointer or independent Run registry.
+_Avoid_: global session registry, persisted active-bundle index, external run catalog
+
+**Bundle Loss**:
+The external removal or unavailability of a Run Bundle, including while its Run is
+active. It ends the Harness's ability to observe or recover that Run's authoritative
+State; no later action may recreate the Bundle or persist a replacement State for it.
+_Avoid_: a terminal lifecycle status, recoverable cleanup, automatic Bundle recreation
+
+**External Run Observation**:
+An optional log, diagnostic, audit, or metadata record held outside a Run Bundle. It
+may outlive the Bundle, but cannot establish Run existence, select an active Run,
+authorize an action, recover State, or prevent a fresh Run after Bundle Loss.
+_Avoid_: lifecycle authority, run registry, checkpoint, resume authorization
+
+**Research State**:
+The lifecycle and control facts for one Deep Research Run, contained within its Run
+Bundle. It cannot survive Bundle deletion or act as a cross-Run or Harness authority.
+_Avoid_: external checkpoint, Harness state, shared state
+
+## Validation
+
+**Smoke Test**:
+A bounded operator-facing verification run that exercises the real integration path as
+closely as practical; it is not a Primary User product interface.
+_Avoid_: end-user onboarding, production user journey
+
+**Smoke Test Operator**:
+A contributor or operator who runs a Smoke Test and can act on concise technical setup
+or diagnostic information.
+_Avoid_: Primary User, research participant
+
+**Passing Smoke Test**:
+A Smoke Test that uses real model and web integrations, follows bounded default
+decisions, and finishes by producing a readable report for its fixed research question.
+_Avoid_: a successful preflight, a retained session, a partial graph traversal
+
+## Entry Interfaces
+
+**Primary User Interface**:
+The dedicated Deep Research TUI through which a Primary User runs and follows Deep
+Research.
+_Avoid_: the smoke-test CLI, the Host Terminal Workbench, a raw lifecycle payload
+
+**Operator Interface**:
+The CLI used for Smoke Tests, debugging, and scriptable operational work.
+_Avoid_: the Primary User Interface
+
+**Integration Interface**:
+The API through which another program invokes or observes Deep Research using its
+published contract.
+_Avoid_: the Primary User Interface, an operator console
+
+**Host Terminal Workbench**:
+The DeerFlow-wide terminal chat interface; it is not the owner of the dedicated Deep
+Research Primary User Interface.
+_Avoid_: the Deep Research TUI
+
+## Node Agent Control
+
+**LLM-Bearing Node**:
+A logical graph node whose bounded model work contributes to a Research Outcome. It is
+a two-part program: a Node Cognitive Control Program directs model behavior, while its
+Deterministic Control Boundary admits only legal work and results.
+_Avoid_: a conventional function call with an incidental model response
+
+**Node Cognitive Control Program**:
+The node-local, runtime-loaded MD/prompt, bounded model-visible inputs, and structured
+feedback that together direct a model's goal, method, evidence and uncertainty handling,
+output contract, and repair behavior. It is a first-class product program that must be
+reviewed, tested, and evaluated for cognitive quality.
+_Avoid_: graph routing configuration, an inactive documentation summary
+
+**Node Cognitive Control Contract**:
+The pre-implementation design anchor for an LLM-Bearing Node. It states the node's
+user-serving cognitive responsibility; trusted and untrusted inputs; bounded method
+and tool strategy; useful candidate, evidence, and uncertainty standard; feedback and
+repair loop; and the final Deterministic Control Boundary. The runtime control program,
+implementation, tests, and evaluations all refine the same contract.
+_Avoid_: a second behavior authority, a prose-only implementation afterthought
+
+**Deterministic Control Boundary**:
+The code-owned authority that enforces tool and access limits, budgets, state,
+persistence, route selection, and candidate admission. It constrains the Node Cognitive
+Control Program but does not substitute for its cognitive design.
+_Avoid_: the model's reasoning policy, a Markdown-controlled route
+
+**Cognitive Evaluation Suite**:
+The independently invoked `evals/` system that observes Node Cognitive Control Program
+behavior through a Python Cognitive Evaluation Runner and a separate Cognitive Evaluation
+Agent Workflow. It is distinct from `tests/`, is not automatically collected by pytest
+or normal deterministic verification, and records private local evaluation evidence
+rather than treating an ordinary regression result as cognitive proof.
+_Avoid_: `tests/eval/`, an always-on CI lane, an unstructured live demo
+
+**Evaluation Control Surface**:
+The slow-changing, source-controlled declarations under `evals/control/`: registered
+Evaluation Execution Cases, their versioned Rubrics, the Evaluation Review Protocol, and
+their schemas or registries. It contains no generated workspace, Bundle, or Review
+Record. The Runner implementation remains in the governed package source root rather
+than alongside these control artifacts.
+_Avoid_: generated run data, a Python source root, mutable evaluator output
+
+**Evaluation Run Store**:
+The ignored, fast-changing local record area under `evals/runs/`. Each invocation creates
+an isolated workspace and immutable Bundle there; separately immutable Review Records may
+reference that Bundle without being written into it. No Case, Rubric, protocol, or other
+control authority is stored in this subtree.
+_Avoid_: a shared resume workspace, source-controlled control artifacts, a mutable Bundle
+
+**Cognitive Evaluation Runner**:
+The Python program that prepares a declared execution environment, sends bounded input
+to the production node or flow, and captures its objective outputs, events, artifacts,
+resource use, and diagnostics as an Evaluation Run Bundle. Every execution receives a
+new isolated local Evaluation Run Workspace and does not reuse another execution's
+checkpoint, artifacts, or bundle. It executes exactly once without retry or recovery,
+then reports whether that execution completed or failed. It makes a best effort to
+preserve every observable input, output, log, and trace needed for later review. It
+neither reads a quality rubric nor decides cognitive quality.
+_Avoid_: a hidden pytest marker, a copied node implementation, an evaluator, a retry controller
+
+**Evaluation Execution Case**:
+A named, versioned, registered declaration of one finite Node Evaluation Run or Flow
+Evaluation Run. It supplies only the execution subject, fixed inputs/fixtures, required
+services, budget, and control-version identity. The Runner accepts this case rather than
+free-form prompts, paths, model overrides, or resume state.
+_Avoid_: an arbitrary script invocation, an evaluator rubric, an unbounded user request
+
+**Evaluation Rubric**:
+The versioned, case-specific cognitive assessment criteria associated with one
+Evaluation Execution Case. It refines the Node Cognitive Control Contract's quality
+standard into observable expectations for that case and is read only by the upper review,
+not the Runner. The Evaluation Review Protocol owns review method and output shape, not
+case quality criteria.
+_Avoid_: a Runner input, a replacement Node Cognitive Control Contract, generic evaluator prose
+
+**Evaluation Run Workspace**:
+The newly created private local workspace assigned to exactly one Cognitive Evaluation
+Runner execution. It contains only that execution's inputs, runtime state, artifacts, and
+bundle, preventing earlier or concurrent evaluations from affecting its observation.
+_Avoid_: a shared resume directory, a reused checkpoint namespace
+
+**Evaluation Run Bundle**:
+The immutable private local record of one Cognitive Evaluation Runner execution: the
+execution-case input and control-version identity; actual node/flow outputs and artifacts;
+and an Observation Trace of events, logs, tool/model observations, resource use, and
+diagnostics. On failure it preserves every material observation the Runner obtained before
+the stop. It lets an evaluator assess the same costly execution without rerunning it.
+Export redaction is not an `evals/` requirement in the current Local-First scope.
+_Avoid_: a mutable conversation transcript, a quality verdict, a shared run directory
+
+**Observation Trace**:
+The Runner's chronological, objective record of observable execution events between the
+declared Evaluation Execution Case input and its actual output or failure. It exposes
+enough of an otherwise black-box Node Cognitive Control Program for later assessment but
+does not infer a quality judgment.
+_Avoid_: an evaluator conclusion, a reconstructed hidden chain of thought
+
+**Cognitive Evaluation Agent Workflow**:
+A bounded multi-turn Agent workflow that receives an Evaluation Run Bundle, the relevant
+Node Cognitive Control Contract, and an evaluation rubric. It may be run by a Coding
+Agent or another approved evaluator interface to inspect artifacts and source seams,
+then produce a read-only Cognitive Evaluation Review. In V1 it follows an Evaluation
+Review Protocol rather than becoming a new runtime Controller or graph node. It never
+alters the captured execution result, production prompt/code, rubric, or execution
+environment, and it never triggers a new costly run on its own. A person explicitly
+chooses whether and when to submit a retained Bundle for review; the Runner never starts
+review automatically.
+_Avoid_: a Python execution driver, a one-shot opaque LLM judge, an auto-fixer, a new runtime agent
+
+**Evaluation Review Protocol**:
+The concise, versioned review instructions and output shape used by a Coding Agent or
+other evaluator to inspect an Evaluation Run Bundle. It gives V1 repeatability without
+creating a separately loaded MD Controller, evaluator runtime, or evaluator graph.
+_Avoid_: a production prompt authority, a second graph, a per-node Python judge
+
+**Cognitive Evaluation Review**:
+The structured, read-only result of a Cognitive Evaluation Agent Workflow. It contains
+an immutable reference to the assessed Bundle; the execution Case and control version;
+the Node Cognitive Control Contract, rubric, and Review Protocol versions; evaluator
+identity or interface; time; Cognitive Evaluation Result; rubric evidence, confidence,
+and unknowns; the likely owning layer and first source seam; and proposed follow-up such
+as a new scenario or OpenSpec change. It follows the Evaluation Review Protocol, advises
+a Coding Agent or human, and does not make production changes. Each review is a separate,
+immutable Review Record that references, but never alters, its Evaluation Run Bundle;
+more than one review may assess the same Bundle.
+_Avoid_: a patch, an ungrounded narrative, a production-state write, a Bundle mutation
+
+**Cognitive Evaluation Execution Status**:
+The Runner's objective two-state account of one execution: `completed` when its declared
+subject finishes, or `failed` otherwise. A failed bundle retains its typed phase/reason
+and any material collected before failure, but is not retried by the Runner. A caller may
+start a fresh isolated Runner execution instead. Execution Status is independent of the
+Cognitive Evaluation Result.
+_Avoid_: a quality grade, a provider error silently treated as a cognitive failure, retry state
+
+**Node Cognitive Smoke Scenario**:
+The minimum bounded, manually runnable Cognitive Evaluation Suite scenario for one
+LLM-Bearing Node. It executes the declared production node branch through the Runner
+under controlled inputs and budget, then preserves a private local, interpretable result
+bundle for later rubric assessment. Every LLM-Bearing Node has at least one such smoke
+scenario.
+_Avoid_: a unit test, a raw provider transcript, a claim that one run proves quality
+
+**Node Evaluation Run**:
+A Cognitive Evaluation Runner execution whose subject is one LLM-Bearing Node and an
+explicit production branch. It is the primary evaluation lane because it isolates one
+Node Cognitive Control Program while retaining the production prompt, bridge, and
+deterministic admission seam.
+_Avoid_: a copied model call, a whole-graph regression, an implied all-branches claim
+
+**Flow Evaluation Run**:
+A Cognitive Evaluation Runner execution whose subject is a bounded complete or declared
+graph flow. It is a distinct, lower-frequency integration lane that observes how nodes
+compose into a Research Outcome after Node Evaluation Runs establish their own baseline.
+_Avoid_: a substitute for node-level diagnosis, an unbounded production Deep Research Run
+
+**Cognitive Evaluation Result**:
+The four-state cognitive assessment produced by a Cognitive Evaluation Agent Workflow:
+`pass` when the observed behavior satisfies its rubric; `limited` when a declared,
+inspectable quality or coverage limitation remains; `inconclusive` when the available
+bundle cannot support an honest assessment; or `failed` when a critical cognitive rubric
+fails. `limited` and `inconclusive` require a readable report and never silently count
+as pass. Execution failure remains a separate Execution Status.
+_Avoid_: a binary assertion, an unreviewed LLM-judge verdict, a Runner status
+
+## Service Responsibility
+
+**Deployment Owner**:
+The person or organization that configures and maintains the model, web-research, and
+other service prerequisites for a Deep Research deployment.
+_Avoid_: Primary User, Smoke Test Operator
+
+**Research Service Prerequisite**:
+A configured capability, such as a model or web-research service, that the system
+needs to perform research but that does not define the Primary User's research intent.
+_Avoid_: User Decision, research scope
+
+**System Recovery**:
+The system-owned effort to restore progress toward a Research Outcome after an
+operational interruption, within declared safety, cost, and evidence limits.
+_Avoid_: a Primary User troubleshooting task, a User Decision
+
+**Support Handoff**:
+A bounded, redacted summary of an interrupted research run that a person can use to
+ask for help without exposing secrets or requiring them to interpret raw runtime data.
+_Avoid_: an opaque diagnostic reference alone, a raw exception dump
+
+**Research Report Export**:
+A self-contained Markdown rendering of a completed Research Outcome that the Primary
+User can reopen, copy, or export from its retained Run Bundle. The first
+Local-First release does not promise PDF export, online sharing, or collaboration.
+_Avoid_: raw graph artifacts, a multi-user publishing feature
+
+**Recovery Point**:
+A durable, safe point in a Run Bundle's Research State from which the system can resume
+legal research work without replaying an unconfirmed user decision while the Bundle is
+available.
+_Avoid_: a local UI cursor, an inferred phase
+
+**Local-First Deployment**:
+The first product deployment scope in which one local Primary User owns the dedicated
+TUI and its retained Run Bundles.
+_Avoid_: an already-supported multi-user service, anonymous shared storage
+
+
+---
+
+# People Initiate Evaluation Review
+
+The Runner ends after it creates and reports a Bundle with its execution status. It never
+automatically invokes, queues, or selects an upper review. A person explicitly decides
+whether, when, and by which approved evaluator interface to review that retained Bundle.
+This allows more than one independent review without repeating the costly execution and
+keeps execution control separate from quality judgment.
+
+
+---
+
+# Reviews Are Separate Immutable Records
+
+An Evaluation Run Bundle is immutable evidence. Every human-initiated Cognitive
+Evaluation Review is a separate immutable Review Record that references that Bundle and
+does not modify it. Multiple independent review records may assess the same Bundle,
+preserving both the original observation and each evaluator's conclusion.
+
+
+---
+
+# Review Records Are Traceable
+
+Every Review Record identifies the immutable Bundle, execution Case, control version,
+Node Cognitive Control Contract, rubric, and Review Protocol it assessed. It also names
+the evaluator or evaluator interface and time, then records the four-state conclusion,
+its evidence, confidence and unknowns, likely owning layer, first source seam, and
+follow-up. A review without those links is not an interpretable evaluation result.
+
+
+---
+
+# Rubrics Are Case-Specific Review Authorities
+
+The Node Cognitive Control Contract sets each node's enduring responsibility and quality
+standard. A versioned Evaluation Rubric refines that standard for one Evaluation
+Execution Case and is associated with that Case without becoming Runner input. The
+Evaluation Review Protocol governs review method and output shape only. This keeps the
+Runner objective and lets case-specific cognitive expectations evolve independently.
+
+
+---
+
+# Evaluation Control And Run Data Are Separate
+
+The new Cognitive Evaluation Suite lives under `deep_research_harness/` but never mixes its
+slow-changing control authority with its fast-changing execution materials. `evals/control/`
+holds versioned Cases, Rubrics, review protocol, and registries. `evals/runs/` is ignored
+local output for isolated workspaces, immutable Bundles, and separate Review Records.
+The Python Runner belongs in the governed `src/deerflow_deep_research/runtime/evaluation/`
+source layer, not either `evals/` subtree. The V1 structural change must explicitly update
+project-structure governance and ignore rules; existing `tests/eval/` remains deterministic
+pytest coverage, not this Suite.

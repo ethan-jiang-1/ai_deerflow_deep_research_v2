@@ -1,0 +1,1 @@
+"""Bootstrap fixture adapter."""

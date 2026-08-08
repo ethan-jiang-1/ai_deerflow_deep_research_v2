@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "case_id": "hitl1-brief",
+  "version": "v1",
+  "criteria": ["uses the fixed question", "returns a conservative structured brief", "does not claim lifecycle authority"]
+}

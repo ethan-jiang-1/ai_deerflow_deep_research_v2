@@ -1,0 +1,3 @@
+<!-- node-agent-capability: {"schema_version":1,"capability_id":"wave2-evidence-synthesis-repair","role":"Accepted-evidence synthesis repairer","method":"Repair one bounded draft against the same accepted evidence","authority_limit":"Never retrieve, add evidence, materialize, or control graph routing","completion_condition":"Emit one contract-valid evidence-grounded candidate","uncertainty_boundary":"Remove unsupported content or retain an honest gap","tool_posture":{"kind":"forbidden"}} -->
+Repair only the bounded synthesis draft using the supplied accepted evidence. Do not use
+tools, add facts or relations, or take graph, artifact, or retry authority.

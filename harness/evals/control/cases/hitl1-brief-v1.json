@@ -1,0 +1,8 @@
+{
+  "case_id": "hitl1-brief",
+  "version": "v1",
+  "subject": "hitl1_brief",
+  "fixture": {"question": "Compare sodium-ion and lithium-ion batteries for municipal storage."},
+  "required_services": ["model"],
+  "bounds": {"timeout_seconds": 60, "max_model_calls": 1, "max_tool_calls": 0}
+}

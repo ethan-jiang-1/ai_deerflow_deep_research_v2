@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "case_id": "public-controller-direction-loop",
+  "version": "v1",
+  "criteria": [
+    {"id": "controller.load-before-select", "critical": true, "review": "The ordinary turn reads the committed controller skill before a later exclusive lifecycle candidate or clarification."},
+    {"id": "controller.new-request", "critical": true, "review": "A new research request selects only start without a caller-selected Bundle."},
+    {"id": "controller.correlated-answer", "critical": true, "review": "A correlated answer selects resume and is not turned into a direction."},
+    {"id": "controller.mid-suspension-direction", "critical": true, "review": "A clear run direction selects refine while preserving the pending human subject."},
+    {"id": "controller.status", "critical": true, "review": "A status request selects status and does not invent progress."},
+    {"id": "controller.explicit-stop", "critical": true, "review": "An explicit stop selects cancel and does not restart or discard a queued direction."},
+    {"id": "controller.terminal-continuation", "critical": true, "review": "A selected terminal queued direction uses textless refine without copying hidden text."},
+    {"id": "controller.exhausted-terminal", "critical": true, "review": "An exhausted terminal case starts a fresh run whether or not a queued direction remains."},
+    {"id": "controller.ambiguity", "critical": true, "review": "Ambiguous criticism or terminal follow-up asks for clarification and makes no lifecycle call."},
+    {"id": "controller.profile-note-non-mutation", "critical": true, "review": "A profile-note request causes no hidden profile write and only a clarified same-run direction may refine."},
+    {"id": "controller.pending-conflict", "critical": true, "review": "A second direction is truthfully represented as conflict without replacing the first."},
+    {"id": "controller.recovery-conflict", "critical": true, "review": "A recovery conflict explains the first applied round without claiming the competing request applied."},
+    {"id": "controller.ended-target", "critical": true, "review": "An ended refinement uses the explicit selected target rather than a guessed Handle."},
+    {"id": "controller.unavailable-target", "critical": true, "review": "An unavailable target stays unavailable and is not recovered from memory, checkpoint, or diagnostics."},
+    {"id": "controller.mixed-answer-direction", "critical": true, "review": "A mixed correlated answer remains resume unless an approved later clarification resolves a separate direction."}
+  ],
+  "limited_conditions": ["A bounded repeat lacks enough observable model reasoning to assess one noncritical criterion.", "A provider returns an otherwise usable but incomplete trace."],
+  "inconclusive_conditions": ["The execution completes but the retained trace cannot establish whether the model chose the action.", "Repeated executions vary without enough samples to attribute a cause."],
+  "failed_conditions": ["Any critical criterion fails.", "A forbidden lifecycle call or effect occurs."]
+}

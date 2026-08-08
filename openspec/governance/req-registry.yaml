@@ -1,0 +1,552 @@
+# Requirement ID Registry
+#
+# 需求 ID 的唯一登记处。借鉴自 deep-research 项目的治理思想，技术栈换成本仓库的
+# Python + OpenSpec；这里只登记「我们在 DeerFlow 之上构建的智能体」的 capability 需求。
+#
+# 规则:
+#   1. 只增不删 — 已分配的 ID 永不复用，废弃的在描述末尾追加 [DEPRECATED]
+#   2. 分配前先查 — 在此文件中搜索确认 ID 未被占用
+#   3. 格式:  PREFIX-NNN: <capability-name> — <description>
+#      - key 是全局唯一 ID，格式 [A-Z]{3}-\d{3}
+#      - value 的 <capability-name> 用 kebab-case
+#   4. 引号:  YAML 值不需要引号，除非值内包含 ": "（冒号+空格）
+#      例:  CUT-001: custom-tool — simple description          （无需引号）
+#           CUT-002: "custom-tool — 含 colon: 需引号包裹"        （需引号）
+#      切勿用单引号——YAML 单引号内无法转义，双引号用 \" 即可。
+#   5. check_project_reqs.py 扫描本文件做一致性校验
+#
+# 三态:
+#   alive   — ID 出现在 openspec/specs/ 某个 main spec 的 > req: 行
+#   pending — ID 出现在 openspec/changes/<active>/specs/ 的 delta spec 中
+#   retired — 本行末尾标了 [DEPRECATED]，ID 占位永不复用
+#
+# 缩写规则: 首单词前 2 字母 + 次单词首字母（如 custom-tool → CUT，memory-policy → MEP）；
+#           单词型 capability 取前 3 字母（如 skills → SKI）。冲突时先查 registry 再定。
+
+# ──────────────────────────────────────────────
+# prefixes: 缩写 → kebab-case capability 全称
+# 此映射块是唯一自文档化来源。key 不匹配 [A-Z]{3}-\d{3}，
+# check_project_reqs.py 自动忽略。首个 capability 落地时在此登记缩写。
+# ──────────────────────────────────────────────
+prefixes:
+  AIC: agent-interaction-charter
+  BON: bootstrap-node
+  CNI: cognitive-node-interface
+  DEC: deployment-configuration
+  DER: deep-research-delivery-efficiency
+  DRC: deep-research-agent-charter
+  DRH: deep-research-harness-run-bundles
+  EVC: evidence-critic-nodes
+  GAK: gate-kernel
+  HIC: human-interaction-contract
+  HIN: hitl1-node
+  HIT: hitl2-node
+  NOA: node-agent-runtime
+  NAC: node-agent-capabilities
+  NRI: node-agent-reader-interface
+  NPC: node-prompt-catalog
+  PRS: project-structure
+  RCF: research-confirmation
+  RED: research-demo-tui
+  REG: research-graph-lifecycle
+  RUI: runtime-integration
+  REC: research-cli-onboarding
+  RER: research-run-experience
+  RUS: research-run-session
+  RES: research-session-lifecycle-binding
+  RDO: research-session-discovery-and-operations
+  RSV: research-session-artifact-view
+  RWB: research-local-session-workbench
+  SCC: selected-change-closeout-evidence
+  TOP: topic-planning-node
+  WAN: wave0-node
+  WON: wave1-node
+  WFC: deep-research-wave0-worker-failure-classification
+  WFO: workflow-failure-outcomes
+  WOU: work-unit-kernel
+  TEL: targeted-evidence-loop
+  WSN: wave2-synthesis-node
+  REN: rerun-node
+  REA: readiness-node
+  FID: final-delivery-node
+  FSI: fixture-source-isolation
+  RUO: runtime-operations
+  EVH: evaluation-hardening
+  DPL: demo-pipeline
+  LCP: local-configuration-profiles
+  ALR: agent-led-research-decisions
+
+# ──────────────────────────────────────────────
+# Requirement IDs（按 capability 分组，组按字母序，组内按数字序）
+# 示例（待第一个 change 落地时替换）:
+#
+#   # custom-tool
+#   CUT-001: custom-tool — <一句话稳定语义描述>
+#
+# ──────────────────────────────────────────────
+
+# bootstrap-node
+BON-001: bootstrap-node — The real bootstrap atomically establishes the minimal research bundle directory tree and a schema/version marker under the canonical bundle root with crash recovery so a partial bundle is never observable as active or completed
+BON-002: bootstrap-node — A real bootstrap gate built on the gate kernel validates bundle, control state, and checkpoint-bundle binding and solely determines the bootstrap route replacing the deterministic fixture pass without a research model call
+BON-003: bootstrap-node — Bootstrap failure performs deterministic cleanup and bounded retry with typed failure codes and never invokes a research LLM or publishes an inconsistent bundle or route, failing closed to a terminal lifecycle when unrecoverable
+BON-004: bootstrap-node — The real bootstrap preserves REG-004 start/resume/status/cancel invariants, keeps bundle establishment research-scoped, and fails closed on marker schema mismatch or cross-research binding without re-implementing path/user/thread isolation
+BON-005: bootstrap-node — The real bootstrap is selected through the explicit implementation map, preserving normalized topology and the deterministic fixture test/demo recipe
+BON-006: bootstrap-node — Bootstrap establishes and validates the checkpoint-selected canonical bundle root while preserving research id as the sole identity
+BON-007: bootstrap-node — Bootstrap consumes one lifecycle-selected Run Bundle and establishes only contained bootstrap content without creating identity, checkpoint, or marker authority
+
+# agent-led-research-decisions
+ALR-001: agent-led-research-decisions — A validated Wave2-pass boundary drives ordinary HITL2 continuation through the sole existing proceed route without a model, sandbox read, or presentation-owned route selection
+ALR-002: agent-led-research-decisions — This change constructs no HITL2 human-decision fallback; a future preference or irreversible authorization requires its own typed contract and reviewed change
+
+# agent-interaction-charter
+AIC-001: agent-interaction-charter — Every participant-facing Deep Research lifecycle outcome has distinct human-readable and machine-readable projections with shared authoritative facts [DEPRECATED: superseded by establish-deep-research-agent-charter]
+AIC-002: agent-interaction-charter — Failure and recovery projections identify safe service target, response signal, retry disposition, ownership, and next action without sensitive operational data [DEPRECATED: superseded by establish-deep-research-agent-charter]
+AIC-003: agent-interaction-charter — Agent interaction changes carry an explicit interaction contract and deterministic evidence at the lowest responsible seam [DEPRECATED: superseded by establish-deep-research-agent-charter]
+
+# deep-research-agent-charter
+DRC-001: deep-research-agent-charter — A canonical Deep Research charter makes the agent-owned scope, source-of-truth hierarchy, and policy boundaries discoverable without treating upstream DeerFlow guidance as local product authority
+DRC-002: deep-research-agent-charter — The authoritative agent module guide and its Claude Code import entrypoint select one primary causal owner, its active specification, its evidence seam, and only necessary adjacent or public DeerFlow interfaces
+DRC-003: deep-research-agent-charter — Charter policies require participant outcomes for people and AI consumers to derive from shared typed authority while remaining comprehensible, actionable, and safely redacted
+DRC-004: deep-research-agent-charter — Agent-affecting OpenSpec changes declare one primary module or causal owner, bounded adjacent contracts, exclusions, and an evidence seam through a mechanically checkable admission rule rather than a second runtime authority
+DRC-005: deep-research-agent-charter — The charter index defines how durable principles, focused policies, capability specifications, operational playbooks, and current runtime facts evolve without duplicating ownership
+DRC-006: deep-research-agent-charter — Distinct bounded entry documents route coding agents, Claude Code, human operators, and OpenSpec authors without turning default context into a project manual
+DRC-007: deep-research-agent-charter — A routed human-interaction-integrity policy guides review of semantic subjects, interpretation and graph authority, visible controls, adapter binding, recovery, and deterministic transcript evidence without becoming a runtime controller
+DRC-008: deep-research-agent-charter — A routed node-agent-workflow-integrity policy records bounded node cognition, tool enforcement, deterministic candidate admission, failure ownership, and proof seams without granting runtime authority
+DRC-009: deep-research-agent-charter — An externally routed control-placement policy structurally records deterministic control ownership, closed posture, human-decision composition, and handoff evidence without runtime authority
+DRC-010: deep-research-agent-charter — Selected control-placement reviews retain bounded advisory operation guidance and local integration evidence without creating task, archive, or semantic-review authority
+DRC-011: deep-research-agent-charter — Downstream agent entry documents route from the canonical Deep Research Harness root while preserving their bounded information-map role
+
+# deep-research-harness-run-bundles
+DRH-001: deep-research-harness-run-bundles — Fresh Deep Research Runs receive a fresh opaque Bundle identity and atomically published Bundle-local State and content roots
+DRH-002: deep-research-harness-run-bundles — Bundle-local Research State is the sole durable lifecycle authority and non-terminal available State remains active
+DRH-003: deep-research-harness-run-bundles — A transient Current Bundle Handle is validated against trusted-scope Bundle directories and State, with missing or ambiguous discovery failing closed
+DRH-004: deep-research-harness-run-bundles — One trusted conversation admits at most one active Bundle while retaining any number of ended inspectable Bundles
+DRH-005: deep-research-harness-run-bundles — Distinct bounded refinement is durably admitted at a safe point and can reactivate an explicitly selected ended Bundle only without another active Bundle
+DRH-006: deep-research-harness-run-bundles — Bundle loss makes only that Run unavailable and forbids external checkpoint, session, binding, cache, or replacement-State recovery
+DRH-007: deep-research-harness-run-bundles — Deep Research Bundle discovery and control are trusted-scope isolated and exclude Cognitive Evaluation Bundles
+DRH-008: deep-research-harness-run-bundles — Bundle-local State writes validate schema, remain atomic and single-writer, and preserve terminal monotonicity and idempotent replay
+
+# selected-change-closeout-evidence
+SCC-001: selected-change-closeout-evidence — A caller-declared selected OpenSpec change boundary is verified only as a clean committed Git base..head range and records no semantic-clearance claim
+SCC-002: selected-change-closeout-evidence — A verified boundary can retain only task-led review-required or evidence-limited inconclusive closeout records without task, runtime, or native archive authority
+SCC-003: selected-change-closeout-evidence — Deterministic zero-API fixtures prove valid committed-boundary records and every closed missing-boundary rejection without task or archive side effects
+
+# research-fake-cli-onboarding
+FCO-001: research-fake-cli-onboarding — Fixture CLI onboarding provides paste-safe commands and never asks users to select an internal HITL2 route while clearly labelling fixture output
+FCO-002: research-fake-cli-onboarding — The credential-free fake CLI mirrors bounded Bundle lifecycle identity without creating real Run control authority
+
+# deployment-configuration
+DEC-001: deployment-configuration — Deep Research source loads through project-owned local, production, and Docker launch paths
+DEC-002: deployment-configuration — Structured configuration materialization is idempotent and rejects ownership conflicts
+DEC-003: deployment-configuration — The public entry skill is materialized and enabled from committed source as an honest fixed all-real lifecycle entry with no fixture execution claim
+DEC-004: deployment-configuration — The dedicated Deep Research Agent is provisioned in the effective user's scope without legacy shared paths and describes the public lifecycle as all-real rather than fixture execution
+DEC-005: deployment-configuration — Diagnostics separate runtime, entry, worker-count, provider durability, reload, and restart readiness without exposing secrets
+DEC-006: deployment-configuration — Deployment loads the unchanged Deep Research package only from the canonical Harness root without an old-root fallback
+
+# deep-research-delivery-efficiency
+DER-001: deep-research-delivery-efficiency — Deterministic test-governance collection is reused within one process without changing selection truth or subprocess-facing behavior
+DER-002: deep-research-delivery-efficiency — Architecture contract tests invoke the repository checker through a reusable in-process seam while preserving its command-line contract
+DER-003: deep-research-delivery-efficiency — Ledger boundary tests prove exact production limits while keeping ordinary edit-loop coverage bounded and fast
+DER-004: deep-research-delivery-efficiency — Focused developer verification targets expose one purpose and elapsed time while full verification remains the unchanged release gate
+DER-005: deep-research-delivery-efficiency — Deterministic CI reports its twenty slowest fast-lane tests and rejects an over-budget test without a reviewed bounded waiver
+DER-006: deep-research-delivery-efficiency — Reference fast-lane performance evidence attributes collection, setup, and call time and demonstrates the documented aggregate delivery budget
+
+# local-configuration-profiles
+LCP-001: local-configuration-profiles — A named local profile deterministically selects a paired DeerFlow configuration and extensions file plus its isolated writable runtime and SQLite state roots
+LCP-002: local-configuration-profiles — Beginner-facing local commands select, list, initialize, and start named profiles without requiring callers to set DeerFlow path environment variables
+LCP-003: local-configuration-profiles — Local profile selection prevents state, SQLite checkpoints, and mutable configuration cross-contamination while keeping secrets outside committed profile templates and diagnostics
+LCP-004: local-configuration-profiles — Profile validation and startup diagnostics truthfully identify the selected safe profile label and restart-required configuration state without exposing host paths or secret values
+LCP-005: local-configuration-profiles — Local profile changes compose with Deep Research startup fingerprinting and run-session storage without changing lifecycle authority, artifact ownership, or Docker behavior
+LCP-006: local-configuration-profiles — Local profile commands and state references use the canonical Harness root without restoring a deleted Run Bundle
+
+HIT-001: hitl2-node — Deterministic brief builder generates decision brief from accepted findings and quality state with confirmed conclusions, uncertainties, gaps, and cost options
+HIT-002: hitl2-node — HITL2 continues autonomously without a human interrupt: the real path selects validated proceed and an explicitly composed fixture path consumes its configured fixture route without pending input
+HIT-003: hitl2-node — Real HITL2 integrates into the all-real or explicitly composed mixed graph through the full real chain from targeted_evidence with unchanged topology while deterministic fixture behavior remains test/demo-only
+
+# human-interaction-contract
+HIC-001: human-interaction-contract — Frozen domain contracts bound a current HITL proposal, closed semantic candidate intent, resolution, feedback, and adapter-safe visible controls without graph, checkpoint, action, or runtime authority
+HIC-002: human-interaction-contract — A complete current proposal preserves its human-safe subject, bounded feedback, and current-proposal control across question, clarification, ambiguity, malformed output, or semantic-provider failure without requiring hidden tokens or JSON confirmation
+HIC-003: human-interaction-contract — Proposal questions yield only bounded recommendation explanations tied to the supplied question and current proposal, never research findings, citations, requirements, or proposal mutation
+HIC-004: human-interaction-contract — HITL1 lifecycle feedback retains current-proposal controls and gives bounded decision or recovery guidance without raw semantic output, hidden action tokens, schema teaching, or JSON instruction
+
+# node-agent-runtime
+NOA-001: node-agent-runtime — A runtime-owned bridge gives phase agents the parent sandbox and trusted ephemeral context without leaking authority or adding a checkpointer
+NOA-002: node-agent-runtime — Phase-agent execution is bounded by explicit model-call, tool-call, token, output, result-size, and wall-time policy
+NOA-003: node-agent-runtime — Phase-agent tool and filesystem access fails closed outside the active attempt policy
+NOA-004: node-agent-runtime — External source content remains untrusted data and cannot change control instructions or authority
+NOA-005: node-agent-runtime — Phase-agent results, progress, cancellation, and failures are normalized for the parent graph
+NOA-006: node-agent-runtime — Phase agents cannot initiate user clarification outside graph-owned HITL nodes
+NOA-007: node-agent-runtime — Node-agent source failures retain closed safe causal categories for graph routing and user-facing lifecycle projection
+NOA-008: node-agent-runtime — Transient provider failures use bounded retry with cancellation, policy budget, and safe attempt observations preserved
+NOA-009: node-agent-runtime — HITL1 semantic-intake invocations remain independent zero-tool structured requests whose bridge makes one model call and never interprets candidates, retries, routes, writes checkpoints, or grants action authority
+NOA-010: node-agent-runtime — The phase-agent bridge obtains system-policy text and final human message from the agents-owned pure renderer before constructing child state, preserving existing ownership without granting the renderer model, tool, route, checkpoint, or lifecycle authority
+NOA-011: node-agent-runtime — The runtime bridge admits only a validated declared node-agent capability and binds actual tools to its closed posture before model construction or dispatch
+NOA-012: node-agent-runtime — Branch-review evidence distinguishes each request's tool window from bridge-enforced capability posture, eligible tools, and safe failure projection without changing execution behavior
+NOA-013: node-agent-runtime — Final report composition uses a dedicated one-invocation zero-tool bridge with explicit token, result-size, and wall-time bounds while retaining closed failure projection and no retry, publication, route, or lifecycle authority
+NOA-014: node-agent-runtime — Node-agent execution receives only ephemeral runtime-bound Bundle context and cannot select a Bundle, checkpoint, State writer, or lifecycle outcome
+
+# node-agent-capabilities
+NAC-001: node-agent-capabilities — Node-agent branches declare a bounded local cognitive capability and trusted resource without granting model, graph, parser, evaluator, materializer, recovery, or evidence authority to the request
+NAC-002: node-agent-capabilities — The final prompt renderer composes base policy, local capability policy, trusted assignment/output, and delimited untrusted data while rejecting arbitrary full-system-prompt replacement
+NAC-003: node-agent-capabilities — The representative HITL1, Wave0, and Wave2 cohort binds stable capability references, closed tool postures, node-owned candidate admission, and existing bounded recovery without generic fallback or inferred capability
+NAC-004: node-agent-capabilities — Node-agent capability evidence records a distinct branch-by-behavior-by-authenticity denominator rather than treating aggregate pytest count as coverage
+NAC-005: node-agent-capabilities — HITL1 profile-brief and repair branches bind distinct local zero-tool capabilities while retaining advisory and graph-owned lifecycle authority
+NAC-006: node-agent-capabilities — Planning and initial-intake branches bind the closed topic-planning and Wave1 local capability cohort with declared tool posture and a twelve-row direct-branch evidence matrix
+NAC-007: node-agent-capabilities — Evidence-evaluation branches bind the final closed targeted-evidence local capability cohort with exact retrieval and zero-tool postures and a sixteen-row direct-branch evidence matrix
+NAC-008: node-agent-capabilities — A test-owned branch ledger joins canonical catalog cases to existing local capabilities and deterministic admission without adding capability, recovery, route, or tool authority
+NAC-009: node-agent-capabilities — Final report composition binds one explicit package-local forbidden-tool capability with distinct collected normal and highest-risk deterministic evidence and no evidence-selection, admission, publication, recovery, route, or lifecycle authority
+
+# node-agent-reader-interface
+NRI-001: node-agent-reader-interface — A package-local reader projection directs maintenance readers to the bounded node-agent role and existing deterministic authority without becoming a runtime resource or second behavior specification
+NRI-002: node-agent-reader-interface — A symptom-driven node reader projection exposes the source owner, narrow proof seam, repair-feedback limitation, and route authority needed to select the first correct maintenance edit
+NRI-003: node-agent-reader-interface — The six existing package-local reader obligations coexist with the complete cognitive-node reader inventory without gaining runtime authority
+
+# cognitive-node-interface
+CNI-001: cognitive-node-interface — Every logical node exposes a product-responsibility-first non-runtime reader projection with fixed identity fields and headings
+CNI-002: cognitive-node-interface — The reader inventory remains closed over the logical topology and keeps audit-only model-branch evidence separate from product identity
+CNI-003: cognitive-node-interface — Reader projections distinguish candidates or human choices from deterministic admission, state, publication, and route authority
+CNI-004: cognitive-node-interface — Deferred, conditional, and controller participation remains honest about current mechanisms and separately admitted activation behavior
+CNI-005: cognitive-node-interface — A deterministic non-runtime checker validates the complete reader inventory and fixed projection interface
+
+# cognitive-program-evidence
+CPE-001: cognitive-program-evidence — Every one of the twenty current direct model branches has one test-owned review ledger row joined exactly to the canonical prompt catalog and capability cohort without becoming execution authority
+CPE-002: cognitive-program-evidence — Branch evidence distinguishes deterministic composition, tool posture, feedback disposition, parsing, admission, and any bounded judgment evaluation without overclaiming model quality
+CPE-003: cognitive-program-evidence — The exact twenty-row direct-branch ledger includes an independent final-delivery composer row with bounded plan and evidence inputs, deterministic admission and publication ownership, absent model feedback authority, and separately classified composition judgment
+CPE-004: cognitive-program-evidence — One test-owned evidence board closes the exact eleven logical nodes, twenty direct model branches, and forty-one branch-local calibration cases while keeping node identity, branch proof, human-decision proof, and collected live applicability distinct
+
+# node-prompt-catalog
+NPC-001: node-prompt-catalog — A canonical prompt catalog owned by deep_research_harness/agents/ stores every node-agent prompt as a typed source and exposes one pure rendering interface consumed by the runtime bridge without duplicating the final message template
+NPC-002: node-prompt-catalog — A graph-owned deterministic review catalog defines a stable synthetic case for every direct node prompt-builder branch, renders through the shared interface, and emits only an ignored on-demand local review workspace below deep_research_harness/.node-prompt-review/ without real-user text, credentials, runtime inventory, or execution authority
+NPC-003: node-prompt-catalog — HITL1 profile-brief and repair catalog cases project their distinct local capability layers and zero-tool runtime posture
+NPC-004: node-prompt-catalog — Planning, Wave0, and Wave1 normal and repair cases project their exact local capability composition and requested-versus-runtime tool posture without becoming runtime authority
+NPC-005: node-prompt-catalog — Wave2 and targeted-evidence catalog cases project exact local capability composition and requested-versus-runtime tool posture without becoming runtime authority
+NPC-006: node-prompt-catalog — Catalog cases expose stable branch composition and join to test-owned bridge/feedback review evidence without becoming prompt, tool, feedback, or admission authority
+NPC-007: node-prompt-catalog — Final report composition has a stable deterministic catalog projection with ordered base, local capability, assignment, and untrusted-data layers plus a forbidden requested tool posture and no runtime authority
+
+# project-structure
+PRS-001: project-structure — Deep Research production code and tests use one canonical downstream package structure while the registered fixture package remains a distinct non-production source root
+PRS-002: project-structure — Import directions, one-way fixture composition, and shared-code ownership boundaries are enforced mechanically
+PRS-003: project-structure — Top-level production workflow nodes expose one stable real-only NodeSpec surface while deterministic fixture adapters remain outside production source
+PRS-004: project-structure — Canonical structural authority remains discoverable and mechanically synchronized after change archival
+PRS-005: project-structure — Run-experience contracts occupy canonical domain and runtime ownership paths with enforced dependency direction
+PRS-006: project-structure — Run-session contracts, runtime-owned manifest/trace stores, and the registered project-local generated-output ignore policy occupy canonical downstream ownership paths
+PRS-007: project-structure — Local configuration profile resolution and its committed templates occupy canonical project-owned tooling paths without upstream source changes
+PRS-008: project-structure — The agent interaction charter occupies a canonical OpenSpec policy path with synchronized governance bootstrap pointers [DEPRECATED: superseded by establish-deep-research-agent-charter]
+PRS-009: project-structure — The Deep Research agent charter tree, bounded local information map, focus gate, and Claude Code compatibility entrypoint occupy canonical project-owned governance paths while root AGENTS.md and CLAUDE.md remain unchanged
+PRS-010: project-structure — The human-interaction domain contract and its focused deterministic tests occupy the existing domain ownership layer without runtime, graph, or adapter imports
+PRS-011: project-structure — The project structure registry registers the agents-owned final-prompt renderer, graph-owned canonical prompt-case registry, prompt-dump script, and focused deterministic tests while excluding generated prompt Markdown from required structural paths and preserving its ignored local-review boundary
+PRS-012: project-structure — Node-agent capability declarations, local resources, and deterministic evidence paths occupy registered downstream ownership locations without reverse or upstream placement
+PRS-013: project-structure — HITL1 profile-brief capability resources and focused evidence paths occupy registered local downstream locations
+PRS-014: project-structure — Cognitive-node reader validation script and focused contract test occupy registered downstream paths without runtime registration
+PRS-015: project-structure — Cognitive Evaluation Runner source, source-controlled evaluation control, and ignored local evaluation runs occupy separate registered downstream paths
+PRS-016: project-structure — The Research Confirmation domain admission boundary and focused deterministic tests occupy registered downstream domain paths without graph, runtime, or upstream placement
+PRS-017: project-structure — Deep Research Harness has one canonical downstream filesystem root without a tracked legacy alias while package and public-tool names remain unchanged
+
+# research-confirmation
+RCF-001: research-confirmation — A pure typed admission boundary turns only a directly confirmed complete current proposal into accepted research facts while preserving one advisory outstanding decision for semantic revisions, ambiguity, and bounded feedback
+
+# cognitive-evaluation-suite
+CES-001: cognitive-evaluation-suite — Registered versioned Evaluation Cases bind closed execution inputs and control identity without caller-supplied prompt, path, model, or resume authority
+CES-002: cognitive-evaluation-suite — The Python Cognitive Evaluation Runner executes one fresh isolated attempt per invocation without outer retry, resume, review dispatch, or production recovery control
+CES-003: cognitive-evaluation-suite — Immutable Evaluation Run Bundles retain objective observations, manifest digests, and exact review-control identities while rejecting altered or incomplete evidence before review
+CES-004: cognitive-evaluation-suite — Explicit human-initiated review is read-only, never reruns execution, and admits only Bundle-matched control inputs
+CES-005: cognitive-evaluation-suite — Separate immutable Review Records retain Bundle-matched provenance, evaluator evidence, four-state cognitive result, and advisory follow-up without mutating execution evidence
+CES-006: cognitive-evaluation-suite — Two-state execution status and four-state cognitive result remain independent without converting failures or limited evidence into a pass
+CES-007: cognitive-evaluation-suite — V1 provides manually selected HITL1 brief and Wave0 worker node smoke Cases through existing production bridges and admission boundaries without a flow-quality claim
+CES-008: cognitive-evaluation-suite — Cognitive Evaluation Bundles remain a separate domain and cannot be discovered or used to recover a Deep Research Run
+
+# research-demo-tui
+RED-001: research-demo-tui — A standalone Textual demo renders an explicit fixture recipe through both HITL requests without Gateway, model, or network dependencies
+RED-002: research-demo-tui — The demo remains an explicitly non-product visualization with deterministic tests and no claim of formal DeerFlow TUI or Web UI integration
+RED-003: research-demo-tui — The Textual demo consumes shared run updates and does not infer lifecycle state or construct graph response envelopes
+RED-004: research-demo-tui — The Textual demo exposes safe failure, diagnostic, durability, and cancellation semantics without raw runtime data
+RED-005: research-demo-tui — The Textual demo exposes a safe run reference and inspectability state without inferring lifecycle control or exposing host paths
+RED-006: research-demo-tui — The demo TUI renders shared typed profile-input actions and safe run updates without lifecycle inference
+RED-007: research-demo-tui — The standalone demo TUI renders shared visible controls, submits only their ids through generic control selection, and forwards ordinary HITL1 text unchanged without aliases, action construction, or prompt-context inspection
+RED-008: research-demo-tui — Demo TUI projects the shared Bundle lifecycle contract without local state inference or recovery
+
+# research-cli-onboarding
+REC-001: research-cli-onboarding — The standalone real CLI asks for or clearly confirms a non-blank research question before a model call and gives a first-time user a bounded explanation of the two graph-owned human-input checkpoint types
+REC-002: research-cli-onboarding — The standalone CLI truthfully presents lifecycle action boundaries, HITL prompts, and terminal failures with stable redacted context and actionable next steps without claiming node-internal streaming
+REC-003: research-cli-onboarding — The standalone CLI makes bounded diagnostic records and non-resumable demo durability visible without claiming a product session
+REC-004: research-cli-onboarding — The standalone CLI presents a stable local run reference and explicit inspect command without leaking raw host paths or overstating resume support
+REC-005: research-cli-onboarding — The standalone CLI renders explicit profile confirmation, actionable run-state, and terminal inspection guidance from shared safe updates
+REC-006: research-cli-onboarding — The standalone real CLI renders a redacted provider-failure disposition, bounded attempt summary, and an executable fresh-run command without promising unavailable resume
+REC-007: research-cli-onboarding — The standalone real CLI accepts natural proposal confirmation, revision, question, and clarification, while rendering numbered shared fallback controls that submit generic control selection rather than action ids, magic phrases, or JSON-only recovery
+REC-008: research-cli-onboarding — Real CLI uses one Bundle lifecycle vocabulary and gives truthful unavailable-Run guidance
+
+# research-run-experience
+RER-001: research-run-experience — One runtime-owned module converts lifecycle wire results into shared safe run updates for presentation adapters
+RER-002: research-run-experience — Lifecycle projection distinguishes committed checkpoint phase from graph-owned pending human interaction without a second control authority
+RER-003: research-run-experience — Source-owned closed failures produce safe next actions and redacted diagnosable incident references
+RER-004: research-run-experience — Preflight, semantic HITL prompts, and waiting state make the first standalone run understandable without fabricated progress
+RER-005: research-run-experience — Production-shaped scripted workflow and shared adapter evidence protect first suspension and safe failure behavior
+RER-006: research-run-experience — Shared run updates expose safe session inspection references and retention truth without creating a second lifecycle authority
+RER-007: research-run-experience — Shared run updates expose bounded profile-intake feedback and returned-only run-state facts without fabricating graph progress
+RER-008: research-run-experience — Terminal incidents and safe run updates preserve an optional closed Wave0 worker-failure diagnosis separately from lifecycle route failure codes
+RER-009: research-run-experience — Shared safe failure updates expose bounded provider-attempt and retry-disposition facts without exposing raw provider data or creating lifecycle authority
+RER-010: research-run-experience — Shared prompt views derive HITL1 proposal subjects, material facts, feedback, and visible controls from typed controller-owned interaction projections while retaining safe legacy-context fallback and withholding action ids
+RER-011: research-run-experience — The runtime binds generic visible-control selection only against its current pending request and advertised typed action while preserving direct typed answer transport compatibility and rejecting stale or unadvertised controls
+RER-012: research-run-experience — Shared confirmation prompts render every bounded typed proposal constraint before acceptance without exposing raw model/user text or lifecycle authority
+RER-013: research-run-experience — Shared run experience projects Bundle-owned outcomes and legal actions without authorizing recovery
+
+# research-run-session
+RUS-001: research-run-session — A canonical durable local run bundle manifests research identity, safe artifact references, retention state, and authoritative checkpoint binding without becoming a lifecycle controller
+RUS-002: research-run-session — A bounded redacted lifecycle trace records verified actions, trace progress, pending-input summaries, terminal outcomes, and diagnostic references without raw sensitive runtime content
+RUS-003: research-run-session — Local developer session discovery and inspection resolve trusted run references to manifests, artifacts, trace, and diagnostics while distinguishing inspection from execution resume
+RUS-004: research-run-session — Retained sessions expose bounded redacted diagnosis summaries and correlated attempt events without becoming lifecycle authority or raw logs
+RUS-005: research-run-session — Retained Wave0 diagnosis preserves closed redacted worker failure classes without becoming lifecycle authority or raw logs
+RUS-006: research-run-session — Retained diagnostics record bounded provider attempt, retry, backoff, and exhaustion observations correlated to the terminal incident without raw provider data
+RUS-007: research-run-session — Retained session material is observation-only after Bundle authority migration and cannot recover a deleted Run
+
+# deep-research-wave0-worker-failure-classification
+WFC-001: deep-research-wave0-worker-failure-classification — Real Wave0 maps trusted worker boundaries to closed redacted per-attempt failure classes and honest exhausted-work aggregates
+
+# research-session-lifecycle-binding
+RES-001: research-session-lifecycle-binding — A runtime-owned durable session binding ties an opaque research id to one authenticated user scope and restart-stable checkpoint namespace without exposing provider credentials or becoming graph control state
+RES-002: research-session-lifecycle-binding — A runtime-owned read-only checkpoint reopen verifier resolves only through the bound provider and validates research identity, schema, and pending interrupt truth after a process restart
+RES-003: research-session-lifecycle-binding — Bound session metadata is only a prerequisite for later user-facing operations; it cannot execute resume, cancel, or answer or infer control state from a manifest or trace
+RES-004: research-session-lifecycle-binding — Binding creation, refresh, invalidation, and recovery are atomic, contained, redacted, and auditable without cross-user enumeration or host-path/provider-detail disclosure
+RES-005: research-session-lifecycle-binding — Retired public full-fixture bindings remain bounded inspection records and cannot select, import, resume, cancel, migrate, or reinterpret a fixture recipe before provider or graph access
+RES-006: research-session-lifecycle-binding — Legacy lifecycle bindings cannot resolve, authorize, or recover a Deep Research Run Bundle
+
+# research-session-discovery-and-operations
+RDO-001: research-session-discovery-and-operations — An authorized local principal discovers only its bounded retained-session projections and safe artifact references without filesystem or cross-user enumeration
+RDO-002: research-session-discovery-and-operations — A runtime-owned resolver recreates operation context only from current trusted DeerFlow identity, configuration, thread data, and sandbox APIs after private binding revalidation
+RDO-003: research-session-discovery-and-operations — Local open/status/resume/cancel operations revalidate the authoritative checkpoint and preserve existing lifecycle and pending-interrupt authority without a manifest-controlled transition
+RDO-004: research-session-discovery-and-operations — Discovery and operation results fail closed for stale, unauthorized, non-durable, corrupt, or unavailable sessions without exposing raw scope, provider, host-path, artifact-body, or checkpoint data
+RDO-005: research-session-discovery-and-operations — Authorized broker resume preserves typed advertised pending-input responses without inferring actions or widening authority
+RDO-006: research-session-discovery-and-operations — The authorized local broker projects current typed visible controls and resolves a generic control id under its namespace lock only against the current advertised pending action, failing closed for stale, unknown, or unadvertised controls
+RDO-007: research-session-discovery-and-operations — Scoped Bundle discovery and operations use Bundle-local authority without a session index or checkpoint fallback
+
+# research-session-artifact-view
+RSV-001: research-session-artifact-view — A local workbench catalog exposes only fixed owner-visible contained session artifact references without recursive bundle enumeration
+RSV-002: research-session-artifact-view — A selected catalog artifact is reauthorized, contained, regular-file validated, and rendered only as inert local metadata
+RSV-003: research-session-artifact-view — Unknown, foreign, stale, or malformed artifact access fails closed without widening session existence, reading retained paths after denial, or adding provider, sandbox, or graph work
+RSV-004: research-session-artifact-view — Run Bundle artifact views are reauthorized observations rather than Run discovery or recovery
+
+# research-local-session-workbench
+RWB-001: research-local-session-workbench — A standalone terminal workbench discovers and selects only fixed-profile authorized durable local Deep Research sessions
+RWB-002: research-local-session-workbench — Workbench lifecycle actions delegate exclusively to the existing authorized broker and preserve checkpointed pending-input authority
+RWB-003: research-local-session-workbench — A workbench renders a bounded retained-session timeline as a read-only observation without creating a lifecycle authority
+RWB-004: research-local-session-workbench — The terminal workbench remains a redacted local non-product surface without Gateway, Web, upstream terminal, multi-user, or generic filesystem access
+RWB-005: research-local-session-workbench — The local workbench renders authorized retained diagnosis summaries and event observations without exposing diagnostic bodies or altering lifecycle control
+RWB-006: research-local-session-workbench — The local workbench renders and submits only authorized projected typed input actions through the broker
+RWB-007: research-local-session-workbench — The local workbench renders only broker-projected visible controls and submits a selected control id with the expected request id without exposing action ids, inferring controls, or retaining reply text
+RWB-008: research-local-session-workbench — Local workbench consumes shared Bundle lifecycle results without a session broker or local recovery controller
+
+# runtime-integration
+RUI-001: runtime-integration — DeerFlow exposes one stable Deep Research control tool with an infrastructure probe action
+RUI-002: runtime-integration — Explicit server identity and parent thread/sandbox resources are validated and authority-reduced from trusted DeerFlow context
+RUI-003: runtime-integration — Deep Research checkpoints use versioned collision-resistant namespaces with supported single-worker mutation serialization and a public all-real revision distinct from retired fixture records
+RUI-004: runtime-integration — GraphHost manages explicitly supplied request-independent recipes, a typed action registry, and effective per-action checkpointer lifecycle without fixture discovery or a Gateway lifespan hook
+RUI-005: runtime-integration — Probe persistence behavior is explicit and verifiable for memory, SQLite, and Postgres backends
+RUI-006: runtime-integration — The reflected Deep Research tool dispatches authority-reduced lifecycle actions through one fixed all-real recipe, never fixture source, while preserving the independent infrastructure probe
+RUI-007: runtime-integration — Reflected lifecycle results expose bounded pending interaction facts separately from committed checkpoint phase
+RUI-008: runtime-integration — Deep Research checkpoints remain readable under LangGraph strict msgpack rules through a minimal explicit serialization compatibility boundary
+RUI-009: runtime-integration — Runtime derives and projects one trusted checkpointed canonical bundle locator with compatible legacy fallback
+RUI-010: runtime-integration — Reflected Deep Research controls use trusted scope and opaque Bundle identity without accepting legacy lifecycle authority
+RUI-011: runtime-integration — Runtime integration cannot make an external checkpoint a Deep Research lifecycle authority
+RUI-012: runtime-integration — Reflected refinement results distinguish submitted admission from same-Bundle round application without exposing private direction or recovery facts
+
+# research-graph-lifecycle
+REG-001: research-graph-lifecycle — One explicit topology and complete adapter/gate selection assemble every stable Deep Research phase from registered real-only NodeSpec packages
+REG-002: research-graph-lifecycle — Deterministic fixture adapters exercise routing, repair, rerun, and parallel Send fan-in through explicit test/demo composition without models, web access, or sandbox research tools
+REG-003: research-graph-lifecycle — Graph-owned HITL requests bridge to the existing human-input message contract and resume only from the matching latest HumanMessage response
+REG-004: research-graph-lifecycle — Start, resume, status, and cancel enforce typed lifecycle transitions, idempotency, and fail-closed scope checks
+REG-005: research-graph-lifecycle — Explicit fixture graph checkpoints, restart recovery, topology snapshots, and end-to-end paths remain non-public, isolated, and deterministic
+REG-006: research-graph-lifecycle — One typed versioned ResearchState is the canonical checkpointed control authority
+REG-007: research-graph-lifecycle — State reducers enforce terminal monotonicity, duplicate-hash idempotency, different-hash conflict, ref dedupe, and sole-writer ownership
+REG-008: research-graph-lifecycle — Large research content stays out of the checkpoint as path, hash, schema-version, and short-summary refs under a hard size bound
+REG-009: research-graph-lifecycle — Checkpointed control state, the validated submission ledger, and sandbox artifact files remain three distinct authorities
+REG-010: research-graph-lifecycle — A minimal research bundle layout and path-containment contract scope every sandbox write to its research and attempt root
+REG-011: research-graph-lifecycle — A versioned ResearchState schema fails closed on incompatible versions and never silently resets or auto-migrates
+REG-012: research-graph-lifecycle — Pending interrupt presentation projection never becomes a second graph-control authority or rewrites committed phase
+REG-013: research-graph-lifecycle — Blocked terminal state retains only a compact safe incident visible through status and restart recovery
+REG-014: research-graph-lifecycle — Run-session manifest and lifecycle trace are derived projections that never become a second phase, pending-input, or transition authority
+REG-015: research-graph-lifecycle — Correlated graph-owned human input supports advertised typed closed actions without text-spoofed authority
+REG-016: research-graph-lifecycle — A checkpointed canonical bundle locator selects physical artifact roots while opaque research id remains lifecycle identity
+REG-017: research-graph-lifecycle — Visible controls bind only through trusted runtime or authorized broker code to a current pending request's advertised typed graph action, while adapters and ordinary text cannot map phrases or action ids into actions and stale or forged controls fail closed
+REG-018: research-graph-lifecycle — ResearchState retains only controller-owned bounded proposal-version and interaction-feedback facts with safe schema-v2 defaults, excluding raw replies, prompts, candidates, model output, and provider bodies while clearing transient feedback on acceptance, cancellation, and terminal handling
+REG-019: research-graph-lifecycle — Every generic graph recipe supplies a complete explicit real-or-injected adapter/gate selection before compilation; the fixed all-real factory is the only production-owned selection and no default fixture selection exists
+REG-020: research-graph-lifecycle — Deep Research graph lifecycle persists only through the selected Run Bundle rather than a generic external checkpoint
+REG-021: research-graph-lifecycle — Graph lifecycle actions use Bundle identity and safe refinement transitions
+
+# fixture-source-isolation
+FSI-001: fixture-source-isolation — Deterministic fixture implementations live in deep_research_harness/src_fake/deerflow_deep_research_fixtures, a separate non-production package that production source, wheel, editable runtime, and Docker paths never import or include
+FSI-002: fixture-source-isolation — Tests and credential-free demos explicitly compose a complete fixture adapter and gate catalog through the generic injection seam while production assembly never discovers or substitutes fixture adapters
+FSI-003: fixture-source-isolation — Fixture source remains physically separate under the canonical Harness root and cannot become production or Bundle-discovery authority
+
+# evidence-critic-nodes
+EVC-001: evidence-critic-nodes — SourceDiagnostic agent produces a typed trust and materiality assessment from assigned accepted evidence with per-source trust tier, materiality, marketing risk, and cross-verification need
+EVC-002: evidence-critic-nodes — ClaimVerifier agent produces typed evidence-backed claim assessment with verdicts (supported/weakened/contradicted/uncertain), support refs, counter refs, and reason referencing only assigned source ids
+EVC-003: evidence-critic-nodes — Critics run as bounded read-only agent loops under a zero-tool read-only ExecutionPolicy and cannot write phase, gate, ledger, or another node's artifacts
+EVC-004: evidence-critic-nodes — Critic output uses versioned structured Pydantic schema with deterministic materializer writing canonical JSON to the sandbox
+EVC-005: evidence-critic-nodes — Author and critic use independent model configurations, prompt templates, and agent sessions with conflicting results recorded as gaps rather than majority-vote truth
+
+# gate-kernel
+GAK-001: gate-kernel — Gate definitions collect all rules and produce deterministic verdicts with typed PhaseVerdict and route_map
+GAK-002: gate-kernel — Failure codes are a closed typed registry with stable classifications and no free-form codes from models or workers
+GAK-003: gate-kernel — Gate is the sole writer of phase transition routing and feedback fields including route, latest_gate_feedback, gate_attempts_by_phase, and repair_budget_by_phase
+GAK-004: gate-kernel — Bounded repair loop with per-phase budget, lazy initialization, fingerprint-based fatigue detection, and cross-phase fatigue isolation
+GAK-005: gate-kernel — Fixture gate definitions preserve deterministic fixture graph paths through recipe-bound scenario rules and typed phase-specific route resolution outside production state
+GAK-006: gate-kernel — Rule evaluation is stable-ordered and deterministic with pure rules that perform no I/O, model calls, or state mutation
+GAK-007: gate-kernel — Wave0 exhausted gate outcomes derive and write an optional closed worker-failure diagnosis without changing route or other lifecycle authority
+
+# hitl1-node
+HIN-001: hitl1-node — Real HITL1 generates a validated structured brief from the original question through the runtime node-agent bridge with closed-enum profile dimensions and fail-closed schema validation
+HIN-002: hitl1-node — Real HITL1 presents structured brief and follow-up prompts through the existing graph-owned interrupt protocol with bounded compact context and deterministic request ordinals
+HIN-003: hitl1-node — Real HITL1 parses JSON or free-text human responses deterministically, accumulates durable partial profile progress, bounds follow-up rounds, and rejects forged or mismatched responses
+HIN-004: hitl1-node — Real HITL1 records the validated profile as request-bundle profile.json plus checkpoint ContentRef and short controller-owned profile fields without bumping ResearchState schema version
+HIN-005: hitl1-node — Real HITL1 integrates into the all-real and explicitly composed mixed graph with explicit follow-up and blocked routes while preserving deterministic fixture test/demo behavior and downstream boundary constraints
+HIN-006: hitl1-node — Real HITL1 preserves typed brief-generation failure category through its existing blocked route without raw error leakage
+HIN-007: hitl1-node — Real HITL1 durably presents advisory profile proposals, deterministic localized answer feedback, and explicit human acceptance without silently degrading unrecognized input
+HIN-008: hitl1-node — Real HITL1 retries a transient brief-generation provider failure within a bounded graph-owned policy and reports safe exhaustion facts
+HIN-009: hitl1-node — For a complete checkpointed proposal, HITL1 interprets a raw reply only through zero-tool structured semantic intake, preserves graph authority for correlation and publication, confirms only the current proposal, makes full revisions visible before fresh confirmation, and reissues questions or clarifications without consuming profile-answer or rejection rounds
+HIN-010: hitl1-node — HITL1 bounds semantic intake to three bridge/model calls per raw proposal reply with at most two retry-eligible transient retries and one structured-output repair, preserving a confirmable proposal with non-terminal feedback after exhaustion, non-transient failure, or invalid output
+HIN-011: hitl1-node — HITL1 profile interaction acceptance preserves graph-owned admission through confirmation, source-constrained revision, question, ambiguity, and exhausted semantic fallback without unauthorized profile publication
+HIN-012: hitl1-node — HITL1 calibration policies preserve conservative decision-ready profile proposals and untrusted semantic-intake boundaries without changing deterministic or human acceptance authority
+HIN-013: hitl1-node — HITL1 brief expected output remains compatible with strict admission
+HIN-014: hitl1-node — HITL1 adapts complete interactive proposals through Research Confirmation while retaining correlation, state, profile publication, routes, and bounded semantic recovery ownership
+HIN-015: hitl1-node — HITL1 keeps durable interaction facts in the selected Run Bundle rather than external checkpoint authority
+HIN-016: hitl1-node — HITL1 runtime-loaded capability resources own bounded cognitive methods while deterministic admission, recovery, and lifecycle authority remain outside Markdown
+
+# topic-planning-node
+TOP-001: topic-planning-node — Real topic planning generates a validated structured topic plan from the checkpointed HITL1 profile via the runtime node-agent bridge with closed topic contracts, one bounded repair, and fail-closed schema validation
+TOP-002: topic-planning-node — A deterministic materializer normalizes the validated plan into a stable topic registry with model-independent ids/slugs plus a must-answer coverage map and rejects duplicate or overlapping topics
+TOP-003: topic-planning-node — Topic coverage and expansion are bounded by hard checks that reject empty or uncovered coverage and over-expansion and fail closed to terminal blocked after one bounded repair
+TOP-004: topic-planning-node — Real topic planning records bounded planner-owned checkpoint topic state read from checkpoint profile fields without reading profile.json, declaring request-bundle or work-unit capabilities, producing a WorkSpec, writing a sandbox file, or bumping the schema version
+TOP-005: topic-planning-node — Real topic planning integrates into the all-real and explicitly composed mixed graph only off real bootstrap and real HITL1 with one explicit exhausted route while preserving deterministic fixture test/demo behavior and the backend/frontend boundary
+TOP-006: topic-planning-node — Topic planning and structured repair bind distinct zero-tool local capabilities, preserve the confirmed profile boundary, and leave candidate admission, stable identifiers, state, routes, and exhaustion with existing deterministic owners
+TOP-007: topic-planning-node — Topic-planning calibration policies preserve confirmed-profile fidelity, bounded distinct coverage, degraded-profile conservatism, and deterministic materialization authority
+TOP-008: topic-planning-node — Topic planning consumes Bundle-local profile facts and writes contained planning artifacts through the selected Bundle
+
+# wave0-node
+WAN-001: wave0-node — Real Wave0 reads the planner topic registry and materializes one immutable source-intake WorkSpec per topic through the existing work-unit controller and shared fan-out/fan-in component without a second controller or work authority
+WAN-002: wave0-node — A bounded web worker agent performs per-topic source intake under a real attempt-scoped tool policy with all fetched content treated as untrusted data and writes only its own attempt artifacts
+WAN-003: wave0-node — A real wave0.source-intake result contract is registered in the generalized validation registry and deterministic submit validation canonicalizes URLs, verifies fetch/cache refs, checks path/hash/source identity, and counts only accepted SubmissionRecords as coverage
+WAN-004: wave0-node — A real source-floor gate replaces the fixture rule, enforces per-topic independent-source coverage at submit time with honest degraded capture, and preserves the completion/drain rule and the repair/pass/exhausted routes
+WAN-005: wave0-node — Real Wave0 integrates into the all-real and explicitly composed mixed graph only off the real topic chain with unchanged topology while preserving the deterministic fixture test/demo path and the backend/frontend boundary
+WAN-006: wave0-node — Real Wave0 maps trusted worker failure boundaries to closed diagnosis without disguising infrastructure failures or changing existing retry/gate authority
+WAN-007: wave0-node — Wave0 source intake retains its existing 1--3 permitted retrieval bound, validator/controller/ledger admission, zero-tool non-inventive repair, and honest source-floor or retrieval degradation evidence
+WAN-008: wave0-node — Wave0 calibration makes bounded assignment-faithful source-intake judgment and parser-only non-inventive repair criteria model-visible while preserving deterministic admission and controller authority
+WAN-009: wave0-node — Wave0 runtime-loaded capability resources own bounded source-intake cognition while deterministic tool, source-admission, and lifecycle owners remain non-bypassable
+
+# workflow-failure-outcomes
+WFO-001: workflow-failure-outcomes — Production model invocation boundaries normalize successful results, classified failures, local unknown failures, and cancellation into a bounded phase-owned outcome without raw exception or provider content
+WFO-002: workflow-failure-outcomes — Syntax-discovered production model-invocation owners declare and prove deterministic phase and lifecycle-or-controller failure-outcome coverage
+
+# wave1-node
+WON-001: wave1-node — Wave1 planner materializes per-topic evidence WorkSpecs from profile constraints and Wave0 background coverage through the shared work-unit controller
+WON-002: wave1-node — A bounded web worker performs deep evidence extraction per topic with structured claims, support/counter refs, open questions, and explicit is_new_vs_wave0 marking
+WON-003: wave1-node — Submit validation enforces a per-topic new-source floor by rejecting Wave0-duplicate URLs and invokes SourceDiagnostic and ClaimVerifier critics on accepted evidence
+WON-004: wave1-node — Wave1 gate enforces hard provenance, semantic coverage, critic verdict presence, and open-question resolution with bounded repair and terminal blocked routing
+WON-005: wave1-node — Real Wave1 integrates into the mixed graph only off the full real chain (bootstrap, hitl1, topic_planning, wave0, targeted_evidence) with unchanged topology
+WON-006: wave1-node — Open questions enter resolved, targeted-search, deferred, or requires-internal-data closed states with deterministic reducer and no silent loss
+WON-007: wave1-node — Wave1 initial and repair requests bind distinct local capabilities so exactly one permitted retrieval may extend rather than re-fetch the Wave0 baseline while deterministic validator/controller/ledger owners retain all admission authority
+WON-008: wave1-node — Wave1 calibration makes baseline-aware evidence, bounded non-broadening repair, and assignment-bound review criteria model-visible while preserving deterministic admission, materialization, and gate authority
+WON-009: wave1-node — Wave1 evidence work remains bound to its selected Run Bundle and stops publication on Bundle loss
+WON-010: wave1-node — Wave1 runtime capabilities own bounded baseline-aware extraction and pre-persistence repair cognition while deterministic owners retain admission and lifecycle authority
+
+# wave2-synthesis-node
+WSN-006: wave2-synthesis-node — Wave2 calibration makes evidence-grounded findings, relations, uncertainty, and honest gaps model-visible while preserving deterministic materialization, searchable-gap projection, gate, and route authority
+WSN-001: wave2-synthesis-node — Synthesis agent reads only accepted evidence via read-only policy and produces structured findings-index, cross-topic relations, contradictions, and candidate gaps without web tools
+WSN-002: wave2-synthesis-node — Deterministic materializer writes synthesis artifacts to sandbox with structured finding schema and cross-topic ledger
+WSN-003: wave2-synthesis-node — Hard gate validates finding references, structure, and accepted backing; semantic gate checks causal strength, contradiction coverage, and must-answer completeness
+WSN-004: wave2-synthesis-node — Real synthesis integrates into the all-real and explicitly composed mixed graph requiring the full real chain through wave1 while preserving the deterministic fixture test/demo path with unchanged topology
+WSN-005: wave2-synthesis-node — Wave2 synthesis and repair admit only candidates bounded by graph-assigned accepted evidence while retaining zero-tool and graph-owned outcome boundaries
+WSN-007: wave2-synthesis-node — Wave2 synthesis reads and materializes only within its selected Run Bundle and cannot create a replacement root
+WSN-008: wave2-synthesis-node — Wave2 runtime capabilities own bounded accepted-evidence synthesis and one structured repair cognition while deterministic owners retain candidate admission and lifecycle authority
+
+# rerun-node
+REN-001: rerun-node — Rerun scope is deterministically parsed from HITL2 decision payload producing a typed RerunPlan with scope, reason, target topics, target findings, and retained topics, defaulting to full scope when metadata is absent
+REN-002: rerun-node — Generation increment is monotonic with generation decrease rejected by reducer; old submission ledger and raw evidence artifacts remain append-only with no deletion or modification of accepted SubmissionRecords
+REN-003: rerun-node — Derived projections (synthesis ref, decision brief ref, report refs) are invalidated by clearing checkpoint refs without deleting sandbox files; raw evidence and submission ledger entries are never removed
+REN-004: rerun-node — Scoped WorkSpecs are materialized via the existing work-unit controller for topics and findings within the rerun scope; topics outside scope retain accepted evidence without new WorkSpecs
+REN-005: rerun-node — Back edges are a closed set determined by rerun scope: full and topic scope route to topic_planning; finding scope with stale sources routes to wave0; finding scope with deep-evidence-only routes to wave1; generation ceiling exhaustion routes to exhausted
+REN-006: rerun-node — New generation must re-pass all affected wave gates and HITL2; gate attempt and repair budget state is reset for affected phases; old HITL2 proceed decision is not inherited
+REN-007: rerun-node — Real rerun integrates into the all-real and explicitly composed mixed graph requiring real hitl2 with unchanged topology; fixture rerun preserves deterministic test/demo behavior; real back edges expand allowed route values without breaking existing edges
+REN-008: rerun-node — An admitted Run direction uses the existing pure full-rerun compiler and capacity policy to reach topic planning without becoming a HITL2 decision or a second route authority
+
+# readiness-node
+REA-001: readiness-node — The node runs deterministic evidence and provenance hard checks on pre-existing state and determines its own route; autonomous HITL2 continuation is not a structural failure and structural failures route to exhausted with BLOCKED
+REA-002: readiness-node — Semantic readiness critic runs as a bounded read-only agent loop assessing answerability per must-answer question with structured typed verdicts
+REA-003: readiness-node — Deterministic report plan materializer produces an immutable projection of writable conclusions, mandatory uncertainties, and prohibited claim upgrades with checkpointed ContentRef
+REA-004: readiness-node — The node writes its own route based on hard-rule results and critic verdicts: pass to final_delivery, repair_targeted to targeted_evidence, exhausted to blocked
+REA-005: readiness-node — The node collects all hard-rule failures and critic verdicts before determining the route; no single failure short-circuits the collection
+REA-006: readiness-node — Readiness critic runs under read-only bounded policy with structured output schema; invalid or malformed critic output fails closed
+REA-007: readiness-node — Real readiness integrates into the all-real and explicitly composed mixed graph requiring the full real chain through hitl2 with unchanged topology; deterministic fixture test/demo readiness remains preserved
+
+# final-delivery-node
+FID-001: final-delivery-node — Real final delivery invokes one bounded zero-tool composer for a closed complete layout permutation, then deterministic code renders exact admitted plan text and backing references before publication; explicit fixture composition remains fixture-controlled for tests and demos
+FID-002: final-delivery-node — The final integrity gate verifies only a fresh current-visit, post-publication re-read and hash-checked artifact pair plus accepted evidence; invalid composition routes through existing repair or evidence-blocked owners without publication
+FID-003: final-delivery-node — Deterministic rendering preserves every admitted conclusion, mandatory uncertainty, and backing submission reference verbatim while rejecting omission, duplication, unapproved entries, paraphrase, strengthening, or citation rebinding
+FID-004: final-delivery-node — Only a verified final-gate pass writes completed terminal facts; repair and evidence-blocked remain non-terminal and exhaustion retains the bounded blocked disposition
+FID-005: final-delivery-node — Real final delivery requires real readiness, a narrow contained and hash-checked final-delivery reader, publication capability, and its dedicated zero-tool bridge before model-visible work while preserving topology and deterministic fixture test/demo behavior
+
+# runtime-operations
+RUO-001: runtime-operations — Non-interactive start/resume is permitted with non_interactive_policy containing auto_profile and auto_proceed; without policy, non-interactive is denied as before
+RUO-002: runtime-operations — HITL1 auto-generates default profile values when auto_profile is True, setting degraded_profile and writing audit note; HITL2 auto-proceeds when auto_proceed is True
+RUO-003: runtime-operations — Orphan in-flight work attempts from a prior graph incarnation are detected on recovery and transitioned to failed
+RUO-004: runtime-operations — Non-interactive policy and orphan detection do not alter graph topology or explicit fixture test/demo behavior
+
+# evaluation-hardening
+EVH-020: evaluation-hardening — Evidence-judgment calibration retains separate branch-specific deterministic conformance and selected live judgment evidence with strict branch dependency seams, closed three-corpus rubric resolution, and canonical canary compatibility
+EVH-021: evaluation-hardening — Readiness answerability activation retains separate deterministic bridge conformance and bounded credentialed judgment evaluation for supported, insufficient, and repair-required verdicts
+EVH-001: evaluation-hardening — Replay-based eval corpus framework supports quick factual, claim verification, and insufficient evidence scenarios with deterministic assertions
+EVH-002: evaluation-hardening — Quality metrics compute citation precision, must-answer coverage, and source diversity from accepted submissions and checkpoint state
+EVH-003: evaluation-hardening — Fault injection tests cover crash, timeout, cancel, and duplicate resume at key graph points with verified recovery or terminal outcome
+EVH-004: evaluation-hardening — Adversarial source tests verify prompt-injected content cannot gain control or forge submissions
+EVH-005: evaluation-hardening — Release gate combines deterministic hard CI checks with optional real-LLM canary tests; DPT parity audit documents achieved vs outstanding invariants
+EVH-006: evaluation-hardening — Every recorded real-mode integration incident maps to a deterministic regression at the lowest responsible test seam with stable diagnostics
+EVH-007: evaluation-hardening — Typed reusable scenarios declare risk, required authenticity, inputs, expected workflow outcomes, artifacts, invariants, metrics, and traceability
+EVH-008: evaluation-hardening — Every real node and high-risk real-prefix workflow has zero-API conformance coverage through real graph/runtime policy paths with only external model and tool adapters replaced
+EVH-009: evaluation-hardening — Stable test selection separates network-free deterministic PR gates, credentialed live canaries, and full-real release acceptance without silent skips or overlap
+EVH-010: evaluation-hardening — Requirement-to-test coverage is mechanically checked and every live or E2E regression descends to the smallest reproducible deterministic scenario when feasible
+EVH-011: evaluation-hardening — Requirement evidence selects the smallest sufficient distinct-risk layers and records any justified escalation beyond them
+EVH-012: evaluation-hardening — Migrated node-agent branches retain a six-row behavior and authenticity evidence matrix that rejects missing, duplicate, unknown, uncollected, or aggregate-substitute claims
+EVH-013: evaluation-hardening — HITL1 profile-brief capability evidence retains independent advisory-success and repair-exhaustion lifecycle claims
+EVH-014: evaluation-hardening — HITL1 profile interaction acceptance retains distinct collected real-node/fake-capabilities claims for complete lifecycle success and exhausted semantic fallback without asserting live model quality
+EVH-015: evaluation-hardening — Planning and initial-intake calibration retains distinct collected real-node/fake-capabilities branch claims and separate scripted-real-workflow bridge claims without asserting live source or research quality
+EVH-016: evaluation-hardening — Evidence-evaluation calibration retains direct Wave2 and targeted branch claims plus separate scripted-real-workflow bridge proof without asserting live source, critic, or research quality
+EVH-017: evaluation-hardening — Every evidence link has a context-valid proof class and role: human-decision may close only conditional node proof, active branches reject it, and obsolete duplicates remain reviewable but cannot close required proof or authorize deletion
+EVH-018: evaluation-hardening — Intake and planning calibration retains branch-specific deterministic conformance plus selected live judgment evidence with typed rubric reporting and canonical canary compatibility
+EVH-019: evaluation-hardening — Evidence-intake calibration retains separate branch-specific deterministic conformance and selected live judgment evidence with typed rubric reporting, strict branch dependency seams, and canonical canary compatibility
+EVH-022: evaluation-hardening — Final report composition retains separately collected scripted real-workflow conformance and an explicitly selected, preflighted bounded live composition corpus whose disposition cannot claim source truth or change publication, lifecycle, or route authority
+EVH-023: evaluation-hardening — Any proposed selector retirement maps every displaced requirement and named risk to collected retained proof, explains evidence-metadata differences, and cannot be justified by aggregate counts or authorize deletion; the accepted rollout is empty
+EVH-024: evaluation-hardening — The singular full-real release acceptance exercises model-led natural confirmation and declared first-party source containment while versioned redacted evidence preserves historical v1 boundaries
+EVH-025: evaluation-hardening — Deterministic evidence proves Run Bundle lifecycle authority, refinement, loss, isolation, and no external recovery at direct seams
+EVH-026: evaluation-hardening — Verification and evidence paths use the canonical Harness root and reject stale or empty root-sensitive scans
+EVH-027: evaluation-hardening — A closed deterministic Wave0 cognitive-program corpus verifies source-intake capability ownership and handoff boundaries without receiving selected-live or release evidence status
+EVH-028: evaluation-hardening — A closed deterministic Wave1 cognitive-program corpus verifies extraction and repair capability ownership and handoff boundaries without receiving selected-live or release evidence status
+EVH-029: evaluation-hardening — A closed deterministic Wave2 cognitive-program corpus verifies synthesis and repair capability ownership and handoff boundaries without receiving selected-live or release evidence status
+
+TEL-001: targeted-evidence-loop — Deterministic gap router converts synthesis gaps to bounded targeted WorkSpecs per gap with scoped search dimensions
+TEL-006: targeted-evidence-loop — Targeted-evidence calibration makes gap-scoped provenance, uncertainty, non-resolution, and assigned-reference review criteria model-visible while preserving deterministic artifact, ledger, convergence-gate, and route authority
+TEL-002: targeted-evidence-loop — Targeted worker performs focused web search per gap under attempt-scoped policy and produces structured evidence with backing refs
+TEL-003: targeted-evidence-loop — Post-submit critic invocation validates new evidence and updates finding backing; convergence gate checks gap closure, round budgets, and fatigue
+TEL-004: targeted-evidence-loop — Real targeted evidence loop integrates into mixed graph requiring full real chain through wave2_synthesis with unchanged topology
+TEL-005: targeted-evidence-loop — Targeted worker, repair, and critics remain capability-bound, gap-scoped, read-only by role, and unable to admit evidence or control outcomes outside existing deterministic owners
+
+# work-unit-kernel
+WOU-001: work-unit-kernel — Immutable work, attempt, candidate, and submission contracts preserve controller-assigned identity and spec integrity
+WOU-002: work-unit-kernel — Typed pending and in-flight state drives bounded Send batches with deterministic fan-in and terminal monotonic reducers
+WOU-003: work-unit-kernel — Deterministic submit validation fails closed on identity, schema, containment, content hash, and source-reference defects
+WOU-004: work-unit-kernel — Only the controller submit path may atomically append hash-chained accepted records and publish accepted submission references
+WOU-005: work-unit-kernel — Submission replay reconciles ledger and checkpoint crash windows idempotently while divergent records fail closed
+WOU-006: work-unit-kernel — Per-research cross-process serialization guarantees at most one accepted winner without partial ledger publication
+WOU-007: work-unit-kernel — Retry, expiry, cancellation, failure, and crash recovery preserve one-way attempt lifecycle semantics
+WOU-008: work-unit-kernel — A generic drain check permits phase gating only when pending and in-flight work are empty
+WOU-009: work-unit-kernel — Work-unit artifacts and content references derive from the checkpoint-selected canonical bundle locator without changing lifecycle identity
+WOU-010: work-unit-kernel — Work-unit terminal projections preserve closed worker failure diagnosis without changing retry, ledger, gate, or lifecycle authority
+WOU-011: work-unit-kernel — Work-unit, evidence, and content stores use one runtime-bound Run Bundle reference without legacy identity or path overrides
+DPL-001: demo-pipeline — A shared demo core module provides DemoAdapter, synthetic tool-call helpers, phase metadata, and importable infrastructure for all demo scripts
+DPL-002: demo-pipeline — Phase progress display reads execution_trace from DeepResearchControlResult and renders completed phases with → and suspended phases with ⏸
+DPL-003: demo-pipeline — Named fixture and all-real demo factories construct their fixed recipes explicitly, without a mode selector or a production fixture fallback
+DPL-004: demo-pipeline — An independent CLI real demo validates supported model and Tavily prerequisites, builds the all-real recipe, and supports scripted non-interactive mode
+DPL-005: demo-pipeline — Makefile provides fixture and real CLI/TUI demos plus demo-sessions and session-workbench with DEMO_ARGS passthrough and their documented fixed profiles
+DPL-006: demo-pipeline — Demo command targets select or clearly reject a foreign active environment before user onboarding
+DPL-007: demo-pipeline — Local demo runs retain inspectable run bundles through an explicit bounded retention policy instead of deleting all artifacts on process exit
+DPL-008: demo-pipeline — Fixture demo and fixed-profile local-session commands enable the separate fixture source root only for their own child process while real and production paths do not
+DPL-009: demo-pipeline — Configured real-demo web reads have bounded transient recovery
+DPL-010: demo-pipeline — Demo pipeline obtains Deep Research identity, status, and legal actions only from the shared Bundle lifecycle result
