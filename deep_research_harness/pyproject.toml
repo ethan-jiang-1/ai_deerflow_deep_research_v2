@@ -62,4 +62,4 @@ select = ["E", "F", "I", "UP", "B", "ASYNC"]
 index-url = "https://pypi.org/simple"
 
 [tool.uv.sources]
-deerflow-harness = { path = "../backend/packages/harness", editable = true }
+deerflow-harness = { path = "../deerflow/backend/packages/harness", editable = true }

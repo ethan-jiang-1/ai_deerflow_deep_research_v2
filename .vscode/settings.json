@@ -1,0 +1,7 @@
+{
+    "python.defaultInterpreterPath": "${workspaceFolder}/backend/.venv/bin/python",
+    "python.terminal.activateEnvInCurrentTerminal": true,
+    "ruff.lint.ignore": ["E501", "E402", "E302", "E303", "E305", "E226", "E702", "E231", "E203", "E704", "F541", "I001", "W503"],
+    "flake8.args": ["--ignore=E501,E402,E302,E303,E305,E226,E702,E231,E203,E704"],
+    "python.terminal.executeInFileDir": false
+}
