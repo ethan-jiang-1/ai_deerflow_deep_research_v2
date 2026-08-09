@@ -19,7 +19,7 @@
 
 | Plan | 简述 |
 |------|------|
-| [cli-tui-entry-integrity-repair.md](cli-tui-entry-integrity-repair.md) | 修复 demo graph composition、scripted policy、inspection command、locked environment 与 CLI/TUI 入口认知图 |
+| [cli-tui-entry-integrity-repair_plan.md](cli-tui-entry-integrity-repair_plan.md) | 渐进修复 demo graph composition、scripted policy、inspection command、local environment 与 CLI/TUI 入口认知图 |
 
 新的分析或设计应在此创建，完成后再移入归档。
 
