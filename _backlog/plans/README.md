@@ -17,13 +17,11 @@
 
 ## 活跃列表
 
-| Plan | 简述 |
-|------|------|
-| [cli-tui-entry-integrity-repair_plan.md](cli-tui-entry-integrity-repair_plan.md) | 渐进修复 demo graph composition、scripted policy、inspection command、local environment 与 CLI/TUI 入口认知图 |
+当前没有活跃 plan。
 
 新的分析或设计应在此创建，完成后再移入归档。
 
-**Next available plan ID: CLS-033**（移入 `_closed_plans/` 时分配）
+**Next available plan ID: CLS-034**（移入 `_closed_plans/` 时分配）
 
 ## 已归档（移至 `_done/_closed_plans/`）
 

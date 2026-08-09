@@ -1,6 +1,6 @@
 # _done — 已完成/暂停的归档记录
 
-> 最后更新: 2026-08-08 | `_backlog/_done/` — 已完成内容与明确暂停项的归档根目录。
+> 最后更新: 2026-08-09 | `_backlog/_done/` — 已完成内容与明确暂停项的归档根目录。
 > **`_` 前缀 = coding agent 默认忽略，除非显式点名要读。**
 >
 > 状态总览和查阅指南在本文件。活跃工作的 PENDING 表、依赖链、执行顺序 → 见 [`../todos/README.md`](../todos/README.md)。
@@ -27,7 +27,7 @@ _done/
 |---------|------|---------|
 | `_fixed_bugs/` | 23 | BUG-024 |
 | `_done_todos/` | 0 | DONE-001 |
-| `_closed_plans/` | 32 | CLS-033 |
+| `_closed_plans/` | 33 | CLS-034 |
 
 ### ⏸ SUSPENDED（明确暂停）
 

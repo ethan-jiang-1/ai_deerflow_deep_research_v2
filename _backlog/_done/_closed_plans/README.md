@@ -1,6 +1,6 @@
 # Closed Plans Index — 已完成 plan 归档
 
-> 最后更新: 2026-08-08 | `_backlog/_done/_closed_plans/` — 已完成 plan 的归档目录。
+> 最后更新: 2026-08-09 | `_backlog/_done/_closed_plans/` — 已完成 plan 的归档目录。
 > 接收来自 [`../../plans/`](../../plans/) 的 plan。`_` 前缀 = coding agent 默认忽略。
 >
 > **plan 完成后文件名不变，位置即状态。** 移入时分配 `CLS-NNN` 序号（Closed），按完成时间递增。
@@ -51,5 +51,6 @@ plan 完成后从 `_backlog/plans/` 通过 `git mv` 移入本目录：
 | CLS-030 | 2026-08-08 | [deep-research-harness-agent-native-progressive-plan.md](deep-research-harness-agent-native/deep-research-harness-agent-native-progressive-plan.md) | Agent-native ownership 计划完成 Direction-loop、HITL1、Wave0、Wave1、Wave2 与 shared deterministic gate repair，全部同步/归档后明确收拢，不建立 successor change。 |
 | CLS-031 | 2026-08-08 | [deep-research-harness-agent-native-workflow-research.md](deep-research-harness-agent-native/deep-research-harness-agent-native-workflow-research.md) | DeerFlow/LangGraph workflow、`note` 语义与 refinement gap 的一手资料研究，已由 Direction-loop 和后续 ownership changes 吸收。 |
 | CLS-032 | 2026-08-08 | [deep-research-harness-test-asset-audit.md](deep-research-harness-agent-native/deep-research-harness-test-asset-audit.md) | 测试资产基线、证据真实性分层与缺口审计，已作为 Direction-loop 与认知 ownership deterministic evidence 的历史输入保留。 |
+| CLS-033 | 2026-08-09 | [cli-tui-entry-integrity-repair_plan.md](cli-tui-entry-integrity-repair_plan.md) | CLI/TUI entry-integrity repair 的五个 OpenSpec changes 已验证、同步主规格并归档；README 已提供受限的 Entry Surfaces 选择地图。 |
 
-**Next available plan ID: CLS-033**
+**Next available plan ID: CLS-034**
