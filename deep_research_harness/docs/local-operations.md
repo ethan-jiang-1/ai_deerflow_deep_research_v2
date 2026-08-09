@@ -21,7 +21,7 @@ Run commands from `deep_research_harness/`. Use the root README's
 | Run a non-interactive all-real demo | `make demo-real-scripted` |
 | Start the Textual real or fixture visualizer | `make demo-tui`, `make demo-tui-fake` |
 | Open the standalone local workbench | `make session-workbench` |
-| Inspect one retained observation | `make demo-sessions DEMO_ARGS='<bundle_id>'` |
+| Inspect one retained observation | `make demo-sessions DEMO_ARGS="inspect <bundle-id>"` |
 
 The demo targets ignore a foreign active `VIRTUAL_ENV` and use the locked project
 environment. A retained observation command is read-only: it does not discover a
@@ -111,7 +111,7 @@ Bundle locator or recovery record. It can show bounded diagnostic facts only; it
 authorize `status`, `resume`, `cancel`, `refine`, State reconstruction, or Bundle
 recreation.
 
-Use `make demo-sessions DEMO_ARGS='<bundle_id>'` only to inspect such an observation.
+Use `make demo-sessions DEMO_ARGS="inspect <bundle-id>"` only to inspect such an observation.
 There is no observation-backed list, open, discovery, cleanup, or lifecycle-control
 command. A missing or corrupt observation is reported as unavailable for inspection and
 does not alter the underlying Bundle result.

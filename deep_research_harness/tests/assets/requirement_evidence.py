@@ -825,11 +825,25 @@ REQUIREMENT_IMPACTS = (
         "CLI and TUI must derive one module-local inspection action from the shared session view",
     ),
     RequirementImpact(
+        "REC-005",
+        "research-cli-onboarding",
+        StableSeam.PUBLIC_ENTRY,
+        "tests/contract/test_demo_commands.py::test_retained_observation_documentation_uses_the_canonical_inspection_command",
+        "operator documentation could retain a one-argument command that the shared renderer does not publish",
+    ),
+    RequirementImpact(
         "REC-006",
         "research-cli-onboarding",
         StableSeam.LIFECYCLE_MIXED_GRAPH,
         "tests/integration/test_demo_run_update_adapters.py::test_standalone_adapters_render_the_same_retained_observation",
         "provider-terminal presentation cannot turn an inspection command into recovery authority",
+    ),
+    RequirementImpact(
+        "REC-006",
+        "research-cli-onboarding",
+        StableSeam.PUBLIC_ENTRY,
+        "tests/contract/test_demo_commands.py::test_retained_observation_documentation_uses_the_canonical_inspection_command",
+        "operator documentation could present a retired inspection spelling as a recovery-capable alternate route",
     ),
     RequirementImpact(
         "REC-002",

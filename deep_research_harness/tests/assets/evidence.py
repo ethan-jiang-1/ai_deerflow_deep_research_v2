@@ -1504,10 +1504,22 @@ EVIDENCE_CLAIMS = (
         requirement_ids=("REC-005", "REC-006"),
     ),
     _correctness_claim(
-        "standalone-inspection-command-execution",
+        "standalone-inspection-observation-projection",
         "tests/integration/test_demo_sessions.py::test_inspect_prints_only_safe_observation_facts",
         StableSeam.RUNTIME_INTEGRATION,
-        requirement_ids=("RUS-003", "RUS-004", "RUS-005", "REC-005", "REC-006"),
+        requirement_ids=("RUS-003",),
+    ),
+    _correctness_claim(
+        "standalone-inspection-command-execution",
+        "tests/integration/test_demo_sessions.py::test_rendered_inspection_command_is_executable_from_harness_root",
+        StableSeam.RUNTIME_INTEGRATION,
+        requirement_ids=("RUS-003", "REC-005", "REC-006"),
+    ),
+    _correctness_claim(
+        "standalone-inspection-command-documentation",
+        "tests/contract/test_demo_commands.py::test_retained_observation_documentation_uses_the_canonical_inspection_command",
+        StableSeam.PUBLIC_ENTRY,
+        requirement_ids=("REC-005", "REC-006"),
     ),
     _correctness_claim(
         "hitl1-run-agent-failure",

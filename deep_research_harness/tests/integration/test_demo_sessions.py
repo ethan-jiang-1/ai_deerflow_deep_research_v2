@@ -10,13 +10,22 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
 import importlib.util
+import secrets
+import shlex
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
 import pytest
 
-from deerflow_deep_research.domain.run_observation import RecordBearingLifecycleFact
+from deerflow_deep_research.domain.run_observation import (
+    ObservationInspectability,
+    RecordBearingLifecycleFact,
+    RunObservationInspection,
+)
 from deerflow_deep_research.runtime.run_observation import RunObservationStore
 
 AGENT_ROOT = Path(__file__).resolve().parents[2]
@@ -37,9 +46,9 @@ def _module():
     return module
 
 
-def _fact(**updates: object) -> RecordBearingLifecycleFact:
+def _fact(*, bundle_id: str = BUNDLE_ID, **updates: object) -> RecordBearingLifecycleFact:
     values: dict[str, object] = {
-        "bundle_id": BUNDLE_ID,
+        "bundle_id": bundle_id,
         "action": "start",
         "status": "suspended",
         "phase": "bootstrap",
@@ -48,6 +57,33 @@ def _fact(**updates: object) -> RecordBearingLifecycleFact:
     }
     values.update(updates)
     return RecordBearingLifecycleFact(**values)
+
+
+def _bundle_id() -> str:
+    return "b_" + secrets.token_urlsafe(32)
+
+
+def _rendered_command(bundle_id: str) -> list[str]:
+    _module()
+    from _terminal_failure_presentation import inspection_command
+
+    command = inspection_command(bundle_id)
+    assert command is not None
+    return shlex.split(command)
+
+
+def _run_rendered_command(bundle_id: str) -> subprocess.CompletedProcess[str]:
+    return _run_inspection_command(arguments=_rendered_command(bundle_id))
+
+
+def _run_inspection_command(*, arguments: list[str]) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        arguments,
+        cwd=AGENT_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
 
 
 @pytest.mark.asyncio
@@ -132,11 +168,108 @@ async def test_invalid_or_missing_observation_never_creates_or_controls_a_bundle
 def test_demo_sessions_parser_exposes_only_a_bundle_observation_target() -> None:
     module = _module()
 
-    args = module._build_parser().parse_args([BUNDLE_ID])
+    args = module._build_parser().parse_args(["inspect", BUNDLE_ID])
 
+    assert args.command == "inspect"
     assert args.bundle_id == BUNDLE_ID
     assert not hasattr(args, "research_id")
     assert not hasattr(args, "session_ref")
+    with pytest.raises(SystemExit):
+        module._build_parser().parse_args([BUNDLE_ID])
+
+
+class _InspectOnlyStore:
+    def __init__(self, inspection: RunObservationInspection) -> None:
+        self.inspection = inspection
+        self.bundle_ids: list[str] = []
+
+    async def inspect(self, *, bundle_id: str) -> RunObservationInspection:
+        self.bundle_ids.append(bundle_id)
+        return self.inspection
+
+    def __getattr__(self, name: str) -> object:
+        raise AssertionError(f"unexpected_observation_store_access:{name}")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("inspectability", "expected_code", "expected_line"),
+    (
+        (ObservationInspectability.AVAILABLE, 0, f"Run Bundle: {BUNDLE_ID}"),
+        (ObservationInspectability.UNAVAILABLE, 2, "Retained observation is unavailable for safe inspection."),
+    ),
+)
+async def test_inspection_dispatches_only_to_store_inspect(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    inspectability: ObservationInspectability,
+    expected_code: int,
+    expected_line: str,
+) -> None:
+    module = _module()
+    store = _InspectOnlyStore(RunObservationInspection(bundle_id=BUNDLE_ID, inspectability=inspectability))
+    monkeypatch.setattr(module, "_observation_store", lambda: store)
+
+    code = await module.run(argparse.Namespace(command="inspect", bundle_id=BUNDLE_ID))
+
+    assert code == expected_code
+    assert expected_line in capsys.readouterr().out
+    assert store.bundle_ids == [BUNDLE_ID]
+
+
+@pytest.mark.asyncio
+async def test_rendered_inspection_command_is_executable_from_harness_root() -> None:
+    bundle_id = _bundle_id()
+    corrupt_bundle_id = _bundle_id()
+    store = RunObservationStore(retained_root=RunObservationStore.project_default_root(AGENT_ROOT))
+    record_roots: list[Path] = []
+
+    try:
+        available = await store.publish(_fact(bundle_id=bundle_id))
+        assert available.inspectability is ObservationInspectability.AVAILABLE
+        record_roots.append(store._record_root(bundle_id))
+
+        completed = await asyncio.to_thread(_run_rendered_command, bundle_id)
+        assert completed.returncode == 0
+        assert f"Run Bundle: {bundle_id}" in completed.stdout
+        assert "Observation does not resume or control this Run Bundle." in completed.stdout
+
+        invalid = await asyncio.to_thread(
+            _run_inspection_command,
+            arguments=["make", "demo-sessions", "DEMO_ARGS=inspect not-a-bundle"],
+        )
+        assert invalid.returncode == 2
+        assert "Run Bundle id is invalid." in invalid.stdout
+
+        missing = await asyncio.to_thread(
+            _run_inspection_command,
+            arguments=["make", "demo-sessions", f"DEMO_ARGS=inspect {_bundle_id()}"],
+        )
+        assert missing.returncode == 2
+        assert "No retained observation was found for this Run Bundle." in missing.stdout
+
+        corrupt = await store.publish(_fact(bundle_id=corrupt_bundle_id))
+        assert corrupt.inspectability is ObservationInspectability.AVAILABLE
+        corrupt_root = store._record_root(corrupt_bundle_id)
+        record_roots.append(corrupt_root)
+        (corrupt_root / "manifest.json").write_text("{not-json", encoding="utf-8")
+
+        unavailable = await asyncio.to_thread(
+            _run_inspection_command,
+            arguments=["make", "demo-sessions", f"DEMO_ARGS=inspect {corrupt_bundle_id}"],
+        )
+        assert unavailable.returncode == 2
+        assert "Retained observation is unavailable for safe inspection." in unavailable.stdout
+
+        retired = await asyncio.to_thread(
+            _run_inspection_command,
+            arguments=["make", "demo-sessions", f"DEMO_ARGS={bundle_id}"],
+        )
+        assert retired.returncode == 2
+        assert "usage:" in retired.stderr
+    finally:
+        for record_root in reversed(record_roots):
+            shutil.rmtree(record_root, ignore_errors=True)
 
 
 def test_observation_store_has_no_lifecycle_control_operations() -> None:

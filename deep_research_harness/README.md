@@ -120,7 +120,7 @@ operations](docs/local-operations.md) own the operational detail.
 | Run the credentialed all-real demo with a question | `make demo-real DEMO_ARGS='--question "Compare battery storage costs"'` |
 | Run the prepared all-real research launcher | `bash run/real-research.sh` |
 | Run the deterministic project gate | `UV_OFFLINE=1 make verify` |
-| Inspect one retained observation, read-only | `make demo-sessions DEMO_ARGS='<bundle_id>'` |
+| Inspect one retained observation, read-only | `make demo-sessions DEMO_ARGS="inspect <bundle-id>"` |
 
 Run that inspection command from `deep_research_harness/`. It only reports a retained
 observation: it cannot locate, resume, refine, cancel, or recreate a Run Bundle.

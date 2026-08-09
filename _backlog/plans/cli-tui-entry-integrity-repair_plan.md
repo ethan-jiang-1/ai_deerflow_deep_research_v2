@@ -1,6 +1,6 @@
 # Progressive Plan: CLI/TUI Entry Integrity Repair
 
-> 类型: 渐进落地计划 | 状态: active -- Stage 1、Stage 2 均已验证、main specs 已同步并完成归档；Stage 3.1 inspection-command change admission 进行中 | 更新: 2026-08-09
+> 类型: 渐进落地计划 | 状态: active -- Stage 1、Stage 2 已验证、main specs 已同步并完成归档；Stage 3 已验证并归档（无 delta spec）；下一项为 Stage 4 local environment | 更新: 2026-08-09
 >
 > 目标: 恢复入口所声明的实际 composition，并用逐阶段、可停止、可验证的方式修复
 > scripted policy、demo graph、inspection command、local environment 与入口说明。
@@ -175,7 +175,9 @@ truthful block；interactive path 和 checkpoint durability 都有 deterministic
 ### Stage 3: Repair Rendered Inspection Command
 
 候选 change: `repair-rendered-inspection-command`。
-当前状态: in progress（3.1 admission；尚未创建第二个 active change）。
+当前状态: 已归档 change
+[`2026-08-09-repair-rendered-inspection-command`](../../openspec/changes/archive/2026-08-09-repair-rendered-inspection-command/)；
+`skip_specs: true`，因为既有 `REC-005`/`REC-006` 已拥有 canonical grammar；下一项为 Stage 4.1。
 
 | Change Focus | 内容 |
 | --- | --- |
@@ -184,14 +186,25 @@ truthful block；interactive path 和 checkpoint durability 都有 deterministic
 | Evidence seam | 从 `deep_research_harness/` 启动的 real subprocess contract，使用 retained observation fixture。 |
 | Not in scope | lifecycle recovery、Bundle discovery、session reference、provider/graph control authority。 |
 
-- [ ] 3.1 创建 change 和 red subprocess test；从 Harness root 执行 renderer 给出的 command，确认
-  当前 parser failure 被重现。
-- [ ] 3.2 实现唯一 `inspect <bundle-id>` grammar；available observation 返回 0，missing/corrupt
-  返回 bounded nonzero，且双方均不创建 graph/provider authority。
-- [ ] 3.3 让 renderer、`--help`、README 和 `docs/local-operations.md` 只使用这一个 grammar；
-  删除一参数同义形，不保留两套 contract。
-- [ ] 3.4 完成 subprocess/read-only regression、strict validation 和 gate；同步 specs、归档 change，
-  并在此记录证据。
+- [x] 3.1 创建 change 和 red subprocess test；从 Harness root 执行 renderer 给出的 command，确认
+  当前 parser failure 被重现。change: `repair-rendered-inspection-command`；red baseline:
+  canonical `inspect <bundle-id>` 被 argparse 拒绝、其 Make subprocess 退出 2，且两份操作文档仍保留
+  一参数写法。
+- [x] 3.2 实现唯一 `inspect <bundle-id>` grammar；available observation 返回 0，missing/corrupt
+  返回 bounded nonzero，且双方均不创建 graph/provider authority。`demo_sessions.py` 的 required
+  `inspect` subparser 仍只 dispatch `RunObservationStore.inspect()`；subprocess 回归同时覆盖 invalid、missing、
+  corrupt 和 retired spelling。迁移遗留的 Harness 默认 diagnostics root 为不安全的 `0755`，已仅将该确切
+  目录收紧为 `0700`、未删除其中的 `records.jsonl`，使 fail-closed store 可发布测试记录。
+- [x] 3.3 让 renderer、`--help`、README 和 `docs/local-operations.md` 只使用这一个 grammar；
+  删除一参数同义形，不保留两套 contract。新增文档合同与 test-owned evidence claims；原本标作 command
+  execution 的 direct `run()` claim 已更正为真实 Harness-root Make subprocess claim。
+- [x] 3.4 完成 subprocess/read-only regression、strict validation 和 gate；同步 specs、归档 change，
+  并在此记录证据。已通过 `cd deep_research_harness && UV_OFFLINE=1 uv run --extra operations python -m
+  pytest tests/integration/test_demo_sessions.py tests/contract/test_demo_commands.py`（16 passed）、
+  `UV_OFFLINE=1 uv run --extra operations python scripts/check_test_assets.py`（380 claims、2662 deterministic
+  tests）、`openspec validate repair-rendered-inspection-command --strict`、`UV_OFFLINE=1 make verify` 与
+  `git diff HEAD --check`。无 delta specs 需要同步；归档位置如上；`deerflow/` 保持 clean，根目录不存在
+  `backend/` 或 `frontend/` 目录。下一未完成阶段: Stage 4.1。
 
 **Stage 3 Exit Gate:** 人复制 CLI/TUI 显示的 inspection command 即能运行；所有输出仍是有限的
 observation，不暗示 resume/retry/recovery。

@@ -72,7 +72,9 @@ async def run(args: argparse.Namespace) -> int:
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Read one retained Deep Research observation.")
-    parser.add_argument("bundle_id", help="Opaque Run Bundle id from a prior lifecycle result.")
+    commands = parser.add_subparsers(dest="command", required=True)
+    inspect = commands.add_parser("inspect", help="Read one retained observation.")
+    inspect.add_argument("bundle_id", help="Opaque Run Bundle id from a prior lifecycle result.")
     return parser
 
 

@@ -137,6 +137,19 @@ def test_readme_setup_commands_are_paste_safe_in_interactive_zsh() -> None:
     assert "UV_OFFLINE=1 make verify #" not in setup
 
 
+def test_retained_observation_documentation_uses_the_canonical_inspection_command() -> None:
+    """@impl REC-005
+    @impl REC-006
+    """
+    command = 'make demo-sessions DEMO_ARGS="inspect <bundle-id>"'
+    retired = "DEMO_ARGS='<bundle_id>'"
+
+    for path in (AGENT_ROOT / "README.md", AGENT_ROOT / "docs/local-operations.md"):
+        document = path.read_text(encoding="utf-8")
+        assert command in document
+        assert retired not in document
+
+
 def test_real_research_launcher_selects_a_configured_flash_model() -> None:
     launcher = REAL_RESEARCH_LAUNCHER.read_text(encoding="utf-8")
 
