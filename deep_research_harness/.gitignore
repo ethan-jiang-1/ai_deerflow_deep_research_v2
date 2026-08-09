@@ -5,3 +5,5 @@
 .node-prompt-review/
 evals/runs/
 .venv/
+.agents/
+.claude/
