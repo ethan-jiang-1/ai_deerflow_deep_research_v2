@@ -1,6 +1,6 @@
 # Active Plans — 活跃 plan/分析文档列表
 
-> 最后更新: 2026-08-08 | `_backlog/plans/` — 活跃 plan 在此，完成移入 [`../_done/_closed_plans/`](../_done/_closed_plans/)。
+> 最后更新: 2026-08-09 | `_backlog/plans/` — 活跃 plan 在此，完成移入 [`../_done/_closed_plans/`](../_done/_closed_plans/)。
 >
 > **plan 没有编号，文件名即标识。完成后文件名不变，位置即状态。**
 
@@ -19,7 +19,7 @@
 
 | Plan | 简述 |
 |------|------|
-| 当前没有活跃 plan。 | — |
+| [cli-tui-entry-integrity-repair.md](cli-tui-entry-integrity-repair.md) | 修复 demo graph composition、scripted policy、inspection command、locked environment 与 CLI/TUI 入口认知图 |
 
 新的分析或设计应在此创建，完成后再移入归档。
 

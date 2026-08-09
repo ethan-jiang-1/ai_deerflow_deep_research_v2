@@ -173,13 +173,32 @@ _Avoid_: a successful preflight, a retained session, a partial graph traversal
 ## Entry Interfaces
 
 **Primary User Interface**:
-The dedicated Deep Research TUI through which a Primary User runs and follows Deep
-Research.
-_Avoid_: the smoke-test CLI, the Host Terminal Workbench, a raw lifecycle payload
+The planned dedicated Deep Research TUI through which a Primary User will run and
+follow Deep Research. It is not yet a current runnable entry route.
+_Avoid_: the standalone demo TUI, the smoke-test CLI, the Host Terminal Workbench, a raw lifecycle payload
+
+**Current Recommended User Route**:
+The Dedicated Agent's ordinary-language workflow and reflected `deep_research` tool.
+It is the current route a Primary User uses to start and follow Deep Research.
+_Avoid_: the planned Primary User Interface, an Operator Interface, a local diagnostic
+
+**Standalone Demo TUI**:
+A contributor/operator visualizer for a shared Deep Research Run experience. It can
+exercise real or fixture composition but is not a Primary User product interface or a
+Host Terminal Workbench.
+_Avoid_: Current Recommended User Route, Primary User Interface, generic recovery client
+
+**Local Session Workbench**:
+A fixed local-profile Operator Interface for bounded Run Bundle observation and legal
+control projection. Its current profile is the configured fixture demo profile; a real
+local profile is not a current product capability.
+_Avoid_: generic recovery client, filesystem explorer, a Primary User Interface
 
 **Operator Interface**:
-The CLI used for Smoke Tests, debugging, and scriptable operational work.
-_Avoid_: the Primary User Interface
+The supported contributor/operator CLI used for Smoke Tests, debugging, and scriptable
+operational work. Its current commands and exit semantics are an operational contract,
+not a versioned general-purpose product CLI for external callers.
+_Avoid_: the Primary User Interface, a public product CLI
 
 **Integration Interface**:
 The API through which another program invokes or observes Deep Research using its
