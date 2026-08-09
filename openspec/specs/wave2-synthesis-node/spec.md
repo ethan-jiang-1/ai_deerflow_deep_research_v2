@@ -1,6 +1,6 @@
 # wave2-synthesis-node Specification
 
-> req: WSN-001, WSN-002, WSN-003, WSN-004, WSN-005, WSN-006, WSN-007
+> req: WSN-001, WSN-002, WSN-003, WSN-004, WSN-005, WSN-006, WSN-007, WSN-008
 ## Purpose
 Cross-topic synthesis agent with read-only policy, structured findings, and gap detection.
 

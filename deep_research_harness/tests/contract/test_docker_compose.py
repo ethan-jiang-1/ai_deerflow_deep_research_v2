@@ -21,7 +21,7 @@ import pytest
 from ruamel.yaml import YAML
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-BASE = REPO_ROOT / "docker" / "docker-compose.yaml"
+BASE = REPO_ROOT / "deerflow" / "docker" / "docker-compose.yaml"
 OVERRIDE = REPO_ROOT / "deep_research_harness" / "docker" / "docker-compose.deep-research.yaml"
 AGENT_SRC = REPO_ROOT / "deep_research_harness" / "src"
 
@@ -69,12 +69,12 @@ def test_override_defines_only_the_gateway_service() -> None:
 
 def test_override_mounts_canonical_source_read_only() -> None:
     volumes = _load(OVERRIDE)["services"]["gateway"]["volumes"]
-    assert "../deep_research_harness/src:/app/deep_research_harness/src:ro" in volumes
+    assert "../../deep_research_harness/src:/app/deep_research_harness/src:ro" in volumes
 
 
 def test_override_keeps_canonical_mount_target_and_gateway_pythonpath_together() -> None:
     gateway = _load(OVERRIDE)["services"]["gateway"]
-    assert gateway["volumes"] == ["../deep_research_harness/src:/app/deep_research_harness/src:ro"]
+    assert gateway["volumes"] == ["../../deep_research_harness/src:/app/deep_research_harness/src:ro"]
     assert DOWNSTREAM_PYTHONPATH in _gateway_command({"services": {"gateway": gateway}})
 
 
@@ -135,12 +135,12 @@ def render_env(tmp_path: Path):
     """Provide env vars and the repo env files the base compose declares.
 
     The base Gateway/frontend services declare ``env_file`` entries at the repo
-    root and ``frontend/``; ``docker compose config`` refuses to render without
+    `deerflow/.env` and `deerflow/frontend/`; ``docker compose config`` refuses to render without
     them. Create empty placeholders only when absent and remove only what we
     created, so a developer's real env files are never touched.
     """
     created: list[Path] = []
-    for relative in (".env", "frontend/.env"):
+    for relative in ("deerflow/.env", "deerflow/frontend/.env"):
         candidate = REPO_ROOT / relative
         if not candidate.exists():
             candidate.write_text("", encoding="utf-8")

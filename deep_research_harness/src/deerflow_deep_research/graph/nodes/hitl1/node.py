@@ -821,6 +821,7 @@ def build_real(dependencies: NodeBuildDependencies):
             return node_state_update(
                 "hitl1",
                 route="accepted",
+                execution_trace=("hitl1", "hitl1_auto_profile"),
                 **profile_state_fields(profile, profile_ref),
             )
 

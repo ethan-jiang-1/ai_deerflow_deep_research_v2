@@ -8,7 +8,7 @@ import shutil
 import pytest
 
 from deerflow_deep_research.domain.bundle import BundleId
-from deerflow_deep_research.domain.lifecycle import LifecycleAction, LifecycleStatus
+from deerflow_deep_research.domain.lifecycle import ImplementationMode, LifecycleAction, LifecycleStatus
 from deerflow_deep_research.domain.run_experience import FailureCertainty, RunFailureCode, TerminalIncidentProjection
 from deerflow_deep_research.domain.state import (
     MAX_CHECKPOINT_STATE_BYTES,
@@ -60,6 +60,25 @@ async def test_blocked_graph_incident_survives_bundle_state_sync_reload_and_proj
 
     assert result.status is LifecycleStatus.BLOCKED
     assert result.terminal_incident == incident
+
+
+async def test_selected_implementation_mode_survives_bundle_reload_and_projection(tmp_path) -> None:
+    lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
+    bundle = await lifecycle.start(
+        scope=("alice", "thread-1"),
+        request_text="Verify fixture graph composition.",
+        implementation_mode=ImplementationMode.FIXTURE,
+    )
+
+    reloaded = await lifecycle.read_state(bundle)
+    result = lifecycle.result_for_state(
+        action=LifecycleAction.STATUS,
+        bundle=bundle,
+        state=reloaded,
+    )
+
+    assert reloaded.implementation_mode is ImplementationMode.FIXTURE
+    assert result.implementation_mode is ImplementationMode.FIXTURE
 
 
 def test_bundle_local_waiting_state_is_active_until_a_terminal_round_is_recorded() -> None:

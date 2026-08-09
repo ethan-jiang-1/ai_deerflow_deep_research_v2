@@ -16,6 +16,7 @@ import json
 import os
 import sys
 import types
+from dataclasses import replace
 from unittest.mock import patch
 
 import httpx
@@ -200,8 +201,28 @@ def test_tool_call_with_bundle_id(_scripts_path):
     assert msg.tool_calls[0]["args"]["action"] == "resume"
 
 
+class _DemoRuntimeAdapter:
+    async def create_work_unit_store(self, _envelope, *, bundle):
+        return None
+
+
+def test_build_demo_runtime_selects_fixed_recipe_and_executor(_scripts_path):
+    from _demo_core import build_demo_runtime
+
+    adapter = _DemoRuntimeAdapter()
+    real = build_demo_runtime(mode="real", adapter=adapter)
+    fixture = build_demo_runtime(mode="fixture_graph", adapter=adapter)
+
+    assert real.adapter is adapter
+    assert real.recipe.implementation_mode.value == "all_real"
+    assert real.executor._recipe is real.recipe
+    assert fixture.adapter is adapter
+    assert fixture.recipe.implementation_mode.value == "fixture"
+    assert fixture.executor._recipe is fixture.recipe
+
+
 @pytest.mark.asyncio
-async def test_demo_lifecycle_transport_only_binds_and_forwards_raw_result(_scripts_path, monkeypatch):
+async def test_demo_lifecycle_transport_forwards_only_the_runtime_owned_executor(_scripts_path, monkeypatch):
     import _demo_core
 
     captured: dict[str, object] = {}
@@ -212,8 +233,9 @@ async def test_demo_lifecycle_transport_only_binds_and_forwards_raw_result(_scri
         return raw_result
 
     monkeypatch.setattr(_demo_core, "run_deep_research", dispatch)
+    runtime = _demo_core.build_demo_runtime(mode="real", adapter=_DemoRuntimeAdapter())
     transport = _demo_core.DemoLifecycleTransport()
-    transport.bind(adapter=object(), host=object())
+    transport.bind(runtime=runtime)
     result = await transport.dispatch(
         action="start",
         bundle_id=None,
@@ -223,7 +245,31 @@ async def test_demo_lifecycle_transport_only_binds_and_forwards_raw_result(_scri
 
     assert result is raw_result
     assert captured["action"] == "start"
+    assert captured["adapter"] is runtime.adapter
+    assert captured["bundle_graph_executor"] is runtime.executor
+    assert "host_factory" not in captured
     assert captured["runtime"].tool_call_id.startswith("demo-lifecycle-start-")
+
+
+@pytest.mark.asyncio
+async def test_demo_lifecycle_transport_rejects_missing_executor_before_dispatch(_scripts_path, monkeypatch):
+    import _demo_core
+
+    dispatched = False
+
+    async def dispatch(**_kwargs):
+        nonlocal dispatched
+        dispatched = True
+        return object()
+
+    monkeypatch.setattr(_demo_core, "run_deep_research", dispatch)
+    runtime = _demo_core.build_demo_runtime(mode="real", adapter=_DemoRuntimeAdapter())
+    transport = _demo_core.DemoLifecycleTransport()
+
+    with pytest.raises(RuntimeError, match="demo_graph_executor_required"):
+        transport.bind(runtime=replace(runtime, executor=None))
+
+    assert dispatched is False
 
 
 def test_real_recipe_selects_all_real_adapters(_scripts_path):

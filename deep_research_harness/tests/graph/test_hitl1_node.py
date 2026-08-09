@@ -583,6 +583,7 @@ async def test_final_answer_round_blocks_missing_comparison_pair_without_writing
     assert result["route"] == "exhausted"
     assert result["terminal_reason"] == TerminalReason.GATE_BLOCKED.value
     assert "profile_ref" not in result
+    assert result["execution_trace"] == ("hitl1",)
     assert store.writes == []
 
 
@@ -620,6 +621,7 @@ async def test_non_interactive_auto_profile_stays_outside_interactive_confirmati
     assert result["route"] == "accepted"
     assert result["degraded_profile"] is True
     assert result["proposed_profile"] is None
+    assert result["execution_trace"] == ("hitl1", "hitl1_auto_profile")
     assert len(store.writes) == 1
     assert store.writes[0].degraded_profile is True
     assert caps.requests == []

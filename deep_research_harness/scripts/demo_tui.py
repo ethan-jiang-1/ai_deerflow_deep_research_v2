@@ -20,7 +20,7 @@ from _demo_core import (
     PHASE_META,
     DemoAdapter,
     DemoLifecycleTransport,
-    build_demo_host,
+    build_demo_runtime,
     demo_readiness_report,
 )
 from _terminal_failure_presentation import (
@@ -375,10 +375,13 @@ class DeepResearchDemoTUI(App[None]):
         if not report.ready:
             self.apply_run_update(Fault(failure=report.failure or _presentation_fault().failure))
             return
+        adapter: DemoAdapter | None = None
         try:
             adapter = DemoAdapter()
-            host = build_demo_host()
-            self._transport.bind(adapter=adapter, host=host)
+            if self.mode == "real":
+                self._transport.bind(runtime=build_demo_runtime(mode="real", adapter=adapter))
+            else:
+                self._transport.bind_full_fake(adapter=adapter)
             if hasattr(self._experience, "set_observation_publisher"):
                 self._experience.set_observation_publisher(adapter.observation_publisher)
             self._adapter = adapter
@@ -386,6 +389,8 @@ class DeepResearchDemoTUI(App[None]):
         except asyncio.CancelledError:
             raise
         except Exception:
+            if adapter is not None:
+                adapter.close()
             self.apply_run_update(_presentation_fault())
 
     def apply_run_update(self, update: RunUpdate) -> None:

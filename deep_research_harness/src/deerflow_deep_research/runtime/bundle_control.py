@@ -22,6 +22,7 @@ from deerflow_deep_research.domain.lifecycle import (
     Durability,
     HumanInputMode,
     HumanInputRequest,
+    ImplementationMode,
     InfrastructureResultCode,
     LegalNextAction,
     LifecycleAction,
@@ -43,6 +44,7 @@ from deerflow_deep_research.runtime.human_input import HumanInputError, Selected
 
 if TYPE_CHECKING:
     from deerflow_deep_research.runtime.bundle_graph import BundleGraphExecutor
+    from deerflow_deep_research.runtime.non_interactive import StartActionInput
 
 
 class BundleControl:
@@ -96,6 +98,7 @@ class BundleControl:
         handle: CurrentBundleHandle | None = None,
         start_message: SelectedStartMessage | None = None,
         envelope: Any | None = None,
+        start_input: StartActionInput | None = None,
     ) -> Any:
         scope = (effective_user_id, outer_thread_id)
         try:
@@ -108,6 +111,7 @@ class BundleControl:
                 tool_call_id=tool_call_id,
                 start_message=start_message,
                 envelope=envelope,
+                start_input=start_input,
             )
         if action is LifecycleAction.STATUS:
             return (await self._lifecycle.status(scope=scope, bundle_id=target, handle=handle)).model_dump(
@@ -142,6 +146,7 @@ class BundleControl:
         tool_call_id: str,
         start_message: SelectedStartMessage | None,
         envelope: Any | None,
+        start_input: StartActionInput | None,
     ) -> Any:
         if start_message is None:
             return self._unavailable(action=LifecycleAction.START, code=ResultCode.START_MESSAGE_INVALID)
@@ -150,6 +155,11 @@ class BundleControl:
                 scope=scope,
                 request_text=start_message.text,
                 start_message_id=start_message.message_id,
+                implementation_mode=(
+                    self._checked_graph_executor().implementation_mode
+                    if self._has_graph_executor()
+                    else ImplementationMode.ALL_REAL
+                ),
             )
         except BundleAlreadyActive as exc:
             try:
@@ -195,6 +205,7 @@ class BundleControl:
                     envelope=envelope,
                     start_message=start_message,
                     tool_call_id=tool_call_id,
+                    start_input=start_input,
                 )
             except BundleLifecycleError:
                 return self._unavailable(action=LifecycleAction.START)

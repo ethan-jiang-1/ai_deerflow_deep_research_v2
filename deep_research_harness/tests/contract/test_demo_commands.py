@@ -47,7 +47,7 @@ def test_demo_commands_keep_fake_and_real_dependency_boundaries() -> None:
     readme = (AGENT_ROOT / "README.md").read_text(encoding="utf-8")
     operations = (AGENT_ROOT / "docs/local-operations.md").read_text(encoding="utf-8")
 
-    assert "demo-real demo-real-scripted demo-tui demo-tui-fake" in makefile
+    assert "demo-fixture-graph demo-real demo-real-scripted demo-tui demo-tui-fake" in makefile
     real_cli = " ".join(
         (
             "env -u VIRTUAL_ENV uv run $(LOCAL_ENV_ARG) --extra operations --extra demo-real",
@@ -69,12 +69,22 @@ def test_demo_commands_keep_fake_and_real_dependency_boundaries() -> None:
         )
     )
     assert fake_tui in makefile
-    for target in ("demo", "demo-scripted", "demo-tui-fake", "demo-sessions", "session-workbench"):
+    for target in (
+        "demo",
+        "demo-scripted",
+        "demo-fixture-graph",
+        "demo-tui-fake",
+        "demo-sessions",
+        "session-workbench",
+    ):
         assert FIXTURE_PYTHONPATH in _target_body(makefile, target)
     for target in ("demo-real", "demo-real-scripted", "demo-tui"):
         assert FIXTURE_PYTHONPATH not in _target_body(makefile, target)
     assert "install:\n\tuv sync --locked --extra operations --extra demo-tui" in makefile
     assert "make demo-tui-fake" in readme
+    assert "make demo-fixture-graph" in readme
+    assert "deterministic graph-composition verification" in readme
+    assert "full fake" in readme
     assert "docs/local-operations.md" in readme
     assert "TAVILY_API_KEY" in operations
 
@@ -83,6 +93,7 @@ def test_make_commands_scope_fixture_source_to_fixture_children() -> None:
     fixture_targets = {
         "demo": "demo.py",
         "demo-scripted": "demo.py",
+        "demo-fixture-graph": "demo_fixture_graph.py",
         "demo-tui-fake": "demo_tui.py",
         "demo-sessions": "demo_sessions.py",
         "session-workbench": "session_workbench.py",
@@ -99,6 +110,21 @@ def test_make_commands_scope_fixture_source_to_fixture_children() -> None:
     for target, script in real_targets.items():
         command = _dry_run_command(target, script)
         assert "src_fake" not in command
+
+
+def test_fixture_graph_make_help_is_a_distinct_graph_verification_route() -> None:
+    completed = subprocess.run(
+        ["make", "demo-fixture-graph", "DEMO_ARGS=--help"],
+        cwd=AGENT_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "deterministic fixture-graph composition verification" in completed.stdout.lower()
+    normalized = " ".join(completed.stdout.split())
+    assert "not a replacement for make demo, make demo-scripted, or make demo-tui-fake" in normalized
+    assert "--fake" not in completed.stdout
 
 
 def test_readme_setup_commands_are_paste_safe_in_interactive_zsh() -> None:

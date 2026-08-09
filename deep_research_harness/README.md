@@ -17,7 +17,8 @@ not provider success, evidence acceptance, or report quality.
 
 | Entry point | Recipe | Boundary |
 | --- | --- | --- |
-| `make demo`, `make demo-tui-fake` | fixture | zero credentials; `src_fake` is enabled only for that child process |
+| `make demo`, `make demo-scripted`, `make demo-tui-fake` | full fake | zero credentials; retained deterministic presentation-only demonstrations |
+| `make demo-fixture-graph` | fixture | deterministic graph-composition verification; `src_fake` is enabled only for that child process |
 | `make demo-real`, `make demo-tui` | all real | local model and web-search prerequisites |
 | reflected `deep_research` tool | all real | public control surface; never imports or selects fixtures |
 | `make session-workbench` | configured fixture demo | typed Run Bundle projections only |
@@ -114,7 +115,8 @@ operations](docs/local-operations.md) own the operational detail.
 
 | Goal | Command |
 | --- | --- |
-| Walk the zero-credential fixture lifecycle | `make demo` |
+| Walk the zero-credential full-fake lifecycle | `make demo` |
+| Verify deterministic fixture-graph composition | `make demo-fixture-graph` |
 | Run the credentialed all-real demo with a question | `make demo-real DEMO_ARGS='--question "Compare battery storage costs"'` |
 | Run the prepared all-real research launcher | `bash run/real-research.sh` |
 | Run the deterministic project gate | `UV_OFFLINE=1 make verify` |

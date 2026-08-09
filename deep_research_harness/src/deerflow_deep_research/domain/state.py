@@ -46,6 +46,7 @@ from deerflow_deep_research.domain.lifecycle import (
     BranchResult,
     CurrentRefinement,
     HumanInputMode,
+    ImplementationMode,
     LifecycleStatus,
     LogicalPhase,
     RefinementAdmissionDisposition,
@@ -157,6 +158,7 @@ class BundleLocalState:
     generation: int = 0
     revision: int = 0
     schema_version: int = BUNDLE_STATE_SCHEMA_VERSION
+    implementation_mode: ImplementationMode = ImplementationMode.ALL_REAL
     phase: LogicalPhase = LogicalPhase.BOOTSTRAP
     phase_status: PhaseStatus = PhaseStatus.IN_PROGRESS
     start_message_id: str | None = None
@@ -203,6 +205,8 @@ class BundleLocalState:
             raise TypeError("bundle_id_required")
         if self.schema_version != BUNDLE_STATE_SCHEMA_VERSION:
             raise ValueError("schema_unsupported")
+        if not isinstance(self.implementation_mode, ImplementationMode):
+            object.__setattr__(self, "implementation_mode", ImplementationMode(self.implementation_mode))
         if not isinstance(self.generation, int) or not 0 <= self.generation <= MAX_FAKE_RERUN_GENERATIONS:
             raise ValueError("generation_invalid")
         if not isinstance(self.revision, int) or self.revision < 0:
@@ -378,6 +382,7 @@ class BundleLocalState:
     def to_mapping(self) -> dict[str, object]:
         return {
             "schema_version": self.schema_version,
+            "implementation_mode": self.implementation_mode.value,
             "bundle_id": self.bundle_id.value,
             "generation": self.generation,
             "revision": self.revision,
@@ -450,6 +455,7 @@ class BundleLocalState:
             raise ValueError("bundle_state_legacy_identity")
         allowed = {
             "schema_version",
+            "implementation_mode",
             "bundle_id",
             "generation",
             "revision",
@@ -492,12 +498,13 @@ class BundleLocalState:
             "interaction_feedback",
             "execution_trace",
         }
-        optional = {"current_refinement", "refinement_replay_receipts"}
+        optional = {"current_refinement", "refinement_replay_receipts", "implementation_mode"}
         if not (allowed - optional) <= set(value) <= allowed:
             raise ValueError("bundle_state_invalid")
         try:
             return cls(
                 schema_version=value["schema_version"],  # type: ignore[arg-type]
+                implementation_mode=value.get("implementation_mode", ImplementationMode.ALL_REAL),  # type: ignore[arg-type]
                 bundle_id=BundleId(value["bundle_id"]),  # type: ignore[arg-type]
                 generation=value["generation"],  # type: ignore[arg-type]
                 revision=value["revision"],  # type: ignore[arg-type]

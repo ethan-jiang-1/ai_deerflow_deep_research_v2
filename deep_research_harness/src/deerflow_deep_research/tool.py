@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 import secrets
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from typing import Annotated, Any
 
 from langchain.tools import ToolRuntime
@@ -24,6 +24,7 @@ from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle, Cur
 from deerflow_deep_research.runtime.control import get_default_graph_host
 from deerflow_deep_research.runtime.human_input import HumanInputError, select_start_message
 from deerflow_deep_research.runtime.identity import TrustedIdentityError
+from deerflow_deep_research.runtime.non_interactive import NonInteractivePolicy, StartActionInput
 from deerflow_deep_research.runtime.runtime_adapter import RuntimeAdapter, RuntimeAdapterError
 
 ADVERTISED_ACTION = "infra_probe"
@@ -91,6 +92,30 @@ def _runtime_messages(runtime: Any) -> tuple[Any, ...]:
     return tuple(state.get("messages", ())) if isinstance(state, dict) else ()
 
 
+def _admitted_start_action_input(*, action: str, context: Mapping[str, Any]) -> StartActionInput | None:
+    """Validate a marked trusted policy before the lifecycle can publish a Bundle."""
+
+    if action not in {"start", "resume", "refine"}:
+        return None
+    marked_non_interactive = context.get("non_interactive") is True or context.get("disable_clarification") is True
+    if not marked_non_interactive:
+        return None
+    candidate = context.get("non_interactive_policy")
+    required_keys = {"auto_profile", "auto_proceed"}
+    if not isinstance(candidate, Mapping) or set(candidate) != required_keys:
+        raise ValueError("non_interactive_policy_invalid")
+    if candidate["auto_profile"] is not True or candidate["auto_proceed"] is not True:
+        raise ValueError("non_interactive_policy_invalid")
+    if action != "start":
+        return None
+    return StartActionInput(
+        non_interactive_policy=NonInteractivePolicy(
+            auto_profile=candidate["auto_profile"],
+            auto_proceed=candidate["auto_proceed"],
+        )
+    )
+
+
 def _production_bundle_graph_executor() -> BundleGraphExecutor:
     """Construct one public graph executor only through trusted runtime composition."""
 
@@ -147,13 +172,10 @@ async def run_deep_research(
 
     context = getattr(runtime, "context", None)
     context = context if isinstance(context, dict) else {}
-    non_interactive = context.get("non_interactive") is True or context.get("disable_clarification") is True
-    non_interactive_policy = context.get("non_interactive_policy")
-    if action in {"start", "resume", "refine"} and non_interactive and not isinstance(non_interactive_policy, dict):
+    try:
+        start_input = _admitted_start_action_input(action=action, context=context)
+    except ValueError:
         return BundleControl.unavailable_wire_result(action=lifecycle_action, code="interactive_required")
-    if action in {"start", "resume", "refine"} and non_interactive and isinstance(non_interactive_policy, dict):
-        if not (non_interactive_policy.get("auto_profile") and non_interactive_policy.get("auto_proceed")):
-            return BundleControl.unavailable_wire_result(action=lifecycle_action, code="interactive_required")
     if action in {"start", "resume", "refine"} and (context.get("channel_user_id") or context.get("channel_name")):
         return BundleControl.unavailable_wire_result(
             action=lifecycle_action,
@@ -186,6 +208,7 @@ async def run_deep_research(
         handle=handle,
         start_message=start_message,
         envelope=envelope,
+        start_input=start_input,
     )
 
 

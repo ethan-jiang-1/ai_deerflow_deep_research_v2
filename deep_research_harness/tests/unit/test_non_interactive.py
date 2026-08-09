@@ -94,17 +94,47 @@ async def test_tool_allows_declared_non_interactive_policy_for_start(tmp_path: P
 async def test_tool_rejects_missing_or_incomplete_non_interactive_policy_before_bundle_publication(
     tmp_path: Path,
 ) -> None:
-    for policy in (None, {}, {"auto_profile": True}, {"auto_proceed": True}):
-        adapter = _Adapter(_envelope(tmp_path))
-        context: dict[str, object] = {"non_interactive": True}
-        if policy is not None:
-            context["non_interactive_policy"] = policy
-        result = await run_deep_research(
-            action="start",
-            probe_id=None,
-            runtime=_runtime(context=context),
-            adapter=adapter,
-        )
+    invalid_policies = (
+        None,
+        {},
+        {"auto_profile": True},
+        {"auto_proceed": True},
+        {"auto_profile": False, "auto_proceed": True},
+        {"auto_profile": True, "auto_proceed": False},
+        {"auto_profile": 1, "auto_proceed": True},
+        {"auto_profile": True, "auto_proceed": "yes"},
+        {"auto_profile": True, "auto_proceed": True, "unexpected": True},
+    )
+    for marker in ("non_interactive", "disable_clarification"):
+        for policy in invalid_policies:
+            adapter = _Adapter(_envelope(tmp_path))
+            context: dict[str, object] = {marker: True}
+            if policy is not None:
+                context["non_interactive_policy"] = policy
+            result = await run_deep_research(
+                action="start",
+                probe_id=None,
+                runtime=_runtime(context=context),
+                adapter=adapter,
+            )
 
-        assert result["code"] == "interactive_required"
-        assert not list(adapter.envelope.workspace_host_path.rglob("state.json"))
+            assert result["code"] == "interactive_required"
+            assert not list(adapter.envelope.workspace_host_path.rglob("state.json"))
+
+
+async def test_tool_accepts_the_compatibility_marker_under_the_closed_policy_rules(tmp_path: Path) -> None:
+    adapter = _Adapter(_envelope(tmp_path))
+
+    result = await run_deep_research(
+        action="start",
+        probe_id=None,
+        runtime=_runtime(
+            context={
+                "disable_clarification": True,
+                "non_interactive_policy": {"auto_profile": True, "auto_proceed": True},
+            }
+        ),
+        adapter=adapter,
+    )
+
+    assert isinstance(result, Command)

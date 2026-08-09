@@ -57,8 +57,8 @@ from deerflow_deep_research.graph.nodes.gate_adapter import (
 from deerflow_deep_research.graph.nodes.targeted_evidence import NODE_SPEC as TARGETED_NODE_SPEC
 from deerflow_deep_research.graph.nodes.wave1 import NODE_SPEC as WAVE1_NODE_SPEC
 from deerflow_deep_research.graph.nodes.wave2_synthesis import NODE_SPEC as WAVE2_NODE_SPEC
+from deerflow_deep_research.runtime.bundle_graph import BundleGraphExecutor
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
-from deerflow_deep_research.runtime.control import build_control_graph_host
 from deerflow_deep_research.runtime.node_agent_bridge import RuntimeNodeAgentBridge
 from deerflow_deep_research.runtime.projection import RuntimeWorkUnitDependencyResolver, project_research_scope
 from deerflow_deep_research.runtime.research import (
@@ -1321,7 +1321,7 @@ async def _execute_with_adapter(
         work_unit_store_factory=adapter.create_work_unit_store,
         node_agent_bridge_factory=bridge_factory,
     )
-    host = build_control_graph_host(fingerprint_verifier=lambda _config: None, research_recipe=recipe)
+    graph_executor = BundleGraphExecutor(recipe=recipe)
     question = HumanMessage(content="What is one authoritative fact about grid energy storage?", id="live-start")
     start_call = _tool_call("start", "live-start-call")
     started = await run_deep_research(
@@ -1329,7 +1329,7 @@ async def _execute_with_adapter(
         probe_id=None,
         runtime=_runtime([question, start_call], "live-start-call"),
         adapter=adapter,
-        host_factory=lambda: host,
+        bundle_graph_executor=graph_executor,
     )
     if not isinstance(started, Command):
         code = started.get("code") if isinstance(started, dict) else type(started).__name__
@@ -1355,7 +1355,7 @@ async def _execute_with_adapter(
             bundle_id=bundle_id,
             runtime=_runtime([question, response, resume_call], "live-resume-call"),
             adapter=adapter,
-            host_factory=lambda: host,
+            bundle_graph_executor=graph_executor,
         )
         if not isinstance(resumed, Command):
             code = resumed.get("code") if isinstance(resumed, dict) else type(resumed).__name__

@@ -976,6 +976,26 @@ EVIDENCE_CLAIMS = (
         authenticity=AuthenticityLevel.REAL_NODE_FAKE_CAPABILITIES,
     ),
     _correctness_claim(
+        "non-interactive-policy-closed-admission",
+        (
+            "tests/unit/test_non_interactive.py::"
+            "test_tool_rejects_missing_or_incomplete_non_interactive_policy_before_bundle_publication"
+        ),
+        StableSeam.PUBLIC_ENTRY,
+        requirement_ids=("RUO-001",),
+    ),
+    TestEvidenceClaim(
+        claim_id="non-interactive-checkpoint-handoff",
+        selector=(
+            "tests/blocking_io/test_research_runtime.py::"
+            "test_composed_start_persists_policy_once_in_the_selected_bundle_checkpoint"
+        ),
+        expected_selection=FocusedSelection.INTEGRATION,
+        requirement_ids=("RUI-006", "RUO-001"),
+        asset_class=AssetClass.CODE_CORRECTNESS,
+        seam=StableSeam.LIFECYCLE_MIXED_GRAPH,
+    ),
+    _correctness_claim(
         "model-resolver-empty-config",
         "tests/unit/test_node_agent_bridge.py::test_default_model_resolver_rejects_empty_model_config",
         StableSeam.RUNTIME_INTEGRATION,
@@ -1060,6 +1080,33 @@ EVIDENCE_CLAIMS = (
         StableSeam.RUNTIME_INTEGRATION,
         requirement_ids=("REG-012", "RER-001", "RER-002", "RUI-007"),
         discovery_ids=("LIVE-20260720-01",),
+    ),
+    _correctness_claim(
+        "run-experience-scripted-policy-projection",
+        (
+            "tests/contract/test_run_experience_contract.py::"
+            "test_scripted_start_projects_policy_once_and_later_actions_do_not_reinject_it"
+        ),
+        StableSeam.RUNTIME_INTEGRATION,
+        requirement_ids=("RER-001",),
+    ),
+    _correctness_claim(
+        "run-experience-auto-profile-trace-observation",
+        (
+            "tests/contract/test_run_experience_contract.py::"
+            "test_policy_trace_marker_is_accepted_as_a_safe_observation[hitl1_auto_profile]"
+        ),
+        StableSeam.RUNTIME_INTEGRATION,
+        requirement_ids=("RER-001",),
+    ),
+    _correctness_claim(
+        "run-experience-auto-proceed-trace-observation",
+        (
+            "tests/contract/test_run_experience_contract.py::"
+            "test_policy_trace_marker_is_accepted_as_a_safe_observation[hitl2_auto_proceed]"
+        ),
+        StableSeam.RUNTIME_INTEGRATION,
+        requirement_ids=("RER-001",),
     ),
     _correctness_claim(
         "run-experience-status-pending-input",
@@ -1633,6 +1680,23 @@ EVIDENCE_CLAIMS = (
         "tests/unit/test_hitl2_real.py::TestRealHitl2Factory::test_validated_state_routes_proceed_without_a_human_response",
         StableSeam.NODE_INTERFACE,
         requirement_ids=("ALR-001", "HIT-002"),
+    ),
+    _correctness_claim(
+        "hitl1-checkpointed-auto-profile",
+        ("tests/graph/test_hitl1_node.py::test_non_interactive_auto_profile_stays_outside_interactive_confirmation"),
+        StableSeam.NODE_INTERFACE,
+        requirement_ids=("RUO-002",),
+        authenticity=AuthenticityLevel.REAL_NODE_FAKE_CAPABILITIES,
+    ),
+    _correctness_claim(
+        "hitl2-checkpointed-auto-proceed",
+        (
+            "tests/unit/test_hitl2_real.py::"
+            "TestRealHitl2Factory::test_checkpointed_auto_proceed_overrides_recommendation_with_an_observation_marker"
+        ),
+        StableSeam.NODE_INTERFACE,
+        requirement_ids=("RUO-002",),
+        authenticity=AuthenticityLevel.REAL_NODE_FAKE_CAPABILITIES,
     ),
     _correctness_claim(
         "hitl2-malformed-state-rejected",

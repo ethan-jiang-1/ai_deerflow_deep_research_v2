@@ -14,11 +14,13 @@ import asyncio
 import sys
 from collections import deque
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
 
 from deerflow_deep_research.domain.human_interaction import InteractionFeedback, InteractionFeedbackKind
+from deerflow_deep_research.domain.profile import RequestLanguage, derive_comparison_intake_seed
 from deerflow_deep_research.domain.run_experience import (
     AnswerRun,
     FailureCertainty,
@@ -115,7 +117,13 @@ def _install_experience(
     *,
     report: ReadinessReport,
     updates: list[object],
-) -> None:
+) -> list[str]:
+    runtime_modes: list[str] = []
+
+    def build_runtime(*, mode: str, adapter: object) -> object:
+        runtime_modes.append(mode)
+        return SimpleNamespace(adapter=adapter, executor=object())
+
     _Adapter.created = []
     _ScriptedExperience.updates = deque(updates)
     _ScriptedExperience.instances = []
@@ -123,8 +131,9 @@ def _install_experience(
     _ScriptedExperience.started = None
     monkeypatch.setattr(demo_real, "DemoAdapter", _Adapter)
     monkeypatch.setattr(demo_real, "ResearchRunExperience", _ScriptedExperience)
-    monkeypatch.setattr(demo_real, "build_demo_host", lambda **_kwargs: object())
+    monkeypatch.setattr(demo_real, "build_demo_runtime", build_runtime)
     monkeypatch.setattr(demo_real, "demo_readiness_report", lambda **_kwargs: report)
+    return runtime_modes
 
 
 def test_cli_collects_safe_question_only_after_preflight(
@@ -175,6 +184,34 @@ async def test_cli_follows_only_shared_awaiting_updates_and_preserves_graph_owne
     assert _Adapter.created[0].closed is True
 
 
+@pytest.mark.asyncio
+async def test_cli_obtains_the_fixed_all_real_runtime_after_preflight(monkeypatch: pytest.MonkeyPatch) -> None:
+    runtime_modes = _install_experience(monkeypatch, report=_ready_report(), updates=[run_updates.completed()])
+
+    assert await demo_real.run_demo(question="Compare storage approaches", scripted=False) == 0
+    assert runtime_modes == ["real"]
+
+
+@pytest.mark.asyncio
+async def test_cli_runtime_construction_fault_cannot_render_full_fake_completion(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _install_experience(monkeypatch, report=_ready_report(), updates=[run_updates.completed()])
+
+    def fail_runtime(**_kwargs: object) -> object:
+        raise RuntimeError("demo_runtime_unavailable")
+
+    monkeypatch.setattr(demo_real, "build_demo_runtime", fail_runtime)
+
+    assert await demo_real.run_demo(question="Compare storage approaches", scripted=False) == 1
+    output = capsys.readouterr().out
+    assert "本地演示无法启动" in output
+    assert "研究流程已完成" not in output
+    assert _ScriptedExperience.instances[0].intents == []
+    assert _Adapter.created[0].closed is True
+
+
 def test_cli_selects_numbered_visible_control_without_rewriting_natural_text(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -215,6 +252,14 @@ async def test_scripted_cli_is_stdin_free_and_preserves_explicit_question(
     assert first.question == demo_real.SCRIPTED_DEFAULT_QUESTION
     assert second.question == "Compare storage costs"
     assert "自动策略" in capsys.readouterr().out
+
+
+def test_scripted_real_question_has_a_supported_language_and_explicit_comparison_pair() -> None:
+    seed = derive_comparison_intake_seed(demo_real.SCRIPTED_DEFAULT_QUESTION)
+
+    assert seed.request_language is RequestLanguage.EN
+    assert seed.comparison_required is True
+    assert seed.comparison_subjects is not None
 
 
 @pytest.mark.asyncio

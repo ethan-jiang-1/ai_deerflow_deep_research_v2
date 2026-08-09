@@ -83,3 +83,29 @@ class TestRealHitl2Factory:
 
         assert result["route"] == "rerun"
         assert result["rerun_source"] == "hitl2"
+
+    def test_checkpointed_auto_proceed_overrides_recommendation_with_an_observation_marker(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr(
+            hitl2_node,
+            "recommend_hitl2_route",
+            lambda _state: Hitl2Recommendation(route=Hitl2Decision.RERUN, reason="fixture rerun"),
+        )
+
+        result = asyncio.run(
+            build_real(_deps())(
+                _STATE
+                | {
+                    "non_interactive_policy": {"auto_profile": True, "auto_proceed": True},
+                    "rerun_source": "none",
+                }
+            )
+        )
+
+        assert result == {
+            "phase": "hitl2",
+            "execution_trace": ("hitl2", "hitl2_auto_proceed"),
+            "route": "proceed",
+        }

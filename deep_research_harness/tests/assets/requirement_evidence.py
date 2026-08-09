@@ -1054,9 +1054,69 @@ REQUIREMENT_IMPACTS = (
     RequirementImpact(
         "RUI-006",
         "runtime-integration",
+        StableSeam.LIFECYCLE_MIXED_GRAPH,
+        (
+            "tests/blocking_io/test_research_runtime.py::"
+            "test_composed_start_persists_policy_once_in_the_selected_bundle_checkpoint"
+        ),
+        "a later lifecycle action could otherwise replace the selected Bundle checkpoint's admitted policy",
+    ),
+    RequirementImpact(
+        "RUO-001",
+        "runtime-operations",
         StableSeam.PUBLIC_ENTRY,
-        "tests/integration/test_research_lifecycle_tool.py::test_public_bundle_lifecycle_completes_after_one_correlated_resume",
-        "the reflected lifecycle could otherwise cease to dispatch through its fixed all-real recipe",
+        (
+            "tests/unit/test_non_interactive.py::"
+            "test_tool_rejects_missing_or_incomplete_non_interactive_policy_before_bundle_publication"
+        ),
+        "malformed trusted context could otherwise publish a Bundle or bypass interactive admission",
+    ),
+    RequirementImpact(
+        "RUO-001",
+        "runtime-operations",
+        StableSeam.LIFECYCLE_MIXED_GRAPH,
+        (
+            "tests/blocking_io/test_research_runtime.py::"
+            "test_composed_start_persists_policy_once_in_the_selected_bundle_checkpoint"
+        ),
+        "a valid policy could otherwise be lost before the initial graph checkpoint write",
+    ),
+    RequirementImpact(
+        "RUO-002",
+        "runtime-operations",
+        StableSeam.NODE_INTERFACE,
+        ("tests/graph/test_hitl1_node.py::test_non_interactive_auto_profile_stays_outside_interactive_confirmation"),
+        "HITL1 could otherwise bypass its own admissible profile path without leaving bounded observation evidence",
+    ),
+    RequirementImpact(
+        "RUO-002",
+        "runtime-operations",
+        StableSeam.NODE_INTERFACE,
+        (
+            "tests/unit/test_hitl2_real.py::"
+            "TestRealHitl2Factory::test_checkpointed_auto_proceed_overrides_recommendation_with_an_observation_marker"
+        ),
+        "HITL2 could otherwise retain an autonomous rerun recommendation despite checkpointed auto-proceed",
+    ),
+    RequirementImpact(
+        "RER-001",
+        "research-run-experience",
+        StableSeam.RUNTIME_INTEGRATION,
+        (
+            "tests/contract/test_run_experience_contract.py::"
+            "test_scripted_start_projects_policy_once_and_later_actions_do_not_reinject_it"
+        ),
+        "a presentation adapter could otherwise omit scripted intent or become a later policy writer",
+    ),
+    RequirementImpact(
+        "RER-001",
+        "research-run-experience",
+        StableSeam.RUNTIME_INTEGRATION,
+        (
+            "tests/contract/test_run_experience_contract.py::"
+            "test_policy_trace_marker_is_accepted_as_a_safe_observation[hitl1_auto_profile]"
+        ),
+        "a bounded graph audit marker could otherwise be rejected as a lifecycle control fact",
     ),
     RequirementImpact(
         "RES-005",

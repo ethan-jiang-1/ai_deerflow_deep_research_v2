@@ -1,4 +1,4 @@
-.PHONY: install governance verify lock-check format lint test test-fast test-integration test-workflow test-live test-unit test-contract test-viability test-durability test-blocking-io test-postgres test-assets test-req-coverage test-intake test-retained-observation test-work-unit test-strict-checkpoint test-duration-policy benchmark-fast prompt-dump prompt-dump-check profile-setup profile-preflight profiles profile-init profile-check profile-dev demo demo-scripted demo-real demo-real-scripted demo-tui demo-tui-fake demo-sessions session-workbench
+.PHONY: install governance verify lock-check format lint test test-fast test-integration test-workflow test-live test-unit test-contract test-viability test-durability test-blocking-io test-postgres test-assets test-req-coverage test-intake test-retained-observation test-work-unit test-strict-checkpoint test-duration-policy benchmark-fast prompt-dump prompt-dump-check profile-setup profile-preflight profiles profile-init profile-check profile-dev demo demo-scripted demo-fixture-graph demo-real demo-real-scripted demo-tui demo-tui-fake demo-sessions session-workbench
 
 DEMO_ARGS ?=
 LOCAL_ENV_ARG := $(if $(wildcard .env),--env-file .env,)
@@ -48,6 +48,10 @@ demo:
 # Non-interactive equivalent used by CI and quick smoke checks.
 demo-scripted:
 	env -u VIRTUAL_ENV PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} uv run --extra operations python scripts/demo.py --scripted $(DEMO_ARGS)
+
+# Deterministic graph-composition verification. This is not a full-fake alias.
+demo-fixture-graph:
+	env -u VIRTUAL_ENV PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} uv run --extra operations python scripts/demo_fixture_graph.py $(DEMO_ARGS)
 
 # Real-mode CLI — full 11-phase pipeline with actual LLM + Tavily web tools.
 # Requires one model credential plus TAVILY_API_KEY.

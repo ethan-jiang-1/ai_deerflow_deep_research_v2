@@ -14,11 +14,11 @@ import os
 import secrets
 import time
 from collections.abc import Awaitable, Callable, Mapping, Sequence
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, Literal
 
 import httpx
 from deerflow.sandbox.local.local_sandbox import LocalSandbox, PathMapping
@@ -34,6 +34,7 @@ from deerflow_deep_research.domain.run_experience import (
     RunFailure,
     RunFailureCode,
 )
+from deerflow_deep_research.runtime.bundle_graph import BundleGraphExecutor
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
 from deerflow_deep_research.runtime.control import build_control_graph_host
 from deerflow_deep_research.runtime.node_agent_bridge import NodeAgentConfigurationError, RuntimeNodeAgentBridge
@@ -427,19 +428,40 @@ def _runtime(
     )
 
 
+@dataclass(frozen=True)
+class DemoRuntime:
+    """Opaque graph-backed demo composition passed to the lifecycle transport."""
+
+    mode: Literal["real", "fixture_graph"]
+    adapter: DemoAdapter
+    recipe: ResearchGraphRecipe
+    executor: BundleGraphExecutor
+
+
 class DemoLifecycleTransport:
     """Demo-owned binding for the runtime-owned lifecycle presentation module."""
 
     def __init__(self) -> None:
         self._adapter: DemoAdapter | None = None
-        self._host: Any = None
+        self._graph_executor: BundleGraphExecutor | None = None
+        self._graph_backed = False
         self._call_ordinal = 0
 
-    def bind(self, *, adapter: DemoAdapter, host: Any) -> None:
+    def bind(self, *, runtime: DemoRuntime) -> None:
+        if self._adapter is not None:
+            raise RuntimeError("demo_transport_already_bound")
+        if runtime.executor is None:
+            raise RuntimeError("demo_graph_executor_required")
+        self._adapter = runtime.adapter
+        self._graph_executor = runtime.executor
+        self._graph_backed = True
+
+    def bind_full_fake(self, *, adapter: DemoAdapter) -> None:
+        """Bind the retained full-fake lifecycle without a graph executor."""
+
         if self._adapter is not None:
             raise RuntimeError("demo_transport_already_bound")
         self._adapter = adapter
-        self._host = host
 
     async def dispatch(
         self,
@@ -449,8 +471,10 @@ class DemoLifecycleTransport:
         messages: tuple[Any, ...],
         context: Mapping[str, Any] | None = None,
     ) -> object:
-        if self._adapter is None or self._host is None:
+        if self._adapter is None:
             raise RuntimeError("demo_transport_not_bound")
+        if self._graph_backed and self._graph_executor is None:
+            raise RuntimeError("demo_graph_executor_required")
         self._call_ordinal += 1
         call_id = f"demo-lifecycle-{action}-{self._call_ordinal}"
 
@@ -458,19 +482,21 @@ class DemoLifecycleTransport:
             refinement = (context or {}).get("refinement")
             if not isinstance(refinement, str):
                 refinement = None
-            return await run_deep_research(
-                action=action,
-                probe_id=None,
-                bundle_id=bundle_id,
-                refinement=refinement,
-                runtime=_runtime(
+            kwargs: dict[str, Any] = {
+                "action": action,
+                "probe_id": None,
+                "bundle_id": bundle_id,
+                "refinement": refinement,
+                "runtime": _runtime(
                     [*messages, _tool_call(action, call_id, bundle_id)],
                     call_id,
                     context=dict(context or {}),
                 ),
-                adapter=self._adapter,
-                host_factory=lambda: self._host,
-            )
+                "adapter": self._adapter,
+            }
+            if self._graph_backed:
+                kwargs["bundle_graph_executor"] = self._graph_executor
+            return await run_deep_research(**kwargs)
 
         return await invoke()
 
@@ -674,6 +700,23 @@ def build_real_demo_recipe(*, work_unit_store_factory: Any) -> ResearchGraphReci
     return ResearchGraphRecipe.all_real(
         work_unit_store_factory=work_unit_store_factory,
         node_agent_bridge_factory=build_demo_node_agent_bridge,
+    )
+
+
+def build_demo_runtime(*, mode: Literal["real", "fixture_graph"], adapter: DemoAdapter) -> DemoRuntime:
+    """Compose one fixed graph-backed demo runtime without caller recipe authority."""
+
+    if mode == "real":
+        recipe = build_real_demo_recipe(work_unit_store_factory=adapter.create_work_unit_store)
+    elif mode == "fixture_graph":
+        recipe = build_fixture_demo_recipe(work_unit_store_factory=adapter.create_work_unit_store)
+    else:
+        raise ValueError("demo_runtime_mode_invalid")
+    return DemoRuntime(
+        mode=mode,
+        adapter=adapter,
+        recipe=recipe,
+        executor=BundleGraphExecutor(recipe=recipe),
     )
 
 

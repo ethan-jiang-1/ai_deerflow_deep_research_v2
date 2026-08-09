@@ -104,7 +104,9 @@ def test_root_dotenv_and_runtime_path_defaults_match_local_gateway(project: tupl
     assert explicit_context.gateway_cwd == explicit_context.backend_dir
     assert explicit_context.deer_flow_home == (root / "deerflow" / "backend" / ".deer-flow").resolve()
     assert explicit_context.environment["DEER_FLOW_PROJECT_ROOT"] == str(root.resolve())
-    assert explicit_context.environment["DEER_FLOW_HOME"] == str((root / "deerflow" / "backend" / ".deer-flow").resolve())
+    assert explicit_context.environment["DEER_FLOW_HOME"] == str(
+        (root / "deerflow" / "backend" / ".deer-flow").resolve()
+    )
 
 
 def test_implicit_runtime_path_defaults_are_established(project: tuple[Path, dict[str, str]]) -> None:
@@ -119,7 +121,10 @@ def test_implicit_runtime_path_defaults_are_established(project: tuple[Path, dic
 
 def test_root_backend_shadow_disagreement_is_refused(project: tuple[Path, dict[str, str]]) -> None:
     root, _env = project
-    (root / "deerflow" / "backend" / "config.yaml").write_text((root / "config.yaml").read_text(encoding="utf-8"), encoding="utf-8")
+    (root / "deerflow" / "backend" / "config.yaml").write_text(
+        (root / "config.yaml").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
     module = _module()
 
     with pytest.raises(module.PrepareError, match="config_target_disagreement"):

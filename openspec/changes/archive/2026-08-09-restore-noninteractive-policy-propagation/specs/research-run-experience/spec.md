@@ -18,6 +18,10 @@ single `start` transport dispatch. It SHALL not synthesize a human response, sel
 HITL route, write checkpoint state, or attach policy to later `resume`, `refine`,
 `status`, or `cancel` dispatches. The reflected lifecycle boundary remains the sole
 admission point and the selected Bundle checkpoint remains the later policy owner.
+When the checkpointed graph trace contains the bounded `hitl1_auto_profile` or
+`hitl2_auto_proceed` policy observation marker, the module SHALL accept and project it
+as an observation only; the marker SHALL NOT become lifecycle, route, profile, or
+checkpoint authority.
 (`RER-001`)
 
 #### Scenario: Run experience keeps refine distinct from a response
@@ -37,3 +41,9 @@ admission point and the selected Bundle checkpoint remains the later policy owne
   dispatches resume, refine, status, or cancel
 - **THEN** the later transport context contains only that action's existing bounded
   input and does not supply a non-interactive policy as a new lifecycle authority
+
+#### Scenario: Policy observations remain presentation-only
+- **WHEN** a record-bearing lifecycle result includes either bounded policy observation
+  marker in its checkpointed execution trace
+- **THEN** the module accepts the trace as a safe observation and does not derive a
+  lifecycle result, graph route, profile, or checkpoint mutation from the marker

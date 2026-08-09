@@ -81,7 +81,9 @@ profile artifact. HITL2 will select its existing `proceed` outcome only when the
 checkpointed policy allows it; otherwise it retains its ordinary autonomous
 recommendation. Both successful policy uses will append bounded markers to the
 existing execution trace instead of introducing an audit record or presentation-side
-receipt.
+receipt. `ResearchRunExperience` will extend its closed trace-acceptance vocabulary
+only for those two markers and will project them as observations, not as lifecycle
+facts or a new control surface.
 
 Using a demo-generated answer or a new human-input control was rejected because it
 would bypass node-owned validation and create new lifecycle authority.
@@ -98,13 +100,13 @@ admission and the graph remains responsible for effects.
 
 Focused tests will first make the missing handoff observable: strict malformed-policy
 cases at the tool boundary; one `ResearchRunExperience` transport-context assertion;
-HITL1/HITL2 direct node behavior; and a production `run_deep_research()` lifecycle
-test that explicitly supplies an actual executor, controlled recipe/adapters, and a
-reopened checkpoint. The integration test must observe real initial graph values and
-later checkpoint consumption rather than asserting a hand-built node state. A separate
-fallback test guards that policy propagation has not selected graph work. Test-evidence
-metadata will be updated only for new or changed collected selectors and their changed
-requirement links.
+HITL1/HITL2 direct node behavior; a `ResearchRunExperience` trace-vocabulary contract;
+and a production `run_deep_research()` lifecycle test that explicitly supplies an
+actual executor, controlled recipe/adapters, and a reopened checkpoint. The integration
+test must observe real initial graph values and later checkpoint consumption rather
+than asserting a hand-built node state. A separate fallback test guards that policy
+propagation has not selected graph work. Test-evidence metadata will be updated only
+for new or changed collected selectors and their changed requirement links.
 
 ## Risks / Trade-offs
 

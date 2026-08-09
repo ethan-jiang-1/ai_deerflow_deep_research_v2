@@ -70,6 +70,7 @@ LogicalPhaseName = Literal[
     "readiness",
     "final_delivery",
 ]
+RunTraceEntry = LogicalPhaseName | Literal["hitl1_auto_profile", "hitl2_auto_proceed"]
 
 
 class PendingInputProjection(FrozenRunContract):
@@ -328,7 +329,7 @@ class RunSnapshot(FrozenRunContract):
     bundle_id: str | None = Field(default=None, pattern=r"^b_[A-Za-z0-9_-]{43}$")
     durability: Literal["same_process", "restart_durable", "unavailable"] = "unavailable"
     lifecycle_phase: LogicalPhaseName | None = None
-    completed_trace: tuple[LogicalPhaseName, ...] = ()
+    completed_trace: tuple[RunTraceEntry, ...] = ()
     pending_input: PendingInputProjection | None = None
     elapsed_seconds: float = Field(default=0.0, ge=0.0, le=86_400.0)
     delivery_mode: Literal["returned_only"] = "returned_only"
@@ -452,14 +453,14 @@ class AwaitingInput(FrozenRunContract):
     kind: Literal["awaiting_input"] = "awaiting_input"
     snapshot: RunSnapshot
     prompt: PromptView
-    trace_delta: tuple[LogicalPhaseName, ...] = ()
+    trace_delta: tuple[RunTraceEntry, ...] = ()
 
 
 class Terminal(FrozenRunContract):
     kind: Literal["terminal"] = "terminal"
     snapshot: RunSnapshot
     outcome: Literal["completed", "stopped", "cancelled", "blocked"]
-    trace_delta: tuple[LogicalPhaseName, ...] = ()
+    trace_delta: tuple[RunTraceEntry, ...] = ()
     trace_verified: bool = True
     failure: RunFailure | None = None
 
@@ -496,6 +497,7 @@ __all__ = [
     "RunIntent",
     "RunMode",
     "RunSnapshot",
+    "RunTraceEntry",
     "SelectControlRun",
     "RunUpdate",
     "StartRun",

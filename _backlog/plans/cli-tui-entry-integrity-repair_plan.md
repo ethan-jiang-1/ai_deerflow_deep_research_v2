@@ -1,6 +1,6 @@
 # Progressive Plan: CLI/TUI Entry Integrity Repair
 
-> 类型: 渐进落地计划 | 状态: active -- research 已收敛，尚未创建 OpenSpec change | 更新: 2026-08-09
+> 类型: 渐进落地计划 | 状态: active -- Stage 1、Stage 2 均已验证、main specs 已同步并完成归档；Stage 3.1 inspection-command change admission 进行中 | 更新: 2026-08-09
 >
 > 目标: 恢复入口所声明的实际 composition，并用逐阶段、可停止、可验证的方式修复
 > scripted policy、demo graph、inspection command、local environment 与入口说明。
@@ -97,19 +97,24 @@ Makefile、文档和 test gate，默认按本文件编号串行推进。
 
 - [x] 1.1 用 `openspec new change` 创建 change，并完成 proposal、design、affected spec delta 和
   tasks；Focus Card 明确 policy 的 trusted input、state writer、checkpoint owner 和 legal
-  blocked outcome。change: [`restore-noninteractive-policy-propagation`](../../openspec/changes/restore-noninteractive-policy-propagation/)；验证:
+  blocked outcome。change: [`restore-noninteractive-policy-propagation`](../../openspec/changes/archive/2026-08-09-restore-noninteractive-policy-propagation/)；验证:
   `openspec status --change restore-noninteractive-policy-propagation` 和
-  `openspec validate restore-noninteractive-policy-propagation --strict` （均已通过）；下一项: 1.2。
-- [ ] 1.2 先写 red evidence：interactive 调用不受影响；缺失/不完整/非布尔 policy 被拒；完整
+  `openspec validate restore-noninteractive-policy-propagation --strict` （均已通过）；Stage 1 归档位置如上；下一项: Stage 2.1。
+- [x] 1.2 先写 red evidence：interactive 调用不受影响；缺失/不完整/非布尔 policy 被拒；完整
   trusted policy 从 tool admission 到 initial graph values；重启/resume 不重新注入 policy。
-- [ ] 1.3 实现闭合 validated action input：`ResearchRunExperience` 同时投影 explicit
+  change: `restore-noninteractive-policy-propagation`；先前 red baseline 为 7 个预期失败，覆盖 strict admission、scripted projection、两个 trace note、HITL1/HITL2 和真实 Bundle checkpoint。
+- [x] 1.3 实现闭合 validated action input：`ResearchRunExperience` 同时投影 explicit
   `non_interactive=True` 与完整 policy；tool boundary 校验两个 key 都是 `True` 布尔值；executor
   将其一次性写入初始 state。
-- [ ] 1.4 实现已拥有 spec 的 graph behavior：HITL1 auto-profile 保留 pair/language admission，
+  change: `restore-noninteractive-policy-propagation`；`runtime/non_interactive.py` 的不可变输入只沿 new `start` 传递，兼容 `disable_clarification=True`，不会选择 executor 或扩大 public tool schema。
+- [x] 1.4 实现已拥有 spec 的 graph behavior：HITL1 auto-profile 保留 pair/language admission，
   HITL2 在 `auto_proceed=True` 时 `proceed` 并记录 audit note；无效 scripted input truthfully
   `GATE_BLOCKED`。
-- [ ] 1.5 运行 change 的最低责任 tests、strict OpenSpec validation、相关 requirement-evidence
+  change: `restore-noninteractive-policy-propagation`；`RunTraceEntry` 仅扩展 presentation trace，`LogicalPhaseName` 仍约束 lifecycle/failure phase。
+- [x] 1.5 运行 change 的最低责任 tests、strict OpenSpec validation、相关 requirement-evidence
   check；完成后同步 main specs、归档 change，并在此记录证据。
+  change: [`restore-noninteractive-policy-propagation`](../../openspec/changes/archive/2026-08-09-restore-noninteractive-policy-propagation/)；已通过:
+  `cd deep_research_harness && uv run --extra operations python -m pytest tests/unit/test_non_interactive.py tests/contract/test_run_experience_contract.py tests/graph/test_hitl1_node.py tests/unit/test_hitl2_real.py tests/blocking_io/test_research_runtime.py`（78 passed）、`openspec validate restore-noninteractive-policy-propagation --strict`、`openspec validate --specs`、`git diff HEAD --check` 与 `UV_OFFLINE=1 make verify`（2388 fast、220 integration/4 expected skips、35 workflow）。迁移补全还恢复了 main-spec ownership headers、ignore registry、downstream Docker/CI contracts、control-case digest 与 live-canary composition；`deerflow/`、`backend/`、`frontend/` 未改动。main specs 已同步，归档位置如上。下一未完成阶段: Stage 2.1。
 
 **Stage 1 Exit Gate:** scripted valid input 无 stdin 地走实际 graph-owned path；无效输入被
 truthful block；interactive path 和 checkpoint durability 都有 deterministic evidence。没有这一关，
@@ -124,22 +129,45 @@ truthful block；interactive path 和 checkpoint durability 都有 deterministic
 | Primary module / causal owner | `deep_research_harness/scripts/_demo_core.py` 的 demo runtime composition module。 |
 | Question | 如何让 real demo 选择并执行 all-real recipe，而明确的新 fixture-graph route 选择 fixture recipe，同时保留旧 full-fake command 的既有合同？ |
 | Necessary adjacent contracts | `runtime/research.py` recipe factories、`BundleGraphExecutor` trusted constructor seam、`run_deep_research()` executor injection、Stage 1 policy contract。 |
-| Evidence seam | production `DemoLifecycleTransport` + demo runtime factory 的 composition test；external model/web adapter 可替换，graph/bridge/checkpoint/final delivery 不可替换。 |
+| Evidence seam | production `DemoLifecycleTransport` + demo runtime factory 的 composition test 验证 all-real executor handoff；完整 fixture graph 经 transport 验证 checkpoint、trace、final delivery 与持久 `implementation_mode=fixture`。all-real 的 model/web adapter 不以 fake 替换来伪造 deterministic completion。 |
 | Not in scope | 改变 full-fake `make demo*` 合同、给 CLI 暴露 recipe/checkpoint/executor 参数、修改 public tool authority。 |
 
-- [ ] 2.1 创建 change，并先在 proposal/design 中固定新 fixture-graph verification route 的名称、
-  `--help`/README 定位和与 full-fake 命令的区别；需要新 requirement 时先写 delta。
-- [ ] 2.2 写 red composition tests：transport 当前未注入 executor；real path 的 generic fallback
-  不能被报告为 completed；fixture-graph 和 all-real recipe 的选择必须从真实 entry path 观察到。
-- [ ] 2.3 实现深的 `build_demo_runtime(mode, adapter)` 类 boundary：在内部选择 recipe、bridge、
-  executor 和 transport binding；probe host 只留下真实 `infra_probe` seam。
-- [ ] 2.4 修复 scripted-real bounded smoke question，使其含有明确 comparison pair 和 supported
-  language evidence；在 controlled external adapters 下证明 actual trace、checkpoint 和 required
-  final delivery/report evidence。
-- [ ] 2.5 保留 full-fake route 的 existing deterministic behavior，新增 fixture-graph route 的专属
-  process/composition evidence；真实 CLI/TUI 都经共享 runtime module，缺 executor fail closed。
-- [ ] 2.6 完成 focused tests、strict validation、deterministic project gate 和必要的 bounded live
-  canary；同步 specs、归档 change，并在此记录证据。
+- [x] 2.1 创建 change，并先在 proposal/design 中固定新 fixture-graph verification route 的名称、
+  `--help`/README 定位和与 full-fake 命令的区别；需要新 requirement 时先写 delta。change:
+  [`restore-demo-graph-composition`](../../openspec/changes/archive/2026-08-09-restore-demo-graph-composition/)；已创建
+  [`proposal.md`](../../openspec/changes/archive/2026-08-09-restore-demo-graph-composition/proposal.md)、
+  [`design.md`](../../openspec/changes/archive/2026-08-09-restore-demo-graph-composition/design.md) 与 `demo-pipeline`/
+  `research-demo-tui` delta。命名已固定为 `make demo-fixture-graph`（graph-composition verification，
+  不替换 `make demo*` full-fake contract）；已通过 `openspec status --change
+  restore-demo-graph-composition`（4/4 artifacts complete）和 `openspec validate
+  restore-demo-graph-composition --strict`。下一项: Stage 2.2。
+- [x] 2.2 写 red composition tests：transport 当前未注入 executor；real path 的 generic fallback
+  不能被报告为 completed；fixture-graph 和 all-real recipe 的选择必须从真实 entry path 观察到，且
+  fixture-graph Bundle 在 terminal/status/reprojection 都投影 `implementation_mode=fixture`。
+  已由 change `restore-demo-graph-composition` 的 1.2--1.5 evidence 覆盖：`DemoLifecycleTransport` 实际驱动
+  fixture recipe 至 `completed`，返回 trace 含 `final_delivery`，Bundle/status/reprojection 均为 `fixture`，且
+  checkpoint 记录 `final_delivery` gate pass。已确认 fixture adapter 保持隔离、不得要求或伪造
+  `report_refs`（其 checkpoint 为 `()`）；deterministic completion evidence 是 gate terminal fact、trace 和
+  durable mode，而非 report publication。定向套件: 2026-08-09 `97 passed`；下一项: 2.3。
+- [x] 2.3 实现深的 `build_demo_runtime(mode, adapter)` 类 boundary：在内部选择 recipe、bridge、
+  executor 和 transport binding；probe host 只留下真实 `infra_probe` seam。`demo_real.py` 和 default
+  `demo_tui.py` 使用固定 all-real runtime；`demo.py` 与 fake TUI 保留 explicit full-fake binding。
+- [x] 2.4 修复 scripted-real bounded smoke question，使其含有明确 comparison pair 和 supported
+  language evidence；all-real 仅以 credentialed bounded smoke 补充，deterministic fixture graph 则证明
+  checkpoint、trace、required final-delivery gate terminal fact 和 durable mode，而不声明 report artifact。
+  本地凭据可用时 `make demo-real-scripted` 以零退出完成。
+- [x] 2.5 保留 full-fake route 的 existing deterministic behavior，新增 fixture-graph route 的专属
+  process/composition evidence；真实 CLI/TUI 都经共享 runtime module，缺 executor fail closed。已通过
+  `make demo-fixture-graph`；定向 suite（demo core、state、real/fake CLI/TUI、fixture process/lifecycle、
+  command contract、blocking I/O）为 97 passed。
+- [x] 2.6 完成 focused tests、strict validation、deterministic project gate 和必要的 bounded live
+  canary；同步 specs、归档 change，并在此记录证据。已通过 `uv run --extra operations --extra demo-tui
+  python -m pytest ...`（97 passed）、`make demo-fixture-graph`、有凭据的 `make demo-real-scripted`、
+  `openspec validate restore-demo-graph-composition --strict`、`openspec validate --specs`（48/48）、
+  `cd deep_research_harness && UV_OFFLINE=1 make verify`、`git diff HEAD --check`。已同步 `demo-pipeline`
+  和 `research-demo-tui` main specs，并归档至
+  [`2026-08-09-restore-demo-graph-composition`](../../openspec/changes/archive/2026-08-09-restore-demo-graph-composition/)；
+  `deerflow/`、`backend/`、`frontend/` 保持 clean。下一未完成阶段: Stage 3.1。
 
 **Stage 2 Exit Gate:** 每个叫作 real 或 fixture-graph 的入口都实际执行对应 recipe；旧 full-fake
 入口仍满足现有 spec；没有 report/terminal evidence 的 generic completion 会使测试失败。
@@ -147,6 +175,7 @@ truthful block；interactive path 和 checkpoint durability 都有 deterministic
 ### Stage 3: Repair Rendered Inspection Command
 
 候选 change: `repair-rendered-inspection-command`。
+当前状态: in progress（3.1 admission；尚未创建第二个 active change）。
 
 | Change Focus | 内容 |
 | --- | --- |

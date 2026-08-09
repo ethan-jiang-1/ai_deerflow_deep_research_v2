@@ -18,6 +18,7 @@ import asyncio
 import sys
 from collections import deque
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -128,7 +129,13 @@ def _install_scripted(
     *,
     report: ReadinessReport,
     updates: list[object],
-) -> None:
+) -> list[str]:
+    runtime_modes: list[str] = []
+
+    def build_runtime(*, mode: str, adapter: object) -> object:
+        runtime_modes.append(mode)
+        return SimpleNamespace(adapter=adapter, executor=object())
+
     _Adapter.created = []
     _ScriptedExperience.updates = deque(updates)
     _ScriptedExperience.instances = []
@@ -136,8 +143,9 @@ def _install_scripted(
     _ScriptedExperience.release = None
     monkeypatch.setattr(demo_tui, "DemoAdapter", _Adapter)
     monkeypatch.setattr(demo_tui, "ResearchRunExperience", _ScriptedExperience)
-    monkeypatch.setattr(demo_tui, "build_demo_host", lambda **_kwargs: object())
+    monkeypatch.setattr(demo_tui, "build_demo_runtime", build_runtime)
     monkeypatch.setattr(demo_tui, "demo_readiness_report", lambda **_kwargs: report)
+    return runtime_modes
 
 
 @pytest.mark.asyncio
@@ -246,6 +254,47 @@ async def test_tui_preflight_failure_shows_safe_fault_before_question(monkeypatc
         assert "Configure a model" in app.last_view.detail
 
     assert not _Adapter.created
+
+
+@pytest.mark.asyncio
+async def test_tui_real_route_obtains_the_fixed_all_real_runtime(monkeypatch: pytest.MonkeyPatch) -> None:
+    runtime_modes = _install_scripted(monkeypatch, report=_ready_report("real"), updates=[run_updates.awaiting_hitl1()])
+    app = DeepResearchDemoTUI(mode="real")
+
+    async with app.run_test() as pilot:
+        await _wait_for(app, pilot, demo_tui.Ready)
+
+    assert runtime_modes == ["real"]
+
+
+@pytest.mark.asyncio
+async def test_tui_runtime_construction_fault_cannot_present_full_fake_completion(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _install_scripted(monkeypatch, report=_ready_report("real"), updates=[run_updates.completed()])
+
+    def fail_runtime(**_kwargs: object) -> object:
+        raise RuntimeError("demo_runtime_unavailable")
+
+    monkeypatch.setattr(demo_tui, "build_demo_runtime", fail_runtime)
+    app = DeepResearchDemoTUI(mode="real")
+    async with app.run_test() as pilot:
+        await _wait_for(app, pilot, Fault)
+        assert app.last_view.heading == "Research could not continue"
+        assert app.query_one("#composer").disabled is True
+
+    assert _Adapter.created[0].close_calls == 1
+
+
+@pytest.mark.asyncio
+async def test_tui_fake_route_remains_outside_the_graph_runtime_factory(monkeypatch: pytest.MonkeyPatch) -> None:
+    runtime_modes = _install_scripted(monkeypatch, report=_ready_report(), updates=[run_updates.awaiting_hitl1()])
+    app = DeepResearchDemoTUI(mode="fake")
+
+    async with app.run_test() as pilot:
+        await _wait_for(app, pilot, demo_tui.Ready)
+
+    assert runtime_modes == []
 
 
 @pytest.mark.asyncio

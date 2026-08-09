@@ -20,6 +20,13 @@ def build_real(dependencies: NodeBuildDependencies):
     """Build the real HITL2 node with graph-owned autonomous continuation."""
 
     async def run(state: dict[str, Any]) -> dict[str, Any]:
+        non_interactive = state.get("non_interactive_policy")
+        if isinstance(non_interactive, dict) and non_interactive.get("auto_proceed") is True:
+            return node_state_update(
+                "hitl2",
+                route="proceed",
+                execution_trace=("hitl2", "hitl2_auto_proceed"),
+            )
         recommendation = recommend_hitl2_route(state)
         updates: dict[str, Any] = {"route": recommendation.route.value}
         if recommendation.route.value == "rerun":

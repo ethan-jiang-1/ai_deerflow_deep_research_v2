@@ -20,6 +20,7 @@ from deerflow_deep_research.domain.lifecycle import (
     MAX_FAKE_RERUN_GENERATIONS,
     AcceptedHumanResponse,
     CurrentRoundDirection,
+    ImplementationMode,
     LifecycleAction,
     LifecycleStatus,
     LogicalPhase,
@@ -37,6 +38,7 @@ from deerflow_deep_research.runtime.bundle_lifecycle import (
 )
 from deerflow_deep_research.runtime.bundle_transition import BundleTransitionLease
 from deerflow_deep_research.runtime.human_input import SelectedStartMessage, pending_from_snapshot, project_suspension
+from deerflow_deep_research.runtime.non_interactive import StartActionInput
 from deerflow_deep_research.runtime.projection import RuntimeWorkUnitDependencyResolver
 from deerflow_deep_research.runtime.request_bundle import RequestBundleStore
 from deerflow_deep_research.runtime.research import (
@@ -85,6 +87,12 @@ class BundleGraphExecutor:
         """Expose the immutable composition input for compatibility checks only."""
 
         return self._full_rerun_policy
+
+    @property
+    def implementation_mode(self) -> ImplementationMode:
+        """Expose the selected recipe mode for trusted lifecycle projection."""
+
+        return self._recipe.implementation_mode
 
     async def prepare_refinement_round(
         self,
@@ -295,6 +303,7 @@ class BundleGraphExecutor:
         envelope: Any,
         start_message: SelectedStartMessage,
         tool_call_id: str,
+        start_input: StartActionInput | None = None,
     ) -> dict[str, Any] | Command:
         async with lifecycle.execution_exclusion(bundle) as execution_lease:
             execution_lease.ensure_live()
@@ -315,7 +324,12 @@ class BundleGraphExecutor:
                     state = await lifecycle.read_state(bundle)
                     execution_lease.ensure_live()
                     await graph.ainvoke(
-                        self._initial_graph_state(bundle=bundle, state=state, start_message=start_message),
+                        self._initial_graph_state(
+                            bundle=bundle,
+                            state=state,
+                            start_message=start_message,
+                            start_input=start_input,
+                        ),
                         config=config,
                         context=await self._context(envelope=envelope, bundle=bundle),
                     )
@@ -687,6 +701,7 @@ class BundleGraphExecutor:
         bundle: RunBundleRef,
         state: BundleLocalState,
         start_message: SelectedStartMessage,
+        start_input: StartActionInput | None = None,
     ) -> dict[str, Any]:
         """Create the graph's bounded working payload from authoritative Bundle State.
 
@@ -700,7 +715,7 @@ class BundleGraphExecutor:
         # Keep this graph payload deliberately partial: graph reducers supply their
         # own defaults, while lifecycle/request facts come from the already-published
         # Bundle State.  No compatibility checkpoint object is instantiated here.
-        return {
+        initial_state = {
             "schema_version": 2,
             "bundle_id": bundle.bundle_id.value,
             "generation": state.generation,
@@ -723,6 +738,9 @@ class BundleGraphExecutor:
             "content_refs": (),
             "execution_trace": (),
         }
+        if start_input is not None and start_input.non_interactive_policy is not None:
+            initial_state["non_interactive_policy"] = start_input.non_interactive_policy.graph_value()
+        return initial_state
 
     async def _project(
         self,

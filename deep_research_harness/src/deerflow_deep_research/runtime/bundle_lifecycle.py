@@ -37,6 +37,7 @@ from deerflow_deep_research.domain.lifecycle import (
     BundleRefinementDisposition,
     BundleRefinementProjection,
     Durability,
+    ImplementationMode,
     LegalNextAction,
     LifecycleAction,
     LifecycleStatus,
@@ -331,6 +332,7 @@ class BundleLifecycle:
         scope: tuple[str, str],
         request_text: str,
         start_message_id: str | None = None,
+        implementation_mode: ImplementationMode = ImplementationMode.ALL_REAL,
     ) -> RunBundleRef:
         """Atomically publish a fresh initialized Bundle when no active Bundle exists."""
 
@@ -346,6 +348,7 @@ class BundleLifecycle:
                 bundle_id=bundle.bundle_id,
                 start_message_id=start_message_id,
                 start_request_digest=self.request_digest(request_text),
+                implementation_mode=implementation_mode,
             )
             scope_lease.ensure_live()
             await asyncio.to_thread(self._publish_sync, bundle, initial_state, scope_lease)
@@ -805,6 +808,7 @@ class BundleLifecycle:
             )
             pending_input = None
         return BundleControlResult(
+            implementation_mode=state.implementation_mode,
             action=action,
             code=result_code,
             availability=BundleAvailability.AVAILABLE,

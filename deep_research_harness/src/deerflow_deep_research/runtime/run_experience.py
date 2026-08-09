@@ -91,7 +91,7 @@ class RunObservationPublisher(Protocol):
 ReadinessProvider = Callable[[], ReadinessReport | Awaitable[ReadinessReport]]
 RunObserver = Callable[[Working], None | Awaitable[None]]
 
-_KNOWN_PHASES = frozenset(phase.value for phase in LogicalPhase)
+_KNOWN_PHASES = frozenset((*[phase.value for phase in LogicalPhase], "hitl1_auto_profile", "hitl2_auto_proceed"))
 _HITL1_DIMENSIONS = frozenset({"depth", "audience", "format", "cost_tolerance", "time_budget"})
 _HITL2_COPY: dict[str, tuple[str, str]] = {
     "proceed": ("继续", "按当前研究计划继续。"),
@@ -328,7 +328,10 @@ class ResearchRunExperience:
             self._observation_view = None
             context: Mapping[str, Any] | None = None
             if intent.scripted:
-                context = {"non_interactive_policy": {"auto_profile": True, "auto_proceed": True}}
+                context = {
+                    "non_interactive": True,
+                    "non_interactive_policy": {"auto_profile": True, "auto_proceed": True},
+                }
             return "start", None, context
         if isinstance(intent, AnswerRun):
             if self._pending_request is None or self._bundle_id is None:

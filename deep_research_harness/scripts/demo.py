@@ -20,7 +20,6 @@ from _demo_core import (
     PHASE_META,
     DemoAdapter,
     DemoLifecycleTransport,
-    build_demo_host,
     demo_readiness_report,
 )
 from _terminal_failure_presentation import inspection_command
@@ -113,7 +112,7 @@ async def run_demo(*, question: str, scripted: bool) -> int:
     try:
         if hasattr(experience, "set_observation_publisher"):
             experience.set_observation_publisher(adapter.observation_publisher)
-        transport.bind(adapter=adapter, host=build_demo_host())
+        transport.bind_full_fake(adapter=adapter)
         update = await experience.handle(StartRun(question=question), observer=_render)
         while isinstance(update, AwaitingInput):
             _render(update)

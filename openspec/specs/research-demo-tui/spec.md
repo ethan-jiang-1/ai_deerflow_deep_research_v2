@@ -12,11 +12,13 @@ human-input integration.
 ### Requirement: Standalone TUI demo traverses fake and real lifecycle modes through the shared experience
 
 The Textual demo SHALL use one owned `DemoAdapter` and the shared
-`ResearchRunExperience` Module. Default mode SHALL construct the all-real recipe with
-the demo-local bridge; `--fake` SHALL construct the full-fake recipe without a model,
-Tavily, Gateway, root configuration, or network. Both modes SHALL retain graph-owned
-free-text HITL-1, explicit graph cancellation, and a truthful selected-mode label.
-Current HITL2 is an autonomous graph continuation, not an advertised choice.
+`ResearchRunExperience` Module. Default mode SHALL obtain its all-real recipe,
+demo-local bridge, and graph executor from the same shared demo runtime composition
+boundary used by the real CLI; it SHALL not dispatch without that executor into the
+existing full-fake fallback. `--fake` SHALL retain the existing full-fake behavior
+without a model, Tavily, Gateway, root configuration, or network. Both modes SHALL retain
+graph-owned free-text HITL-1, explicit graph cancellation, and a truthful selected-mode
+label. Current HITL2 is an autonomous graph continuation, not an advertised choice.
 
 The TUI SHALL render `Ready`, `Working`, `AwaitingInput`, `Terminal`, and `Fault`
 `RunUpdate` values. Its question view SHALL show only the focused composer after
@@ -30,7 +32,9 @@ objects, or machine brief JSON.
 The tracker SHALL use only the shared verified returned trace delta and actual
 observed activity. It SHALL not infer stage from start/resume, option presence,
 request shape, or a private phase list; it SHALL not claim streaming or node-internal
-progress without a real observed event. (`RED-001`)
+progress without a real observed event. A missing all-real executor or absent
+graph-backed final-delivery evidence SHALL leave the TUI in its bounded fault or
+non-completed terminal state; it SHALL not display completed research. (`RED-001`)
 
 #### Scenario: User completes the deterministic fake visual path
 - **WHEN** a user launches `--fake`, submits a question and HITL-1 response
@@ -42,6 +46,10 @@ progress without a real observed event. (`RED-001`)
 - **WHEN** a user launches default mode with a supported model key and `TAVILY_API_KEY`
 - **THEN** it passes shared preflight, starts the all-real recipe, and presents a
   returned bootstrap-plus-HITL-1 state as an `AwaitingInput` scope prompt
+
+#### Scenario: Real TUI cannot use a full-fake completion
+- **WHEN** the default real TUI cannot obtain its all-real graph composition
+- **THEN** it shows the bounded startup fault and does not report completed research
 
 #### Scenario: Processing does not fabricate node progress
 - **WHEN** a lifecycle call is unresolved

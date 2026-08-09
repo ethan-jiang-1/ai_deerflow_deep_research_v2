@@ -22,7 +22,7 @@ from _demo_core import (
     PHASE_META,
     DemoAdapter,
     DemoLifecycleTransport,
-    build_demo_host,
+    build_demo_runtime,
     demo_readiness_report,
 )
 from _terminal_failure_presentation import (
@@ -47,7 +47,9 @@ from deerflow_deep_research.domain.run_experience import (
 from deerflow_deep_research.runtime.run_diagnostics import DEFAULT_DEMO_DIAGNOSTIC_RELATIVE_PATH
 from deerflow_deep_research.runtime.run_experience import ResearchRunExperience
 
-SCRIPTED_DEFAULT_QUESTION = "Compare the evidence for two approaches to renewable energy storage."
+SCRIPTED_DEFAULT_QUESTION = (
+    "Compare lithium-ion batteries and pumped-hydro storage on grid-balancing cost and deployment risk."
+)
 
 
 class CliInputError(ValueError):
@@ -346,7 +348,7 @@ async def run_demo(*, question: str | None, scripted: bool) -> int:
     try:
         if hasattr(experience, "set_observation_publisher"):
             experience.set_observation_publisher(adapter.observation_publisher)
-        transport.bind(adapter=adapter, host=build_demo_host())
+        transport.bind(runtime=build_demo_runtime(mode="real", adapter=adapter))
         update = await experience.handle(
             StartRun(question=selected_question, scripted=scripted),
             observer=_dispatch_observer(),

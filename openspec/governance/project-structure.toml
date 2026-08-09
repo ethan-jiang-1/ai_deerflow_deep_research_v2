@@ -38,7 +38,7 @@ recipe_factories = ["from_adapters"]
 
 [ignored_paths]
 path = "deep_research_harness/.gitignore"
-entries = [".deep-research-demo-runs/", ".reports/", ".pytest_cache/", ".ruff_cache/", ".node-prompt-review/", "evals/runs/", ".venv/"]
+entries = [".deep-research-demo-runs/", ".reports/", ".pytest_cache/", ".ruff_cache/", ".node-prompt-review/", "evals/runs/", ".venv/", ".agents/", ".claude/"]
 
 [[required_paths]]
 path = "deep_research_harness/AGENTS.md"

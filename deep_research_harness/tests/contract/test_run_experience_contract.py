@@ -175,6 +175,51 @@ async def test_resume_uses_the_selected_bundle_id_and_returns_the_same_result_co
 
 
 @pytest.mark.asyncio
+async def test_scripted_start_projects_policy_once_and_later_actions_do_not_reinject_it() -> None:
+    transport = ReplayTransport(
+        [
+            _suspension(),
+            _suspension(action=LifecycleAction.REFINE),
+            _completed(),
+        ]
+    )
+    experience = ResearchRunExperience(transport=transport, mode="fake")
+
+    await experience.handle(StartRun(question="Compare storage options", scripted=True))
+    await experience.handle(RefineRun(text="Focus on lifecycle durability."))
+    update = await experience.handle(AnswerRun(value="Use public sources."))
+
+    assert isinstance(update, Terminal)
+    assert transport.calls == [
+        (
+            "start",
+            None,
+            {
+                "non_interactive": True,
+                "non_interactive_policy": {"auto_profile": True, "auto_proceed": True},
+            },
+        ),
+        ("refine", BUNDLE_ID, {"refinement": "Focus on lifecycle durability."}),
+        ("resume", BUNDLE_ID, None),
+    ]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("marker", ("hitl1_auto_profile", "hitl2_auto_proceed"))
+async def test_policy_trace_marker_is_accepted_as_a_safe_observation(marker: str) -> None:
+    suspended = _suspended().model_copy(update={"execution_trace": ("bootstrap", "hitl1", marker)})
+    transport = ReplayTransport([project_suspension(pending=_pending(), result=suspended, tool_call_id="call-1")])
+
+    update = await ResearchRunExperience(transport=transport, mode="fake").handle(
+        StartRun(question="Compare storage options")
+    )
+
+    assert isinstance(update, AwaitingInput)
+    assert update.snapshot.completed_trace == ("bootstrap", "hitl1", marker)
+    assert update.trace_delta == ("bootstrap", "hitl1", marker)
+
+
+@pytest.mark.asyncio
 async def test_refine_is_dispatched_separately_without_consuming_the_pending_response() -> None:
     transport = ReplayTransport([_suspension(), _suspended(action=LifecycleAction.REFINE).model_dump(mode="json")])
     experience = ResearchRunExperience(transport=transport, mode="fake")

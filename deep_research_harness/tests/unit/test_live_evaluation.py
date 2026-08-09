@@ -154,6 +154,38 @@ def test_six_case_live_deadline_budget_preserves_job_margin() -> None:
     }
 
 
+async def test_live_canary_injects_its_recipe_through_bundle_executor(monkeypatch) -> None:
+    """The generic infra-probe host is not a lifecycle composition boundary."""
+
+    from tests.scenarios import canaries
+
+    recipe = object()
+    executor = object()
+    invocation: dict[str, object] = {}
+    assert not hasattr(canaries, "build_control_graph_host")
+    monkeypatch.setattr(canaries, "mixed_recipe", lambda **_kwargs: recipe)
+    monkeypatch.setattr(canaries, "BundleGraphExecutor", lambda *, recipe: executor, raising=False)
+
+    async def run_controlled_lifecycle(**kwargs: object) -> dict[str, str]:
+        invocation.update(kwargs)
+        return {"code": "controlled_stop"}
+
+    monkeypatch.setattr(canaries, "run_deep_research", run_controlled_lifecycle)
+    attempt = await canaries._execute_with_adapter(
+        LIVE_CANARIES[0],
+        started_at=0,
+        tracker=_UsageTracker(model_id="test-model"),
+        web=None,
+        focused_node="hitl1",
+        bridge_factory=object(),
+        adapter=SimpleNamespace(create_work_unit_store=object()),
+    )
+
+    assert attempt.error_code == "live_start_not_suspended:controlled_stop"
+    assert invocation["bundle_graph_executor"] is executor
+    assert "host_factory" not in invocation
+
+
 @pytest.mark.parametrize(
     ("case_id", "timeout_seconds", "error"),
     [
