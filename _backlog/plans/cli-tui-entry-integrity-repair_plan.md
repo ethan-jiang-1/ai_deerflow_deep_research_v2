@@ -1,6 +1,6 @@
 # Progressive Plan: CLI/TUI Entry Integrity Repair
 
-> 类型: 渐进落地计划 | 状态: active -- Stage 1、Stage 2 已验证、main specs 已同步并完成归档；Stage 3 已验证并归档（无 delta spec）；下一项为 Stage 4 local environment | 更新: 2026-08-09
+> 类型: 渐进落地计划 | 状态: active -- Stage 1、Stage 2 已验证、main specs 已同步并完成归档；Stage 3 已验证、归档并提交；Stage 4 local environment 已完成规划、等待 APPLY 授权实施 | 更新: 2026-08-09
 >
 > 目标: 恢复入口所声明的实际 composition，并用逐阶段、可停止、可验证的方式修复
 > scripted policy、demo graph、inspection command、local environment 与入口说明。
@@ -212,6 +212,12 @@ observation，不暗示 resume/retry/recovery。
 ### Stage 4: Stabilize Local Entry Environment
 
 候选 change: `stabilize-local-entry-environment`。
+当前状态: 已完成 [`proposal.md`](../../openspec/changes/stabilize-local-entry-environment/proposal.md)、
+[`design.md`](../../openspec/changes/stabilize-local-entry-environment/design.md)、`demo-pipeline`/
+`local-configuration-profiles` delta 与 [`tasks.md`](../../openspec/changes/stabilize-local-entry-environment/tasks.md)；
+`openspec status --change stabilize-local-entry-environment` 为 4/4 artifacts complete，
+`openspec validate stabilize-local-entry-environment --strict` 已通过。下一步须显式 APPLY；4.1 的 lock
+更新及其验证属于 apply，不得因 planning 完成而提前勾选。
 
 | Change Focus | 内容 |
 | --- | --- |
