@@ -212,6 +212,20 @@ def completed() -> Terminal:
     )
 
 
+def auto_profile_terminal() -> Terminal:
+    """Terminal whose returned trace includes presentation-only policy trace steps."""
+    return Terminal(
+        snapshot=RunSnapshot(
+            bundle_id=BUNDLE_ID,
+            durability="same_process",
+            lifecycle_phase="final_delivery",
+            completed_trace=("hitl1", "hitl1_auto_profile", "hitl2", "hitl2_auto_proceed", "final_delivery"),
+        ),
+        outcome="completed",
+        trace_delta=("hitl1", "hitl1_auto_profile", "hitl2_auto_proceed", "final_delivery"),
+    )
+
+
 def provider_fault() -> Fault:
     return Fault(
         snapshot=RunSnapshot(bundle_id=BUNDLE_ID, durability="same_process", lifecycle_phase="hitl1"),

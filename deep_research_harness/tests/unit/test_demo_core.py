@@ -48,6 +48,24 @@ def test_phase_meta_covers_all_logical_nodes(_scripts_path):
         assert isinstance(desc, str) and desc, f"Empty description for {name}"
 
 
+def test_phase_meta_covers_all_run_trace_entries(_scripts_path):
+    from typing import get_args
+
+    from _demo_core import PHASE_META
+
+    from deerflow_deep_research.domain.run_experience import RunTraceEntry
+
+    trace_entries: list[str] = []
+    for member in get_args(RunTraceEntry):
+        trace_entries.extend(get_args(member))
+    assert trace_entries, "RunTraceEntry union unexpectedly empty"
+    for entry in trace_entries:
+        assert entry in PHASE_META, f"Missing PHASE_META entry for trace step {entry}"
+        label, desc = PHASE_META[entry]
+        assert isinstance(label, str) and label, f"Empty label for {entry}"
+        assert isinstance(desc, str) and desc, f"Empty description for {entry}"
+
+
 def test_build_fixture_demo_recipe(_scripts_path):
     from _demo_core import build_fixture_demo_recipe
 

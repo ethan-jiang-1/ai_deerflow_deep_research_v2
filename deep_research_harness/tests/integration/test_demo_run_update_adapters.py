@@ -40,6 +40,7 @@ import demo_tui  # noqa: E402, I001
         pytest.param(run_updates.awaiting_hitl1(), id="hitl1"),
         pytest.param(run_updates.awaiting_hitl2(), id="hitl2"),
         pytest.param(run_updates.completed(), id="terminal"),
+        pytest.param(run_updates.auto_profile_terminal(), id="terminal-auto-profile"),
         pytest.param(run_updates.provider_fault(), id="fault"),
     ],
 )
@@ -53,6 +54,22 @@ def test_standalone_adapters_render_shared_run_updates_without_lifecycle_wire(up
     assert "ToolMessage" not in rendered
     assert "human_input" not in rendered
     assert "traceback" not in rendered.lower()
+
+
+def test_tui_pipeline_tracker_renders_presentation_only_trace_steps() -> None:
+    from rich.console import Console
+
+    tracker = demo_tui._pipeline_tracker(
+        ("hitl1", "hitl1_auto_profile", "hitl2", "hitl2_auto_proceed", "final_delivery"),
+        pending=None,
+    )
+    console = Console(record=True, width=80)
+    console.print(tracker)
+    rendered = console.export_text()
+    assert "hitl1_auto_profile" not in rendered
+    assert "hitl2_auto_proceed" not in rendered
+    assert "自动建档" in rendered
+    assert "自动决策" in rendered
 
 
 def test_standalone_adapters_render_safe_invalid_choice_feedback_without_wire_data() -> None:

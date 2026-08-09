@@ -8,7 +8,6 @@ Provide a standalone, bounded Deep Research demo pipeline with truthful lifecycl
 progress, fake and real recipes, local real-demo web tools, and separate CLI/TUI
 entry points without changing graph topology, `backend/`, or `frontend/`.
 ## Requirements
-
 ### Requirement: Shared demo core provides infrastructure, lifecycle transport, and prerequisite checks
 
 The agent project SHALL provide
@@ -66,6 +65,12 @@ phase visits. A suspended marker SHALL identify `pending_input.pending_phase`, n
 demo script shall hardcode a phase sequence, infer current phase from action or
 request options, or update a tracker before a valid returned event/result proves it.
 
+The shared display map SHALL cover the complete closed `RunTraceEntry` set, including
+the presentation-only trace steps `hitl1_auto_profile` and `hitl2_auto_proceed` with
+safe display labels and descriptions. A returned trace that includes a
+presentation-only step SHALL render without a crash and SHALL identify that step as an
+automatic-policy step rather than a logical phase.
+
 For a shared `PromptView` in `choice` mode from a separately specified graph
 interaction, standalone demo adapters SHALL distinguish the canonical option ID from
 its bounded human-readable consequence and submit only the advertised ID through
@@ -80,6 +85,12 @@ progress, changing the request ID, or constructing a lifecycle result. (`DPL-002
   `bootstrap`, and pending-input phase `hitl1`
 - **THEN** a demo marks bootstrap as completed and renders HITL-1 as the current
   requested interaction without treating the result as inconsistent
+
+#### Scenario: Presentation-only trace step renders without crashing
+- **WHEN** a returned trace delta includes `hitl1_auto_profile` or
+  `hitl2_auto_proceed`
+- **THEN** each demo adapter renders that step from the shared display map with an
+  automatic-policy label and does not raise or invent a logical phase
 
 #### Scenario: Fake demo shows phases that actually executed
 - **WHEN** `make demo --scripted` runs the fake lifecycle
