@@ -16,10 +16,21 @@ _backlog/                 任务账本
 
 ```bash
 cd deep_research_harness
-uv sync                                   # 建 venv
-.venv/bin/pip install -e ../deerflow/backend/packages/harness   # editable 装框架
-.venv/bin/python -m pytest tests/         # 跑测试
+make install                              # 准备本地运行环境（等价于 uv sync + editable 装框架）
+UV_OFFLINE=1 make verify                  # 跑确定性测试 gate
 ```
+
+## 跑实验（CLI / TUI 入口）
+
+实验、演示与操作入口都在 `deep_research_harness/` 里，用 `make` 驱动。根目录只指路，细节去子目录看：
+
+| 想看什么 | 去哪 |
+| --- | --- |
+| 有哪些入口、各自是什么（Entry Surfaces 表） | [`deep_research_harness/README.md`](deep_research_harness/README.md) |
+| 每条命令怎么跑、环境怎么准备 | [`deep_research_harness/docs/local-operations.md`](deep_research_harness/docs/local-operations.md) |
+| 入口背后的架构与 composition | [`deep_research_harness/docs/runtime-architecture.md`](deep_research_harness/docs/runtime-architecture.md) |
+
+常用示例：`cd deep_research_harness && make demo`（零凭据演示）、`make demo-real-scripted`（真实流程）、`make demo-tui`（TUI 可视化）。环境未就绪时先 `make install`。
 
 ## 给 Coding Agent
 
