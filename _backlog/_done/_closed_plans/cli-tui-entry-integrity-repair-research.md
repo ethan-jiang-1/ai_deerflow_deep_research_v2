@@ -4,6 +4,30 @@
 > Question: Does `cli-tui-entry-integrity-repair_plan.md` recommend the right repairs?  
 > Scope: current Harness source, tests, OpenSpec main specs, and official `uv` docs.
 > The `deerflow/` framework source was not inspected or modified.
+> Status: **Closed 2026-08-09** — all five recommended changes were implemented,
+> verified, synchronized to their main specs where applicable, and archived. This note
+> remains first-party audit context for `CLS-033`; it is not an active proposal queue.
+
+## Outcome
+
+The repair plan completed through these archived changes:
+
+1. `2026-08-09-restore-noninteractive-policy-propagation` closed validated policy
+   admission and its durable graph/HITL projection.
+2. `2026-08-09-restore-demo-graph-composition` preserved full-fake demos while adding
+   a distinct deterministic fixture-graph route.
+3. `2026-08-09-repair-rendered-inspection-command` made `inspect <bundle-id>` the
+   parser, renderer, and documentation grammar, with process-level proof.
+4. `2026-08-09-stabilize-local-entry-environment` made explicit setup and
+   `make lock-check` the dependency-state owners; ordinary entries use the locked,
+   no-sync runner and preflight missing extras.
+5. `2026-08-09-document-entry-surfaces` added the bounded README route map and its
+   DRC-006 documentation contract.
+
+The complete deterministic gate, `UV_OFFLINE=1 make verify`, passed after the final
+documentation change. All affected main specs are synchronized, `openspec list --json`
+has no active changes, and the implementation plus plan closeout are recorded in commits
+`5370548`, `23e3626`, `9cadf73`, `f41846f`, and `55569c2`.
 
 ## Verdict
 
@@ -59,21 +83,17 @@ The lock defect *was* rechecked: `uv 0.7.3`; `uv lock --check` exited nonzero be
 `deep_research_harness/uv.lock` needs updating. No lockfile, environment, source, or
 framework file was changed.
 
-## Required Proposal Edits
+## Required Proposal Edits (Resolved)
 
-1. Add an explicit decision to Change 2: preserve full-fake `make demo*` and add a
-   fixture-graph command, **or** change its main-spec requirements before changing its
-   composition. Do not call it a no-contract-change repair.
-2. In Change 4, state: ordinary targets shall neither lock nor sync dependencies and
-   shall not modify `uv.lock` or project `.venv`; `make lock-check` remains the fresh-lock
-   assertion. Add a fast preflight that emits `make install` when required extras are
-   absent, because `--no-sync` will not do that validation for you.
-3. In Change 1, make policy input a closed validated type; validate both booleans as
-   booleans rather than accepting generic truthy values. Keep the tool boundary as the
-   sole trusted admission point and the checkpointed graph state as the later owner.
-4. In Change 3, select the spec's canonical `inspect <bundle-id>` grammar, update parser
-   and both documents, and prove it through `make`/subprocess execution from the Harness
-   root.
+1. Change 2 preserved full-fake `make demo*` behavior and added a distinct
+   fixture-graph command; no existing route was silently reclassified.
+2. Change 4 separated the read-only ordinary-entry invariant from lock freshness:
+   `make install` owns synchronization, `make lock-check` owns freshness, and entry
+   preflight directs missing extras to setup.
+3. Change 1 introduced the closed, validated policy input at the trusted tool boundary
+   and projected it into checkpointed graph state.
+4. Change 3 selected and proved the canonical `inspect <bundle-id>` grammar across the
+   parser, renderer, README, and operations documentation.
 
 ## Sources
 
