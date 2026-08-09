@@ -174,8 +174,16 @@ class ToolPolicyMiddleware(AgentMiddleware):
             result = getattr(response, "result", None)
             message = result[-1] if result else response
             pending_calls = getattr(message, "tool_calls", None) or []
-            if self.tool_calls + len(pending_calls) > self._tool_call_limit:
-                raise AgentPolicyError("request tool-call limit exceeded")
+            remaining = self._tool_call_limit - self.tool_calls
+            if len(pending_calls) > remaining:
+                # The request window is a cap on executed calls. An eager model
+                # that over-requests parallel calls keeps only the first calls
+                # that fit the window; the excess never executes.
+                truncated = message.model_copy(update={"tool_calls": pending_calls[:remaining]})
+                if result is not None:
+                    result[-1] = truncated
+                else:
+                    response = truncated
         return response
 
     async def awrap_tool_call(self, request: Any, handler: Any) -> Any:

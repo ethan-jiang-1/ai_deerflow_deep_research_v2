@@ -135,7 +135,7 @@ async def test_tool_window_removes_tools_from_the_final_model_round() -> None:
     assert seen.tool_choice is None
 
 
-async def test_tool_window_rejects_parallel_calls_exceeding_remaining_request_quota() -> None:
+async def test_tool_window_truncates_eager_parallel_calls_to_remaining_quota() -> None:
     middleware = ToolPolicyMiddleware(_policy(), tool_call_limit=2)
     middleware.tool_calls = 1
 
@@ -148,9 +148,9 @@ async def test_tool_window_rejects_parallel_calls_exceeding_remaining_request_qu
             ],
         )
 
-    with pytest.raises(AgentPolicyError, match="request tool-call limit exceeded"):
-        await middleware.awrap_model_call(FakeModelRequest(tools=["read_file"], tool_choice="auto"), handler)
-
+    response = await middleware.awrap_model_call(FakeModelRequest(tools=["read_file"], tool_choice="auto"), handler)
+    message = response.result[-1] if getattr(response, "result", None) else response
+    assert [call["id"] for call in message.tool_calls] == ["call-1"]
     assert middleware.tool_calls == 1
 
 

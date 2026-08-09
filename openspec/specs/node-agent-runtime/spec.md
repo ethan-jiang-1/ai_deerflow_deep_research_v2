@@ -5,7 +5,6 @@
 ## Purpose
 The bounded embedded phase-agent runtime: parent-context bridge, explicit budgets, fail-closed tool/path policy, untrusted-source isolation, normalized results, and no self-initiated clarification.
 ## Requirements
-
 ### Requirement: Phase agents inherit one parent runtime
 The runtime-owned node-agent bridge SHALL implement a pure domain capability protocol used by graph nodes. It SHALL resolve model/tools from TrustedRuntimeEnvelope, seed an ephemeral child state/context with the already validated parent sandbox and thread data, and invoke a bounded embedded agent produced by the full-takeover factory. The agents layer SHALL not import runtime; raw AppConfig, identity, host paths, sandbox internals, and checkpoint identity SHALL not enter graph/node contracts, checkpoints, events, or model-visible context. Each bound compiled child SHALL be created for one `run_agent` request, invoked as a separate runnable with `checkpointer=None`, and discarded after completion/cancellation; it SHALL never be cached across actions/users/threads/attempts, mounted as a checkpoint-inheriting subgraph, or create another sandbox lifecycle, thread namespace, or persistent controller.
 
@@ -43,7 +42,23 @@ exceeded in observed dispatch accounting.
 - **THEN** the runtime emits terminal `usage_unavailable`, strips tool calls, and does not make another model request
 
 ### Requirement: Tool and path policy fails closed
-The node-agent runtime SHALL expose only explicitly allowed tools and SHALL revalidate the runtime tool name and path-bearing arguments before dispatch. Every allowed tool SHALL have a typed ToolPolicySpec declaring path fields, effects, validator, and cancellation class; unknown argument shapes and tools without an approved native async/cancellable path SHALL be denied. Reads and writes SHALL stay within policy roots; writes SHALL stay within the active attempt and SHALL never mutate graph phase, gates, ledger, sibling attempts, package source, or host paths.
+
+The node-agent runtime SHALL expose only explicitly allowed tools and SHALL revalidate
+the runtime tool name and path-bearing arguments before dispatch. Every allowed tool
+SHALL have a typed ToolPolicySpec declaring path fields, effects, validator, and
+cancellation class; unknown argument shapes and tools without an approved native
+async/cancellable path SHALL be denied. Reads and writes SHALL stay within policy
+roots; writes SHALL stay within the active attempt and SHALL never mutate graph phase,
+gates, ledger, sibling attempts, package source, or host paths.
+
+A bounded request tool window SHALL cap the number of tool calls that execute in one
+agent run. When a model response requests more parallel tool calls than the remaining
+window, the runtime SHALL keep only the first calls that fit the window and drop the
+excess; it SHALL NOT fail the run, and the dropped calls SHALL NOT execute. After the
+window is exhausted, later model turns SHALL have tools removed so the agent produces
+its structured answer. Genuine policy violations — a non-allow-listed tool, a traversal
+path, an ineligible spec, or a write outside the attempt root — SHALL still fail closed
+before dispatch. (`NOA-003`)
 
 #### Scenario: Allowed attempt write succeeds
 - **WHEN** a fake file tool writes a canonical path within the active attempt write root
@@ -52,6 +67,12 @@ The node-agent runtime SHALL expose only explicitly allowed tools and SHALL reva
 #### Scenario: Forged tool or path is denied
 - **WHEN** a model requests an unlisted tool, traversal path, symlink escape, cross-attempt write, or gate/ledger mutation
 - **THEN** middleware blocks execution, leaves the target unchanged, and returns a typed policy denial
+
+#### Scenario: Eager over-request is truncated to the remaining window
+- **WHEN** a model response requests more parallel tool calls than the remaining
+  bounded request window
+- **THEN** the runtime keeps only the first calls that fit the window, drops the
+  excess without executing them, and does not fail the run
 
 ### Requirement: External source content remains untrusted data
 The runtime SHALL keep package system/policy prompts separate from external source payloads. Source text SHALL only enter model context as delimited untrusted data or an artifact reference, and its instructions SHALL never grant tool, path, phase, gate, or ledger authority.

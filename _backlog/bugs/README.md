@@ -17,9 +17,9 @@
 
 | ID | 严重级别 | 发现 | 标题 |
 | --- | --- | --- | --- |
-当前没有活跃 bug。
+| BUG-024 | P1 | 2026-08-10 | real demo（`make demo-real-scripted`）在 deepseek-v4-flash 下随机在不同节点失败（模型 vs 紧契约不匹配） |
 
-**Next available bug ID: BUG-024**
+**Next available bug ID: BUG-025**
 
 ---
 
