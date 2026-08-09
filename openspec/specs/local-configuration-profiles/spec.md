@@ -97,14 +97,16 @@ The `deep_research_harness/Makefile` SHALL provide `profile-setup`, `profiles`,
 `profile-init`, `profile-check`, and `profile-dev`. `profile-dev` SHALL be the only
 profile launch mode; production and daemon profile modes are out of scope.
 `profile-setup` SHALL first invoke the unchanged root `make install` and then
-explicitly synchronize the locked `deep_research_harness/` operations environment.
-Every other profile command SHALL use that environment with sync disabled and SHALL
-preflight a missing `deep_research_harness/.venv/` before invoking `uv`. A missing
-environment SHALL report `make profile-setup` before a launcher, service stop, or
-profile-state creation occurs. `profile-dev` SHALL invoke the unchanged root launcher
-only as `--dev --skip-install`; ordinary profile commands SHALL NOT install or
-synchronize dependencies implicitly. Valid profile commands SHALL validate before
-launcher execution.
+invoke the explicit downstream `make install` environment setup. That downstream setup
+SHALL prepare the reviewed locked project environment with every optional dependency
+set required by the supported local demo and workbench commands: `operations`,
+`demo-tui`, and `demo-real`. Every other profile command SHALL use that environment
+with sync disabled and SHALL preflight a missing `deep_research_harness/.venv/` before
+invoking `uv`. A missing environment SHALL report `make profile-setup` before a
+launcher, service stop, or profile-state creation occurs. `profile-dev` SHALL invoke
+the unchanged root launcher only as `--dev --skip-install`; ordinary profile commands
+SHALL NOT install or synchronize dependencies implicitly. Valid profile commands SHALL
+validate before launcher execution.
 
 The resolver SHALL use DeerFlow's documented configuration-path environment variables
 directly and SHALL not add a shell hook, source interception, or root file
@@ -132,6 +134,13 @@ remains profile-agnostic. (`LCP-002`, `LCP-005`)
 #### Scenario: A missing operations environment gives one setup command
 - **WHEN** a beginner uses a profile command before the locked operations environment has been installed
 - **THEN** it reports `make profile-setup`, and no launcher, service stop, dependency synchronization, or profile runtime state is created
+
+#### Scenario: Profile setup prepares the profile-gated workbench dependencies
+- **WHEN** a beginner runs `make profile-setup` and then starts the supported
+  profile-gated local workbench
+- **THEN** the workbench's declared optional dependencies are already present in the
+  prepared locked project environment, and the workbench does not synchronize them
+  itself
 
 #### Scenario: Ordinary profile commands do not synchronize dependencies
 - **WHEN** a prepared beginner runs list, init, check, or launch

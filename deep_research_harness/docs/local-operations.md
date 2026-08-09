@@ -27,6 +27,11 @@ The demo targets ignore a foreign active `VIRTUAL_ENV` and use the locked projec
 environment. A retained observation command is read-only: it does not discover a
 Bundle, validate a Handle, or provide a lifecycle action.
 
+Run `make install` before any local demo, retained-observation, workbench, or prepared
+all-real launcher entry. It prepares the complete local optional dependency set; these
+ordinary entries never synchronize it themselves. Run `make lock-check` separately
+when checking that dependency metadata agrees with the tracked lockfile.
+
 ## Run Bundle Lifecycle
 
 The Harness allocates a fresh opaque `bundle_id` for an admitted `start`. That id names

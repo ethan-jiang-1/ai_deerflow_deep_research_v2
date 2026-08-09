@@ -212,12 +212,10 @@ observation，不暗示 resume/retry/recovery。
 ### Stage 4: Stabilize Local Entry Environment
 
 候选 change: `stabilize-local-entry-environment`。
-当前状态: 已完成 [`proposal.md`](../../openspec/changes/stabilize-local-entry-environment/proposal.md)、
-[`design.md`](../../openspec/changes/stabilize-local-entry-environment/design.md)、`demo-pipeline`/
-`local-configuration-profiles` delta 与 [`tasks.md`](../../openspec/changes/stabilize-local-entry-environment/tasks.md)；
-`openspec status --change stabilize-local-entry-environment` 为 4/4 artifacts complete，
-`openspec validate stabilize-local-entry-environment --strict` 已通过。下一步须显式 APPLY；4.1 的 lock
-更新及其验证属于 apply，不得因 planning 完成而提前勾选。
+当前状态: 已完成并归档至
+[`2026-08-09-stabilize-local-entry-environment`](../../openspec/changes/archive/2026-08-09-stabilize-local-entry-environment/)；
+`demo-pipeline` 与 `local-configuration-profiles` main specs 已同步。`uv lock --check`
+确认不需要 lockfile refresh；下一未完成阶段: Stage 5.1。
 
 | Change Focus | 内容 |
 | --- | --- |
@@ -226,22 +224,28 @@ observation，不暗示 resume/retry/recovery。
 | Evidence seam | clean-copy subprocess contract：setup 后依次运行 supported `--help`、fixture/full-fake、profile check 和 inspection，并比较 tracked lock 与 environment state。 |
 | Not in scope | 修改 DeerFlow source、让 normal entry 自动 refresh lock/sync、禁止声明的 ignored run artifacts、替换部署工具。 |
 
-- [ ] 4.1 创建 change；用受审查的 Harness dependency metadata 刷新 `uv.lock`，使 clean checkout
-  的 `uv lock --check` 成功。该 repository update 不是 ordinary runtime command。
-- [ ] 4.2 把 `make install` 定义为所有支持的 CLI/TUI extras 的同步 owner（包括 `demo-real`），保留
-  `make profile-setup` 的明确 profile setup 职责。
-- [ ] 4.3 让普通 entry 使用 no-sync execution，并加快速 deterministic preflight：缺 extra 时只
-  指向 `make install`；`make lock-check` 独立检查 freshness，不能依赖 `--no-sync` 或混用 flags
-  来伪造检查。
-- [ ] 4.4 建立 clean-copy/process regressions，证明普通命令不改 `uv.lock` 或 project `.venv`；
-  对被允许的 ignored diagnostics/run bundles 明确列出例外。
-- [ ] 4.5 运行并发 read-only/help smoke；若某组合不能并发，明确 fail closed 与 setup action，而不
-  报告不可靠的成功。
-- [ ] 4.6 完成 lock check、focused environment tests、`UV_OFFLINE=1 make verify`、strict validation，
-  同步 specs、归档 change，并在此记录证据。
+- [x] 4.1 创建并验证 change；受审查的 `operations`、`demo-tui`、`demo-real` dependency metadata
+  已由 `cd deep_research_harness && uv lock --check` 验证，无需刷新 `uv.lock`。该检查仍不属于 ordinary
+  runtime command。
+- [x] 4.2 将 `make install` 定义为支持的 CLI/TUI、fixture-graph、retained-observation 与 workbench
+  extras 的唯一同步 owner，包含 `demo-real`；`make profile-setup` 仍先调用未改动的 root setup，再委托
+  完整的下游 `make install`。
+- [x] 4.3 普通 entry 均先执行本地 metadata preflight，再通过清除 foreign `VIRTUAL_ENV` 的
+  `uv run --locked --no-sync` runner 执行；缺少 `.venv` 或 required distribution 时只指向 `make install`。
+  `make lock-check` 继续独立断言 freshness，ordinary entry 不借 no-sync 伪造该结论。
+- [x] 4.4 新增 clean-copy/process regression，显式 setup 后比较 `uv.lock` 与 `.venv` snapshot，覆盖
+  help、full-fake、fixture-graph、inspection、bounded profile/workbench 与 launcher credential preflight；
+  仅允许其已声明的 ignored run/diagnostic outputs。
+- [x] 4.5 已通过 two-process read-only/help smoke；重叠 command 同样走 no-sync runner，不竞争 setup，且
+  不更改 dependency state。
+- [x] 4.6 已通过 `cd deep_research_harness && uv lock --check`、focused command/profile/local-entry
+  suites、`cd deep_research_harness && UV_OFFLINE=1 make verify`（2393 fast、232 integration/4 expected
+  skips、35 workflow）、`openspec validate stabilize-local-entry-environment --strict`、
+  `openspec validate --specs`（48/48）及 `git diff HEAD --check`。已同步 `demo-pipeline`/
+  `local-configuration-profiles` specs 并归档至上述路径；closeout commit: `feat: stabilize local entry environment`。
 
-**Stage 4 Exit Gate:** `make install && make lock-check` 在 clean checkout 通过；普通入口不会
-修改 dependency state，且缺依赖时给出明确的 setup action。
+**Stage 4 Exit Gate:** 已满足：`make install && make lock-check` 在 clean checkout evidence 中通过；普通
+入口不会修改 dependency state，且缺依赖时给出唯一明确的 setup action。
 
 ### Stage 5: Document Entry Surfaces
 

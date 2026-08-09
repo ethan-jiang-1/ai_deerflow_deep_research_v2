@@ -1,17 +1,23 @@
-.PHONY: install governance verify lock-check format lint test test-fast test-integration test-workflow test-live test-unit test-contract test-viability test-durability test-blocking-io test-postgres test-assets test-req-coverage test-intake test-retained-observation test-work-unit test-strict-checkpoint test-duration-policy benchmark-fast prompt-dump prompt-dump-check profile-setup profile-preflight profiles profile-init profile-check profile-dev demo demo-scripted demo-fixture-graph demo-real demo-real-scripted demo-tui demo-tui-fake demo-sessions session-workbench
+.PHONY: install entry-preflight governance verify lock-check format lint test test-fast test-integration test-workflow test-live test-unit test-contract test-viability test-durability test-blocking-io test-postgres test-assets test-req-coverage test-intake test-retained-observation test-work-unit test-strict-checkpoint test-duration-policy benchmark-fast prompt-dump prompt-dump-check profile-setup profile-preflight profiles profile-init profile-check profile-dev demo demo-scripted demo-fixture-graph demo-real demo-real-scripted demo-tui demo-tui-fake demo-sessions session-workbench
 
 DEMO_ARGS ?=
 LOCAL_ENV_ARG := $(if $(wildcard .env),--env-file .env,)
 PYTEST := python -m pytest
+ENTRY_RUN = PYTHONDONTWRITEBYTECODE=1 env -u VIRTUAL_ENV uv run --locked --no-sync
+ENTRY_REQUIRED_DISTRIBUTIONS = python-dotenv ruamel.yaml textual tavily-python
+ENTRY_SETUP_MESSAGE = Command environment is not prepared. Run 'make install' from deep_research_harness/.
 
 install:
-	uv sync --locked --extra operations --extra demo-tui
+	env -u VIRTUAL_ENV uv sync --locked --extra operations --extra demo-tui --extra demo-real
 
-PROFILE_RUN = env -u VIRTUAL_ENV uv run --locked --no-sync --extra operations python scripts/local_profiles.py
+entry-preflight:
+	@test -x .venv/bin/python && .venv/bin/python -c 'from importlib.metadata import version; [version(name) for name in "$(ENTRY_REQUIRED_DISTRIBUTIONS)".split()]' >/dev/null 2>&1 || { echo "$(ENTRY_SETUP_MESSAGE)"; exit 2; }
+
+PROFILE_RUN = PYTHONDONTWRITEBYTECODE=1 env -u VIRTUAL_ENV uv run --locked --no-sync --extra operations python scripts/local_profiles.py
 
 profile-setup:
 	$(MAKE) -C ../deerflow install
-	env -u VIRTUAL_ENV uv sync --locked --extra operations
+	$(MAKE) install
 
 profile-preflight:
 	@test -d .venv || { echo "Profile setup is required. Run 'make profile-setup' from deep_research_harness/."; exit 2; }
@@ -42,43 +48,43 @@ verify: governance lock-check lint test-assets test-req-coverage test-fast test-
 
 # Standalone fake lifecycle demo. Zero API, no Gateway, config.yaml,
 # model credentials, network access, or TUI installation needed.
-demo:
-	env -u VIRTUAL_ENV PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} uv run --extra operations python scripts/demo.py $(DEMO_ARGS)
+demo: entry-preflight
+	PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) --extra operations python scripts/demo.py $(DEMO_ARGS)
 
 # Non-interactive equivalent used by CI and quick smoke checks.
-demo-scripted:
-	env -u VIRTUAL_ENV PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} uv run --extra operations python scripts/demo.py --scripted $(DEMO_ARGS)
+demo-scripted: entry-preflight
+	PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) --extra operations python scripts/demo.py --scripted $(DEMO_ARGS)
 
 # Deterministic graph-composition verification. This is not a full-fake alias.
-demo-fixture-graph:
-	env -u VIRTUAL_ENV PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} uv run --extra operations python scripts/demo_fixture_graph.py $(DEMO_ARGS)
+demo-fixture-graph: entry-preflight
+	PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) --extra operations python scripts/demo_fixture_graph.py $(DEMO_ARGS)
 
 # Real-mode CLI — full 11-phase pipeline with actual LLM + Tavily web tools.
 # Requires one model credential plus TAVILY_API_KEY.
-demo-real:
-	env -u VIRTUAL_ENV uv run $(LOCAL_ENV_ARG) --extra operations --extra demo-real python scripts/demo_real.py $(DEMO_ARGS)
+demo-real: entry-preflight
+	$(ENTRY_RUN) $(LOCAL_ENV_ARG) --extra operations --extra demo-real python scripts/demo_real.py $(DEMO_ARGS)
 
 # Non-interactive real-mode for CI (requires credentials).
-demo-real-scripted:
-	env -u VIRTUAL_ENV uv run $(LOCAL_ENV_ARG) --extra operations --extra demo-real python scripts/demo_real.py --scripted $(DEMO_ARGS)
+demo-real-scripted: entry-preflight
+	$(ENTRY_RUN) $(LOCAL_ENV_ARG) --extra operations --extra demo-real python scripts/demo_real.py --scripted $(DEMO_ARGS)
 
 # Standalone real-mode TUI. Requires model + Tavily credentials.
 # This is not the production DeerFlow Terminal Workbench or generic
 # human-input integration.
-demo-tui:
-	env -u VIRTUAL_ENV uv run $(LOCAL_ENV_ARG) --extra operations --extra demo-real --extra demo-tui python scripts/demo_tui.py $(DEMO_ARGS)
+demo-tui: entry-preflight
+	$(ENTRY_RUN) $(LOCAL_ENV_ARG) --extra operations --extra demo-real --extra demo-tui python scripts/demo_tui.py $(DEMO_ARGS)
 
 # Credential-free Textual route using the same lifecycle presentation shell.
-demo-tui-fake:
-	env -u VIRTUAL_ENV PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} uv run --extra operations --extra demo-tui python scripts/demo_tui.py --fake $(DEMO_ARGS)
+demo-tui-fake: entry-preflight
+	PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) --extra operations --extra demo-tui python scripts/demo_tui.py --fake $(DEMO_ARGS)
 
-demo-sessions:
-	env -u VIRTUAL_ENV PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} uv run --extra operations python scripts/demo_sessions.py $(DEMO_ARGS)
+demo-sessions: entry-preflight
+	PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) --extra operations python scripts/demo_sessions.py $(DEMO_ARGS)
 
 # Fixed-profile local operator surface. It is not Gateway, Web, upstream Terminal
 # Workbench, or a generic recovery client, and accepts no profile/path authority.
-session-workbench: profile-preflight
-	env -u VIRTUAL_ENV PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} uv run --locked --no-sync --extra operations --extra demo-tui python scripts/session_workbench.py $(DEMO_ARGS)
+session-workbench: entry-preflight
+	PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) --extra operations --extra demo-tui python scripts/session_workbench.py $(DEMO_ARGS)
 
 lock-check:
 	uv lock --check

@@ -1312,6 +1312,18 @@ EVIDENCE_CLAIMS = (
         requirement_ids=("DPL-005", "DPL-008", "RED-002"),
     ),
     _correctness_claim(
+        "local-entry-environment-preflight",
+        "tests/integration/test_local_entry_environment.py::test_missing_or_incomplete_entry_environment_stops_before_an_adapter",
+        StableSeam.PUBLIC_ENTRY,
+        requirement_ids=("DPL-006",),
+    ),
+    _correctness_claim(
+        "local-entry-environment-prepared-process",
+        "tests/integration/test_local_entry_environment.py::test_prepared_entries_preserve_dependency_state_and_keep_launcher_credential_bounded",
+        StableSeam.PUBLIC_ENTRY,
+        requirement_ids=("DPL-005", "DPL-006", "LCP-002"),
+    ),
+    _correctness_claim(
         "demo-explicit-recipe-factories",
         "tests/unit/test_demo_core.py::test_demo_recipe_factories_do_not_expose_a_mode_selector",
         StableSeam.RUNTIME_INTEGRATION,

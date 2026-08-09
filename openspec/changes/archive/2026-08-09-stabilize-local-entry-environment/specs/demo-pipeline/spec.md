@@ -55,7 +55,7 @@ the complete optional dependency set prepared by `make install`. If the project
 environment is missing or lacks a required distribution, it SHALL exit nonzero before
 the adapter begins and identify only `make install` as the corrective setup command. A
 prepared ordinary entry SHALL use the locked project environment with synchronization
-  disabled. It SHALL neither resolve nor update `uv.lock` nor create, remove, or change
+disabled. It SHALL neither resolve nor update `uv.lock` nor create, remove, or change
 the project `.venv`; declared ignored run-bundle, retained-observation, and diagnostic
 artifacts remain permitted target outputs. `make lock-check` SHALL remain the separate
 lock-freshness assertion; no ordinary entry's no-sync execution SHALL claim to validate

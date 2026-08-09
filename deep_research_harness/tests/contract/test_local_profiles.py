@@ -358,7 +358,9 @@ def test_agent_make_profile_commands_are_setup_gated_and_local_only() -> None:
     assert "profile-start" not in makefile
     assert "profile-dev-daemon" not in makefile
     assert "make -C ../deerflow install" in setup
-    assert "uv sync --locked --extra operations" in setup
+    assert "$(MAKE) install" in makefile
+    profile_setup = makefile.split("profile-setup:", 1)[1].split("\n\n", 1)[0]
+    assert "uv sync --locked --extra operations" not in profile_setup
 
 
 def test_profile_guide_and_ignore_rules_are_root_owned() -> None:

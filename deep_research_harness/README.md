@@ -66,6 +66,12 @@ independently locked and resolves `deerflow-harness` from the sibling checkout t
 an editable uv source. The `operations` extra contains the round-trip YAML dependency
 used by project configuration scripts; runtime code does not acquire it implicitly.
 
+`make install` is the one explicit local environment setup command: it prepares the
+operations, demo TUI, and real-demo extras. Demo, retained-observation, workbench, and
+prepared launcher entries do not synchronize dependencies; when that prepared
+environment is absent or incomplete, run `make install`. Use `make lock-check`
+separately to verify that dependency metadata matches `uv.lock`.
+
 ## Running Tests From The CLI
 
 `make` owns the supported test selections and uses `uv` to run them in the locked

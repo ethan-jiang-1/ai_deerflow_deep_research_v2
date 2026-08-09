@@ -27,7 +27,9 @@ def test_makefile_exposes_exact_non_mutating_verify_composition() -> None:
     text = MAKEFILE.read_text(encoding="utf-8")
 
     assert re.search(r"^\.PHONY:.*\bgovernance\b.*\bverify\b", text, re.MULTILINE)
-    assert "install:\n\tuv sync --locked --extra operations --extra demo-tui" in text
+    assert (
+        "install:\n\tenv -u VIRTUAL_ENV uv sync --locked --extra operations --extra demo-tui --extra demo-real" in text
+    )
     assert "governance:\n" in text
     assert (
         "\tpython3 ../openspec/governance/check_project_reqs.py ..\n"
@@ -61,7 +63,9 @@ def test_deterministic_pr_workflow_delegates_without_forking_component_gates() -
     assert not (REPO_ROOT / ".github/workflows/agent-release-e2e.yml").exists()
 
     block = _job_block(pr_workflow, "deterministic")
-    assert block.count("uv sync --locked --extra operations --extra demo-tui") == 1
+    assert block.count("make install") == 1
+    assert "uv sync --locked --extra operations --extra demo-tui" not in block
+    assert block.index("make install") < block.index("UV_OFFLINE=1 make verify")
     assert block.count("UV_OFFLINE=1 make verify") == 1
     for component in (
         "make lock-check",

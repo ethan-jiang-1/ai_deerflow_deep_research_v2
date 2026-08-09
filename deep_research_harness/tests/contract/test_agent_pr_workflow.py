@@ -14,7 +14,9 @@ def test_agent_pr_workflow_delegates_to_canonical_deterministic_gate() -> None:
     assert workflow.count("working-directory: deep_research_harness") == 1
     assert "working-directory: agent" not in workflow
     assert "agent-release-e2e.yml" not in workflow
-    assert workflow.count("uv sync --locked --extra operations --extra demo-tui") == 1
+    assert workflow.count("make install") == 1
+    assert "uv sync --locked --extra operations --extra demo-tui" not in workflow
+    assert workflow.index("make install") < workflow.index("UV_OFFLINE=1 make verify")
     assert workflow.count("UV_OFFLINE=1 make verify") == 1
     assert workflow.count("UV_OFFLINE=1 make test-duration-policy") == 1
     for component in (

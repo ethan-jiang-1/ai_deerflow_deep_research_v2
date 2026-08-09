@@ -48,23 +48,41 @@ def test_demo_commands_keep_fake_and_real_dependency_boundaries() -> None:
     operations = (AGENT_ROOT / "docs/local-operations.md").read_text(encoding="utf-8")
 
     assert "demo-fixture-graph demo-real demo-real-scripted demo-tui demo-tui-fake" in makefile
+    assert "ENTRY_RUN = PYTHONDONTWRITEBYTECODE=1 env -u VIRTUAL_ENV uv run --locked --no-sync" in makefile
+    assert (
+        "install:\n\tenv -u VIRTUAL_ENV uv sync --locked --extra operations --extra demo-tui --extra demo-real"
+        in makefile
+    )
+    for target in (
+        "demo",
+        "demo-scripted",
+        "demo-fixture-graph",
+        "demo-real",
+        "demo-real-scripted",
+        "demo-tui",
+        "demo-tui-fake",
+        "demo-sessions",
+        "session-workbench",
+    ):
+        assert f"{target}: entry-preflight" in makefile
+
     real_cli = " ".join(
         (
-            "env -u VIRTUAL_ENV uv run $(LOCAL_ENV_ARG) --extra operations --extra demo-real",
+            "$(ENTRY_RUN) $(LOCAL_ENV_ARG) --extra operations --extra demo-real",
             "python scripts/demo_real.py $(DEMO_ARGS)",
         )
     )
     assert real_cli in makefile
     real_tui = " ".join(
         (
-            "env -u VIRTUAL_ENV uv run $(LOCAL_ENV_ARG) --extra operations --extra demo-real --extra demo-tui",
+            "$(ENTRY_RUN) $(LOCAL_ENV_ARG) --extra operations --extra demo-real --extra demo-tui",
             "python scripts/demo_tui.py $(DEMO_ARGS)",
         )
     )
     assert real_tui in makefile
     fake_tui = " ".join(
         (
-            f"env -u VIRTUAL_ENV {FIXTURE_PYTHONPATH} uv run --extra operations --extra demo-tui",
+            f"{FIXTURE_PYTHONPATH} $(ENTRY_RUN) --extra operations --extra demo-tui",
             "python scripts/demo_tui.py --fake $(DEMO_ARGS)",
         )
     )
@@ -80,7 +98,6 @@ def test_demo_commands_keep_fake_and_real_dependency_boundaries() -> None:
         assert FIXTURE_PYTHONPATH in _target_body(makefile, target)
     for target in ("demo-real", "demo-real-scripted", "demo-tui"):
         assert FIXTURE_PYTHONPATH not in _target_body(makefile, target)
-    assert "install:\n\tuv sync --locked --extra operations --extra demo-tui" in makefile
     assert "make demo-tui-fake" in readme
     assert "make demo-fixture-graph" in readme
     assert "deterministic graph-composition verification" in readme
@@ -100,7 +117,9 @@ def test_make_commands_scope_fixture_source_to_fixture_children() -> None:
     }
     for target, script in fixture_targets.items():
         command = _dry_run_command(target, script)
-        assert command.startswith(f"env -u VIRTUAL_ENV {DRY_RUN_FIXTURE_PYTHONPATH} uv run")
+        assert command.startswith(
+            f"{DRY_RUN_FIXTURE_PYTHONPATH} PYTHONDONTWRITEBYTECODE=1 env -u VIRTUAL_ENV uv run --locked --no-sync"
+        )
 
     real_targets = {
         "demo-real": "demo_real.py",
@@ -110,6 +129,7 @@ def test_make_commands_scope_fixture_source_to_fixture_children() -> None:
     for target, script in real_targets.items():
         command = _dry_run_command(target, script)
         assert "src_fake" not in command
+        assert "PYTHONDONTWRITEBYTECODE=1 env -u VIRTUAL_ENV uv run --locked --no-sync" in command
 
 
 def test_fixture_graph_make_help_is_a_distinct_graph_verification_route() -> None:
@@ -156,7 +176,11 @@ def test_real_research_launcher_selects_a_configured_flash_model() -> None:
     assert "DEERFLOW_DEMO_MODEL=${DEERFLOW_DEMO_MODEL:-deepseek-v4-flash}" in launcher
     assert 'cd "$project_root"' in launcher
     assert 'python scripts/demo_real.py --scripted --question "$question"' in launcher
-    assert "uv run --env-file .env --extra operations --extra demo-real" in launcher
+    assert "make entry-preflight" in launcher
+    assert (
+        "env -u VIRTUAL_ENV PYTHONDONTWRITEBYTECODE=1 uv run --locked --no-sync "
+        "--env-file .env --extra operations --extra demo-real"
+    ) in launcher
 
 
 def test_demo_help_describes_retained_inspection_without_promising_resume() -> None:
@@ -180,9 +204,9 @@ def test_session_workbench_command_starts_only_the_fixed_local_profile_surface()
     makefile = MAKEFILE.read_text(encoding="utf-8")
     script = (AGENT_ROOT / "scripts" / "session_workbench.py").read_text(encoding="utf-8")
 
-    assert "session-workbench: profile-preflight" in makefile
+    assert "session-workbench: entry-preflight" in makefile
     assert (
-        f"env -u VIRTUAL_ENV {FIXTURE_PYTHONPATH} uv run --locked --no-sync --extra operations --extra demo-tui "
+        f"{FIXTURE_PYTHONPATH} $(ENTRY_RUN) --extra operations --extra demo-tui "
         "python scripts/session_workbench.py $(DEMO_ARGS)"
     ) in makefile
     assert "not a Gateway, Web, upstream terminal, multi-user, or generic" in script
