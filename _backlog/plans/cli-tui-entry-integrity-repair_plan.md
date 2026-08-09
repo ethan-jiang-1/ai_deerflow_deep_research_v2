@@ -250,6 +250,9 @@ observation，不暗示 resume/retry/recovery。
 ### Stage 5: Document Entry Surfaces
 
 候选 change: `document-entry-surfaces`；依赖 Stage 1--4 的已验证当前事实。
+当前状态: complete。`document-entry-surfaces` 已同步 `deep-research-agent-charter`
+DRC-006 主规格，并归档至
+[`2026-08-09-document-entry-surfaces`](../../openspec/changes/archive/2026-08-09-document-entry-surfaces/)。
 
 | Change Focus | 内容 |
 | --- | --- |
@@ -258,16 +261,25 @@ observation，不暗示 resume/retry/recovery。
 | Evidence seam | README routing review + command/document process evidence already established by Stages 2--4。 |
 | Not in scope | 新建第二份行为 registry、把 README 变成操作手册、把未来 Primary User TUI 写成 current runnable surface。 |
 
-- [ ] 5.1 创建 documentation change；在 proposal 中引用前四阶段的已归档 evidence，而不把旧计划或
-  README 文案当成行为证明。
-- [ ] 5.2 用 `Entry Surfaces` 表替换当前过浅的 entry table，逐项给出 primary reader/user、purpose、
-  actual composition 与 explicit non-goal。
-- [ ] 5.3 将 exact commands 链接到 `docs/local-operations.md`，authority/composition 链接到
+- [x] 5.1 创建 documentation change；在 proposal 中引用前四阶段的已归档 evidence，而不把旧计划或
+  README 文案当成行为证明。change:
+  [`document-entry-surfaces`](../../openspec/changes/archive/2026-08-09-document-entry-surfaces/)；primary owner:
+  `deep_research_harness/README.md`；delta: `deep-research-agent-charter` DRC-006；验证:
+  `openspec status --change document-entry-surfaces --json`（4/4 artifacts complete）和
+  `openspec validate document-entry-surfaces --strict`。
+- [x] 5.2 用 `Entry Surfaces` 表替换当前过浅的 entry table，逐项给出 primary reader/user、purpose、
+  actual composition 与 explicit non-goal；静态 contract:
+  `test_readme_entry_surfaces_route_to_current_detail_owners`。
+- [x] 5.3 将 exact commands 链接到 `docs/local-operations.md`，authority/composition 链接到
   `docs/runtime-architecture.md`，测试/verification 链接到 testing docs；不复制第二份手册。
-- [ ] 5.4 校准术语：普通用户走 Dedicated Agent + reflected tool；Operator CLI 非 versioned product
-  CLI；demo TUI 是 visualizer；Primary User TUI 是 future；workbench 仅当前 fixture profile。
-- [ ] 5.5 运行 information-map/governance checks、link/command evidence、strict validation 和
-  deterministic project gate；同步 relevant specs、归档 change，并在此记录证据。
+- [x] 5.4 校准术语：普通用户走 Dedicated Agent + reflected tool；Operator CLI 非 versioned product
+  CLI；demo TUI 是 visualizer，不是 current Primary User TUI；workbench 仅当前 configured fixture
+  profile。
+- [x] 5.5 已通过 focused command/charter contracts（97 passed）、`UV_OFFLINE=1 make governance`、
+  `UV_OFFLINE=1 make test-assets`、`UV_OFFLINE=1 make verify`、
+  `openspec validate document-entry-surfaces --strict`、`openspec validate --specs`（48/48）及
+  `git diff HEAD --check`。已同步 `deep-research-agent-charter` DRC-006，并归档至上述路径；
+  closeout commit: `docs: document entry surfaces`。
 
 **Stage 5 Exit Gate:** README 没有制造新的 authority，却使新读者和 Coding Agent 能在一屏内选择
 正确 surface，并能追到精确命令、架构说明和已验证的行为 contract。

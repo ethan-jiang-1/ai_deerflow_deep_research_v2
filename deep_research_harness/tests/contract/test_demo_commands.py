@@ -157,6 +157,51 @@ def test_readme_setup_commands_are_paste_safe_in_interactive_zsh() -> None:
     assert "UV_OFFLINE=1 make verify #" not in setup
 
 
+def test_readme_entry_surfaces_route_to_current_detail_owners() -> None:
+    """@impl DRC-006"""
+    readme = (AGENT_ROOT / "README.md").read_text(encoding="utf-8")
+
+    assert readme.index("## Entry Surfaces") < readme.index("## Reading Map")
+    surfaces = readme.split("## Entry Surfaces", 1)[1].split("## Reading Map", 1)[0]
+
+    for heading in (
+        "Surface",
+        "Primary reader/user",
+        "Purpose",
+        "Actual composition",
+        "Explicit non-goal",
+    ):
+        assert heading in surfaces
+
+    for route in (
+        "Dedicated Agent + reflected `deep_research` tool",
+        "Standalone operator CLI",
+        "Demo TUI visualizer",
+        "Full-fake demonstrations",
+        "Fixture-graph verification",
+        "Configured-fixture local workbench",
+    ):
+        assert route in surfaces
+
+    normalized_surfaces = surfaces.lower()
+    for distinction in (
+        "all real",
+        "not a versioned product cli",
+        "not a current primary user tui",
+        "presentation, not fixture-graph verification",
+        "configured fixture demo profile",
+        "not a generic product ui",
+    ):
+        assert distinction in normalized_surfaces
+
+    for detail_owner in (
+        "docs/local-operations.md",
+        "docs/runtime-architecture.md",
+        "docs/testing-and-evaluation.md",
+    ):
+        assert detail_owner in surfaces
+
+
 def test_retained_observation_documentation_uses_the_canonical_inspection_command() -> None:
     """@impl REC-005
     @impl REC-006

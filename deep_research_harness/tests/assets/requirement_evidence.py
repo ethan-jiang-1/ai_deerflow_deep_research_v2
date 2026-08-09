@@ -531,6 +531,14 @@ REQUIREMENT_IMPACTS = (
         "quick-start commands do not pass prose or a shell comment to Make",
     ),
     RequirementImpact(
+        "DRC-006",
+        "deep-research-agent-charter",
+        StableSeam.PUBLIC_ENTRY,
+        "tests/contract/test_demo_commands.py::test_readme_entry_surfaces_route_to_current_detail_owners",
+        "a first-time reader could otherwise conflate the product, operator, demo, "
+        "verification, and workbench surfaces",
+    ),
+    RequirementImpact(
         "REA-001",
         "readiness-node",
         StableSeam.NODE_INTERFACE,

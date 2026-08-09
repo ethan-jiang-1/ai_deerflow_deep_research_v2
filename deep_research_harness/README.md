@@ -15,13 +15,16 @@ host is fixed to `all_real`, an explicitly composed fixture demo or test recipe 
 as read-only metadata for retired records. These labels identify implementation composition,
 not provider success, evidence acceptance, or report quality.
 
-| Entry point | Recipe | Boundary |
-| --- | --- | --- |
-| `make demo`, `make demo-scripted`, `make demo-tui-fake` | full fake | zero credentials; retained deterministic presentation-only demonstrations |
-| `make demo-fixture-graph` | fixture | deterministic graph-composition verification; `src_fake` is enabled only for that child process |
-| `make demo-real`, `make demo-tui` | all real | local model and web-search prerequisites |
-| reflected `deep_research` tool | all real | public control surface; never imports or selects fixtures |
-| `make session-workbench` | configured fixture demo | typed Run Bundle projections only |
+## Entry Surfaces
+
+| Surface | Primary reader/user | Purpose | Actual composition | Explicit non-goal |
+| --- | --- | --- | --- | --- |
+| Dedicated Agent + reflected `deep_research` tool | Primary User | Current product route for a research question | The reflected public tool is fixed to all real; see [runtime architecture](docs/runtime-architecture.md) | Not an operator CLI or a fixture/demo route selector |
+| Standalone operator CLI | Contributor/operator | Local smoke, debugging, and scriptable operational work; see [local operations](docs/local-operations.md) for exact commands | The real CLI is a standalone all real presentation adapter over shared Run Bundle results | Not a versioned product CLI |
+| Demo TUI visualizer | Contributor/operator | Visualize the shared lifecycle in real or fake demo mode | `make demo-tui` is all real; `make demo-tui-fake` is full fake | Not a current Primary User TUI |
+| Full-fake demonstrations | Contributor/operator | Zero-credential lifecycle presentation; see [local operations](docs/local-operations.md) | `make demo`, `make demo-scripted`, and `make demo-tui-fake` use the retained full fake path | Presentation, not fixture-graph verification |
+| Fixture-graph verification | Contributor/maintainer | Provides deterministic graph-composition verification; see [testing and evaluation](docs/testing-and-evaluation.md) | `make demo-fixture-graph` executes a fixed fixture recipe and graph executor | Not a full-fake demonstration or a product result |
+| Configured-fixture local workbench | Local operator | Inspect bounded Run Bundle projections; see [local operations](docs/local-operations.md) | `make session-workbench` uses the configured fixture demo profile | Not a generic product UI or recovery client |
 
 ## Reading Map
 

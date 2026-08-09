@@ -1063,6 +1063,12 @@ EVIDENCE_CLAIMS = (
         requirement_ids=("FCO-001",),
     ),
     _correctness_claim(
+        "readme-entry-surfaces",
+        "tests/contract/test_demo_commands.py::test_readme_entry_surfaces_route_to_current_detail_owners",
+        StableSeam.PUBLIC_ENTRY,
+        requirement_ids=("DRC-006",),
+    ),
+    _correctness_claim(
         "demo-adapter-invalid-choice-feedback",
         "tests/integration/test_demo_run_update_adapters.py::test_standalone_adapters_render_safe_invalid_choice_feedback_without_wire_data",
         StableSeam.LIFECYCLE_MIXED_GRAPH,
