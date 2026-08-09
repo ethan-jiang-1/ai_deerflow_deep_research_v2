@@ -75,8 +75,10 @@ Makefile、文档和 test gate，默认按本文件编号串行推进。
   `.venv` contention 只作为后续 change 的待重放 evidence，不能写成已重新证明的事实。
 - [x] 0.3 选择保守的 full-fake/fixture-graph 分界，以及独立 lock-consistency gate；这两项取代
   原 plan 中与 main spec 或 `uv` 语义冲突的表述。
-- [ ] 0.4 运行 `openspec list --json`，确认没有 active change 后，为 Stage 1 创建唯一 active
-  change；在本项追加 change 名和 proposal 路径。
+- [x] 0.4 运行 `openspec list --json`，确认没有 active change 后，为 Stage 1 创建唯一 active
+  change；change: `restore-noninteractive-policy-propagation`；proposal:
+  [`openspec/changes/restore-noninteractive-policy-propagation/proposal.md`](../../openspec/changes/restore-noninteractive-policy-propagation/proposal.md)；验证:
+  `openspec list --json` 和 `openspec status --change restore-noninteractive-policy-propagation --json`。
 
 **Stage 0 Exit Gate:** 研究与本计划不再对同一行为给出相反指令；Stage 1 的 primary owner、
 证据 seam、非范围和 acceptance criteria 可以写成一个不依赖 demo workaround 的 proposal。
@@ -93,9 +95,11 @@ Makefile、文档和 test gate，默认按本文件编号串行推进。
 | Evidence seam | production `run_deep_research()` + actual `BundleGraphExecutor` + controlled external adapters 的 deterministic lifecycle test。 |
 | Not in scope | demo recipe selection、CLI/TUI presentation、任意 caller-selected graph route、`deerflow/` source。 |
 
-- [ ] 1.1 用 `openspec new change` 创建 change，并完成 proposal、design、affected spec delta 和
+- [x] 1.1 用 `openspec new change` 创建 change，并完成 proposal、design、affected spec delta 和
   tasks；Focus Card 明确 policy 的 trusted input、state writer、checkpoint owner 和 legal
-  blocked outcome。
+  blocked outcome。change: [`restore-noninteractive-policy-propagation`](../../openspec/changes/restore-noninteractive-policy-propagation/)；验证:
+  `openspec status --change restore-noninteractive-policy-propagation` 和
+  `openspec validate restore-noninteractive-policy-propagation --strict` （均已通过）；下一项: 1.2。
 - [ ] 1.2 先写 red evidence：interactive 调用不受影响；缺失/不完整/非布尔 policy 被拒；完整
   trusted policy 从 tool admission 到 initial graph values；重启/resume 不重新注入 policy。
 - [ ] 1.3 实现闭合 validated action input：`ResearchRunExperience` 同时投影 explicit
