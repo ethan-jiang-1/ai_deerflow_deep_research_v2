@@ -1,6 +1,6 @@
 # BUG-024: real demo (`make demo-real-scripted`) flakily fails at different nodes; model attribution is unresolved
 
-> 严重级别: P1 | 发现: 2026-08-10 | 状态: 活跃（topic-planning envelope 已修复；Wave0/Wave1 的工具后结构化输出仍不可靠）
+> 严重级别: P1 | 发现: 2026-08-10 | 状态: 已修复，已归档
 
 ## 症状
 
@@ -197,3 +197,18 @@ seam. It should:
 The change should first prove the compact envelope deterministically, then run the
 repaired one-worker live loop and a small explicit-profile Bundle matrix. A full
 real demo must advance through both Wave0 and Wave1 before it can be called stable.
+
+## 关闭证据（2026-08-11）
+
+`stabilize-evidence-worker-output-envelopes` 已作为 OpenSpec change 归档，并由提交
+`17d0975` 实施。它在不放宽 parser、local semantic validation、source/newness floors、
+tool window、预算、repair/controller bound、ledger、gate、route 或 lifecycle 的前提下，
+为 Wave0/Wave1 initial 与 repair 程序补齐了模型可见的闭合 JSON completion envelope。
+同时，Bundle-local Journal 现在能以脱敏的 closed response shape 与
+`post_candidate` canonical code 区分这些失败，而不保留原始模型输出。
+
+确定性回归已在 `UV_OFFLINE=1 make verify` 中通过。归档任务还完成了所有可用显式
+profile 的初始 worker 定点校准，并运行一条新的真实
+`DEERFLOW_DEMO_MODEL=<profile> make demo-real-scripted` Bundle，确认它穿过 Wave0 和
+Wave1；这正覆盖了本 bug 最后的阻断范围。该结论不宣称后续阶段、最终交付质量或外部依赖
+永远不会失败。

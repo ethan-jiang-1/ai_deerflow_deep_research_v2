@@ -1,6 +1,6 @@
 # Fixed Bugs Index — 已修复 bug 归档
 
-> 最后更新: 2026-08-03 | `_backlog/_done/_fixed_bugs/` — 已修复 bug 的归档目录。
+> 最后更新: 2026-08-11 | `_backlog/_done/_fixed_bugs/` — 已修复 bug 的归档目录。
 > 接收来自 [`../../bugs/`](../../bugs/) 的 bug。`_` 前缀 = coding agent 默认忽略。
 >
 > **本目录是 bug 编号的唯一权威来源——新 bug 的编号 = 本目录最大编号 + 1。**
@@ -40,8 +40,9 @@ bug 修完后从 `_backlog/bugs/` 通过 `git mv` 移入本目录：
 | BUG-021 | 2026-08-02 | 研究语言未绑定到用户请求语言 |
 | BUG-022 | 2026-08-03 | 真实研究演示的瞬态 Tavily 读取不再首次失败即终止；历史红绿差分证明两次有界恢复。 |
 | BUG-023 | 2026-08-03 | HITL1 brief prompt 不再要求 strict schema 禁止的语言字段；历史 prompt/parser 差分证明契约兼容。 |
+| BUG-024 | 2026-08-11 | Wave0/Wave1 的模型可见闭合输出 envelope 使真实 demo 通过受影响阶段，且 Journal 保留脱敏的结构化失败证据。 |
 
-**Next available bug ID: BUG-024**
+**Next available bug ID: BUG-025**
 
 ---
 

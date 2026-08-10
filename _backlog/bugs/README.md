@@ -1,6 +1,6 @@
 # Active Bugs — 活跃 bug 列表
 
-> 最后更新: 2026-08-03 | `_backlog/bugs/` — 活跃 bug 在此
+> 最后更新: 2026-08-11 | `_backlog/bugs/` — 活跃 bug 在此
 >
 > **bug 编号权威在 `_done/_fixed_bugs/`，新 bug = 最大编号 + 1。** 本文件只列活跃 bug。
 
@@ -17,7 +17,8 @@
 
 | ID | 严重级别 | 发现 | 标题 |
 | --- | --- | --- | --- |
-| BUG-024 | P1 | 2026-08-10 | real demo（`make demo-real-scripted`）在 deepseek-v4-flash 下随机在不同节点失败（模型 vs 紧契约不匹配） |
+
+暂无活跃 bug。
 
 **Next available bug ID: BUG-025**
 
