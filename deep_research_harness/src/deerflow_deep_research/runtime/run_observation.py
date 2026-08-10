@@ -31,6 +31,8 @@ from deerflow_deep_research.domain.run_observation import (
     MAX_EVENT_RECORDS,
     MAX_LIFECYCLE_SEQUENCE,
     MAX_TRACE_SNAPSHOT_BYTES,
+    BudgetStopReason,
+    ExecutionProfileEvidence,
     JournalAvailability,
     JournalIncompleteReason,
     ObservationCategory,
@@ -163,6 +165,7 @@ class RunObservationStore:
         validation_codes: tuple[str, ...] = (),
         failure_category: str | None = None,
         worker_failure_category: str | None = None,
+        budget_stop_reason: BudgetStopReason | None = None,
         retry_count: int | None = None,
         diagnostic_ref: str | None = None,
         recovery_correlation_id: str | None = None,
@@ -192,6 +195,7 @@ class RunObservationStore:
                     validation_codes,
                     failure_category,
                     worker_failure_category,
+                    budget_stop_reason,
                     retry_count,
                     diagnostic_ref,
                     recovery_correlation_id,
@@ -216,6 +220,7 @@ class RunObservationStore:
         generation: int,
         phase: str,
         durability: str,
+        execution_profile: ExecutionProfileEvidence | None = None,
     ) -> RunObservationView:
         """Create the selected Bundle's Journal before any producer can emit facts."""
 
@@ -228,6 +233,7 @@ class RunObservationStore:
                     generation,
                     phase,
                     durability,
+                    execution_profile,
                 )
             except (OSError, ValueError, RunObservationError):
                 self._note_bundle_persistence_failure(self._bundle_id)
@@ -243,6 +249,7 @@ class RunObservationStore:
         generation: int,
         phase: str,
         durability: str,
+        execution_profile: ExecutionProfileEvidence | None = None,
     ) -> RunObservationView:
         assert self._bundle_id is not None
         journal_root = self._ensure_journal_directory()
@@ -252,6 +259,7 @@ class RunObservationStore:
             raise RunObservationError("journal_manifest_mismatch")
         now = datetime.now(UTC)
         events = self._read_lines(journal_root / _EVENTS_FILENAME, RunEvent)
+        summary = self._read_model(journal_root / _SUMMARY_FILENAME, RunSummary)
         manifest = existing
         if not events:
             admission = RunEvent(
@@ -261,6 +269,7 @@ class RunObservationStore:
                 category=RunEventCategory.ADMISSION,
                 generation=generation,
                 phase=phase,
+                execution_profile=execution_profile,
             )
             manifest = self._new_bundle_manifest(now=now, durability=durability, high_watermark=0)
             events, manifest = self._append_bundle_event(journal_root, manifest, admission)
@@ -278,7 +287,11 @@ class RunObservationStore:
                 }
             )
             self._atomic_write(manifest_path, self._encode_model(manifest))
-        summary = self._read_model(journal_root / _SUMMARY_FILENAME, RunSummary)
+        persisted_profile = self._validated_execution_profile(
+            events=events,
+            summary=summary,
+            supplied=execution_profile,
+        )
         if summary is None:
             summary = self._bundle_summary(
                 status="active",
@@ -287,6 +300,7 @@ class RunObservationStore:
                 durability=durability,
                 latest_event_sequence=events[-1].sequence,
                 manifest=manifest,
+                execution_profile=persisted_profile,
             )
             self._atomic_write(journal_root / _SUMMARY_FILENAME, self._encode_model(summary))
         return RunObservationView(
@@ -338,6 +352,11 @@ class RunObservationStore:
             worker_failure_category=fact.worker_failure_category,
             diagnostic_ref=fact.diagnostic_ref,
             retained_recovery_summary=fact.retained_recovery_summary,
+            execution_profile=self._validated_execution_profile(
+                events=events,
+                summary=self._read_model(journal_root / _SUMMARY_FILENAME, RunSummary),
+                supplied=None,
+            ),
         )
         self._atomic_write(journal_root / _SUMMARY_FILENAME, self._encode_model(summary))
         updated_manifest = manifest.model_copy(
@@ -398,6 +417,7 @@ class RunObservationStore:
         validation_codes: tuple[str, ...],
         failure_category: str | None,
         worker_failure_category: str | None,
+        budget_stop_reason: BudgetStopReason | None,
         retry_count: int | None,
         diagnostic_ref: str | None,
         recovery_correlation_id: str | None,
@@ -428,6 +448,7 @@ class RunObservationStore:
                 validation_codes=validation_codes,
                 failure_category=failure_category,
                 worker_failure_category=worker_failure_category,  # type: ignore[arg-type]
+                budget_stop_reason=budget_stop_reason,
                 retry_count=retry_count,
                 diagnostic_ref=diagnostic_ref,
                 recovery_correlation_id=recovery_correlation_id,
@@ -691,6 +712,7 @@ class RunObservationStore:
         worker_failure_category: str | None = None,
         diagnostic_ref: str | None = None,
         retained_recovery_summary: Any | None = None,
+        execution_profile: ExecutionProfileEvidence | None = None,
     ) -> RunSummary:
         return RunSummary(
             schema_version=2,
@@ -710,7 +732,29 @@ class RunObservationStore:
             first_dropped_sequence=manifest.first_dropped_sequence,
             last_dropped_sequence=manifest.last_dropped_sequence,
             retained_recovery_summary=retained_recovery_summary,
+            execution_profile=execution_profile,
         )
+
+    @staticmethod
+    def _validated_execution_profile(
+        *,
+        events: tuple[RunEvent, ...],
+        summary: RunSummary | None,
+        supplied: ExecutionProfileEvidence | None,
+    ) -> ExecutionProfileEvidence | None:
+        admissions = tuple(event for event in events if event.category is RunEventCategory.ADMISSION)
+        if len(admissions) != 1:
+            if summary is not None and summary.execution_profile is not None:
+                raise RunObservationError("journal_execution_profile_admission_missing")
+            if supplied is not None:
+                raise RunObservationError("journal_execution_profile_admission_missing")
+            return None
+        persisted = admissions[0].execution_profile
+        if summary is not None and summary.execution_profile != persisted:
+            raise RunObservationError("journal_execution_profile_summary_mismatch")
+        if supplied is not None and supplied != persisted:
+            raise RunObservationError("journal_execution_profile_mismatch")
+        return persisted
 
     @staticmethod
     def _diagnostic_record(fact: RecordBearingLifecycleFact, now: datetime) -> RetainedDiagnosticRecord:
@@ -850,13 +894,25 @@ class RunObservationStore:
 class RunObservationRecorder:
     """A producer-facing event adapter with no Bundle path or lifecycle capability."""
 
-    def __init__(self, *, store: RunObservationStore, bundle_id: str) -> None:
+    def __init__(
+        self,
+        *,
+        store: RunObservationStore,
+        bundle_id: str,
+        execution_profile: ExecutionProfileEvidence | None = None,
+    ) -> None:
         self._store = store
         self._bundle_id = bundle_id
         self._generation: int | None = None
+        self._execution_profile = execution_profile
 
     async def establish(self, *, generation: int, phase: str, durability: str) -> RunObservationView:
-        view = await self._store._establish(generation=generation, phase=phase, durability=durability)
+        view = await self._store._establish(
+            generation=generation,
+            phase=phase,
+            durability=durability,
+            execution_profile=self._execution_profile,
+        )
         if view.inspectability is ObservationInspectability.AVAILABLE:
             self._generation = generation
         return view

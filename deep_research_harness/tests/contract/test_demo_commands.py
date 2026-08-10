@@ -228,6 +228,78 @@ def test_real_research_launcher_selects_a_configured_flash_model() -> None:
     ) in launcher
 
 
+def test_real_entries_reject_an_unselected_profile_before_adapter_or_bundle_composition() -> None:
+    """@impl DPL-011
+
+    The resolver is exercised with credentials but no selector. The entry-source
+    assertions then keep that preflight on the only path before adapter creation,
+    which is the first code able to create a local Bundle lifecycle.
+    """
+
+    import sys
+
+    scripts = str(AGENT_ROOT / "scripts")
+    if scripts not in sys.path:
+        sys.path.insert(0, scripts)
+    from _demo_core import demo_readiness_report
+
+    report = demo_readiness_report(
+        mode="real",
+        environ={"DEEPSEEK_API_KEY": "test-key", "TAVILY_API_KEY": "test-web-key"},
+    )
+    assert report.ready is False
+    assert report.failure is not None
+    assert report.failure.code.value == "configuration.model_missing"
+    assert report.failure.journal_record_created is False
+
+    cli = (AGENT_ROOT / "scripts" / "demo_real.py").read_text(encoding="utf-8")
+    tui = (AGENT_ROOT / "scripts" / "demo_tui.py").read_text(encoding="utf-8")
+    for source, preflight, rejection, adapter in (
+        (
+            cli,
+            "report = await experience.preflight()",
+            "if not report.ready:\n        return 2",
+            "adapter = DemoAdapter.for_real()",
+        ),
+        (
+            tui,
+            "report = await self._experience.preflight()",
+            "if not report.ready:\n            self.apply_run_update",
+            'adapter = DemoAdapter.for_real() if self.mode == "real" else DemoAdapter()',
+        ),
+    ):
+        assert source.index(preflight) < source.index(rejection) < source.index(adapter)
+
+    launcher = REAL_RESEARCH_LAUNCHER.read_text(encoding="utf-8")
+    assert "DEERFLOW_DEMO_MODEL=${DEERFLOW_DEMO_MODEL:-deepseek-v4-flash}" in launcher
+    assert "export DEERFLOW_DEMO_MODEL" in launcher
+
+
+def test_real_demo_calibration_documents_an_explicit_observational_procedure() -> None:
+    """@impl DPL-012"""
+
+    calibration_command = "DEERFLOW_DEMO_MODEL=<profile> make demo-real-scripted"
+    inspection_command = 'make demo-sessions DEMO_ARGS="inspect <bundle-id>"'
+    documents = (
+        AGENT_ROOT / "README.md",
+        AGENT_ROOT / "docs" / "local-operations.md",
+        AGENT_ROOT / "run" / "README.md",
+    )
+
+    for path in documents:
+        document = path.read_text(encoding="utf-8")
+        normalized = " ".join(document.split())
+        assert "## Bounded Real-Demo Calibration" in document
+        assert calibration_command in document
+        assert inspection_command in document
+        assert "fresh Run Bundle" in normalized
+        assert "does not qualify a model" in normalized
+        assert "does not select or change a default model" in normalized
+
+    makefile = MAKEFILE.read_text(encoding="utf-8")
+    assert "DEERFLOW_DEMO_MODEL" not in _target_body(makefile, "demo-real-scripted")
+
+
 def test_demo_help_describes_retained_inspection_without_promising_resume() -> None:
     """Run references are retained observations, not a second lifecycle contract."""
     scripts = AGENT_ROOT / "scripts"

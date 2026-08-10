@@ -33,6 +33,7 @@ from langchain_core.messages import HumanMessage
 
 from deerflow_deep_research.agents.factory import build_phase_agent
 from deerflow_deep_research.agents.middleware import (
+    AgentBudgetError,
     BudgetMiddleware,
     PhaseAgentStop,
     ToolExecutionFailure,
@@ -53,7 +54,7 @@ from deerflow_deep_research.domain.run_experience import (
     ProviderObservation,
     RunFailureCode,
 )
-from deerflow_deep_research.domain.run_observation import ProviderTimeoutOrigin, RunEventCategory
+from deerflow_deep_research.domain.run_observation import BudgetStopReason, ProviderTimeoutOrigin, RunEventCategory
 from deerflow_deep_research.runtime.events import build_progress_event
 from deerflow_deep_research.runtime.runtime_adapter import TrustedRuntimeEnvelope
 
@@ -96,6 +97,18 @@ _PHASE_AGENT_STOP_CODES = {
     NodeFinishReason.BUDGET_EXHAUSTED: RunFailureCode.BUDGET_EXHAUSTED,
     NodeFinishReason.POLICY_DENIED: RunFailureCode.POLICY_DENIED,
 }
+_MIDDLEWARE_BUDGET_STOP_REASONS = frozenset(
+    {
+        BudgetStopReason.REQUEST_CONTENT_UNESTIMABLE,
+        BudgetStopReason.MODEL_CALL_LIMIT,
+        BudgetStopReason.TOKEN_ADMISSION,
+        BudgetStopReason.PER_CALL_OUTPUT_CAP,
+        BudgetStopReason.TOTAL_TOKEN_BUDGET,
+        BudgetStopReason.TOOL_CALLS_PER_RESPONSE,
+        BudgetStopReason.PARALLEL_TOOL_CALLS,
+        BudgetStopReason.TOTAL_TOOL_CALLS,
+    }
+)
 
 
 class NodeAgentConfigurationError(RuntimeError):
@@ -111,6 +124,13 @@ class ResolvedNodeModel:
     model: Any
     configured_service_label: str | None = None
     configured_endpoint_authority: str | None = None
+
+
+@dataclass
+class _InvocationRecording:
+    """Private per-invocation Journal-only attribution; never a node result."""
+
+    budget_stop_reason: BudgetStopReason | None = None
 
 
 def _default_model_resolver(envelope: TrustedRuntimeEnvelope) -> ResolvedNodeModel:
@@ -255,8 +275,9 @@ class RuntimeNodeAgentBridge:
     ) -> NodeExecutionResult:
         """Run the bounded agent and publish one safe terminal invocation fact."""
 
-        result = await self._run_agent(context=context, request=request)
-        await self._record_result(context, result)
+        recording = _InvocationRecording()
+        result = await self._run_agent(context=context, request=request, recording=recording)
+        await self._record_result(context, result, budget_stop_reason=recording.budget_stop_reason)
         return result
 
     async def _run_agent(
@@ -264,6 +285,7 @@ class RuntimeNodeAgentBridge:
         *,
         context: NodeAgentContext,
         request: NodeExecutionRequest,
+        recording: _InvocationRecording,
     ) -> NodeExecutionResult:
         if context.bundle_context is None:
             return self._safe_failure(
@@ -384,6 +406,7 @@ class RuntimeNodeAgentBridge:
                 result = await agent.ainvoke(child_state, context=child_context)
         except TimeoutError:
             if deadline.expired():
+                recording.budget_stop_reason = BudgetStopReason.BRIDGE_WALL_TIME
                 self._emit(context, operation="run_agent", status="budget_exhausted")
                 if admitted_provider_request:
                     return self._provider_failure(
@@ -418,6 +441,11 @@ class RuntimeNodeAgentBridge:
                 code=RunFailureCode.TOOL_EXECUTION_FAILED,
             )
         except PhaseAgentStop as exc:
+            if exc.finish_reason is NodeFinishReason.BUDGET_EXHAUSTED:
+                candidate = exc.budget_stop_reason if isinstance(exc, AgentBudgetError) else None
+                recording.budget_stop_reason = (
+                    candidate if candidate in _MIDDLEWARE_BUDGET_STOP_REASONS else BudgetStopReason.UNKNOWN
+                )
             self._emit(context, operation="run_agent", status=str(exc.finish_reason))
             return self._safe_failure(
                 context,
@@ -591,7 +619,13 @@ class RuntimeNodeAgentBridge:
         self._emit(context, operation="run_agent", status="completed")
         return node_result
 
-    async def _record_result(self, context: NodeAgentContext, result: NodeExecutionResult) -> None:
+    async def _record_result(
+        self,
+        context: NodeAgentContext,
+        result: NodeExecutionResult,
+        *,
+        budget_stop_reason: BudgetStopReason | None,
+    ) -> None:
         problem = result.problem
         if problem is None:
             await self._record(context, outcome="completed")
@@ -622,6 +656,20 @@ class RuntimeNodeAgentBridge:
             failure_category=code,
             worker_failure_category=worker_failure_category,
             provider_category=provider_category,
+            budget_stop_reason=(
+                budget_stop_reason
+                if (
+                    (
+                        budget_stop_reason is BudgetStopReason.BRIDGE_WALL_TIME
+                        and problem.code is RunFailureCode.PROVIDER_TIMEOUT
+                    )
+                    or (
+                        budget_stop_reason is not BudgetStopReason.BRIDGE_WALL_TIME
+                        and problem.code is RunFailureCode.BUDGET_EXHAUSTED
+                    )
+                )
+                else None
+            ),
         )
 
     async def _record(
@@ -632,19 +680,25 @@ class RuntimeNodeAgentBridge:
         failure_category: str | None = None,
         worker_failure_category: str | None = None,
         provider_category: str | None = None,
+        budget_stop_reason: BudgetStopReason | None = None,
     ) -> None:
         factory = self.envelope.event_recorder_factory
         if factory is None:
             return
         try:
+            event: dict[str, Any] = {
+                "category": RunEventCategory.MODEL_TOOL,
+                "phase": context.node_name,
+                "attempt_id": context.attempt_id,
+                "outcome": outcome,
+                "failure_category": failure_category,
+                "worker_failure_category": worker_failure_category,
+                "provider_category": provider_category,
+            }
+            if budget_stop_reason is not None:
+                event["budget_stop_reason"] = budget_stop_reason
             await factory(context.research_scope_id).record(
-                category=RunEventCategory.MODEL_TOOL,
-                phase=context.node_name,
-                attempt_id=context.attempt_id,
-                outcome=outcome,
-                failure_category=failure_category,
-                worker_failure_category=worker_failure_category,
-                provider_category=provider_category,
+                **event,
             )
         except Exception:
             return

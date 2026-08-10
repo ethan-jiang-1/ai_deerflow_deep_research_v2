@@ -2380,6 +2380,61 @@ EVIDENCE_CLAIMS = (
         StableSeam.LIFECYCLE_MIXED_GRAPH,
         requirement_ids=("RER-012",),
     ),
+    _correctness_claim(
+        "demo-explicit-real-profile-admission",
+        "tests/unit/test_demo_core.py::test_explicit_real_demo_profile_is_single_safe_runtime_configuration",
+        StableSeam.RUNTIME_INTEGRATION,
+        requirement_ids=("DPL-011",),
+    ),
+    _correctness_claim(
+        "demo-real-calibration-procedure",
+        "tests/contract/test_demo_commands.py::test_real_demo_calibration_documents_an_explicit_observational_procedure",
+        StableSeam.PUBLIC_ENTRY,
+        requirement_ids=("DPL-012",),
+    ),
+    _correctness_claim(
+        "journal-execution-profile-provenance",
+        "tests/unit/test_run_observation_store.py::test_admitted_journal_retains_profile_only_on_matching_admission_and_summary",
+        StableSeam.RUNTIME_INTEGRATION,
+        requirement_ids=("REJ-006",),
+    ),
+    _correctness_claim(
+        "journal-cross-node-validation-attribution",
+        (
+            "tests/integration/test_wave0_work_units.py::"
+            "test_one_bundle_journal_retains_topic_planning_and_wave0_validation_as_observations"
+        ),
+        StableSeam.RUNTIME_INTEGRATION,
+        requirement_ids=("REJ-007",),
+        authenticity=AuthenticityLevel.REAL_NODE_FAKE_CAPABILITIES,
+    ),
+    _correctness_claim(
+        "node-agent-budget-stop-attribution",
+        (
+            "tests/unit/test_node_agent_bridge.py::"
+            "test_bridge_uses_unknown_for_untyped_budget_stop_and_keeps_non_budget_failures_unattributed"
+        ),
+        StableSeam.RUNTIME_INTEGRATION,
+        requirement_ids=("NOA-015",),
+        authenticity=AuthenticityLevel.REAL_NODE_FAKE_CAPABILITIES,
+    ),
+    _correctness_claim(
+        "topic-planning-validation-observation",
+        (
+            "tests/graph/test_topic_planning_node.py::"
+            "test_invalid_initial_topic_plan_then_repair_records_ordered_closed_codes"
+        ),
+        StableSeam.NODE_INTERFACE,
+        requirement_ids=("TOP-009",),
+        authenticity=AuthenticityLevel.REAL_NODE_FAKE_CAPABILITIES,
+    ),
+    _correctness_claim(
+        "wave0-validation-observation",
+        "tests/integration/test_wave0_work_units.py::test_real_wave0_valid_initial_parser_observation_is_closed_and_correlated",
+        StableSeam.RUNTIME_INTEGRATION,
+        requirement_ids=("WAN-010",),
+        authenticity=AuthenticityLevel.REAL_NODE_FAKE_CAPABILITIES,
+    ),
 )
 
 

@@ -14,7 +14,7 @@ from deerflow_deep_research.domain.context import GraphContextView
 from deerflow_deep_research.domain.node_spec import NodeBuildDependencies, PolicyRef
 from deerflow_deep_research.domain.profile import RequestBundleStoreProtocol
 from deerflow_deep_research.domain.publication import FinalDeliveryBundleStoreProtocol, PublicationBundleStoreProtocol
-from deerflow_deep_research.domain.run_observation import RunEventCategory
+from deerflow_deep_research.domain.run_observation import BudgetStopReason, RunEventCategory
 from deerflow_deep_research.domain.synthesis import SynthesisBundleStoreProtocol
 from deerflow_deep_research.domain.work_units import Attempt, AttemptArtifactWriter, WorkSpec, WorkUnitStoreProtocol
 
@@ -64,6 +64,7 @@ class RunEventRecorderProtocol(Protocol):
         validation_codes: tuple[str, ...] = (),
         failure_category: str | None = None,
         worker_failure_category: str | None = None,
+        budget_stop_reason: BudgetStopReason | None = None,
         retry_count: int | None = None,
         diagnostic_ref: str | None = None,
         recovery_correlation_id: str | None = None,

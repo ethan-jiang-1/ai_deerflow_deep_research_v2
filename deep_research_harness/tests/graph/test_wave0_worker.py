@@ -29,7 +29,7 @@ from deerflow_deep_research.graph.nodes.wave0.prompts import (
     build_wave0_worker_prompt,
     parse_wave0_worker_output,
 )
-from deerflow_deep_research.graph.nodes.wave0.subgraph import materialize_wave0_intents
+from deerflow_deep_research.graph.nodes.wave0.subgraph import _canonical_validation_code, materialize_wave0_intents
 
 BUNDLE = RunBundleRef(
     bundle_id=BundleId("b_" + "A" * 43),
@@ -169,6 +169,27 @@ def test_parse_wave0_worker_output_round_trip_and_rejects_invalid() -> None:
         parse_wave0_worker_output("   ")
     with pytest.raises(ValidationError):
         parse_wave0_worker_output(json.dumps({"schema_version": 1, "sources": []}))
+
+
+@pytest.mark.parametrize(
+    ("candidate", "expected_code"),
+    [
+        pytest.param("   ", "wave0_worker_output_empty", id="empty"),
+        pytest.param("not json", "wave0_worker_output_json_invalid", id="json-invalid"),
+        pytest.param(
+            json.dumps({"schema_version": 1, "sources": []}),
+            "wave0_worker_output_invalid",
+            id="shape-invalid",
+        ),
+    ],
+)
+def test_wave0_parser_failure_is_mapped_to_a_closed_journal_code(candidate: str, expected_code: str) -> None:
+    """@impl WAN-010"""
+
+    with pytest.raises(ValueError) as error:
+        parse_wave0_worker_output(candidate)
+
+    assert _canonical_validation_code(error.value) == expected_code
 
 
 def test_wave0_repair_prompt_carries_bounded_tool_results_as_untrusted_data() -> None:

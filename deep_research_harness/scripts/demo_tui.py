@@ -375,7 +375,7 @@ class DeepResearchDemoTUI(App[None]):
             return
         adapter: DemoAdapter | None = None
         try:
-            adapter = DemoAdapter()
+            adapter = DemoAdapter.for_real() if self.mode == "real" else DemoAdapter()
             if self.mode == "real":
                 self._transport.bind(runtime=build_demo_runtime(mode="real", adapter=adapter))
             else:

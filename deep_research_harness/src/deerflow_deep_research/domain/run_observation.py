@@ -41,6 +41,13 @@ class FrozenRunObservationContract(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
 
+class ExecutionProfileEvidence(FrozenRunObservationContract):
+    """Safe profile provenance carried only by trusted runtime composition."""
+
+    profile_id: str = Field(min_length=1, max_length=64, pattern=r"^[a-z][a-z0-9-]*$")
+    registry_revision: str = Field(min_length=2, max_length=16, pattern=r"^v[1-9][0-9]*$")
+
+
 class ObservationInspectability(StrEnum):
     """Availability of an external observation, never of its Run Bundle."""
 
@@ -86,6 +93,21 @@ class RunEventCategory(StrEnum):
     RETRY = "retry"
     EXHAUSTION = "exhaustion"
     TERMINAL = "terminal"
+
+
+class BudgetStopReason(StrEnum):
+    """Closed diagnostic attribution for a stopped model/tool invocation."""
+
+    REQUEST_CONTENT_UNESTIMABLE = "request_content_unestimable"
+    MODEL_CALL_LIMIT = "model_call_limit"
+    TOKEN_ADMISSION = "token_admission"
+    PER_CALL_OUTPUT_CAP = "per_call_output_cap"
+    TOTAL_TOKEN_BUDGET = "total_token_budget"
+    TOOL_CALLS_PER_RESPONSE = "tool_calls_per_response"
+    PARALLEL_TOOL_CALLS = "parallel_tool_calls"
+    TOTAL_TOOL_CALLS = "total_tool_calls"
+    BRIDGE_WALL_TIME = "bridge_wall_time"
+    UNKNOWN = "unknown"
 
 
 class RetainedRecoverySummary(FrozenRunObservationContract):
@@ -142,6 +164,8 @@ class RunEvent(FrozenRunObservationContract):
     retry_ordinal: int | None = Field(default=None, ge=1, le=1)
     backoff_milliseconds: int | None = Field(default=None, ge=1, le=60_000)
     recovery_event_disposition: Literal["scheduled", "exhausted"] | None = None
+    execution_profile: ExecutionProfileEvidence | None = None
+    budget_stop_reason: BudgetStopReason | None = None
 
     @model_validator(mode="after")
     def validate_recovery_event(self) -> RunEvent:
@@ -158,17 +182,32 @@ class RunEvent(FrozenRunObservationContract):
                 raise ValueError("journal_validation_stage_required")
         elif self.validation_stage is not None or self.validation_codes:
             raise ValueError("journal_validation_fields_unexpected")
-        recovery_fields_present = any(
+        if self.execution_profile is not None and self.category is not RunEventCategory.ADMISSION:
+            raise ValueError("journal_execution_profile_unexpected")
+        if self.budget_stop_reason is not None:
+            if self.category is not RunEventCategory.MODEL_TOOL or self.outcome != "failed":
+                raise ValueError("journal_budget_stop_reason_unexpected")
+            if self.budget_stop_reason is BudgetStopReason.BRIDGE_WALL_TIME:
+                if self.failure_category != "provider.timeout":
+                    raise ValueError("journal_budget_stop_reason_failure_mismatch")
+            elif self.failure_category != "budget.exhausted":
+                raise ValueError("journal_budget_stop_reason_failure_mismatch")
+        recovery_control_fields_present = any(
             value is not None
             for value in (
                 self.recovery_correlation_id,
-                self.provider_category,
                 self.retry_ordinal,
                 self.backoff_milliseconds,
                 self.recovery_event_disposition,
             )
         )
-        if not recovery_fields_present:
+        if self.category is RunEventCategory.MODEL_TOOL:
+            if recovery_control_fields_present:
+                raise ValueError("model_tool_recovery_fields_unexpected")
+            return self
+        if not recovery_control_fields_present:
+            if self.provider_category is not None:
+                raise ValueError("provider_category_unexpected")
             return self
         if self.recovery_correlation_id is None:
             raise ValueError("recovery_event_correlation_required")
@@ -241,6 +280,7 @@ class RunSummary(FrozenRunObservationContract):
     first_dropped_sequence: int | None = Field(default=None, ge=1, le=MAX_LIFECYCLE_SEQUENCE)
     last_dropped_sequence: int | None = Field(default=None, ge=1, le=MAX_LIFECYCLE_SEQUENCE)
     retained_recovery_summary: RetainedRecoverySummary | None = None
+    execution_profile: ExecutionProfileEvidence | None = None
 
     @model_validator(mode="after")
     def validate_journal_loss(self) -> RunSummary:
@@ -428,6 +468,8 @@ class RunObservationInspection(FrozenRunObservationContract):
 __all__ = [
     "JournalAvailability",
     "JournalIncompleteReason",
+    "BudgetStopReason",
+    "ExecutionProfileEvidence",
     "LifecycleTraceRecord",
     "MAX_EVENT_RECORDS",
     "MAX_LIFECYCLE_SEQUENCE",

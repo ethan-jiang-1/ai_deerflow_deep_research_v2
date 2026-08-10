@@ -126,10 +126,28 @@ operations](docs/local-operations.md) own the operational detail.
 | --- | --- |
 | Walk the zero-credential full-fake lifecycle | `make demo` |
 | Verify deterministic fixture-graph composition | `make demo-fixture-graph` |
-| Run the credentialed all-real demo with a question | `make demo-real DEMO_ARGS='--question "Compare battery storage costs"'` |
+| Run the credentialed all-real demo with a question | `DEERFLOW_DEMO_MODEL=<profile> make demo-real DEMO_ARGS='--question "Compare battery storage costs"'` |
 | Run the prepared all-real research launcher | `bash run/real-research.sh` |
 | Run the deterministic project gate | `UV_OFFLINE=1 make verify` |
 | Inspect one retained observation, read-only | `make demo-sessions DEMO_ARGS="inspect <bundle-id>"` |
+
+## Bounded Real-Demo Calibration
+
+Choose one registered, credential-backed profile explicitly for each comparison run:
+
+```bash
+DEERFLOW_DEMO_MODEL=<profile> make demo-real-scripted
+make demo-sessions DEMO_ARGS="inspect <bundle-id>"
+```
+
+The scripted command uses its fixed question and starts a fresh Run Bundle; take the
+printed Bundle id to the second, read-only command. Compare only the retained redacted
+profile identity/revision, phase, failure category, budget-stop reason, and validation
+codes. Repeat manually for another explicit profile when needed.
+
+This is bounded diagnostic evidence: it does not qualify a model and does not select
+or change a default model. It neither changes a prompt or budget nor reruns, resumes,
+or controls an existing Bundle.
 
 Run that inspection command from `deep_research_harness/`. It only reports a retained
 observation: it cannot locate, resume, refine, cancel, or recreate a Run Bundle.

@@ -14,6 +14,7 @@ from deerflow_deep_research.domain.bundle import (
     BundleId,
     RunBundleRef,
     bundle_host_relative_root,
+    bundle_profile_path,
     bundle_result_path,
     bundle_source_content_path,
     run_bundle_root,
@@ -29,13 +30,20 @@ from deerflow_deep_research.domain.enums import NodeFinishReason
 from deerflow_deep_research.domain.invocation import GraphInvocationContext, WorkUnitControllerDependencies
 from deerflow_deep_research.domain.lifecycle import WorkUnitStorageReason
 from deerflow_deep_research.domain.node_spec import NodeBuildDependencies, NodeCapability, PolicyRef
+from deerflow_deep_research.domain.profile import ResearchProfile, compute_profile_content_hash, profile_state_fields
 from deerflow_deep_research.domain.run_experience import (
     FailureCertainty,
     NodeProblem,
     ProviderObservation,
     RunFailureCode,
 )
-from deerflow_deep_research.domain.state import WORK_UNIT_GATE_PREVIEW_FIELDS, merge_trace, preview_work_unit_update
+from deerflow_deep_research.domain.run_observation import RunEventCategory
+from deerflow_deep_research.domain.state import (
+    WORK_UNIT_GATE_PREVIEW_FIELDS,
+    ContentRef,
+    merge_trace,
+    preview_work_unit_update,
+)
 from deerflow_deep_research.domain.work_units import (
     WORK_UNIT_GATE_VIEW_KEY,
     SubmissionValidationCode,
@@ -51,10 +59,12 @@ from deerflow_deep_research.graph.components import work_units as work_unit_comp
 from deerflow_deep_research.graph.components.work_units import reconcile_parent_ledger_authority
 from deerflow_deep_research.graph.implementation_map import AdapterKind, NodeAdapter
 from deerflow_deep_research.graph.nodes.gate_adapter import real_wave0_gate_def
+from deerflow_deep_research.graph.nodes.topic_planning import node as topic_planning_node
 from deerflow_deep_research.graph.nodes.wave0 import NODE_SPEC
 from deerflow_deep_research.graph.nodes.wave0.subgraph import run_wave0_work_units_real
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
 from deerflow_deep_research.runtime.projection import RuntimeWorkUnitDependencyResolver
+from deerflow_deep_research.runtime.run_observation import RunObservationRecorder, RunObservationStore
 from deerflow_deep_research.runtime.work_unit_storage import WorkUnitStoreError
 from deerflow_deep_research.runtime.work_unit_store import WorkUnitStore
 from tests.scenarios.assertions import assert_scenario
@@ -90,6 +100,18 @@ class _ResultCapabilities:
         if isinstance(result, BaseException):
             raise result
         return result  # type: ignore[return-value]
+
+
+class _JournalRecorder:
+    def __init__(self) -> None:
+        self.events: list[dict[str, object]] = []
+
+    async def record(self, **event: object) -> None:
+        self.events.append(dict(event))
+
+
+def _validation_events(recorder: _JournalRecorder) -> list[dict[str, object]]:
+    return [event for event in recorder.events if event["category"] is RunEventCategory.VALIDATION]
 
 
 def _graph_context() -> GraphContextView:
@@ -354,6 +376,44 @@ async def test_real_wave0_worker_binds_the_required_capability_before_artifact_a
     assert len(await store.load_records()) == 1
 
 
+async def test_real_wave0_valid_initial_parser_observation_is_closed_and_correlated(tmp_path) -> None:
+    """@impl WAN-010"""
+
+    capabilities = _ResultCapabilities(
+        NodeExecutionResult(
+            finish_reason=NodeFinishReason.SUCCESS,
+            summary=(
+                '{"schema_version":1,"sources":[{"source_id":"source:storage","canonical_url":'
+                '"https://example.com/storage","title":"Storage","fetch_status":"fetched"}],'
+                '"baseline_facts":[],"limitations":""}'
+            ),
+        )
+    )
+    recorder = _JournalRecorder()
+    context, store = _context(tmp_path, capabilities)
+    assert context.work_units is not None
+
+    component = await run_wave0_work_units_real(
+        _state(),
+        controller=context.work_units,
+        topic_registry=({"topic_id": "storage", "title": "Storage", "scope": "Storage economics"},),
+        clock=lambda: NOW,
+        event_recorder=recorder,
+    )
+
+    assert [
+        (event["validation_stage"], event["validation_codes"], event["work_id"], event["attempt_id"])
+        for event in _validation_events(recorder)
+    ] == [
+        ("initial", (), "g0_wave0_w0000", "g0_wave0_w0000_a00"),
+        ("initial", (), "g0_wave0_w0000", "g0_wave0_w0000_a00"),
+    ]
+    assert "https://example.com/storage" not in str(recorder.events)
+    assert len(capabilities.requests) == 1
+    assert len(component.parent_update["accepted_submission_refs"]) == 1
+    assert len(await store.load_records()) == 1
+
+
 async def test_real_wave0_artifacts_remain_bound_to_the_selected_run_bundle(tmp_path) -> None:
     """The worker cannot recreate legacy paths from its WorkSpec identity."""
     capabilities = _ResultCapabilities(
@@ -439,6 +499,7 @@ async def test_real_wave0_repair_keeps_tools_disabled_and_preserves_worker_admis
             ),
         )
     )
+    recorder = _JournalRecorder()
     context, _store = _context(tmp_path, capabilities)
     assert context.work_units is not None
 
@@ -447,6 +508,7 @@ async def test_real_wave0_repair_keeps_tools_disabled_and_preserves_worker_admis
         controller=context.work_units,
         topic_registry=({"topic_id": "storage", "title": "Storage", "scope": "Storage economics"},),
         clock=lambda: NOW,
+        event_recorder=recorder,
     )
 
     assert len(capabilities.requests) == 2
@@ -472,6 +534,16 @@ async def test_real_wave0_repair_keeps_tools_disabled_and_preserves_worker_admis
     ):
         assert forbidden not in repair.objective
     assert len(component.parent_update["accepted_submission_refs"]) == 1
+    assert [
+        (event["validation_stage"], event["validation_codes"], event["work_id"], event["attempt_id"])
+        for event in _validation_events(recorder)
+    ] == [
+        ("initial", ("wave0_worker_output_json_invalid",), "g0_wave0_w0000", "g0_wave0_w0000_a00"),
+        ("repair", (), "g0_wave0_w0000", "g0_wave0_w0000_a00"),
+        ("initial", (), "g0_wave0_w0000", "g0_wave0_w0000_a00"),
+    ]
+    assert "not-json" not in str(recorder.events)
+    assert "wave0 retained observation" not in str(recorder.events)
 
 
 async def test_real_wave0_malformed_repair_fails_without_artifact_admission(tmp_path) -> None:
@@ -485,6 +557,7 @@ async def test_real_wave0_malformed_repair_fails_without_artifact_admission(tmp_
             NodeExecutionResult(finish_reason=NodeFinishReason.SUCCESS, summary="still-not-json"),
         )
     )
+    recorder = _JournalRecorder()
     context, store = _context(tmp_path, capabilities)
     assert context.work_units is not None
 
@@ -493,6 +566,7 @@ async def test_real_wave0_malformed_repair_fails_without_artifact_admission(tmp_
         controller=context.work_units,
         topic_registry=({"topic_id": "storage", "title": "Storage", "scope": "Storage economics"},),
         clock=lambda: NOW,
+        event_recorder=recorder,
     )
 
     assert len(capabilities.requests) == 2
@@ -503,6 +577,151 @@ async def test_real_wave0_malformed_repair_fails_without_artifact_admission(tmp_
     assert capabilities.requests[1].tools_enabled is False
     assert component.parent_update["accepted_submission_refs"] == ()
     assert await store.load_records() == ()
+    assert [
+        (event["validation_stage"], event["validation_codes"], event["work_id"], event["attempt_id"])
+        for event in _validation_events(recorder)
+    ] == [
+        ("initial", ("wave0_worker_output_json_invalid",), "g0_wave0_w0000", "g0_wave0_w0000_a00"),
+        ("repair", ("wave0_worker_output_json_invalid",), "g0_wave0_w0000", "g0_wave0_w0000_a00"),
+    ]
+    assert "still-not-json" not in str(recorder.events)
+
+
+async def test_one_bundle_journal_retains_topic_planning_and_wave0_validation_as_observations(tmp_path) -> None:
+    """@impl REJ-007
+    @impl TOP-009
+    @impl WAN-010
+    """
+
+    profile = ResearchProfile(
+        schema_version=2,
+        depth="standard",
+        audience="practitioner",
+        format="detailed_report",
+        cost_tolerance="moderate",
+        time_budget="standard",
+        must_answer=("Q1",),
+        scope_boundaries="Storage technologies only.",
+        custom_notes="Use bounded evidence.",
+        comparison_required=False,
+        request_language="en",
+        output_language="en",
+    )
+    profile_ref = ContentRef(
+        sandbox_path=bundle_profile_path(BUNDLE),
+        content_hash=compute_profile_content_hash(profile),
+        schema_version=1,
+        short_summary="journal test profile",
+    )
+
+    class ProfileReader:
+        async def read_profile(self, requested_ref: ContentRef) -> ResearchProfile:
+            if requested_ref != profile_ref:
+                raise ValueError("profile_ref_unexpected")
+            return profile
+
+    partial_topic_plan = (
+        '{"schema_version":1,"topics":[{"title":"Storage","scope":"Storage scope",'
+        '"must_answer_bindings":["Other question"],"search_dimensions":[],"exclusions":[]}]}'
+    )
+    valid_topic_plan = (
+        '{"schema_version":1,"topics":[{"title":"Storage","scope":"Storage scope",'
+        '"must_answer_bindings":["Q1"],"search_dimensions":[],"exclusions":[]}]}'
+    )
+    planner_capabilities = _ResultCapabilities(
+        (
+            NodeExecutionResult(finish_reason=NodeFinishReason.SUCCESS, summary=partial_topic_plan),
+            NodeExecutionResult(finish_reason=NodeFinishReason.SUCCESS, summary=valid_topic_plan),
+        )
+    )
+    wave0_capabilities = _ResultCapabilities(
+        (
+            NodeExecutionResult(finish_reason=NodeFinishReason.SUCCESS, summary="not-json wave0-draft=keep-out"),
+            NodeExecutionResult(
+                finish_reason=NodeFinishReason.SUCCESS,
+                summary=(
+                    '{"schema_version":1,"sources":[{"source_id":"source:storage","canonical_url":'
+                    '"https://example.com/storage","title":"Storage","fetch_status":"fetched"}],'
+                    '"baseline_facts":[],"limitations":""}'
+                ),
+            ),
+        )
+    )
+    context, work_store = _context(tmp_path, wave0_capabilities)
+    assert context.work_units is not None
+    journal_store = RunObservationStore(
+        bundle_root=BundleLifecycle(workspace_host_path=tmp_path).private_root(BUNDLE),
+        bundle_id=BUNDLE_ID,
+    )
+    recorder = RunObservationRecorder(store=journal_store, bundle_id=BUNDLE_ID)
+    await recorder.establish(generation=0, phase="topic_planning", durability="restart_durable")
+
+    graph_context = _graph_context()
+    selected_bundle = SelectedBundleContext(bundle=BUNDLE)
+    topic_dependencies = NodeBuildDependencies(
+        graph_context=graph_context,
+        agent_context=NodeAgentContext(
+            research_scope_id=BUNDLE_ID,
+            node_name="topic_planning",
+            attempt_id="g0_topic_planning_a00",
+            workspace_root=graph_context.workspace_root,
+            attempt_root=f"{graph_context.workspace_root}/attempts/g0_topic_planning_a00",
+            policy_name="topic-planning",
+            bundle_context=NodeAgentBundleContext.from_selected_bundle(selected_bundle),
+        ),
+        capabilities=planner_capabilities,
+        event_recorder=recorder,
+        request_bundle=ProfileReader(),
+        selected_bundle=selected_bundle,
+    )
+    topic_state = (
+        _state()
+        | {
+            "schema_version": 2,
+            "outer_thread_id": "journal-observation-test",
+            "request_text": "Research storage options",
+            "phase": "topic_planning",
+        }
+        | profile_state_fields(profile, profile_ref)
+    )
+
+    topic_update = await topic_planning_node.build_real(topic_dependencies)(topic_state)
+    wave0_component = await run_wave0_work_units_real(
+        _state(),
+        controller=context.work_units,
+        topic_registry=topic_update["topic_registry"],
+        clock=lambda: NOW,
+        event_recorder=recorder,
+    )
+    journal = await journal_store.inspect(bundle_id=BUNDLE_ID)
+
+    assert topic_update["route"] == "next"
+    assert topic_update["topic_refs"] == ("storage",)
+    assert len(wave0_component.parent_update["accepted_submission_refs"]) == 1
+    assert len(await work_store.load_records()) == 1
+
+    validation_events = tuple(event for event in journal.events if event.category is RunEventCategory.VALIDATION)
+    topic_events = tuple(event for event in validation_events if event.phase == "topic_planning")
+    assert [
+        (event.validation_stage, event.validation_codes, event.work_id, event.attempt_id) for event in topic_events
+    ] == [
+        ("initial", ("topic_coverage_uncovered",), None, None),
+        ("repair", (), None, None),
+    ]
+    wave0_events = tuple(event for event in validation_events if event.phase == "wave0")
+    assert [
+        (event.validation_stage, event.validation_codes, event.work_id, event.attempt_id) for event in wave0_events
+    ] == [
+        ("initial", ("wave0_worker_output_json_invalid",), "g0_wave0_w0000", "g0_wave0_w0000_a00"),
+        ("repair", (), "g0_wave0_w0000", "g0_wave0_w0000_a00"),
+        ("initial", (), "g0_wave0_w0000", "g0_wave0_w0000_a00"),
+    ]
+
+    retained = "\n".join(event.model_dump_json() for event in validation_events)
+    for forbidden in ("Storage scope", "Q1", "not-json wave0-draft=keep-out", "https://example.com/storage"):
+        assert forbidden not in retained
+    assert "topic_coverage_uncovered" not in str(topic_update)
+    assert "wave0_worker_output_json_invalid" not in str(wave0_component.parent_update)
 
 
 async def test_real_wave0_post_candidate_submission_validation_does_not_enter_repair(monkeypatch, tmp_path) -> None:
@@ -583,6 +802,7 @@ async def test_real_wave0_invocation_outcomes_use_closed_controller_categories(
     expected_category: str,
 ) -> None:
     """@impl WFO-001"""
+    recorder = _JournalRecorder()
     context, store = _context(tmp_path, _ResultCapabilities(result))
     assert context.work_units is not None
 
@@ -591,6 +811,7 @@ async def test_real_wave0_invocation_outcomes_use_closed_controller_categories(
         controller=context.work_units,
         topic_registry=({"topic_id": "storage", "title": "Storage", "scope": "Storage economics"},),
         clock=lambda: NOW,
+        event_recorder=recorder,
     )
 
     attempt_id, attempt = next(iter(component.parent_update["attempts_by_id"].items()))
@@ -606,6 +827,7 @@ async def test_real_wave0_invocation_outcomes_use_closed_controller_categories(
     ) is WorkerFailureAggregate(expected_category)
     assert "raw unknown worker failure" not in str(component.parent_update)
     assert await store.load_records() == ()
+    assert _validation_events(recorder) == []
 
 
 @pytest.mark.workflow

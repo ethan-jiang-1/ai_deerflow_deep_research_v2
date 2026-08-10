@@ -23,6 +23,7 @@ from deerflow_deep_research.domain.bundle import (
 )
 from deerflow_deep_research.domain.invocation import RunEventRecorderProtocol, WorkUnitControllerDependencies
 from deerflow_deep_research.domain.node_spec import PolicyRef
+from deerflow_deep_research.domain.run_observation import RunEventCategory
 from deerflow_deep_research.domain.work_units import (
     Attempt,
     CandidateResult,
@@ -55,11 +56,50 @@ from .prompts import (
 )
 
 WAVE0_REAL_POLICY = PolicyRef(name="real-wave0", version="v1")
+_WAVE0_VALIDATION_CODES = frozenset(
+    {
+        "wave0_worker_output_empty",
+        "wave0_worker_output_json_invalid",
+        "wave0_worker_output_invalid",
+    }
+)
 
 
 def _content_hash(data: bytes) -> str:
     digest = hashlib.sha256(data).digest()
     return "h_" + base64.urlsafe_b64encode(digest).decode("ascii").rstrip("=")
+
+
+def _canonical_validation_code(error: ValueError) -> str:
+    """Collapse parser detail to the closed Journal vocabulary."""
+
+    code = str(error)
+    return code if code in _WAVE0_VALIDATION_CODES else "wave0_worker_output_invalid"
+
+
+async def _observe_validation(
+    event_recorder: RunEventRecorderProtocol | None,
+    *,
+    spec: WorkSpec,
+    attempt: Attempt,
+    stage: str,
+    codes: tuple[str, ...],
+) -> None:
+    """Publish parser evidence without allowing observation persistence to affect a worker."""
+
+    if event_recorder is None:
+        return
+    try:
+        await event_recorder.record(
+            category=RunEventCategory.VALIDATION,
+            phase="wave0",
+            work_id=spec.work_id,
+            attempt_id=attempt.attempt_id,
+            validation_stage=stage,
+            validation_codes=codes,
+        )
+    except Exception:
+        return
 
 
 def materialize_wave0_intents(
@@ -143,6 +183,13 @@ async def run_wave0_work_units_real(
         try:
             output = parse_wave0_worker_output(result.summary)
         except ValueError as parse_error:
+            await _observe_validation(
+                event_recorder,
+                spec=spec,
+                attempt=attempt,
+                stage="initial",
+                codes=(_canonical_validation_code(parse_error),),
+            )
             assignment = build_wave0_assignment_projection(spec, topic_registry)
             repair_outcome = await invoke_and_normalize(
                 lambda: capabilities.run_agent(
@@ -162,7 +209,29 @@ async def run_wave0_work_units_real(
             try:
                 output = parse_wave0_worker_output(repaired.summary)
             except ValueError as repair_error:
+                await _observe_validation(
+                    event_recorder,
+                    spec=spec,
+                    attempt=attempt,
+                    stage="repair",
+                    codes=(_canonical_validation_code(repair_error),),
+                )
                 raise WorkerAttemptFailure(WorkerFailureCategory.STRUCTURED_OUTPUT) from repair_error
+            await _observe_validation(
+                event_recorder,
+                spec=spec,
+                attempt=attempt,
+                stage="repair",
+                codes=(),
+            )
+        else:
+            await _observe_validation(
+                event_recorder,
+                spec=spec,
+                attempt=attempt,
+                stage="initial",
+                codes=(),
+            )
         metas: list[Wave0SourceMeta] = []
         source_refs: list[SourceRef] = []
         for index, source in enumerate(output.sources):

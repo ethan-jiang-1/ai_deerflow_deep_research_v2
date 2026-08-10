@@ -170,7 +170,7 @@ def test_prepared_entries_preserve_dependency_state_and_keep_launcher_credential
         lambda: _run(project, "demo-sessions", f"DEMO_ARGS=inspect {bundle_id}", foreign_virtual_env=True),
     )
     assert inspection.returncode == 0, inspection.stdout + inspection.stderr
-    assert "Observation does not resume or control" in inspection.stdout
+    assert "Event Journal is read-only; lifecycle controls remain independent." in inspection.stdout
 
     profile_check = _assert_state_unchanged(
         project,

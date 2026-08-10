@@ -185,6 +185,7 @@ NOA-011: node-agent-runtime — The runtime bridge admits only a validated decla
 NOA-012: node-agent-runtime — Branch-review evidence distinguishes each request's tool window from bridge-enforced capability posture, eligible tools, and safe failure projection without changing execution behavior
 NOA-013: node-agent-runtime — Final report composition uses a dedicated one-invocation zero-tool bridge with explicit token, result-size, and wall-time bounds while retaining closed failure projection and no retry, publication, route, or lifecycle authority
 NOA-014: node-agent-runtime — Node-agent execution receives only ephemeral runtime-bound Bundle context and cannot select a Bundle, checkpoint, State writer, or lifecycle outcome
+NOA-015: node-agent-runtime — Node-agent budget stops expose only a closed safe diagnostic subreason to the Event Journal without changing normalized results, recovery, or lifecycle authority
 
 # node-agent-capabilities
 NAC-001: node-agent-capabilities — Node-agent branches declare a bounded local cognitive capability and trusted resource without granting model, graph, parser, evaluator, materializer, recovery, or evidence authority to the request
@@ -282,6 +283,8 @@ REJ-002: run-event-journal — Shared lifecycle, graph, work-attempt, invocation
 REJ-003: run-event-journal — Bounded Journal retention truthfully reports complete, incomplete, or unavailable history without changing lifecycle or recovery authority
 REJ-004: run-event-journal — Read-only inspection exposes only safe selected-Bundle Journal facts and never obtains external historical diagnostic or control authority
 REJ-005: run-event-journal — DeerFlow runtime context and custom streaming are ingress and best-effort projection boundaries, never Journal identity, durable evidence, or lifecycle authority
+REJ-006: run-event-journal — Admitted all-real demo Bundles retain matching trusted redacted execution-profile provenance only in Journal admission and summary facts
+REJ-007: run-event-journal — Journal attribution retains closed budget-stop subreasons and parser/materialization validation facts without changing recovery or lifecycle authority
 
 # research-run-experience
 RER-001: research-run-experience — One runtime-owned module converts lifecycle wire results into shared safe run updates for presentation adapters
@@ -429,6 +432,7 @@ TOP-005: topic-planning-node — Real topic planning integrates into the all-rea
 TOP-006: topic-planning-node — Topic planning and structured repair bind distinct zero-tool local capabilities, preserve the confirmed profile boundary, and leave candidate admission, stable identifiers, state, routes, and exhaustion with existing deterministic owners
 TOP-007: topic-planning-node — Topic-planning calibration policies preserve confirmed-profile fidelity, bounded distinct coverage, degraded-profile conservatism, and deterministic materialization authority
 TOP-008: topic-planning-node — Topic planning consumes Bundle-local profile facts and writes contained planning artifacts through the selected Bundle
+TOP-009: topic-planning-node — Topic planning retains closed initial and repair parser/materialization Journal evidence without altering planner recovery, checkpoint, or route authority
 
 # wave0-node
 WAN-001: wave0-node — Real Wave0 reads the planner topic registry and materializes one immutable source-intake WorkSpec per topic through the existing work-unit controller and shared fan-out/fan-in component without a second controller or work authority
@@ -440,6 +444,7 @@ WAN-006: wave0-node — Real Wave0 maps trusted worker failure boundaries to clo
 WAN-007: wave0-node — Wave0 source intake retains its existing 1--3 permitted retrieval bound, validator/controller/ledger admission, zero-tool non-inventive repair, and honest source-floor or retrieval degradation evidence
 WAN-008: wave0-node — Wave0 calibration makes bounded assignment-faithful source-intake judgment and parser-only non-inventive repair criteria model-visible while preserving deterministic admission and controller authority
 WAN-009: wave0-node — Wave0 runtime-loaded capability resources own bounded source-intake cognition while deterministic tool, source-admission, and lifecycle owners remain non-bypassable
+WAN-010: wave0-node — Wave0 retains closed initial and repair structural parser Journal evidence before candidate admission without altering controller, gate, or route authority
 
 # workflow-failure-outcomes
 WFO-001: workflow-failure-outcomes — Production model invocation boundaries normalize successful results, classified failures, local unknown failures, and cancellation into a bounded phase-owned outcome without raw exception or provider content
@@ -559,3 +564,5 @@ DPL-007: demo-pipeline — Local demo runs retain inspectable run bundles throug
 DPL-008: demo-pipeline — Fixture demo and fixed-profile local-session commands enable the separate fixture source root only for their own child process while real and production paths do not
 DPL-009: demo-pipeline — Configured real-demo web reads have bounded transient recovery
 DPL-010: demo-pipeline — Demo pipeline obtains Deep Research identity, status, and legal actions only from the shared Bundle lifecycle result
+DPL-011: demo-pipeline — All-real demo admission resolves one explicit credential-backed registered model profile before graph or Bundle creation and exposes only safe identity and revision to the Bundle Journal
+DPL-012: demo-pipeline — An explicit all-real calibration procedure records fresh Bundle-local diagnostic evidence for comparison without qualifying a model or changing a default

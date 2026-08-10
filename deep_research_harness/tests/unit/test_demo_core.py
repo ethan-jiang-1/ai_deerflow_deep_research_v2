@@ -38,6 +38,14 @@ def _scripts_path():
     return scripts
 
 
+@pytest.fixture
+def _real_demo_environ() -> dict[str, str]:
+    return {
+        "DEEPSEEK_API_KEY": "demo-secret",
+        "TAVILY_API_KEY": "tavily-secret",
+    }
+
+
 def test_phase_meta_covers_all_logical_nodes(_scripts_path):
     from _demo_core import PHASE_META
 
@@ -101,7 +109,7 @@ def test_demo_recipe_factories_do_not_expose_a_mode_selector(_scripts_path):
 def test_check_credentials_available_true(_scripts_path):
     from _demo_core import check_credentials_available
 
-    with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "sk-test"}):
+    with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "sk-test", "DEERFLOW_DEMO_MODEL": "anthropic-demo"}):
         assert check_credentials_available() is True
 
 
@@ -170,6 +178,64 @@ def test_demo_model_selector_restricts_to_configured_models(_scripts_path):
     assert unavailable == []
 
 
+def test_all_real_demo_requires_an_explicit_selected_profile(_scripts_path, _real_demo_environ):
+    """@impl DPL-011"""
+    from _demo_core import DemoAdapter, DemoPrerequisiteError, demo_readiness_report, validate_real_demo_prerequisites
+
+    report = demo_readiness_report(mode="real", environ=_real_demo_environ)
+
+    assert report.ready is False
+    assert report.failure is not None
+    assert report.failure.code.value == "configuration.model_missing"
+    assert report.failure.journal_record_created is False
+    with pytest.raises(DemoPrerequisiteError) as error:
+        validate_real_demo_prerequisites(_real_demo_environ)
+    assert error.value.model_missing is True
+    with pytest.raises(DemoPrerequisiteError):
+        DemoAdapter.for_real(environ=_real_demo_environ)
+
+
+def test_all_real_demo_rejects_unknown_and_non_unique_profile_selection(
+    _scripts_path,
+    _real_demo_environ,
+    monkeypatch,
+):
+    """@impl DPL-011"""
+    import _demo_core
+
+    unknown = {**_real_demo_environ, "DEERFLOW_DEMO_MODEL": "not-registered"}
+    assert _demo_core.demo_readiness_report(mode="real", environ=unknown).ready is False
+
+    duplicate = _demo_core._MODEL_REGISTRY[0]
+    monkeypatch.setattr(_demo_core, "_MODEL_REGISTRY", (duplicate, duplicate))
+    non_unique = {**_real_demo_environ, "DEERFLOW_DEMO_MODEL": "deepseek-v4-pro"}
+    assert _demo_core.demo_readiness_report(mode="real", environ=non_unique).ready is False
+    with pytest.raises(_demo_core.DemoPrerequisiteError):
+        _demo_core.DemoAdapter.for_real(environ=non_unique)
+
+
+def test_explicit_real_demo_profile_is_single_safe_runtime_configuration(_scripts_path, _real_demo_environ, tmp_path):
+    """@impl DPL-011"""
+    from _demo_core import DemoAdapter, resolve_real_demo_model_profile
+
+    profile = resolve_real_demo_model_profile({**_real_demo_environ, "DEERFLOW_DEMO_MODEL": "deepseek-v4-flash"})
+
+    assert profile is not None
+    assert profile.model_config.name == "deepseek-v4-flash"
+    assert profile.evidence.profile_id == "deepseek-v4-flash"
+    assert profile.evidence.registry_revision == "v1"
+    evidence = profile.evidence.model_dump_json()
+    assert "demo-secret" not in evidence
+    assert "https://" not in evidence
+
+    adapter = DemoAdapter.for_real(
+        bundle_root=tmp_path / "runs",
+        environ={**_real_demo_environ, "DEERFLOW_DEMO_MODEL": "deepseek-v4-flash"},
+    )
+    assert [model.name for model in adapter._envelope.app_config.models] == ["deepseek-v4-flash"]
+    assert adapter._envelope.execution_profile == profile.evidence
+
+
 @pytest.mark.asyncio
 async def test_demo_adapter_close_is_idempotent(_scripts_path, tmp_path):
     """@impl DPL-001"""
@@ -220,6 +286,8 @@ def test_tool_call_with_bundle_id(_scripts_path):
 
 
 class _DemoRuntimeAdapter:
+    execution_profile = object()
+
     async def create_work_unit_store(self, _envelope, *, bundle):
         return None
 
@@ -237,6 +305,13 @@ def test_build_demo_runtime_selects_fixed_recipe_and_executor(_scripts_path):
     assert fixture.adapter is adapter
     assert fixture.recipe.implementation_mode.value == "fixture"
     assert fixture.executor._recipe is fixture.recipe
+
+
+def test_real_demo_runtime_rejects_an_adapter_without_an_explicit_profile(_scripts_path, tmp_path):
+    from _demo_core import DemoAdapter, build_demo_runtime
+
+    with pytest.raises(RuntimeError, match="demo_real_profile_required"):
+        build_demo_runtime(mode="real", adapter=DemoAdapter(bundle_root=tmp_path / "runs"))
 
 
 @pytest.mark.asyncio

@@ -24,7 +24,7 @@ import openai
 import pytest
 
 from deerflow_deep_research.agents.capabilities import load_node_agent_capability
-from deerflow_deep_research.agents.middleware import PhaseAgentStop
+from deerflow_deep_research.agents.middleware import AgentBudgetError, PhaseAgentStop
 from deerflow_deep_research.agents.phase_prompt import RenderedPhasePrompt, render_phase_agent_prompt
 from deerflow_deep_research.agents.policies import (
     ExecutionBudget,
@@ -36,6 +36,7 @@ from deerflow_deep_research.domain.bundle import BundleId
 from deerflow_deep_research.domain.context import NodeAgentBundleContext, NodeAgentContext, NodeExecutionRequest
 from deerflow_deep_research.domain.enums import NodeFinishReason
 from deerflow_deep_research.domain.run_experience import ProviderObservation, RunFailureCode
+from deerflow_deep_research.domain.run_observation import BudgetStopReason
 from deerflow_deep_research.graph.nodes.hitl1.prompts import build_brief_prompt
 from deerflow_deep_research.graph.nodes.wave0.capabilities import WAVE0_AUTHORITATIVE_SOURCE_INTAKE
 from deerflow_deep_research.graph.prompt_catalog import prompt_catalog_cases
@@ -408,6 +409,75 @@ async def test_bridge_records_closed_failure_when_the_live_projection_subscriber
     assert recorder.events[-1]["outcome"] == "failed"
     assert recorder.events[-1]["failure_category"] == RunFailureCode.CONFIGURATION_MODEL_MISSING.value
     assert recorder.events[-1]["worker_failure_category"] == "agent_invocation"
+
+
+@pytest.mark.parametrize(
+    "budget_stop_reason",
+    tuple(reason for reason in BudgetStopReason if reason is not BudgetStopReason.BRIDGE_WALL_TIME),
+)
+async def test_bridge_records_only_closed_middleware_budget_stop_reason(
+    monkeypatch: pytest.MonkeyPatch,
+    budget_stop_reason: BudgetStopReason,
+) -> None:
+    """@impl NOA-015"""
+
+    sentinel = "raw middleware detail /Users/alice/private provider-body-secret"
+    recorder = _JournalRecorder()
+    envelope = replace(_envelope(), event_recorder_factory=lambda _scope: recorder)
+
+    class BudgetStoppingAgent:
+        async def ainvoke(self, *_args, **_kwargs):
+            raise AgentBudgetError(NodeFinishReason.BUDGET_EXHAUSTED, sentinel, budget_stop_reason)
+
+    bridge = _bridge(lambda: ScriptedChatModel(responses=[]), envelope=envelope)
+    monkeypatch.setattr(bridge_module, "build_phase_agent", lambda **_kwargs: BudgetStoppingAgent())
+
+    result = await bridge.run_agent(context=_context(), request=_request())
+
+    assert result.finish_reason is NodeFinishReason.BUDGET_EXHAUSTED
+    assert result.problem is not None
+    assert result.problem.code is RunFailureCode.BUDGET_EXHAUSTED
+    assert "budget_stop_reason" not in result.model_dump_json()
+    assert recorder.events[-1]["failure_category"] == RunFailureCode.BUDGET_EXHAUSTED.value
+    assert recorder.events[-1]["budget_stop_reason"] == budget_stop_reason.value
+    assert sentinel not in str(recorder.events)
+
+
+async def test_bridge_uses_unknown_for_untyped_budget_stop_and_keeps_non_budget_failures_unattributed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """@impl NOA-015"""
+
+    sentinel = "raw untyped detail /Users/alice/private provider-body-secret"
+    recorder = _JournalRecorder()
+    envelope = replace(_envelope(), event_recorder_factory=lambda _scope: recorder)
+
+    class UntypedBudgetStoppingAgent:
+        async def ainvoke(self, *_args, **_kwargs):
+            raise PhaseAgentStop(NodeFinishReason.BUDGET_EXHAUSTED, sentinel)
+
+    bridge = _bridge(lambda: ScriptedChatModel(responses=[]), envelope=envelope)
+    monkeypatch.setattr(bridge_module, "build_phase_agent", lambda **_kwargs: UntypedBudgetStoppingAgent())
+    budget_result = await bridge.run_agent(context=_context(), request=_request())
+
+    assert budget_result.problem is not None
+    assert budget_result.problem.code is RunFailureCode.BUDGET_EXHAUSTED
+    assert "budget_stop_reason" not in budget_result.model_dump_json()
+    assert recorder.events[-1]["budget_stop_reason"] == BudgetStopReason.UNKNOWN.value
+    assert sentinel not in str(recorder.events)
+
+    class UsageStoppingAgent:
+        async def ainvoke(self, *_args, **_kwargs):
+            raise PhaseAgentStop(NodeFinishReason.USAGE_UNAVAILABLE, sentinel)
+
+    monkeypatch.setattr(bridge_module, "build_phase_agent", lambda **_kwargs: UsageStoppingAgent())
+    usage_result = await bridge.run_agent(context=_context(), request=_request())
+
+    assert usage_result.problem is not None
+    assert usage_result.problem.code is RunFailureCode.PROVIDER_USAGE_UNAVAILABLE
+    assert "budget_stop_reason" not in usage_result.model_dump_json()
+    assert "budget_stop_reason" not in recorder.events[-1]
+    assert sentinel not in str(recorder.events)
 
 
 async def test_request_requiring_tool_execution_rejects_direct_model_answer() -> None:
@@ -1147,8 +1217,9 @@ async def test_admitted_hitl_bridge_deadline_has_only_bridge_timeout_origin(
         async def ainvoke(self, *_args, **_kwargs):
             await asyncio.Event().wait()
 
+    recorder = _JournalRecorder()
     bridge = RuntimeNodeAgentBridge(
-        envelope=_envelope(),
+        envelope=replace(_envelope(), event_recorder_factory=lambda _scope: recorder),
         policy=_policy(
             _budget(wall_time_seconds=0.01),
             provider_observation_admission=ProviderObservationAdmission.CONFIGURED_MODEL_SERVICE,
@@ -1165,6 +1236,9 @@ async def test_admitted_hitl_bridge_deadline_has_only_bridge_timeout_origin(
     assert result.problem.code is RunFailureCode.PROVIDER_TIMEOUT
     assert result.problem.provider_observation is not None
     assert result.problem.provider_observation.timeout_origin == "bridge_wall_time_budget"
+    assert "budget_stop_reason" not in result.model_dump_json()
+    assert recorder.events[-1]["failure_category"] == RunFailureCode.PROVIDER_TIMEOUT.value
+    assert recorder.events[-1]["budget_stop_reason"] == BudgetStopReason.BRIDGE_WALL_TIME.value
 
 
 def test_generic_or_legacy_no_response_does_not_invent_timeout_origin() -> None:

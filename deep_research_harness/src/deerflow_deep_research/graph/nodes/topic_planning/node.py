@@ -6,6 +6,7 @@
 @impl TOP-004
 @impl TOP-005
 @impl WFO-001
+@impl TOP-009
 """
 
 from __future__ import annotations
@@ -47,6 +48,24 @@ from deerflow_deep_research.graph.nodes.topic_planning.prompts import (
 
 RETRY_BACKOFF_MILLISECONDS = 1_000
 RETRY_BACKOFF_SECONDS = RETRY_BACKOFF_MILLISECONDS / 1_000
+_TOPIC_PLAN_PARSER_CODES = frozenset(
+    {
+        "topic_plan_empty",
+        "topic_plan_json_invalid",
+        "topic_plan_extra_fields",
+        "topic_plan_invalid",
+    }
+)
+_TOPIC_MATERIALIZATION_CODES = frozenset(
+    {
+        "topic_count_profile_mismatch",
+        "topic_coverage_empty",
+        "topic_duplicate_slug",
+        "topic_overlap",
+        "topic_coverage_uncovered",
+        "topic_materialization_invalid",
+    }
+)
 
 
 def _exhausted_update(
@@ -103,6 +122,22 @@ def _provider_category(problem: NodeProblem | None) -> str | None:
     return problem.code.value
 
 
+def _canonical_parser_validation_code(error: TypeError | ValueError) -> str:
+    """Collapse parser detail to the closed Journal vocabulary."""
+
+    code = str(error)
+    return code if code in _TOPIC_PLAN_PARSER_CODES else "topic_plan_invalid"
+
+
+def _canonical_materialization_validation_code(error: TypeError | ValueError) -> str:
+    """Retain only a materializer's closed code, never dynamic validation detail."""
+
+    code = str(error)
+    if code.startswith("topic_coverage_uncovered:"):
+        return "topic_coverage_uncovered"
+    return code if code in _TOPIC_MATERIALIZATION_CODES else "topic_materialization_invalid"
+
+
 def _recovery_projection(
     *,
     trigger: NodeProblem,
@@ -151,6 +186,28 @@ async def _record_recovery_observation(
         return
 
 
+async def _record_validation_observation(
+    dependencies: NodeBuildDependencies,
+    *,
+    stage: str,
+    codes: tuple[str, ...],
+) -> None:
+    """Publish parser/materializer evidence without affecting planner control flow."""
+
+    recorder = dependencies.event_recorder
+    if recorder is None:
+        return
+    try:
+        await recorder.record(
+            category=RunEventCategory.VALIDATION,
+            phase="topic_planning",
+            validation_stage=stage,
+            validation_codes=codes,
+        )
+    except Exception:
+        return
+
+
 async def _invoke_plan(
     dependencies: NodeBuildDependencies,
     *,
@@ -168,11 +225,37 @@ async def _invoke_plan(
     return outcome.result, None
 
 
-def _materialize(result: NodeExecutionResult, inputs: PlannerInputs) -> MaterializedTopics:
-    plan: TopicPlan = parse_plan_output(result.summary)
-    if inputs.single_topic and len(plan.topics) != 1:
-        raise ValueError("topic_count_profile_mismatch")
-    return materialize_topic_plan(plan, inputs.coverage_questions)
+async def _materialize_with_observation(
+    result: NodeExecutionResult,
+    inputs: PlannerInputs,
+    *,
+    dependencies: NodeBuildDependencies,
+    stage: str,
+) -> MaterializedTopics:
+    """Validate one candidate and retain only its closed observational outcome."""
+
+    try:
+        plan: TopicPlan = parse_plan_output(result.summary)
+    except (TypeError, ValueError) as error:
+        await _record_validation_observation(
+            dependencies,
+            stage=stage,
+            codes=(_canonical_parser_validation_code(error),),
+        )
+        raise
+    try:
+        if inputs.single_topic and len(plan.topics) != 1:
+            raise ValueError("topic_count_profile_mismatch")
+        materialized = materialize_topic_plan(plan, inputs.coverage_questions)
+    except (TypeError, ValueError) as error:
+        await _record_validation_observation(
+            dependencies,
+            stage=stage,
+            codes=(_canonical_materialization_validation_code(error),),
+        )
+        raise
+    await _record_validation_observation(dependencies, stage=stage, codes=())
+    return materialized
 
 
 async def _generate_plan(
@@ -243,7 +326,16 @@ async def _generate_plan(
             )
         assert retry_result is not None
         try:
-            return _materialize(retry_result, inputs), None, None
+            return (
+                await _materialize_with_observation(
+                    retry_result,
+                    inputs,
+                    dependencies=dependencies,
+                    stage="initial",
+                ),
+                None,
+                None,
+            )
         except (TypeError, ValueError):
             return (
                 None,
@@ -262,7 +354,16 @@ async def _generate_plan(
 
     assert initial_result is not None
     try:
-        return _materialize(initial_result, inputs), None, None
+        return (
+            await _materialize_with_observation(
+                initial_result,
+                inputs,
+                dependencies=dependencies,
+                stage="initial",
+            ),
+            None,
+            None,
+        )
     except (TypeError, ValueError) as exc:
         repair_request = build_planner_prompt(
             inputs,
@@ -293,7 +394,16 @@ async def _generate_plan(
             return None, repair_problem, None
         assert repair_result is not None
         try:
-            return _materialize(repair_result, inputs), None, None
+            return (
+                await _materialize_with_observation(
+                    repair_result,
+                    inputs,
+                    dependencies=dependencies,
+                    stage="repair",
+                ),
+                None,
+                None,
+            )
         except (TypeError, ValueError):
             return (
                 None,

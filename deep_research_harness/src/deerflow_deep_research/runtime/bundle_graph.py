@@ -899,6 +899,7 @@ class BundleGraphExecutor:
                 bundle_id=bundle.bundle_id.value,
             ),
             bundle_id=bundle.bundle_id.value,
+            execution_profile=envelope.execution_profile,
         )
         await recorder.establish(
             generation=state.generation,

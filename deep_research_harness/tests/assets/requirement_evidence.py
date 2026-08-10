@@ -1240,6 +1240,73 @@ REQUIREMENT_IMPACTS = (
         ),
         "a deleted selected Bundle could otherwise reach an artifact or retained-record fallback",
     ),
+    RequirementImpact(
+        "DPL-011",
+        "demo-pipeline",
+        StableSeam.RUNTIME_INTEGRATION,
+        "tests/unit/test_demo_core.py::test_explicit_real_demo_profile_is_single_safe_runtime_configuration",
+        (
+            "registry ordering could otherwise choose a credential-backed profile or "
+            "expose its configuration at composition"
+        ),
+    ),
+    RequirementImpact(
+        "DPL-012",
+        "demo-pipeline",
+        StableSeam.PUBLIC_ENTRY,
+        "tests/contract/test_demo_commands.py::test_real_demo_calibration_documents_an_explicit_observational_procedure",
+        (
+            "operator guidance could otherwise invoke an unselected profile or treat "
+            "one diagnostic run as a default decision"
+        ),
+    ),
+    RequirementImpact(
+        "REJ-006",
+        "run-event-journal",
+        StableSeam.RUNTIME_INTEGRATION,
+        "tests/unit/test_run_observation_store.py::test_admitted_journal_retains_profile_only_on_matching_admission_and_summary",
+        (
+            "execution-profile provenance could otherwise escape its admitted Bundle "
+            "Journal boundary or include sensitive configuration"
+        ),
+    ),
+    RequirementImpact(
+        "REJ-007",
+        "run-event-journal",
+        StableSeam.RUNTIME_INTEGRATION,
+        (
+            "tests/integration/test_wave0_work_units.py::"
+            "test_one_bundle_journal_retains_topic_planning_and_wave0_validation_as_observations"
+        ),
+        "cross-node validation evidence could otherwise leak candidate detail or become checkpoint and admission state",
+    ),
+    RequirementImpact(
+        "NOA-015",
+        "node-agent-runtime",
+        StableSeam.RUNTIME_INTEGRATION,
+        (
+            "tests/unit/test_node_agent_bridge.py::"
+            "test_bridge_uses_unknown_for_untyped_budget_stop_and_keeps_non_budget_failures_unattributed"
+        ),
+        "raw budget-stop detail could otherwise escape the bridge or be attributed to an unrelated normalized failure",
+    ),
+    RequirementImpact(
+        "TOP-009",
+        "topic-planning-node",
+        StableSeam.NODE_INTERFACE,
+        (
+            "tests/graph/test_topic_planning_node.py::"
+            "test_invalid_initial_topic_plan_then_repair_records_ordered_closed_codes"
+        ),
+        "planner parser evidence could otherwise lose initial-versus-repair order or retain an untrusted draft",
+    ),
+    RequirementImpact(
+        "WAN-010",
+        "wave0-node",
+        StableSeam.RUNTIME_INTEGRATION,
+        "tests/integration/test_wave0_work_units.py::test_real_wave0_valid_initial_parser_observation_is_closed_and_correlated",
+        "Wave0 parser evidence could otherwise be lost before candidate admission or lose work/attempt correlation",
+    ),
 )
 
 

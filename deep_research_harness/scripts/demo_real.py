@@ -339,8 +339,9 @@ async def run_demo(*, question: str | None, scripted: bool) -> int:
         print("  已退出，未启动研究。")
         return 130
 
-    adapter = DemoAdapter()
+    adapter: DemoAdapter | None = None
     try:
+        adapter = DemoAdapter.for_real()
         if hasattr(experience, "set_observation_publisher"):
             experience.set_observation_publisher(adapter.observation_publisher)
         transport.bind(runtime=build_demo_runtime(mode="real", adapter=adapter))
@@ -366,11 +367,12 @@ async def run_demo(*, question: str | None, scripted: bool) -> int:
         print("  本地演示无法启动；请检查本地项目环境。")
         return 1
     finally:
-        closer = getattr(adapter, "aclose", None)
-        if closer is not None:
-            await closer()
-        else:
-            adapter.close()
+        if adapter is not None:
+            closer = getattr(adapter, "aclose", None)
+            if closer is not None:
+                await closer()
+            else:
+                adapter.close()
 
 
 def main() -> None:

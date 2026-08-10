@@ -16,6 +16,8 @@ from pathlib import Path
 import pytest
 
 from deerflow_deep_research.domain.run_observation import (
+    BudgetStopReason,
+    ExecutionProfileEvidence,
     JournalAvailability,
     JournalIncompleteReason,
     ObservationInspectability,
@@ -34,6 +36,10 @@ from deerflow_deep_research.runtime.run_observation import (
 )
 
 BUNDLE_ID = "b_" + "A" * 43
+
+
+def _execution_profile(*, profile_id: str = "deepseek-v4-flash") -> ExecutionProfileEvidence:
+    return ExecutionProfileEvidence(profile_id=profile_id, registry_revision="v1")
 
 
 def _fact(**overrides: object) -> RecordBearingLifecycleFact:
@@ -140,6 +146,164 @@ async def test_admitted_bundle_journal_retains_correlated_validation_evidence_in
         (0, None, ()),
         (0, "initial", ("wave1_new_source_floor_not_met",)),
     ]
+
+
+@pytest.mark.asyncio
+async def test_admitted_journal_retains_profile_only_on_matching_admission_and_summary(tmp_path: Path) -> None:
+    """@impl REJ-006"""
+    bundle_root = tmp_path / "bundle"
+    (bundle_root / "diagnostics").mkdir(mode=0o700, parents=True)
+    os.chmod(bundle_root / "diagnostics", 0o700)
+    profile = _execution_profile()
+    recorder = RunObservationRecorder(
+        store=RunObservationStore(bundle_root=bundle_root, bundle_id=BUNDLE_ID),
+        bundle_id=BUNDLE_ID,
+        execution_profile=profile,
+    )
+
+    await recorder.establish(generation=0, phase="bootstrap", durability="restart_durable")
+    await recorder.record(category=RunEventCategory.NODE, phase="bootstrap", attempt_id="bootstrap_a00")
+    inspection = await RunObservationStore(bundle_root=bundle_root, bundle_id=BUNDLE_ID).inspect(bundle_id=BUNDLE_ID)
+
+    assert inspection.summary is not None
+    assert inspection.summary.execution_profile == profile
+    assert inspection.events[0].category is RunEventCategory.ADMISSION
+    assert inspection.events[0].execution_profile == profile
+    assert all(event.execution_profile is None for event in inspection.events[1:])
+    serialized = inspection.model_dump_json(exclude_none=True)
+    assert "deepseek-v4-flash" in serialized
+    for forbidden in ("api_key", "https://", "prompt", "provider_body", "demo-secret"):
+        assert forbidden not in serialized
+
+
+@pytest.mark.asyncio
+async def test_profile_provenance_is_strict_and_legacy_or_non_demo_journals_do_not_invent_it(tmp_path: Path) -> None:
+    """@impl REJ-006"""
+    bundle_root = tmp_path / "bundle"
+    (bundle_root / "diagnostics").mkdir(mode=0o700, parents=True)
+    os.chmod(bundle_root / "diagnostics", 0o700)
+    store = RunObservationStore(bundle_root=bundle_root, bundle_id=BUNDLE_ID)
+    profile = _execution_profile()
+    await RunObservationRecorder(store=store, bundle_id=BUNDLE_ID, execution_profile=profile).establish(
+        generation=0,
+        phase="bootstrap",
+        durability="restart_durable",
+    )
+
+    conflicting = await RunObservationRecorder(
+        store=RunObservationStore(bundle_root=bundle_root, bundle_id=BUNDLE_ID),
+        bundle_id=BUNDLE_ID,
+        execution_profile=_execution_profile(profile_id="openai-demo"),
+    ).establish(generation=0, phase="bootstrap", durability="restart_durable")
+    assert conflicting.inspectability is ObservationInspectability.UNAVAILABLE
+
+    with pytest.raises(ValueError, match="journal_execution_profile_unexpected"):
+        RunEvent(
+            schema_version=2,
+            sequence=2,
+            timestamp=datetime.now(UTC),
+            category=RunEventCategory.NODE,
+            generation=0,
+            phase="bootstrap",
+            execution_profile=profile,
+        )
+
+    non_demo_root = tmp_path / "non-demo"
+    (non_demo_root / "diagnostics").mkdir(mode=0o700, parents=True)
+    os.chmod(non_demo_root / "diagnostics", 0o700)
+    non_demo_store = RunObservationStore(bundle_root=non_demo_root, bundle_id=BUNDLE_ID)
+    await RunObservationRecorder(store=non_demo_store, bundle_id=BUNDLE_ID).establish(
+        generation=0,
+        phase="bootstrap",
+        durability="restart_durable",
+    )
+    non_demo = await non_demo_store.inspect(bundle_id=BUNDLE_ID)
+    assert non_demo.summary is not None
+    assert non_demo.summary.execution_profile is None
+    assert non_demo.events[0].execution_profile is None
+
+
+@pytest.mark.asyncio
+async def test_journal_retains_only_valid_closed_budget_stop_reasons(tmp_path: Path) -> None:
+    """@impl REJ-007"""
+
+    bundle_root = tmp_path / "bundle"
+    (bundle_root / "diagnostics").mkdir(mode=0o700, parents=True)
+    os.chmod(bundle_root / "diagnostics", 0o700)
+    store = RunObservationStore(bundle_root=bundle_root, bundle_id=BUNDLE_ID)
+    recorder = RunObservationRecorder(store=store, bundle_id=BUNDLE_ID)
+    await recorder.establish(generation=0, phase="bootstrap", durability="restart_durable")
+
+    await recorder.record(
+        category=RunEventCategory.MODEL_TOOL,
+        phase="topic_planning",
+        attempt_id="topic_planning_a00",
+        outcome="failed",
+        failure_category="budget.exhausted",
+        worker_failure_category="agent_invocation",
+        budget_stop_reason=BudgetStopReason.TOKEN_ADMISSION,
+    )
+    await recorder.record(
+        category=RunEventCategory.MODEL_TOOL,
+        phase="hitl1",
+        attempt_id="hitl1_a00",
+        outcome="failed",
+        failure_category="provider.timeout",
+        worker_failure_category="agent_invocation",
+        provider_category="provider.timeout",
+        budget_stop_reason=BudgetStopReason.BRIDGE_WALL_TIME,
+    )
+    await recorder.record(
+        category=RunEventCategory.MODEL_TOOL,
+        phase="wave0",
+        attempt_id="wave0_a00",
+        outcome="failed",
+        failure_category="provider.unavailable",
+        worker_failure_category="agent_invocation",
+        provider_category="provider.unavailable",
+        budget_stop_reason=BudgetStopReason.UNKNOWN,
+    )
+    inspection = await store.inspect(bundle_id=BUNDLE_ID)
+
+    assert [event.budget_stop_reason for event in inspection.events] == [
+        None,
+        BudgetStopReason.TOKEN_ADMISSION,
+        BudgetStopReason.BRIDGE_WALL_TIME,
+    ]
+    serialized = inspection.model_dump_json(exclude_none=True)
+    assert '"token_admission"' in serialized
+    assert '"bridge_wall_time"' in serialized
+    assert "provider.unavailable" not in serialized
+
+    invalid_event = {
+        "schema_version": 2,
+        "sequence": 4,
+        "timestamp": datetime.now(UTC),
+        "category": RunEventCategory.NODE,
+        "generation": 0,
+        "phase": "wave0",
+        "outcome": "failed",
+        "failure_category": "budget.exhausted",
+        "budget_stop_reason": BudgetStopReason.TOTAL_TOKEN_BUDGET,
+    }
+    with pytest.raises(ValueError, match="journal_budget_stop_reason_unexpected"):
+        RunEvent(**invalid_event)
+    with pytest.raises(ValueError, match="journal_budget_stop_reason_failure_mismatch"):
+        RunEvent(
+            **{
+                **invalid_event,
+                "category": RunEventCategory.MODEL_TOOL,
+                "budget_stop_reason": BudgetStopReason.BRIDGE_WALL_TIME,
+            }
+        )
+    with pytest.raises(ValueError, match="journal_budget_stop_reason_failure_mismatch"):
+        RunEvent(
+            **{
+                **invalid_event,
+                "category": RunEventCategory.MODEL_TOOL,
+                "failure_category": "provider.timeout",
+            }
+        )
 
 
 @pytest.mark.asyncio

@@ -21,6 +21,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from deerflow_deep_research.domain.run_observation import ExecutionProfileEvidence
 from deerflow_deep_research.runtime.events import ProgressEmitter, make_progress_emitter
 from deerflow_deep_research.runtime.identity import (
     require_context_value,
@@ -61,6 +62,7 @@ class TrustedRuntimeEnvelope:
     outputs_virtual_root: str
     parent_sandbox: Any | None
     progress: ProgressEmitter
+    execution_profile: ExecutionProfileEvidence | None = None
     event_recorder_factory: Callable[[str], Any] | None = None
 
 

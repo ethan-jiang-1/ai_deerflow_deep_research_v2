@@ -26,6 +26,7 @@ from langchain.agents.middleware import AgentMiddleware
 
 from deerflow_deep_research.agents.policies import ExecutionBudget, ExecutionPolicy, path_within_roots
 from deerflow_deep_research.domain.enums import NodeFinishReason
+from deerflow_deep_research.domain.run_observation import BudgetStopReason
 
 
 class PhaseAgentStop(RuntimeError):
@@ -39,6 +40,15 @@ class PhaseAgentStop(RuntimeError):
 
 class AgentBudgetError(PhaseAgentStop):
     """Raised to stop the agent with a typed budget/usage finish reason."""
+
+    def __init__(
+        self,
+        finish_reason: NodeFinishReason,
+        detail: str,
+        budget_stop_reason: BudgetStopReason | None = None,
+    ) -> None:
+        super().__init__(finish_reason, detail)
+        self.budget_stop_reason = budget_stop_reason
 
 
 class AgentPolicyError(PhaseAgentStop):
@@ -76,12 +86,20 @@ class BudgetMiddleware(AgentMiddleware):
         if system is not None:
             bound = _content_upper_bound(getattr(system, "content", ""))
             if bound < 0:
-                raise AgentBudgetError(NodeFinishReason.BUDGET_EXHAUSTED, "non-text content lacks a modality estimator")
+                raise AgentBudgetError(
+                    NodeFinishReason.BUDGET_EXHAUSTED,
+                    "non-text content lacks a modality estimator",
+                    BudgetStopReason.REQUEST_CONTENT_UNESTIMABLE,
+                )
             total += bound
         for message in getattr(request, "messages", []) or []:
             bound = _content_upper_bound(getattr(message, "content", ""))
             if bound < 0:
-                raise AgentBudgetError(NodeFinishReason.BUDGET_EXHAUSTED, "non-text content lacks a modality estimator")
+                raise AgentBudgetError(
+                    NodeFinishReason.BUDGET_EXHAUSTED,
+                    "non-text content lacks a modality estimator",
+                    BudgetStopReason.REQUEST_CONTENT_UNESTIMABLE,
+                )
             total += bound
         for tool in getattr(request, "tools", []) or []:
             total += len(str(tool).encode("utf-8"))
@@ -90,11 +108,19 @@ class BudgetMiddleware(AgentMiddleware):
     async def awrap_model_call(self, request: Any, handler: Any) -> Any:
         budget = self._budget
         if self.model_calls >= budget.max_model_calls:
-            raise AgentBudgetError(NodeFinishReason.BUDGET_EXHAUSTED, "maximum model calls reached")
+            raise AgentBudgetError(
+                NodeFinishReason.BUDGET_EXHAUSTED,
+                "maximum model calls reached",
+                BudgetStopReason.MODEL_CALL_LIMIT,
+            )
 
         projected = self._request_upper_bound(request) + budget.per_call_output_token_cap
         if self.tokens_used + projected > budget.total_token_budget:
-            raise AgentBudgetError(NodeFinishReason.BUDGET_EXHAUSTED, "token admission upper bound exceeds budget")
+            raise AgentBudgetError(
+                NodeFinishReason.BUDGET_EXHAUSTED,
+                "token admission upper bound exceeds budget",
+                BudgetStopReason.TOKEN_ADMISSION,
+            )
 
         response = await handler(request)
 
@@ -104,24 +130,44 @@ class BudgetMiddleware(AgentMiddleware):
             raise AgentBudgetError(NodeFinishReason.USAGE_UNAVAILABLE, "model response has no usable token accounting")
 
         if usage["output_tokens"] > budget.per_call_output_token_cap:
-            raise AgentBudgetError(NodeFinishReason.BUDGET_EXHAUSTED, "per-call output token cap exceeded")
+            raise AgentBudgetError(
+                NodeFinishReason.BUDGET_EXHAUSTED,
+                "per-call output token cap exceeded",
+                BudgetStopReason.PER_CALL_OUTPUT_CAP,
+            )
 
         self.tokens_used += int(usage["total_tokens"])
         if self.tokens_used > budget.total_token_budget:
-            raise AgentBudgetError(NodeFinishReason.BUDGET_EXHAUSTED, "total token budget exhausted")
+            raise AgentBudgetError(
+                NodeFinishReason.BUDGET_EXHAUSTED,
+                "total token budget exhausted",
+                BudgetStopReason.TOTAL_TOKEN_BUDGET,
+            )
         self.model_calls += 1
 
         tool_calls = getattr(message, "tool_calls", None) or []
         if len(tool_calls) > budget.max_tool_calls_per_response:
-            raise AgentBudgetError(NodeFinishReason.BUDGET_EXHAUSTED, "too many tool calls in one response")
+            raise AgentBudgetError(
+                NodeFinishReason.BUDGET_EXHAUSTED,
+                "too many tool calls in one response",
+                BudgetStopReason.TOOL_CALLS_PER_RESPONSE,
+            )
         if len(tool_calls) > budget.max_parallel_tool_calls:
-            raise AgentBudgetError(NodeFinishReason.BUDGET_EXHAUSTED, "parallel tool-call limit exceeded")
+            raise AgentBudgetError(
+                NodeFinishReason.BUDGET_EXHAUSTED,
+                "parallel tool-call limit exceeded",
+                BudgetStopReason.PARALLEL_TOOL_CALLS,
+            )
         return response
 
     async def awrap_tool_call(self, request: Any, handler: Any) -> Any:
         budget = self._budget
         if self.tool_calls >= budget.max_total_tool_calls:
-            raise AgentBudgetError(NodeFinishReason.BUDGET_EXHAUSTED, "maximum total tool calls reached")
+            raise AgentBudgetError(
+                NodeFinishReason.BUDGET_EXHAUSTED,
+                "maximum total tool calls reached",
+                BudgetStopReason.TOTAL_TOOL_CALLS,
+            )
         self.tool_calls += 1
         result = await handler(request)
         return self._bound_tool_result(result, budget.per_tool_result_bytes)

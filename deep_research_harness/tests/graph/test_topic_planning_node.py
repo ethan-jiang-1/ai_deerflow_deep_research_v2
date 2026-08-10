@@ -354,6 +354,171 @@ class _RecoveryRecorder:
         self.calls.append(kwargs)
 
 
+class _ValidationRecorder:
+    def __init__(self) -> None:
+        self.calls: list[dict[str, object]] = []
+
+    async def record(self, **kwargs: object) -> None:
+        self.calls.append(kwargs)
+
+
+def _validation_events(recorder: _ValidationRecorder) -> list[dict[str, object]]:
+    return [call for call in recorder.calls if call["category"] is RunEventCategory.VALIDATION]
+
+
+async def test_valid_initial_topic_plan_publishes_a_phase_validation_fact() -> None:
+    """@impl TOP-009
+    @impl REJ-007
+    """
+
+    recorder = _ValidationRecorder()
+    result = await topic_planning_node.build_real(_deps(_Caps(_result(_covering_plan())), recorder=recorder))(_state())
+
+    assert result["route"] == "next"
+    assert _validation_events(recorder) == [
+        {
+            "category": RunEventCategory.VALIDATION,
+            "phase": "topic_planning",
+            "validation_stage": "initial",
+            "validation_codes": (),
+        }
+    ]
+
+
+async def test_invalid_initial_topic_plan_then_repair_records_ordered_closed_codes() -> None:
+    """@impl TOP-009
+    @impl REJ-007
+    """
+
+    invalid_draft = "not-json untrusted-draft=keep-out"
+    recorder = _ValidationRecorder()
+    caps = _Caps(_result(invalid_draft), _result(_covering_plan()))
+
+    result = await topic_planning_node.build_real(_deps(caps, recorder=recorder))(_state())
+
+    assert result["route"] == "next"
+    assert _validation_events(recorder) == [
+        {
+            "category": RunEventCategory.VALIDATION,
+            "phase": "topic_planning",
+            "validation_stage": "initial",
+            "validation_codes": ("topic_plan_json_invalid",),
+        },
+        {
+            "category": RunEventCategory.VALIDATION,
+            "phase": "topic_planning",
+            "validation_stage": "repair",
+            "validation_codes": (),
+        },
+    ]
+    assert invalid_draft not in str(_validation_events(recorder))
+
+
+async def test_invalid_initial_and_repair_topic_plans_record_distinct_validation_facts() -> None:
+    """@impl TOP-009
+    @impl REJ-007
+    """
+
+    initial_draft = "not-json initial-draft=keep-out"
+    repair_draft = '{"unexpected":"repair-draft=keep-out"}'
+    recorder = _ValidationRecorder()
+    caps = _Caps(_result(initial_draft), _result(repair_draft))
+
+    result = await topic_planning_node.build_real(_deps(caps, recorder=recorder))(_state())
+
+    assert result["route"] == "exhausted"
+    assert _validation_events(recorder) == [
+        {
+            "category": RunEventCategory.VALIDATION,
+            "phase": "topic_planning",
+            "validation_stage": "initial",
+            "validation_codes": ("topic_plan_json_invalid",),
+        },
+        {
+            "category": RunEventCategory.VALIDATION,
+            "phase": "topic_planning",
+            "validation_stage": "repair",
+            "validation_codes": ("topic_plan_extra_fields",),
+        },
+    ]
+    retained = str(_validation_events(recorder))
+    assert initial_draft not in retained
+    assert repair_draft not in retained
+
+
+async def test_topic_plan_materialization_collapses_dynamic_coverage_detail() -> None:
+    """@impl TOP-009
+    @impl REJ-007
+    """
+
+    uncovered_question = "Q2"
+    partial_plan = _plan_json(_topic("Batteries", "Grid battery economics", "Q1"))
+    recorder = _ValidationRecorder()
+    caps = _Caps(_result(partial_plan), _result(_covering_plan()))
+
+    result = await topic_planning_node.build_real(_deps(caps, recorder=recorder))(_state())
+
+    assert result["route"] == "next"
+    events = _validation_events(recorder)
+    assert [event["validation_codes"] for event in events] == [
+        ("topic_coverage_uncovered",),
+        (),
+    ]
+    assert uncovered_question not in str(events)
+    assert partial_plan not in str(events)
+
+
+async def test_topic_planning_invocation_failure_before_candidate_emits_no_validation_fact() -> None:
+    """@impl TOP-009
+    @impl REJ-007
+    """
+
+    recorder = _ValidationRecorder()
+    caps = _Caps(RuntimeError("provider failure raw-detail=keep-out"))
+
+    result = await topic_planning_node.build_real(_deps(caps, recorder=recorder))(_state())
+
+    assert result["route"] == "exhausted"
+    assert "topic_registry" not in result
+    assert _validation_events(recorder) == []
+
+
+def test_topic_planning_validation_code_mappers_are_closed_and_redacted() -> None:
+    """@impl TOP-009"""
+
+    for code in (
+        "topic_plan_empty",
+        "topic_plan_json_invalid",
+        "topic_plan_extra_fields",
+        "topic_plan_invalid",
+    ):
+        assert topic_planning_node._canonical_parser_validation_code(ValueError(code)) == code
+    assert (
+        topic_planning_node._canonical_parser_validation_code(ValueError("raw parser detail=keep-out"))
+        == "topic_plan_invalid"
+    )
+
+    for code in (
+        "topic_count_profile_mismatch",
+        "topic_coverage_empty",
+        "topic_duplicate_slug",
+        "topic_overlap",
+        "topic_coverage_uncovered",
+        "topic_materialization_invalid",
+    ):
+        assert topic_planning_node._canonical_materialization_validation_code(ValueError(code)) == code
+    assert (
+        topic_planning_node._canonical_materialization_validation_code(
+            ValueError("topic_coverage_uncovered:dynamic question=keep-out")
+        )
+        == "topic_coverage_uncovered"
+    )
+    assert (
+        topic_planning_node._canonical_materialization_validation_code(ValueError("raw materializer detail=keep-out"))
+        == "topic_materialization_invalid"
+    )
+
+
 def _provider_timeout_problem() -> NodeProblem:
     return NodeProblem(
         code=RunFailureCode.PROVIDER_TIMEOUT,
@@ -556,7 +721,10 @@ async def test_structured_output_repair_timeout_does_not_start_provider_recovery
         "automatic_retries": 0,
         "disposition": "retry_not_started_budget_consumed",
     }
-    assert [call["category"] for call in recorder.calls] == [RunEventCategory.ATTEMPT]
+    assert [call["category"] for call in recorder.calls] == [
+        RunEventCategory.VALIDATION,
+        RunEventCategory.ATTEMPT,
+    ]
 
 
 async def test_empty_must_answer_uses_request_text_for_coverage() -> None:

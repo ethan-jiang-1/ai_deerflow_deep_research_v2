@@ -92,6 +92,11 @@ class _Adapter:
         self.close_calls = 0
         type(self).created.append(self)
 
+    @classmethod
+    def for_real(cls) -> _Adapter:
+        """Represent a test environment whose real-demo preflight already passed."""
+        return cls()
+
     async def create_work_unit_store(self, *_args: Any, **_kwargs: Any) -> object:
         return object()
 

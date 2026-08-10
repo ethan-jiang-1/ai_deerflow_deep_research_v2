@@ -35,6 +35,7 @@ from deerflow_deep_research.domain.run_experience import (
     RunFailure,
     RunFailureCode,
 )
+from deerflow_deep_research.domain.run_observation import ExecutionProfileEvidence
 from deerflow_deep_research.runtime.bundle_graph import BundleGraphExecutor
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
 from deerflow_deep_research.runtime.control import build_control_graph_host
@@ -66,33 +67,63 @@ _TAVILY_MAX_READ_ATTEMPTS = 3
 _TAVILY_RETRY_BACKOFF_SECONDS = (1.0, 2.0)
 _DEMO_BUNDLE_ROOT_NAME = ".deep-research-demo-runs"
 
-# Each entry: (env_var, model_name, use_path, model_id, base_url, extra_kwargs)
+
+@dataclass(frozen=True)
+class _RegisteredDemoModel:
+    credential_env: str
+    name: str
+    use_path: str
+    model_id: str
+    base_url: str | None
+    extra_kwargs: Mapping[str, Any]
+    safe_revision: str
+
+
+@dataclass(frozen=True)
+class DemoModelProfile:
+    """One selected credential-backed model and its safe diagnostic identity."""
+
+    model_config: Any
+    evidence: ExecutionProfileEvidence
+
+
 _MODEL_REGISTRY = (
-    (
-        "DEEPSEEK_API_KEY",
-        "deepseek-v4-pro",
-        "deerflow.models.patched_deepseek:PatchedChatDeepSeek",
-        "deepseek-v4-pro",
-        "https://api.deepseek.com/v1",
-        {},
+    _RegisteredDemoModel(
+        credential_env="DEEPSEEK_API_KEY",
+        name="deepseek-v4-pro",
+        use_path="deerflow.models.patched_deepseek:PatchedChatDeepSeek",
+        model_id="deepseek-v4-pro",
+        base_url="https://api.deepseek.com/v1",
+        extra_kwargs={},
+        safe_revision="v1",
     ),
-    (
-        "DEEPSEEK_API_KEY",
-        "deepseek-v4-flash",
-        "deerflow.models.patched_deepseek:PatchedChatDeepSeek",
-        "deepseek-v4-flash",
-        "https://api.deepseek.com/v1",
-        {},
+    _RegisteredDemoModel(
+        credential_env="DEEPSEEK_API_KEY",
+        name="deepseek-v4-flash",
+        use_path="deerflow.models.patched_deepseek:PatchedChatDeepSeek",
+        model_id="deepseek-v4-flash",
+        base_url="https://api.deepseek.com/v1",
+        extra_kwargs={},
+        safe_revision="v1",
     ),
-    (
-        "ANTHROPIC_API_KEY",
-        "anthropic-demo",
-        "langchain_anthropic:ChatAnthropic",
-        "claude-sonnet-4-5-20250901",
-        None,
-        {},
+    _RegisteredDemoModel(
+        credential_env="ANTHROPIC_API_KEY",
+        name="anthropic-demo",
+        use_path="langchain_anthropic:ChatAnthropic",
+        model_id="claude-sonnet-4-5-20250901",
+        base_url=None,
+        extra_kwargs={},
+        safe_revision="v1",
     ),
-    ("OPENAI_API_KEY", "openai-demo", "langchain_openai:ChatOpenAI", "gpt-4o", None, {}),
+    _RegisteredDemoModel(
+        credential_env="OPENAI_API_KEY",
+        name="openai-demo",
+        use_path="langchain_openai:ChatOpenAI",
+        model_id="gpt-4o",
+        base_url=None,
+        extra_kwargs={},
+        safe_revision="v1",
+    ),
 )
 
 
@@ -119,7 +150,7 @@ def validate_real_demo_prerequisites(environ: Mapping[str, str] | None = None) -
     @impl DPL-001
     @impl DPL-004
     """
-    model_missing = not _resolve_demo_models(environ)
+    model_missing = resolve_real_demo_model_profile(environ) is None
     web_tool_missing = _nonblank_environment_value(_TAVILY_API_KEY_VAR, environ) is None
     if model_missing or web_tool_missing:
         raise DemoPrerequisiteError(model_missing=model_missing, web_tool_missing=web_tool_missing)
@@ -138,7 +169,7 @@ def demo_readiness_report(*, mode: str, environ: Mapping[str, str] | None = None
     if mode != "real":
         raise ValueError("demo_mode_invalid")
 
-    model_ready = bool(_resolve_demo_models(environ))
+    model_ready = resolve_real_demo_model_profile(environ) is not None
     web_ready = _nonblank_environment_value(_TAVILY_API_KEY_VAR, environ) is not None
     checks = (
         ReadinessCheck(
@@ -189,28 +220,48 @@ def demo_readiness_report(*, mode: str, environ: Mapping[str, str] | None = None
     )
 
 
-def _resolve_demo_models(environ: Mapping[str, str] | None = None):
-    """Build ModelConfig entries for every available env credential."""
+def _model_config_for_profile(entry: _RegisteredDemoModel, *, api_key: str) -> Any:
+    """Materialize one configured model without exporting its secret-bearing fields."""
     from deerflow.config.model_config import ModelConfig
 
-    models = []
-    for env_var, name, use_path, model_id, base_url, extra in _MODEL_REGISTRY:
-        api_key = _nonblank_environment_value(env_var, environ)
-        if api_key is not None:
-            cfg: dict[str, Any] = {
-                "name": name,
-                "use": use_path,
-                "model": model_id,
-                "api_key": api_key,
-                **extra,
-            }
-            if base_url is not None:
-                cfg["base_url"] = base_url
-            models.append(ModelConfig(**cfg))
+    config: dict[str, Any] = {
+        "name": entry.name,
+        "use": entry.use_path,
+        "model": entry.model_id,
+        "api_key": api_key,
+        **entry.extra_kwargs,
+    }
+    if entry.base_url is not None:
+        config["base_url"] = entry.base_url
+    return ModelConfig(**config)
+
+
+def resolve_real_demo_model_profile(environ: Mapping[str, str] | None = None) -> DemoModelProfile | None:
+    """Resolve exactly one explicit credential-backed all-real demo profile."""
+
     requested_name = _nonblank_environment_value(_DEMO_MODEL_SELECTOR_ENV, environ)
     if requested_name is None:
-        return models
-    return [model for model in models if model.name == requested_name]
+        return None
+    matches = [
+        (entry, api_key)
+        for entry in _MODEL_REGISTRY
+        if entry.name == requested_name
+        if (api_key := _nonblank_environment_value(entry.credential_env, environ)) is not None
+    ]
+    if len(matches) != 1:
+        return None
+    entry, api_key = matches[0]
+    return DemoModelProfile(
+        model_config=_model_config_for_profile(entry, api_key=api_key),
+        evidence=ExecutionProfileEvidence(profile_id=entry.name, registry_revision=entry.safe_revision),
+    )
+
+
+def _resolve_demo_models(environ: Mapping[str, str] | None = None) -> list[Any]:
+    """Compatibility helper for the fixed one-profile real-demo composition."""
+
+    profile = resolve_real_demo_model_profile(environ)
+    return [profile.model_config] if profile is not None else []
 
 
 class _DemoSandboxConfig:
@@ -230,8 +281,8 @@ class DemoAppConfig:
     sandbox = _DemoSandboxConfig()
     tools: list[Any] = []
 
-    def __init__(self) -> None:
-        self._models = _resolve_demo_models()
+    def __init__(self, *, models: Sequence[Any] = ()) -> None:
+        self._models = list(models)
         self.models = self._models
 
     def get_model_config(self, name: str):
@@ -302,6 +353,7 @@ class DemoAdapter:
         self,
         *,
         bundle_root: Path | None = None,
+        model_profile: DemoModelProfile | None = None,
     ) -> None:
         agent_root = Path(__file__).resolve().parents[1]
         root = bundle_root or agent_root / _DEMO_BUNDLE_ROOT_NAME
@@ -312,6 +364,7 @@ class DemoAdapter:
         self._paths = (root, workspace, uploads, outputs)
         self._opened = False
         self._closed = False
+        self._execution_profile = model_profile.evidence if model_profile is not None else None
 
         # Create a proper LocalSandbox so the work-unit storage verification can
         # exercise real POSIX primitives (aliased read/write, directory listing).
@@ -331,7 +384,7 @@ class DemoAdapter:
             # its lifecycle scope. Bundle ids remain independently generated.
             outer_thread_id=f"demo-thread-{profile_key}",
             outer_run_id=f"demo-run-{secrets.token_hex(4)}",
-            app_config=DemoAppConfig(),
+            app_config=DemoAppConfig(models=(model_profile.model_config,) if model_profile is not None else ()),
             workspace_host_path=workspace,
             uploads_host_path=uploads,
             outputs_host_path=outputs,
@@ -340,11 +393,29 @@ class DemoAdapter:
             outputs_virtual_root="/mnt/user-data/outputs",
             parent_sandbox=sandbox,
             progress=None,
+            execution_profile=self._execution_profile,
         )
         self._observation_publisher = BundleRunObservationPublisher(
             lifecycle=self._bundle_lifecycle,
             scope=(self._envelope.effective_user_id, self._envelope.outer_thread_id),
         )
+
+    @classmethod
+    def for_real(
+        cls,
+        *,
+        bundle_root: Path | None = None,
+        environ: Mapping[str, str] | None = None,
+    ) -> DemoAdapter:
+        validate_real_demo_prerequisites(environ)
+        profile = resolve_real_demo_model_profile(environ)
+        if profile is None:
+            raise DemoPrerequisiteError(model_missing=True, web_tool_missing=False)
+        return cls(bundle_root=bundle_root, model_profile=profile)
+
+    @property
+    def execution_profile(self) -> ExecutionProfileEvidence | None:
+        return self._execution_profile
 
     @property
     def observation_publisher(self) -> BundleRunObservationPublisher:
@@ -710,6 +781,8 @@ def build_demo_runtime(*, mode: Literal["real", "fixture_graph"], adapter: DemoA
     """Compose one fixed graph-backed demo runtime without caller recipe authority."""
 
     if mode == "real":
+        if adapter.execution_profile is None:
+            raise RuntimeError("demo_real_profile_required")
         recipe = build_real_demo_recipe(work_unit_store_factory=adapter.create_work_unit_store)
     elif mode == "fixture_graph":
         recipe = build_fixture_demo_recipe(work_unit_store_factory=adapter.create_work_unit_store)
@@ -730,7 +803,7 @@ def build_demo_host() -> Any:
 
 
 def check_credentials_available() -> bool:
-    return bool(_resolve_demo_models())
+    return resolve_real_demo_model_profile() is not None
 
 
 # ── install demo patches at import time ──────────────────────────────

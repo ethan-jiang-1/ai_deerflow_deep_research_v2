@@ -17,9 +17,9 @@ Run commands from `deep_research_harness/`. Use the root README's
 | Initialize, check, or start the demo profile | `make profile-init PROFILE=demo`, `make profile-check PROFILE=demo`, `make profile-dev PROFILE=demo` |
 | Run the interactive zero-credential demo | `make demo` |
 | Run the deterministic non-interactive demo | `make demo-scripted` |
-| Run an interactive all-real demo | `make demo-real` |
-| Run a non-interactive all-real demo | `make demo-real-scripted` |
-| Start the Textual real or fixture visualizer | `make demo-tui`, `make demo-tui-fake` |
+| Run an interactive all-real demo | `DEERFLOW_DEMO_MODEL=<profile> make demo-real` |
+| Run a non-interactive all-real demo | `DEERFLOW_DEMO_MODEL=<profile> make demo-real-scripted` |
+| Start the Textual real or fixture visualizer | `DEERFLOW_DEMO_MODEL=<profile> make demo-tui`, `make demo-tui-fake` |
 | Open the standalone local workbench | `make session-workbench` |
 | Inspect one retained observation | `make demo-sessions DEMO_ARGS="inspect <bundle-id>"` |
 
@@ -101,12 +101,31 @@ id, infer lifecycle state from output files, or create a second controller.
 For example:
 
 ```bash
-make demo-real DEMO_ARGS='--question "Compare battery storage costs"'
+DEERFLOW_DEMO_MODEL=<profile> make demo-real DEMO_ARGS='--question "Compare battery storage costs"'
 ```
 
 The CLI and TUI show progress only after a returned typed update. A local Ctrl-C stops
 the presentation process; it is not a claim that the Bundle was cancelled. Use a
 returned legal `cancel` action when the run must be stopped.
+
+## Bounded Real-Demo Calibration
+
+Choose one registered, credential-backed profile for each bounded calibration run:
+
+```bash
+DEERFLOW_DEMO_MODEL=<profile> make demo-real-scripted
+make demo-sessions DEMO_ARGS="inspect <bundle-id>"
+```
+
+The scripted command keeps its existing fixed question and creates a fresh Run Bundle.
+Use the printed Bundle id only with the read-only inspection command, then compare the
+redacted profile identity/revision, phase, failure category, budget-stop reason, and
+validation codes. Repeat manually with another explicit profile when a comparison is
+needed; do not automate a model matrix from this procedure.
+
+This evidence does not qualify a model and does not select or change a default model.
+It does not change prompts, budgets, retries, or lifecycle controls, and a retained
+observation cannot rerun or alter the Bundle that produced it.
 
 ## Retained Observations And Diagnostics
 

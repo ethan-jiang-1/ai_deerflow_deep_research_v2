@@ -11,6 +11,7 @@ from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from deerflow_deep_research.agents.middleware import AgentBudgetError, BudgetMiddleware
 from deerflow_deep_research.agents.policies import ExecutionBudget
 from deerflow_deep_research.domain.enums import NodeFinishReason
+from deerflow_deep_research.domain.run_observation import BudgetStopReason
 
 
 def _budget(**overrides) -> ExecutionBudget:
@@ -79,14 +80,16 @@ async def test_max_model_calls_refused_before_handler() -> None:
     with pytest.raises(AgentBudgetError) as excinfo:
         await mw.awrap_model_call(FakeRequest(), handler)
     assert excinfo.value.finish_reason == NodeFinishReason.BUDGET_EXHAUSTED
+    assert excinfo.value.budget_stop_reason is BudgetStopReason.MODEL_CALL_LIMIT
     assert called is False
 
 
 async def test_non_text_content_fails_admission() -> None:
     mw = BudgetMiddleware(_budget())
     non_text = HumanMessage(content=[{"type": "image_url", "image_url": {"url": "x"}}])
-    with pytest.raises(AgentBudgetError):
+    with pytest.raises(AgentBudgetError) as excinfo:
         await mw.awrap_model_call(FakeRequest(messages=[non_text]), _handler_for(_ai()))
+    assert excinfo.value.budget_stop_reason is BudgetStopReason.REQUEST_CONTENT_UNESTIMABLE
 
 
 async def test_token_admission_upper_bound_refused_before_handler() -> None:
@@ -99,8 +102,9 @@ async def test_token_admission_upper_bound_refused_before_handler() -> None:
         return FakeResponse(_ai())
 
     big = HumanMessage("x" * 200)
-    with pytest.raises(AgentBudgetError):
+    with pytest.raises(AgentBudgetError) as excinfo:
         await mw.awrap_model_call(FakeRequest(messages=[big]), handler)
+    assert excinfo.value.budget_stop_reason is BudgetStopReason.TOKEN_ADMISSION
     assert called is False
 
 
@@ -109,6 +113,7 @@ async def test_missing_usage_is_terminal_usage_unavailable() -> None:
     with pytest.raises(AgentBudgetError) as excinfo:
         await mw.awrap_model_call(FakeRequest(), _handler_for(_ai(input_tokens=None, output_tokens=None)))
     assert excinfo.value.finish_reason == NodeFinishReason.USAGE_UNAVAILABLE
+    assert excinfo.value.budget_stop_reason is None
 
 
 async def test_per_call_output_cap_exceeded() -> None:
@@ -116,13 +121,15 @@ async def test_per_call_output_cap_exceeded() -> None:
     with pytest.raises(AgentBudgetError) as excinfo:
         await mw.awrap_model_call(FakeRequest(), _handler_for(_ai(output_tokens=500)))
     assert excinfo.value.finish_reason == NodeFinishReason.BUDGET_EXHAUSTED
+    assert excinfo.value.budget_stop_reason is BudgetStopReason.PER_CALL_OUTPUT_CAP
 
 
 async def test_total_token_budget_exhausted_after_reconcile() -> None:
-    mw = BudgetMiddleware(_budget(total_token_budget=120, per_call_output_token_cap=100))
-    mw.tokens_used = 100
-    with pytest.raises(AgentBudgetError):
-        await mw.awrap_model_call(FakeRequest(), _handler_for(_ai(input_tokens=5, output_tokens=90)))
+    mw = BudgetMiddleware(_budget(total_token_budget=300, per_call_output_token_cap=100))
+    mw.tokens_used = 101
+    with pytest.raises(AgentBudgetError) as excinfo:
+        await mw.awrap_model_call(FakeRequest(), _handler_for(_ai(input_tokens=150, output_tokens=50)))
+    assert excinfo.value.budget_stop_reason is BudgetStopReason.TOTAL_TOKEN_BUDGET
 
 
 async def test_too_many_tool_calls_per_response() -> None:
@@ -132,15 +139,17 @@ async def test_too_many_tool_calls_per_response() -> None:
         {"name": "t", "args": {}, "id": "2"},
         {"name": "t", "args": {}, "id": "3"},
     ]
-    with pytest.raises(AgentBudgetError):
+    with pytest.raises(AgentBudgetError) as excinfo:
         await mw.awrap_model_call(FakeRequest(), _handler_for(_ai(tool_calls=three)))
+    assert excinfo.value.budget_stop_reason is BudgetStopReason.TOOL_CALLS_PER_RESPONSE
 
 
 async def test_parallel_tool_call_limit() -> None:
     mw = BudgetMiddleware(_budget(max_tool_calls_per_response=2, max_parallel_tool_calls=1))
     two = [{"name": "t", "args": {}, "id": "1"}, {"name": "t", "args": {}, "id": "2"}]
-    with pytest.raises(AgentBudgetError):
+    with pytest.raises(AgentBudgetError) as excinfo:
         await mw.awrap_model_call(FakeRequest(), _handler_for(_ai(tool_calls=two)))
+    assert excinfo.value.budget_stop_reason is BudgetStopReason.PARALLEL_TOOL_CALLS
 
 
 async def test_max_total_tool_calls_refused() -> None:
@@ -150,8 +159,9 @@ async def test_max_total_tool_calls_refused() -> None:
     async def handler(_request):
         return ToolMessage(content="x", tool_call_id="c1")
 
-    with pytest.raises(AgentBudgetError):
+    with pytest.raises(AgentBudgetError) as excinfo:
         await mw.awrap_tool_call(object(), handler)
+    assert excinfo.value.budget_stop_reason is BudgetStopReason.TOTAL_TOOL_CALLS
 
 
 async def test_tool_result_is_size_bounded() -> None:
