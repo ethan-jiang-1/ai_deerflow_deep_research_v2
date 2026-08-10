@@ -1,6 +1,0 @@
-interface:
-  display_name: "Polish OpenSpec Change"
-  short_description: "Iteratively review and harden a change"
-  default_prompt: "Use $polish-openspec-change to review and refine <change-name-or-path> until it is ready for apply."
-policy:
-  allow_implicit_invocation: false

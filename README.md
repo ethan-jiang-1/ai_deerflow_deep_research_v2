@@ -9,7 +9,8 @@ deep_research_harness/    ★ 你的应用（deep research runtime，基于 deer
 deerflow/                 被 leverage 的框架（submodule @ ethan，含研究笔记 _digest/_faq），只读
 openspec/                 设计规格（openspec CLI 管理）
 _backlog/                 任务账本
-.claude/skills/           grillme 技能集（grilling/tdd/code-review 等）
+.agents/skills/           openspec 技能（Codex 通用入口，项目自有）
+（grillme 技能集由全局 ~/.claude/skills、~/.agents/skills 提供）
 ```
 
 ## 快速开始

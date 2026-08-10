@@ -37,7 +37,7 @@ uv sync                              # 或 python -m venv .venv && pip install -
 
 ## 可用技能（Coding Agent）
 
-`.claude/skills/` 下是 grillme 技能集（grilling / tdd / code-review / domain-modeling 等）。适合本仓的：`grilling`（质疑方案）、`tdd`、`code-review`、`domain-modeling`、`codebase-design`。
+共享的 grillme 技能集（grilling / tdd / code-review / domain-modeling 等）由全局安装提供（`~/.claude/skills/` 与 `~/.agents/skills/`，symlink 到 grillme-skills checkout），本仓库不保存副本。适合本仓的：`grilling`（质疑方案）、`tdd`、`code-review`、`domain-modeling`、`codebase-design`。项目自有的 openspec 技能在 `.agents/skills/`（Codex 通用入口，见 `.openspec-target`）。
 
 ## 边界铁律
 
