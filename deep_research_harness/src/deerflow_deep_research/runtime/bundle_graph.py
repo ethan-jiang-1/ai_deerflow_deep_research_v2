@@ -8,7 +8,7 @@ the SQLite checkpoint, lifecycle State, evidence ledger, and produced content.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any
 
 from langgraph.types import Command
@@ -20,6 +20,7 @@ from deerflow_deep_research.domain.lifecycle import (
     MAX_FAKE_RERUN_GENERATIONS,
     AcceptedHumanResponse,
     CurrentRoundDirection,
+    Durability,
     ImplementationMode,
     LifecycleAction,
     LifecycleStatus,
@@ -52,6 +53,8 @@ from deerflow_deep_research.runtime.research import (
     _build_wave1_capabilities,
     _build_wave2_synthesis_capabilities,
 )
+from deerflow_deep_research.runtime.run_observation import RunObservationRecorder, RunObservationStore
+from deerflow_deep_research.runtime.runtime_adapter import TrustedRuntimeEnvelope
 from deerflow_deep_research.runtime.work_unit_store import WorkUnitStore
 
 
@@ -322,6 +325,12 @@ class BundleGraphExecutor:
                     )
                 else:
                     state = await lifecycle.read_state(bundle)
+                    journal_envelope = await self._journal_envelope(
+                        lifecycle=lifecycle,
+                        bundle=bundle,
+                        state=state,
+                        envelope=envelope,
+                    )
                     execution_lease.ensure_live()
                     await graph.ainvoke(
                         self._initial_graph_state(
@@ -331,7 +340,7 @@ class BundleGraphExecutor:
                             start_input=start_input,
                         ),
                         config=config,
-                        context=await self._context(envelope=envelope, bundle=bundle),
+                        context=await self._context(envelope=journal_envelope, bundle=bundle),
                     )
                     execution_lease.ensure_live()
                     result = await self._project(
@@ -399,6 +408,12 @@ class BundleGraphExecutor:
             ),
             round_token=current.round_token,
         )
+        journal_envelope = await self._journal_envelope(
+            lifecycle=lifecycle,
+            bundle=bundle,
+            state=state,
+            envelope=envelope,
+        )
         config = self._config(bundle)
         async with lifecycle.open_graph_checkpoint(bundle) as saver:
             graph = self._recipe.builder.compile(checkpointer=saver)
@@ -417,7 +432,7 @@ class BundleGraphExecutor:
             await graph.ainvoke(
                 None,
                 config=config,
-                context=await self._context(envelope=envelope, bundle=bundle),
+                context=await self._context(envelope=journal_envelope, bundle=bundle),
             )
             execution_lease.ensure_live()
             completed = await graph.aget_state(config)
@@ -647,10 +662,17 @@ class BundleGraphExecutor:
                 snapshot = await graph.aget_state(config)
                 if not snapshot or not snapshot.values:
                     raise BundleLifecycleError("bundle_graph_missing")
+                state = await lifecycle.read_state(bundle)
+                journal_envelope = await self._journal_envelope(
+                    lifecycle=lifecycle,
+                    bundle=bundle,
+                    state=state,
+                    envelope=envelope,
+                )
                 await graph.ainvoke(
                     Command(resume=response.model_dump(mode="json")),
                     config=config,
-                    context=await self._context(envelope=envelope, bundle=bundle),
+                    context=await self._context(envelope=journal_envelope, bundle=bundle),
                 )
                 execution_lease.ensure_live()
                 result = await self._project(
@@ -857,6 +879,35 @@ class BundleGraphExecutor:
                 if getattr(envelope, "event_recorder_factory", None) is not None
                 else None
             ),
+        )
+
+    @staticmethod
+    async def _journal_envelope(
+        *,
+        lifecycle: BundleLifecycle,
+        bundle: RunBundleRef,
+        state: BundleLocalState,
+        envelope: Any,
+    ) -> Any:
+        """Establish one Bundle-local Journal before a graph producer can run."""
+
+        if not isinstance(envelope, TrustedRuntimeEnvelope):
+            return envelope
+        recorder = RunObservationRecorder(
+            store=RunObservationStore(
+                bundle_root=lifecycle.private_root(bundle),
+                bundle_id=bundle.bundle_id.value,
+            ),
+            bundle_id=bundle.bundle_id.value,
+        )
+        await recorder.establish(
+            generation=state.generation,
+            phase=state.phase.value,
+            durability=Durability.RESTART_DURABLE.value,
+        )
+        return replace(
+            envelope,
+            event_recorder_factory=lambda bundle_id: recorder if bundle_id == bundle.bundle_id.value else None,
         )
 
 

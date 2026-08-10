@@ -17,7 +17,9 @@
 
 ## 活跃列表
 
-当前没有活跃 plan。
+| Plan | 说明 |
+|------|------|
+| [diagnostics-event-journal.md](diagnostics-event-journal.md) | 中间态诊断日志架构：为什么 demo 只记结果不记过程、怎么把每个失败留痕（2026-08-10，实施走 openspec/changes） |
 
 新的分析或设计应在此创建，完成后再移入归档。
 

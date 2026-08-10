@@ -25,8 +25,10 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from deerflow_deep_research.domain.bundle import BundleId
 from deerflow_deep_research.domain.run_observation import (
     MAX_EVENT_RECORDS,
+    MAX_LIFECYCLE_SEQUENCE,
     MAX_TRACE_RECORDS,
     MAX_TRACE_SNAPSHOT_BYTES,
     JournalAvailability,
@@ -53,6 +55,7 @@ _DIAGNOSTICS_DIRECTORY = "diagnostics"
 _LIFECYCLE_FILENAME = "lifecycle.jsonl"
 _EVENTS_FILENAME = "events.jsonl"
 _DIAGNOSTIC_FILENAME = "records.jsonl"
+_JOURNAL_MANIFEST_FILENAME = "journal-manifest.json"
 
 
 class RunObservationError(RuntimeError):
@@ -67,9 +70,29 @@ class RunObservationStore:
     observation's bounded identity.  It never maps to a Run Bundle directory.
     """
 
-    def __init__(self, *, retained_root: Path) -> None:
-        self._root = Path(retained_root)
+    def __init__(
+        self,
+        *,
+        retained_root: Path | None = None,
+        bundle_root: Path | None = None,
+        bundle_id: str | None = None,
+        max_event_records: int = MAX_EVENT_RECORDS,
+    ) -> None:
+        if (retained_root is None) == (bundle_root is None):
+            raise ValueError("observation_storage_location_required")
+        if not isinstance(max_event_records, int) or not 2 <= max_event_records <= MAX_EVENT_RECORDS:
+            raise ValueError("journal_capacity_invalid")
+        if bundle_root is not None:
+            if not _valid_bundle_id(bundle_id):
+                raise ValueError("bundle_id_invalid")
+            self._root = Path(bundle_root)
+            self._bundle_id = bundle_id
+        else:
+            self._root = Path(retained_root)
+            self._bundle_id = None
+        self._max_event_records = max_event_records
         self._locks: dict[str, asyncio.Lock] = {}
+        self._pending_bundle_persistence_failures: dict[str, int] = {}
 
     @staticmethod
     def project_default_root(project_root: Path) -> Path:
@@ -82,10 +105,20 @@ class RunObservationStore:
 
         if not isinstance(fact, RecordBearingLifecycleFact):
             raise TypeError("run_observation_fact_required")
+        if self._bundle_id is not None and fact.bundle_id != self._bundle_id:
+            return RunObservationView(
+                bundle_id=fact.bundle_id,
+                inspectability=ObservationInspectability.UNAVAILABLE,
+                durability="unavailable",
+                observation_category=ObservationCategory.RECORD_INVALID,
+            )
         async with self._lock_for(fact.bundle_id):
             try:
+                if self._bundle_id is not None:
+                    return await asyncio.to_thread(self._bundle_publish_sync, fact)
                 return await asyncio.to_thread(self._publish_sync, fact)
             except (OSError, ValueError, RunObservationError):
+                self._note_bundle_persistence_failure(fact.bundle_id)
                 return RunObservationView(
                     bundle_id=fact.bundle_id,
                     inspectability=ObservationInspectability.UNAVAILABLE,
@@ -101,8 +134,16 @@ class RunObservationStore:
                 inspectability=ObservationInspectability.INVALID_REFERENCE,
                 observation_category=ObservationCategory.RECORD_INVALID,
             )
+        if self._bundle_id is not None and bundle_id != self._bundle_id:
+            return RunObservationInspection(
+                bundle_id=bundle_id,
+                inspectability=ObservationInspectability.UNAVAILABLE,
+                observation_category=ObservationCategory.RECORD_INVALID,
+            )
         async with self._lock_for(bundle_id):
             try:
+                if self._bundle_id is not None:
+                    return await asyncio.to_thread(self._bundle_inspect_sync, bundle_id)
                 return await asyncio.to_thread(self._inspect_sync, bundle_id)
             except (OSError, ValueError, RunObservationError):
                 return RunObservationInspection(
@@ -117,9 +158,12 @@ class RunObservationStore:
         bundle_id: str,
         category: RunEventCategory,
         phase: str,
+        generation: int | None = None,
         work_id: str | None = None,
         attempt_id: str | None = None,
         validation_code: str | None = None,
+        validation_stage: str | None = None,
+        validation_codes: tuple[str, ...] = (),
         worker_failure_category: str | None = None,
         retry_count: int | None = None,
         diagnostic_ref: str | None = None,
@@ -131,18 +175,21 @@ class RunObservationStore:
     ) -> None:
         """Append a redacted event only to an already-published observation."""
 
-        if not _valid_bundle_id(bundle_id):
+        if not _valid_bundle_id(bundle_id) or (self._bundle_id is not None and bundle_id != self._bundle_id):
             return
         async with self._lock_for(bundle_id):
             try:
                 await asyncio.to_thread(
-                    self._record_event_sync,
+                    self._bundle_record_event_sync if self._bundle_id is not None else self._record_event_sync,
                     bundle_id,
                     category,
                     phase,
+                    generation,
                     work_id,
                     attempt_id,
                     validation_code,
+                    validation_stage,
+                    validation_codes,
                     worker_failure_category,
                     retry_count,
                     diagnostic_ref,
@@ -154,12 +201,453 @@ class RunObservationStore:
                 )
             except (OSError, ValueError, RunObservationError):
                 # Observations cannot perturb graph or lifecycle execution.
+                self._note_bundle_persistence_failure(bundle_id)
                 return
 
     async def cleanup(self) -> tuple[str, ...]:
         """Keep retention lifecycle-free; no observation can delete a Bundle."""
 
         return ()
+
+    async def _establish(
+        self,
+        *,
+        generation: int,
+        phase: str,
+        durability: str,
+    ) -> RunObservationView:
+        """Create the selected Bundle's Journal before any producer can emit facts."""
+
+        if self._bundle_id is None:
+            raise RuntimeError("bundle_journal_required")
+        async with self._lock_for(self._bundle_id):
+            try:
+                return await asyncio.to_thread(
+                    self._bundle_establish_sync,
+                    generation,
+                    phase,
+                    durability,
+                )
+            except (OSError, ValueError, RunObservationError):
+                self._note_bundle_persistence_failure(self._bundle_id)
+                return RunObservationView(
+                    bundle_id=self._bundle_id,
+                    inspectability=ObservationInspectability.UNAVAILABLE,
+                    durability="unavailable",
+                    observation_category=ObservationCategory.PERSISTENCE_UNAVAILABLE,
+                )
+
+    def _bundle_establish_sync(
+        self,
+        generation: int,
+        phase: str,
+        durability: str,
+    ) -> RunObservationView:
+        assert self._bundle_id is not None
+        journal_root = self._bundle_journal_root()
+        self._ensure_directory(journal_root)
+        manifest_path = journal_root / _JOURNAL_MANIFEST_FILENAME
+        existing = self._read_model(manifest_path, RunObservationManifest)
+        if existing is not None and existing.bundle_id != self._bundle_id:
+            raise RunObservationError("journal_manifest_mismatch")
+        now = datetime.now(UTC)
+        events = self._read_lines(journal_root / _EVENTS_FILENAME, RunEvent)
+        manifest = existing
+        if not events:
+            admission = RunEvent(
+                schema_version=2,
+                sequence=1,
+                timestamp=now,
+                category=RunEventCategory.ADMISSION,
+                generation=generation,
+                phase=phase,
+            )
+            manifest = self._new_bundle_manifest(now=now, durability=durability, high_watermark=0)
+            events, manifest = self._append_bundle_event(journal_root, manifest, admission)
+        elif manifest is None:
+            manifest = self._new_bundle_manifest(
+                now=now,
+                durability=durability,
+                high_watermark=max(event.sequence for event in events),
+            )
+            manifest = manifest.model_copy(
+                update={
+                    "dropped_event_count": 1,
+                    "first_dropped_sequence": 1,
+                    "last_dropped_sequence": 1,
+                }
+            )
+            self._atomic_write(manifest_path, self._encode_model(manifest))
+        summary = self._read_model(journal_root / _SUMMARY_FILENAME, RunSummary)
+        if summary is None:
+            summary = self._bundle_summary(
+                status="active",
+                phase=phase,
+                generation=generation,
+                durability=durability,
+                latest_event_sequence=events[-1].sequence,
+                manifest=manifest,
+            )
+            self._atomic_write(journal_root / _SUMMARY_FILENAME, self._encode_model(summary))
+        return RunObservationView(
+            bundle_id=self._bundle_id,
+            inspectability=ObservationInspectability.AVAILABLE,
+            retention_state=manifest.retention_state,
+            durability=manifest.durability,
+        )
+
+    def _bundle_publish_sync(self, fact: RecordBearingLifecycleFact) -> RunObservationView:
+        self._bundle_establish_sync(
+            generation=fact.generation,
+            phase=fact.phase,
+            durability=fact.durability,
+        )
+        assert self._bundle_id is not None
+        journal_root = self._bundle_journal_root()
+        now = datetime.now(UTC)
+        manifest = self._required_bundle_manifest(journal_root)
+        events = self._read_lines(journal_root / _EVENTS_FILENAME, RunEvent)
+        event = RunEvent(
+            schema_version=2,
+            sequence=self._next_sequence(manifest, events),
+            timestamp=now,
+            category=RunEventCategory.TERMINAL if fact.terminal_outcome is not None else RunEventCategory.LIFECYCLE,
+            generation=fact.generation,
+            phase=fact.phase,
+            worker_failure_category=fact.worker_failure_category,
+            diagnostic_ref=fact.diagnostic_ref,
+        )
+        events, manifest = self._append_bundle_event(journal_root, manifest, event)
+        diagnostics_records = self._read_lines(journal_root / _DIAGNOSTIC_FILENAME, RetainedDiagnosticRecord)
+        if fact.diagnostic_ref is not None and not any(record.reference == fact.diagnostic_ref for record in diagnostics_records):
+            diagnostics_records = (*diagnostics_records, self._diagnostic_record(fact, now))
+            self._atomic_write(journal_root / _DIAGNOSTIC_FILENAME, self._encode_lines(diagnostics_records))
+        summary = self._bundle_summary(
+            status=fact.status,
+            phase=fact.phase,
+            generation=fact.generation,
+            durability=fact.durability,
+            latest_event_sequence=event.sequence,
+            manifest=manifest,
+            terminal_outcome=fact.terminal_outcome,
+            failure_category=fact.failure_category,
+            worker_failure_category=fact.worker_failure_category,
+            diagnostic_ref=fact.diagnostic_ref,
+            retained_recovery_summary=fact.retained_recovery_summary,
+        )
+        self._atomic_write(journal_root / _SUMMARY_FILENAME, self._encode_model(summary))
+        updated_manifest = manifest.model_copy(
+            update={
+                "updated_at": now,
+                "durability": fact.durability,
+                "diagnostic_path": "diagnostics/records.jsonl" if diagnostics_records else None,
+            }
+        )
+        self._atomic_write(journal_root / _JOURNAL_MANIFEST_FILENAME, self._encode_model(updated_manifest))
+        return RunObservationView(
+            bundle_id=fact.bundle_id,
+            inspectability=ObservationInspectability.AVAILABLE,
+            retention_state=updated_manifest.retention_state,
+            durability=fact.durability,
+            terminal_diagnostic_ref=fact.diagnostic_ref,
+        )
+
+    def _bundle_inspect_sync(self, bundle_id: str) -> RunObservationInspection:
+        journal_root = self._bundle_journal_root()
+        if not journal_root.exists():
+            return RunObservationInspection(bundle_id=bundle_id, inspectability=ObservationInspectability.NOT_FOUND)
+        self._require_directory(journal_root)
+        manifest = self._read_model(journal_root / _JOURNAL_MANIFEST_FILENAME, RunObservationManifest)
+        if manifest is None or manifest.bundle_id != bundle_id:
+            raise RunObservationError("journal_manifest_invalid")
+        summary = self._read_model(journal_root / _SUMMARY_FILENAME, RunSummary)
+        events = self._read_lines(journal_root / _EVENTS_FILENAME, RunEvent)
+        diagnostics = self._read_lines(journal_root / _DIAGNOSTIC_FILENAME, RetainedDiagnosticRecord)
+        journal_availability = self._inspection_journal_availability(manifest, events)
+        if summary is not None and summary.journal_availability is not journal_availability:
+            summary = summary.model_copy(update={"journal_availability": journal_availability})
+        terminal = self._terminal_diagnostic(summary, diagnostics)
+        return RunObservationInspection(
+            bundle_id=bundle_id,
+            inspectability=ObservationInspectability.AVAILABLE,
+            retention_state=manifest.retention_state,
+            durability=manifest.durability,
+            summary=summary,
+            events=events,
+            journal_availability=journal_availability,
+            terminal_diagnostic_ref=(terminal.reference if terminal is not None else None),
+            terminal_diagnostic=terminal,
+        )
+
+    def _bundle_record_event_sync(
+        self,
+        bundle_id: str,
+        category: RunEventCategory,
+        phase: str,
+        generation: int | None,
+        work_id: str | None,
+        attempt_id: str | None,
+        validation_code: str | None,
+        validation_stage: str | None,
+        validation_codes: tuple[str, ...],
+        worker_failure_category: str | None,
+        retry_count: int | None,
+        diagnostic_ref: str | None,
+        recovery_correlation_id: str | None,
+        provider_category: str | None,
+        retry_ordinal: int | None,
+        backoff_milliseconds: int | None,
+        recovery_event_disposition: str | None,
+    ) -> None:
+        if generation is None:
+            return
+        journal_root = self._bundle_journal_root()
+        manifest = self._read_model(journal_root / _JOURNAL_MANIFEST_FILENAME, RunObservationManifest)
+        if manifest is None or manifest.bundle_id != bundle_id:
+            return
+        events = self._read_lines(journal_root / _EVENTS_FILENAME, RunEvent)
+        try:
+            event = RunEvent(
+                schema_version=2,
+                sequence=self._next_sequence(manifest, events),
+                timestamp=datetime.now(UTC),
+                category=category,
+                generation=generation,
+                phase=phase,
+                work_id=work_id,
+                attempt_id=attempt_id,
+                validation_code=validation_code,
+                validation_stage=validation_stage,  # type: ignore[arg-type]
+                validation_codes=validation_codes,
+                worker_failure_category=worker_failure_category,  # type: ignore[arg-type]
+                retry_count=retry_count,
+                diagnostic_ref=diagnostic_ref,
+                recovery_correlation_id=recovery_correlation_id,
+                provider_category=provider_category,  # type: ignore[arg-type]
+                retry_ordinal=retry_ordinal,
+                backoff_milliseconds=backoff_milliseconds,
+                recovery_event_disposition=recovery_event_disposition,  # type: ignore[arg-type]
+            )
+        except ValueError:
+            return
+        events, manifest = self._append_bundle_event(journal_root, manifest, event)
+        summary = self._read_model(journal_root / _SUMMARY_FILENAME, RunSummary)
+        if summary is not None:
+            updated_summary = summary.model_copy(
+                update={
+                    "updated_at": event.timestamp,
+                    "journal_availability": self._journal_availability(manifest),
+                    "latest_event_sequence": event.sequence,
+                    "dropped_event_count": manifest.dropped_event_count,
+                    "first_dropped_sequence": manifest.first_dropped_sequence,
+                    "last_dropped_sequence": manifest.last_dropped_sequence,
+                }
+            )
+            self._atomic_write(journal_root / _SUMMARY_FILENAME, self._encode_model(updated_summary))
+
+    def _bundle_journal_root(self) -> Path:
+        if self._bundle_id is None:
+            raise RuntimeError("bundle_journal_required")
+        return self._root / _DIAGNOSTICS_DIRECTORY
+
+    def _new_bundle_manifest(
+        self,
+        *,
+        now: datetime,
+        durability: str,
+        high_watermark: int,
+    ) -> RunObservationManifest:
+        assert self._bundle_id is not None
+        return RunObservationManifest(
+            schema_version=2,
+            bundle_id=self._bundle_id,
+            created_at=now,
+            updated_at=now,
+            retention_state=RetentionState.RETAINED,
+            durability=durability,  # type: ignore[arg-type]
+            summary_path=_SUMMARY_FILENAME,
+            events_path=f"{_DIAGNOSTICS_DIRECTORY}/{_EVENTS_FILENAME}",
+            event_high_watermark=high_watermark,
+        )
+
+    def _required_bundle_manifest(self, journal_root: Path) -> RunObservationManifest:
+        manifest = self._read_model(journal_root / _JOURNAL_MANIFEST_FILENAME, RunObservationManifest)
+        if manifest is None or manifest.bundle_id != self._bundle_id:
+            raise RunObservationError("journal_manifest_invalid")
+        if manifest.schema_version != 2 or manifest.event_high_watermark is None:
+            raise RunObservationError("journal_manifest_legacy")
+        return manifest
+
+    @staticmethod
+    def _next_sequence(manifest: RunObservationManifest, events: tuple[RunEvent, ...]) -> int:
+        if manifest.schema_version != 2 or manifest.event_high_watermark is None:
+            raise RunObservationError("journal_manifest_legacy")
+        if events and max(event.sequence for event in events) > manifest.event_high_watermark:
+            raise RunObservationError("journal_sequence_high_watermark_invalid")
+        if manifest.event_high_watermark >= MAX_LIFECYCLE_SEQUENCE:
+            raise RunObservationError("journal_sequence_exhausted")
+        return manifest.event_high_watermark + 1
+
+    def _append_bundle_event(
+        self,
+        journal_root: Path,
+        manifest: RunObservationManifest,
+        event: RunEvent,
+    ) -> tuple[tuple[RunEvent, ...], RunObservationManifest]:
+        if manifest.schema_version != 2 or manifest.event_high_watermark is None:
+            raise RunObservationError("journal_manifest_legacy")
+        events = self._read_lines(journal_root / _EVENTS_FILENAME, RunEvent)
+        sequences = tuple(item.sequence for item in events)
+        if len(events) > self._max_event_records or sequences != tuple(sorted(set(sequences))):
+            raise RunObservationError("journal_events_invalid")
+        if events and events[-1].sequence > manifest.event_high_watermark:
+            raise RunObservationError("journal_sequence_high_watermark_invalid")
+        expected_sequence = manifest.event_high_watermark + 1
+        if event.sequence != expected_sequence:
+            raise RunObservationError("journal_sequence_not_monotonic")
+
+        retained = (*events, event)
+        dropped: list[RunEvent] = []
+        while len(retained) > self._max_event_records:
+            eviction_index = self._bundle_eviction_index(retained)
+            dropped.append(retained[eviction_index])
+            retained = (*retained[:eviction_index], *retained[eviction_index + 1 :])
+
+        first_dropped_sequence = manifest.first_dropped_sequence
+        last_dropped_sequence = manifest.last_dropped_sequence
+        if dropped:
+            dropped_sequences = tuple(item.sequence for item in dropped)
+            first_dropped_sequence = min(
+                dropped_sequences
+                if first_dropped_sequence is None
+                else (first_dropped_sequence, *dropped_sequences)
+            )
+            last_dropped_sequence = max(
+                dropped_sequences
+                if last_dropped_sequence is None
+                else (last_dropped_sequence, *dropped_sequences)
+            )
+        updated_manifest = manifest.model_copy(
+            update={
+                "updated_at": event.timestamp,
+                "event_high_watermark": event.sequence,
+                "dropped_event_count": manifest.dropped_event_count + len(dropped),
+                "first_dropped_sequence": first_dropped_sequence,
+                "last_dropped_sequence": last_dropped_sequence,
+                "persistence_failure_count": (
+                    manifest.persistence_failure_count + self._pending_bundle_failure_count()
+                ),
+            }
+        )
+        self._atomic_write(journal_root / _EVENTS_FILENAME, self._encode_lines(retained))
+        self._atomic_write(journal_root / _JOURNAL_MANIFEST_FILENAME, self._encode_model(updated_manifest))
+        self._clear_pending_bundle_persistence_failures()
+        return retained, updated_manifest
+
+    @staticmethod
+    def _bundle_eviction_index(events: tuple[RunEvent, ...]) -> int:
+        candidates = [
+            (RunObservationStore._event_retention_priority(event), event.sequence, index)
+            for index, event in enumerate(events)
+            if event.category is not RunEventCategory.ADMISSION
+        ]
+        if not candidates:
+            raise RunObservationError("journal_admission_anchor_overflow")
+        return min(candidates)[2]
+
+    @staticmethod
+    def _event_retention_priority(event: RunEvent) -> int:
+        if event.category is RunEventCategory.TERMINAL:
+            return 90
+        if event.category is RunEventCategory.VALIDATION and (
+            event.validation_code is not None or event.validation_codes
+        ):
+            return 80
+        if event.worker_failure_category is not None or event.provider_category is not None:
+            return 70
+        if event.category is RunEventCategory.EXHAUSTION:
+            return 60
+        if event.category is RunEventCategory.RETRY:
+            return 50
+        if event.category is RunEventCategory.LIFECYCLE:
+            return 40
+        return 10
+
+    @staticmethod
+    def _journal_availability(manifest: RunObservationManifest) -> JournalAvailability:
+        if manifest.schema_version != 2 or manifest.event_high_watermark is None:
+            return JournalAvailability.INCOMPLETE
+        if manifest.dropped_event_count or manifest.persistence_failure_count:
+            return JournalAvailability.INCOMPLETE
+        return JournalAvailability.COMPLETE
+
+    def _inspection_journal_availability(
+        self,
+        manifest: RunObservationManifest,
+        events: tuple[RunEvent, ...],
+    ) -> JournalAvailability:
+        if manifest.schema_version != 2 or manifest.event_high_watermark is None:
+            return JournalAvailability.INCOMPLETE
+        if any(event.schema_version != 2 or event.generation is None for event in events):
+            return JournalAvailability.INCOMPLETE
+        sequences = tuple(event.sequence for event in events)
+        if not events or sequences != tuple(sorted(set(sequences))):
+            raise RunObservationError("journal_events_invalid")
+        if events[-1].sequence > manifest.event_high_watermark:
+            raise RunObservationError("journal_sequence_high_watermark_invalid")
+        if self._pending_bundle_failure_count():
+            return JournalAvailability.INCOMPLETE
+        return self._journal_availability(manifest)
+
+    def _note_bundle_persistence_failure(self, bundle_id: str | None) -> None:
+        if self._bundle_id is None or bundle_id != self._bundle_id:
+            return
+        self._pending_bundle_persistence_failures[bundle_id] = self._pending_bundle_failure_count() + 1
+
+    def _pending_bundle_failure_count(self) -> int:
+        if self._bundle_id is None:
+            return 0
+        return self._pending_bundle_persistence_failures.get(self._bundle_id, 0)
+
+    def _clear_pending_bundle_persistence_failures(self) -> None:
+        if self._bundle_id is not None:
+            self._pending_bundle_persistence_failures.pop(self._bundle_id, None)
+
+    def _bundle_summary(
+        self,
+        *,
+        status: str,
+        phase: str,
+        generation: int,
+        durability: str,
+        latest_event_sequence: int,
+        manifest: RunObservationManifest,
+        terminal_outcome: str | None = None,
+        failure_category: str | None = None,
+        worker_failure_category: str | None = None,
+        diagnostic_ref: str | None = None,
+        retained_recovery_summary: Any | None = None,
+    ) -> RunSummary:
+        assert self._bundle_id is not None
+        return RunSummary(
+            schema_version=2,
+            bundle_id=self._bundle_id,
+            status=status,  # type: ignore[arg-type]
+            phase=phase,
+            generation=generation,
+            updated_at=datetime.now(UTC),
+            durability=durability,  # type: ignore[arg-type]
+            terminal_outcome=terminal_outcome,  # type: ignore[arg-type]
+            failure_category=failure_category,
+            worker_failure_category=worker_failure_category,  # type: ignore[arg-type]
+            diagnostic_ref=diagnostic_ref,
+            journal_availability=self._journal_availability(manifest),
+            latest_event_sequence=latest_event_sequence,
+            dropped_event_count=manifest.dropped_event_count,
+            first_dropped_sequence=manifest.first_dropped_sequence,
+            last_dropped_sequence=manifest.last_dropped_sequence,
+            retained_recovery_summary=retained_recovery_summary,
+        )
 
     def _publish_sync(self, fact: RecordBearingLifecycleFact) -> RunObservationView:
         root = self._record_root(fact.bundle_id)
@@ -289,9 +777,12 @@ class RunObservationStore:
         bundle_id: str,
         category: RunEventCategory,
         phase: str,
+        generation: int | None,
         work_id: str | None,
         attempt_id: str | None,
         validation_code: str | None,
+        validation_stage: str | None,
+        validation_codes: tuple[str, ...],
         worker_failure_category: str | None,
         retry_count: int | None,
         diagnostic_ref: str | None,
@@ -314,10 +805,13 @@ class RunObservationStore:
             sequence=len(events) + 1,
             timestamp=datetime.now(UTC),
             category=category,
+            generation=generation,
             phase=phase,
             work_id=work_id,
             attempt_id=attempt_id,
             validation_code=validation_code,
+            validation_stage=validation_stage,  # type: ignore[arg-type]
+            validation_codes=validation_codes,
             worker_failure_category=worker_failure_category,
             retry_count=retry_count,
             diagnostic_ref=diagnostic_ref,
@@ -470,9 +964,18 @@ class RunObservationRecorder:
     def __init__(self, *, store: RunObservationStore, bundle_id: str) -> None:
         self._store = store
         self._bundle_id = bundle_id
+        self._generation: int | None = None
+
+    async def establish(self, *, generation: int, phase: str, durability: str) -> RunObservationView:
+        view = await self._store._establish(generation=generation, phase=phase, durability=durability)
+        if view.inspectability is ObservationInspectability.AVAILABLE:
+            self._generation = generation
+        return view
 
     async def record(self, **event: Any) -> None:
-        await self._store.record_event(bundle_id=self._bundle_id, **event)
+        if self._generation is None:
+            return
+        await self._store.record_event(bundle_id=self._bundle_id, generation=self._generation, **event)
 
 
 class RetainedRunObservationPublisher:
@@ -486,6 +989,45 @@ class RetainedRunObservationPublisher:
 
     async def close(self) -> None:
         await self._store.cleanup()
+
+
+class BundleRunObservationPublisher:
+    """Publish lifecycle projections only through an already-available Bundle."""
+
+    def __init__(self, *, lifecycle: Any, scope: tuple[str, str]) -> None:
+        self._lifecycle = lifecycle
+        self._scope = scope
+
+    async def publish(self, fact: RecordBearingLifecycleFact) -> RunObservationView:
+        try:
+            bundle = await self._lifecycle.resolve(
+                scope=self._scope,
+                bundle_id=BundleId(fact.bundle_id),
+            )
+            if bundle is None:
+                return RunObservationView(
+                    bundle_id=fact.bundle_id,
+                    inspectability=ObservationInspectability.UNAVAILABLE,
+                    durability="unavailable",
+                    observation_category=ObservationCategory.RECORD_INVALID,
+                )
+            store = RunObservationStore(
+                bundle_root=self._lifecycle.private_root(bundle),
+                bundle_id=fact.bundle_id,
+            )
+            return await store.publish(fact)
+        except asyncio.CancelledError:
+            raise
+        except (OSError, RuntimeError, TypeError, ValueError):
+            return RunObservationView(
+                bundle_id=fact.bundle_id,
+                inspectability=ObservationInspectability.UNAVAILABLE,
+                durability="unavailable",
+                observation_category=ObservationCategory.PERSISTENCE_UNAVAILABLE,
+            )
+
+    async def close(self) -> None:
+        return None
 
 
 def _observation_key(bundle_id: str) -> str:
@@ -508,6 +1050,7 @@ def _valid_bundle_id(bundle_id: object) -> bool:
 
 
 __all__ = [
+    "BundleRunObservationPublisher",
     "RETAINED_ROOT_NAME",
     "RetainedRunObservationPublisher",
     "RunObservationError",

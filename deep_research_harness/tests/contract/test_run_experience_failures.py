@@ -21,12 +21,15 @@ from deerflow_deep_research.domain.lifecycle import (
     Durability,
     InfrastructureResultCode,
     LegalNextAction,
+    LifecycleStatus,
     LifecycleAction,
     ResultCode,
     WorkUnitStorageReason,
 )
-from deerflow_deep_research.domain.run_experience import Fault, RunFailureCode, StartRun
+from deerflow_deep_research.domain.run_experience import Fault, RunFailureCode, StartRun, Terminal
+from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
 from deerflow_deep_research.runtime.run_experience import ResearchRunExperience
+from deerflow_deep_research.runtime.run_observation import BundleRunObservationPublisher, RunObservationStore
 
 BUNDLE_ID = "b_" + "B" * 43
 SENTINEL = "secret=sentinel /Users/alice/private https://provider.invalid/body"
@@ -95,3 +98,31 @@ async def test_runtime_exception_is_redacted_as_a_safe_internal_failure() -> Non
     assert isinstance(update, Fault)
     assert update.failure.code is RunFailureCode.INTERNAL_UNEXPECTED
     assert SENTINEL not in update.model_dump_json()
+
+
+@pytest.mark.asyncio
+async def test_admitted_terminal_diagnostic_has_no_external_support_fallback(tmp_path) -> None:
+    lifecycle = BundleLifecycle(workspace_host_path=tmp_path / "workspace")
+    scope = ("experience-user", "experience-thread")
+    bundle = await lifecycle.start(scope=scope, request_text="Research journal diagnostics.")
+    state = await lifecycle.end(bundle=bundle, terminal_status=LifecycleStatus.BLOCKED)
+    result = lifecycle.result_for_state(action=LifecycleAction.START, bundle=bundle, state=state).model_dump(mode="json")
+    support_path = tmp_path / "support-records.jsonl"
+    experience = ResearchRunExperience(
+        transport=ReplayTransport([result]),
+        mode="real",
+        observation_publisher=BundleRunObservationPublisher(lifecycle=lifecycle, scope=scope),
+    )
+
+    update = await experience.handle(StartRun(question="Research journal diagnostics."))
+    journal = await RunObservationStore(
+        bundle_root=lifecycle.private_root(bundle),
+        bundle_id=bundle.bundle_id.value,
+    ).inspect(bundle_id=bundle.bundle_id.value)
+
+    assert isinstance(update, Terminal)
+    assert update.failure is not None
+    assert update.failure.diagnostic_ref is not None
+    assert not support_path.exists()
+    assert journal.terminal_diagnostic_ref == update.failure.diagnostic_ref
+    assert journal.terminal_diagnostic is not None

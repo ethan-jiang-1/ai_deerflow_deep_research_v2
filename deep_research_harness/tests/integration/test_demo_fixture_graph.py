@@ -16,6 +16,8 @@ from langgraph.types import Command
 
 from deerflow_deep_research.domain.bundle import BundleId
 from deerflow_deep_research.domain.lifecycle import ImplementationMode, LifecycleAction, LifecycleStatus
+from deerflow_deep_research.domain.run_observation import ObservationInspectability, RunEventCategory
+from deerflow_deep_research.runtime.run_observation import RunObservationStore
 
 SCRIPTS = Path(__file__).resolve().parents[2] / "scripts"
 sys.path.insert(0, str(SCRIPTS))
@@ -42,6 +44,18 @@ async def test_fixture_graph_transport_runs_to_final_delivery_and_projects_its_d
         bundle_id, request = _bundle_and_request(started)
         assert request["mode"] == "text"
 
+        scope = (adapter._envelope.effective_user_id, adapter._envelope.outer_thread_id)
+        lifecycle = adapter._bundle_lifecycle
+        bundle = await lifecycle.resolve(scope=scope, bundle_id=BundleId(bundle_id))
+        assert bundle is not None
+        journal = await RunObservationStore(
+            bundle_root=lifecycle.private_root(bundle),
+            bundle_id=bundle_id,
+        ).inspect(bundle_id=bundle_id)
+        assert journal.inspectability is ObservationInspectability.AVAILABLE
+        assert [event.category for event in journal.events[:1]] == [RunEventCategory.ADMISSION]
+        assert any(event.category is RunEventCategory.NODE for event in journal.events)
+
         response = HumanMessage(
             content="Use broad public sources.",
             id="fixture-profile",
@@ -66,9 +80,6 @@ async def test_fixture_graph_transport_runs_to_final_delivery_and_projects_its_d
         assert status.status is LifecycleStatus.COMPLETED
         assert status.implementation_mode is ImplementationMode.FIXTURE
 
-        scope = (adapter._envelope.effective_user_id, adapter._envelope.outer_thread_id)
-        lifecycle = adapter._bundle_lifecycle
-        bundle = await lifecycle.resolve(scope=scope, bundle_id=BundleId(bundle_id))
         state = await lifecycle.read_state(bundle)
         assert state.implementation_mode is ImplementationMode.FIXTURE
 

@@ -104,9 +104,9 @@ _Avoid_: automatic restart, a generic retry, a hidden text recovery, a new lifec
 
 **Run Bundle**:
 The retained, inspectable, and independently deletable durable record of one Deep
-Research Run. It contains that Run's Research State, evidence, and content; it may be
-deleted externally at any time, making that Run unavailable without affecting the
-Harness or another Run.
+Research Run. It contains that Run's Research State, evidence, content, and Run Event
+Journal; it may be deleted externally at any time, making that Run and its retained
+diagnostic evidence unavailable without affecting the Harness or another Run.
 _Avoid_: disposable temp directory, shared workspace, Deep Research Harness
 
 **Run Bundle ID**:
@@ -146,7 +146,19 @@ _Avoid_: a terminal lifecycle status, recoverable cleanup, automatic Bundle recr
 An optional log, diagnostic, audit, or metadata record held outside a Run Bundle. It
 may outlive the Bundle, but cannot establish Run existence, select an active Run,
 authorize an action, recover State, or prevent a fresh Run after Bundle Loss.
-_Avoid_: lifecycle authority, run registry, checkpoint, resume authorization
+It is not the Run Event Journal.
+_Avoid_: lifecycle authority, run registry, checkpoint, Run Event Journal, resume authorization
+
+**Run Event Journal**:
+The bounded, redacted, Bundle-local record of material execution facts for one admitted
+Run. It shares the Bundle's lifetime and is neither a raw application log nor lifecycle
+authority.
+_Avoid_: External Run Observation, checkpoint, terminal State, raw log
+
+**Live Progress Projection**:
+A best-effort, non-durable rendering of safe current execution facts to a live DeerFlow
+subscriber. It does not establish retained evidence or authorize an action.
+_Avoid_: Run Event Journal, lifecycle result, checkpoint
 
 **Research State**:
 The lifecycle and control facts for one Deep Research Run, contained within its Run
@@ -398,7 +410,9 @@ _Avoid_: a Primary User troubleshooting task, a User Decision
 **Support Handoff**:
 A bounded, redacted summary of an interrupted research run that a person can use to
 ask for help without exposing secrets or requiring them to interpret raw runtime data.
-_Avoid_: an opaque diagnostic reference alone, a raw exception dump
+For an admitted Run it is derived while its Bundle remains available and is not retained
+outside that Bundle.
+_Avoid_: an opaque diagnostic reference alone, an external persistent journal, a raw exception dump
 
 **Research Report Export**:
 A self-contained Markdown rendering of a completed Research Outcome that the Primary

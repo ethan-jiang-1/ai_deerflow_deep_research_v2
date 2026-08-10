@@ -65,8 +65,8 @@ from deerflow_deep_research.domain.run_observation import (
     RecordBearingLifecycleFact,
     RetainedRecoverySummary,
     RunObservationView,
+    derive_diagnostic_reference,
 )
-from deerflow_deep_research.runtime.run_diagnostics import DemoDiagnosticJournal
 
 
 class LifecycleTransport(Protocol):
@@ -158,7 +158,6 @@ class ResearchRunExperience:
         transport: LifecycleTransport,
         mode: RunMode,
         readiness_provider: ReadinessProvider | None = None,
-        diagnostics: DemoDiagnosticJournal | None = None,
         observation_publisher: RunObservationPublisher | None = None,
         liveness_interval: float = 1.0,
     ) -> None:
@@ -167,7 +166,6 @@ class ResearchRunExperience:
         self._transport = transport
         self._mode = mode
         self._readiness_provider = readiness_provider
-        self._diagnostics = diagnostics or DemoDiagnosticJournal()
         self._observation_publisher = observation_publisher
         self._messages: list[Any] = []
         self._bundle_id: str | None = None
@@ -590,18 +588,21 @@ class ResearchRunExperience:
         return trigger_origin, final_origin
 
     def _terminal_diagnostic_reference(self, control: BundleControlResult) -> str | None:
-        """Allocate one safe reference before projecting a blocked terminal anywhere."""
+        """Derive one safe Bundle-local reference before terminal projection."""
+
         if control.status is not LifecycleStatus.BLOCKED:
             return None
         incident = control.terminal_incident
         if incident is not None and incident.diagnostic_ref is not None:
             return incident.diagnostic_ref
-        return self._diagnostics.publish(
-            action="lifecycle",
-            phase=control.phase.value if control.phase is not None else None,
-            code=incident.code if incident is not None else RunFailureCode.RESEARCH_BLOCKED,
-            certainty=incident.certainty if incident is not None else FailureCertainty.UNKNOWN,
-            fingerprint_source=control,
+        if control.bundle_id is None or control.generation is None or control.phase is None:
+            return None
+        return derive_diagnostic_reference(
+            bundle_id=control.bundle_id,
+            generation=control.generation,
+            phase=control.phase.value,
+            category=(incident.code if incident is not None else RunFailureCode.RESEARCH_BLOCKED).value,
+            correlation_id=control.action.value,
         )
 
     async def _publish_observation(
@@ -968,25 +969,7 @@ class ResearchRunExperience:
             and session.terminal_diagnostic_ref == diagnostic_ref
         ):
             return "observation_store"
-        recovery_trigger_timeout_origin, final_timeout_origin = self._provider_timeout_origins(control)
-        recorded = self._diagnostics.publish(
-            action="lifecycle",
-            phase=control.phase.value if control.phase is not None else None,
-            code=(
-                control.terminal_incident.code
-                if control.terminal_incident is not None
-                else RunFailureCode.INTERNAL_UNEXPECTED
-            ),
-            certainty=(
-                control.terminal_incident.certainty
-                if control.terminal_incident is not None
-                else FailureCertainty.UNKNOWN
-            ),
-            reference=diagnostic_ref,
-            recovery_trigger_timeout_origin=recovery_trigger_timeout_origin,
-            final_timeout_origin=final_timeout_origin,
-        )
-        return "support_journal" if recorded == diagnostic_ref else "unavailable"
+        return "unavailable"
 
     @staticmethod
     def _failure_code_for_control(control: BundleControlResult) -> RunFailureCode:
@@ -1040,15 +1023,8 @@ class ResearchRunExperience:
             next_action = FRESH_START_NEXT_ACTION
             retryable = True
             recovery_action = "fresh_start"
+        del source
         reference = diagnostic_ref
-        if reference is None:
-            reference = self._diagnostics.publish(
-                action="lifecycle",
-                phase=phase or self._lifecycle_phase,
-                code=code,
-                certainty=certainty,
-                fingerprint_source=source,
-            )
         record_created = (
             self._observation_view is not None if observation_record_created is None else observation_record_created
         )

@@ -23,7 +23,6 @@ from deerflow_deep_research.domain.run_observation import (
     RetentionState,
     RunObservationView,
 )
-from deerflow_deep_research.runtime.run_diagnostics import DemoDiagnosticJournal
 from deerflow_deep_research.runtime.run_experience import ResearchRunExperience
 from tests.fixtures import run_updates
 
@@ -172,7 +171,6 @@ async def test_shared_failure_never_leaks_raw_exception_into_either_adapter(tmp_
     update = await ResearchRunExperience(
         transport=ExplodingTransport(),
         mode="real",
-        diagnostics=DemoDiagnosticJournal(path=tmp_path / "records.jsonl"),
     ).handle(StartRun(question="Compare storage options"))
 
     assert isinstance(update, Fault)
@@ -180,4 +178,4 @@ async def test_shared_failure_never_leaks_raw_exception_into_either_adapter(tmp_
     tui = demo_tui.render_run_update(update).detail
     assert sentinel not in cli
     assert sentinel not in tui
-    assert sentinel not in (tmp_path / "records.jsonl").read_text(encoding="utf-8")
+    assert not (tmp_path / "records.jsonl").exists()

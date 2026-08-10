@@ -1,8 +1,8 @@
-"""Bounded historical observations derived from Run Bundle lifecycle results.
+"""Bounded, Bundle-local execution observations.
 
-Observation records can outlive a Run Bundle, but they never establish Bundle
-existence, scope, lifecycle state, or a control target. The Bundle lifecycle boundary
-remains the sole owner of those facts.
+Run Event Journal records live only in an admitted Run Bundle's diagnostics subtree.
+They never establish Bundle existence, scope, lifecycle state, or a control target. The
+Bundle lifecycle boundary remains the sole owner of those facts.
 
 @impl RUS-001
 @impl RUS-002
@@ -30,6 +30,7 @@ MAX_SKIPPED_ENTRIES = 20
 MAX_EVENT_RECORDS = 256
 _BUNDLE_ID_PATTERN = r"^b_[A-Za-z0-9_-]{43}$"
 _RECOVERY_IDENTIFIER_PATTERN = r"^[A-Za-z0-9_-]{8,64}$"
+_VALIDATION_CODE_PATTERN = r"^[a-z][a-z0-9]*(?:[._][a-z][a-z0-9]*)*$"
 _TRANSIENT_PROVIDER_CATEGORIES = frozenset({"provider.timeout", "provider.unavailable"})
 ProviderTimeoutOrigin = Literal["bridge_wall_time_budget", "provider_sdk_timeout"]
 
@@ -66,6 +67,7 @@ class JournalAvailability(StrEnum):
 
 
 class RunEventCategory(StrEnum):
+    ADMISSION = "admission"
     LIFECYCLE = "lifecycle"
     NODE = "node"
     ATTEMPT = "attempt"
@@ -105,14 +107,17 @@ class RetainedRecoverySummary(FrozenRunObservationContract):
 class RunEvent(FrozenRunObservationContract):
     """One redacted historical event, never a raw log or lifecycle cursor."""
 
-    schema_version: Literal[1] = 1
+    schema_version: Literal[1, 2] = 1
     sequence: int = Field(ge=1, le=MAX_LIFECYCLE_SEQUENCE)
     timestamp: datetime
     category: RunEventCategory
+    generation: int | None = Field(default=None, ge=0, le=2)
     phase: str = Field(min_length=1, max_length=32, pattern=r"^[a-z][a-z0-9_]*$")
     work_id: str | None = Field(default=None, pattern=r"^[A-Za-z0-9:_-]{1,128}$")
     attempt_id: str | None = Field(default=None, pattern=r"^[A-Za-z0-9:_-]{1,128}$")
-    validation_code: str | None = Field(default=None, pattern=r"^[a-z]+(?:[._][a-z]+)*$")
+    validation_code: str | None = Field(default=None, pattern=_VALIDATION_CODE_PATTERN)
+    validation_stage: Literal["initial", "repair"] | None = None
+    validation_codes: tuple[str, ...] = Field(default=(), max_length=MAX_LIST_ENTRIES)
     worker_failure_category: (
         Literal["agent_invocation", "tool_execution", "structured_output", "submission_validation", "unknown", "mixed"]
         | None
@@ -129,6 +134,19 @@ class RunEvent(FrozenRunObservationContract):
 
     @model_validator(mode="after")
     def validate_recovery_event(self) -> RunEvent:
+        if self.schema_version == 2 and self.generation is None:
+            raise ValueError("journal_event_generation_required")
+        if any(re.fullmatch(_VALIDATION_CODE_PATTERN, code) is None for code in self.validation_codes):
+            raise ValueError("journal_validation_code_invalid")
+        if len(set(self.validation_codes)) != len(self.validation_codes):
+            raise ValueError("journal_validation_codes_duplicate")
+        if self.category is RunEventCategory.VALIDATION and self.schema_version == 2:
+            if self.validation_stage is None:
+                raise ValueError("journal_validation_stage_required")
+            if self.validation_code is not None:
+                raise ValueError("journal_validation_code_legacy_forbidden")
+        elif self.validation_stage is not None or self.validation_codes:
+            raise ValueError("journal_validation_fields_unexpected")
         recovery_fields_present = any(
             value is not None
             for value in (
@@ -192,7 +210,7 @@ def derive_diagnostic_reference(
 
 
 class RunSummary(FrozenRunObservationContract):
-    schema_version: Literal[1] = 1
+    schema_version: Literal[1, 2] = 1
     bundle_id: str = Field(pattern=_BUNDLE_ID_PATTERN)
     status: Literal["active", "suspended", "completed", "stopped", "cancelled", "blocked"]
     phase: str = Field(min_length=1, max_length=32, pattern=r"^[a-z][a-z0-9_]*$")
@@ -208,7 +226,25 @@ class RunSummary(FrozenRunObservationContract):
     diagnostic_ref: str | None = Field(default=None, pattern=r"^diag_[A-Za-z0-9_-]{8,64}$")
     journal_availability: JournalAvailability
     latest_event_sequence: int | None = Field(default=None, ge=1, le=MAX_LIFECYCLE_SEQUENCE)
+    dropped_event_count: int = Field(default=0, ge=0, le=MAX_LIFECYCLE_SEQUENCE)
+    first_dropped_sequence: int | None = Field(default=None, ge=1, le=MAX_LIFECYCLE_SEQUENCE)
+    last_dropped_sequence: int | None = Field(default=None, ge=1, le=MAX_LIFECYCLE_SEQUENCE)
     retained_recovery_summary: RetainedRecoverySummary | None = None
+
+    @model_validator(mode="after")
+    def validate_journal_loss(self) -> RunSummary:
+        has_interval = self.first_dropped_sequence is not None or self.last_dropped_sequence is not None
+        if self.dropped_event_count == 0:
+            if has_interval:
+                raise ValueError("journal_drop_interval_without_drop")
+            return self
+        if self.journal_availability is JournalAvailability.COMPLETE:
+            raise ValueError("complete_journal_cannot_have_dropped_events")
+        if self.first_dropped_sequence is None or self.last_dropped_sequence is None:
+            raise ValueError("journal_drop_interval_required")
+        if self.first_dropped_sequence > self.last_dropped_sequence:
+            raise ValueError("journal_drop_interval_invalid")
+        return self
 
 
 class RecordBearingLifecycleFact(FrozenRunObservationContract):
@@ -274,9 +310,9 @@ class RetainedDiagnosticRecord(FrozenRunObservationContract):
 
 
 class RunObservationManifest(FrozenRunObservationContract):
-    """Metadata for an external observation store, not a Run locator."""
+    """Metadata for one Bundle-local Journal, never a Run locator."""
 
-    schema_version: Literal[1] = 1
+    schema_version: Literal[1, 2] = 1
     bundle_id: str = Field(pattern=_BUNDLE_ID_PATTERN)
     created_at: datetime
     updated_at: datetime
@@ -286,6 +322,25 @@ class RunObservationManifest(FrozenRunObservationContract):
     diagnostic_path: Literal["diagnostics/records.jsonl"] | None = None
     summary_path: Literal["run-summary.json"] | None = None
     events_path: Literal["diagnostics/events.jsonl"] | None = None
+    event_high_watermark: int | None = Field(default=None, ge=0, le=MAX_LIFECYCLE_SEQUENCE)
+    dropped_event_count: int = Field(default=0, ge=0, le=MAX_LIFECYCLE_SEQUENCE)
+    first_dropped_sequence: int | None = Field(default=None, ge=1, le=MAX_LIFECYCLE_SEQUENCE)
+    last_dropped_sequence: int | None = Field(default=None, ge=1, le=MAX_LIFECYCLE_SEQUENCE)
+    persistence_failure_count: int = Field(default=0, ge=0, le=MAX_LIFECYCLE_SEQUENCE)
+
+    @model_validator(mode="after")
+    def validate_journal_metadata(self) -> RunObservationManifest:
+        has_interval = self.first_dropped_sequence is not None or self.last_dropped_sequence is not None
+        if self.dropped_event_count == 0:
+            if has_interval:
+                raise ValueError("journal_manifest_drop_interval_without_drop")
+        elif self.first_dropped_sequence is None or self.last_dropped_sequence is None:
+            raise ValueError("journal_manifest_drop_interval_required")
+        elif self.first_dropped_sequence > self.last_dropped_sequence:
+            raise ValueError("journal_manifest_drop_interval_invalid")
+        if self.schema_version == 2 and self.event_high_watermark is None:
+            raise ValueError("journal_high_watermark_required")
+        return self
 
 
 class LifecycleTraceRecord(FrozenRunObservationContract):

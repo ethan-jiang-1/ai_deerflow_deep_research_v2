@@ -40,10 +40,7 @@ from deerflow_deep_research.runtime.control import build_control_graph_host
 from deerflow_deep_research.runtime.node_agent_bridge import NodeAgentConfigurationError, RuntimeNodeAgentBridge
 from deerflow_deep_research.runtime.research import ResearchGraphRecipe
 from deerflow_deep_research.runtime.run_observation import (
-    RETAINED_ROOT_NAME,
-    RetainedRunObservationPublisher,
-    RunObservationRecorder,
-    RunObservationStore,
+    BundleRunObservationPublisher,
 )
 from deerflow_deep_research.runtime.runtime_adapter import TrustedRuntimeEnvelope
 from deerflow_deep_research.runtime.session_workbench import BundleWorkbench
@@ -306,7 +303,6 @@ class DemoAdapter:
         workspace = root / "workspace"
         uploads = root / "uploads"
         outputs = root / "outputs"
-        observation_root = root.parent / RETAINED_ROOT_NAME
         self._root = root
         self._paths = (root, workspace, uploads, outputs)
         self._opened = False
@@ -324,7 +320,6 @@ class DemoAdapter:
         )
         _suffix = secrets.token_hex(4)
         self._bundle_lifecycle = BundleLifecycle(workspace_host_path=workspace)
-        self._observation_store = RunObservationStore(retained_root=observation_root)
         self._envelope = TrustedRuntimeEnvelope(
             effective_user_id="demo-user",
             outer_thread_id=f"demo-thread-{_suffix}",
@@ -338,15 +333,14 @@ class DemoAdapter:
             outputs_virtual_root="/mnt/user-data/outputs",
             parent_sandbox=sandbox,
             progress=None,
-            event_recorder_factory=lambda bundle_id: RunObservationRecorder(
-                store=self._observation_store,
-                bundle_id=bundle_id,
-            ),
         )
-        self._observation_publisher = RetainedRunObservationPublisher(self._observation_store)
+        self._observation_publisher = BundleRunObservationPublisher(
+            lifecycle=self._bundle_lifecycle,
+            scope=(self._envelope.effective_user_id, self._envelope.outer_thread_id),
+        )
 
     @property
-    def observation_publisher(self) -> RetainedRunObservationPublisher:
+    def observation_publisher(self) -> BundleRunObservationPublisher:
         return self._observation_publisher
 
     def local_bundle_workbench(self) -> BundleWorkbench:
