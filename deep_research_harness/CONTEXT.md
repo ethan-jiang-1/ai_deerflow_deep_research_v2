@@ -251,6 +251,39 @@ persistence, route selection, and candidate admission. It constrains the Node Co
 Control Program but does not substitute for its cognitive design.
 _Avoid_: the model's reasoning policy, a Markdown-controlled route
 
+**Product Responsibility**:
+The enduring user-serving responsibility an LLM-Bearing Node exists to fulfill — what
+the node is for. It outlives any particular mechanism or branch.
+_Avoid_: the current loop that happens to run, a mechanism described as a purpose
+
+**Participation Mode**:
+Whether a node participates as a model-directed cognitive program, a deterministic
+owner, a human decision, or an intentional controller exclusion.
+_Avoid_: a role claim inferred from the running mechanism
+
+**Commitment State**:
+The node's recorded acceptance of its latest candidate: `current accepted`,
+`accepted-but-deferred`, `conditional/unresolved`, or `intentional controller
+exclusion`.
+_Avoid_: an unrecorded or inferred acceptance
+
+**Current Operating Mechanism**:
+The program branch a node runs today — which `run_agent` loop, controller, or
+deterministic path is live. It proves that the mechanism exists, never what the node
+is for.
+_Avoid_: equating the mechanism with the node's product identity
+
+**Current Model-Branch Evidence**:
+Observable facts showing whether today's running branch is the model branch —
+evidence, not identity.
+_Avoid_: inferring a model branch from configuration order or file presence
+
+**Seam Classification**:
+The closed classification of a change's primary edit target —
+`cognitive-program | human-decision | deterministic-guardrail | wiring` — declared
+bare on the Focus Card with a short rationale.
+_Avoid_: inferring the seam from the first file opened or from `run_agent` presence
+
 **Cognitive Evaluation Suite**:
 The independently invoked `evals/` system that observes Node Cognitive Control Program
 behavior through a Python Cognitive Evaluation Runner and a separate Cognitive Evaluation
@@ -487,3 +520,22 @@ The Python Runner belongs in the governed `src/deerflow_deep_research/runtime/ev
 source layer, not either `evals/` subtree. The V1 structural change must explicitly update
 project-structure governance and ignore rules; existing `tests/eval/` remains deterministic
 pytest coverage, not this Suite.
+
+
+---
+
+# The Cognitive Control Program Is The First Modification Seam
+
+An LLM-Bearing Node is a two-part program: its Node Cognitive Control Program
+(capability Markdown, prompt builder, model-visible context, structured feedback)
+directs model behavior, and its Deterministic Control Boundary admits only legal
+candidates, state, and routes. When a node's behavior is wrong, the first
+modification seam is the cognitive control program; the deterministic program is the
+guardrail that proves it, not a substitute repair site. A deterministic edit for a
+node-behavior symptom records a Seam Classification showing the cognitive-program
+seam was already adjusted or rejected first, and `run_agent` presence is
+current-mechanism evidence, never a node's product identity. This discipline comes
+from the archived `node-agent-cognitive-loop-governance-progressive-plan` and is
+routed by the
+[local-context policy](../openspec/governance/agent-charter/policies/local-context.md)
+seam rule.

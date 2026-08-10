@@ -59,6 +59,7 @@ Every active change writes the following compact boundary in its proposal:
 ## Change Focus
 
 - **Primary module / causal owner:** ...
+- **Seam classification:** one of `cognitive-program | human-decision | deterministic-guardrail | wiring`, written bare, plus a short rationale
 - **Question:** ...
 - **Necessary adjacent/external contracts:** ...
 - **Evidence seam:** ...
@@ -71,6 +72,41 @@ For every non-`none` adjacent/external contract, state the contract and the ques
 it answers; this is an admission record, not a list of sources that might be useful.
 If two modules both appear to own the decision, resolve the ownership ambiguity before
 implementation instead of silently creating a shared helper or duplicate control path.
+
+## Seam Classification
+
+An LLM-Bearing Node is a two-part program: its cognitive-program seam (capability
+Markdown, prompt builder, model-visible context, structured feedback) directs model
+behavior, and its Deterministic Control Boundary admits only legal candidates, state,
+and routes. A node-behavior symptom — a wrong role or model-visible policy, wrong
+context or tool posture, malformed or misaligned candidate or feedback, unexpected
+admission, or wrong route or terminal — routes its first inspection through the
+cognitive-program seam before any deterministic edit:
+
+| Symptom | First seam |
+|---|---|
+| Wrong node role or model-visible policy | Capability Markdown, prompt builder, model-visible context, structured feedback |
+| Wrong context or tool posture | Context projection and tool window policy |
+| Malformed or misaligned candidate or feedback | Candidate schema, parser feedback, repair loop |
+| Unexpected admission | Parser, materializer, controller, or ledger boundary |
+| Wrong route or terminal | Gate, wrapper, or route seam |
+
+A cognitive-program edit states its cognitive hypothesis and the observable result
+or evaluation that will show whether the edit worked. A deterministic edit for a
+node-behavior symptom is a guardrail change, not a substitute repair: it records a
+`Seam classification` showing the cognitive-program seam was already adjusted or
+rejected first. Presence or absence of a direct `run_agent` call is current-mechanism
+evidence, never a node's product identity; never infer a seam from the first file
+opened.
+
+Every active proposal declares exactly one closed value on its Focus Card's `Seam
+classification` field, written bare (no backticks, no punctuation inside the value),
+with a short rationale. The closed values are `cognitive-program`,
+`human-decision`, `deterministic-guardrail`, and `wiring`; this policy owns the
+canonical values and the substantive cognitive-hypothesis and deterministic-owner
+requirements. The charter checker mechanically enforces presence, closed-value
+membership, and a non-empty rationale without judging which classification is
+semantically true for a change.
 
 ## Boundary
 

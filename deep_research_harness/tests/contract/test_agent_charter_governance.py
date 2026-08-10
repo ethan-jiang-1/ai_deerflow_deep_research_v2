@@ -41,11 +41,19 @@ CONTEXT_EXPANSION_SENTENCE = "A possible future use is not enough to expand scop
 CLAUDE_IMPORT = "@AGENTS.md"
 FOCUS_FIELDS = (
     "Primary module / causal owner",
+    "Seam classification",
     "Question",
     "Necessary adjacent/external contracts",
     "Evidence seam",
     "Not in scope",
     "Triggered review policies",
+)
+SEAM_CLASSIFICATION_FIELD = "Seam classification"
+SEAM_CLASSIFICATIONS = (
+    "cognitive-program",
+    "human-decision",
+    "deterministic-guardrail",
+    "wiring",
 )
 TRIGGERED_POLICIES_FIELD = "Triggered review policies"
 LEGACY_TRIGGERED_POLICIES_FIELD = "Triggered charter policies"
@@ -167,6 +175,7 @@ def _control_placement_review_record(*, posture: str = "advisory") -> str:
 def _focus_card(
     *,
     triggered_policies: str = "none: fixture documentation rationale",
+    seam_classification: str = "deterministic-guardrail",
     include_workflow_outcome_review: bool = False,
     include_node_agent_review: bool = False,
     node_agent_classification: str = "node-agent",
@@ -174,6 +183,7 @@ def _focus_card(
     control_placement_posture: str = "advisory",
 ) -> str:
     field_values = {field: "fixture" for field in FOCUS_FIELDS}
+    field_values[SEAM_CLASSIFICATION_FIELD] = f"{seam_classification} — fixture rationale"
     field_values[TRIGGERED_POLICIES_FIELD] = triggered_policies
     fields = "\n".join(f"- **{field}:** {field_values[field]}" for field in FOCUS_FIELDS)
     reviews = ""
@@ -549,10 +559,64 @@ def test_line_budget_fails_after_hard_limit(tmp_path: Path, relative_path: Path,
 @pytest.mark.parametrize("field", FOCUS_FIELDS)
 def test_missing_focus_card_field_fails(tmp_path: Path, field: str) -> None:
     _project(tmp_path)
-    value = "none: fixture documentation rationale" if field == TRIGGERED_POLICIES_FIELD else "fixture"
+    if field == TRIGGERED_POLICIES_FIELD:
+        value = "none: fixture documentation rationale"
+    elif field == SEAM_CLASSIFICATION_FIELD:
+        value = "deterministic-guardrail — fixture rationale"
+    else:
+        value = "fixture"
     _replace(tmp_path, "openspec/changes/change-one/proposal.md", f"- **{field}:** {value}\n", "")
 
     _assert_error(tmp_path, "focus.field_missing")
+
+
+@pytest.mark.parametrize(
+    "seam_value",
+    (
+        "cognitive",
+        "Cognitive-program",
+        "runtime-gate",
+        "`deterministic-guardrail`",
+        "deterministic-guardrail, wiring",
+    ),
+)
+def test_seam_classification_rejects_each_invalid_value(tmp_path: Path, seam_value: str) -> None:
+    _project(tmp_path)
+    _write(
+        tmp_path,
+        "openspec/changes/change-one/proposal.md",
+        _focus_card(seam_classification=seam_value),
+    )
+
+    _assert_error(tmp_path, "focus.seam_classification_invalid")
+
+
+def test_seam_classification_requires_a_rationale(tmp_path: Path) -> None:
+    _project(tmp_path)
+    _write(
+        tmp_path,
+        "openspec/changes/change-one/proposal.md",
+        _focus_card().replace(
+            "- **Seam classification:** deterministic-guardrail — fixture rationale",
+            "- **Seam classification:** deterministic-guardrail",
+        ),
+    )
+
+    _assert_error(tmp_path, "focus.seam_classification_rationale_missing")
+
+
+@pytest.mark.parametrize("seam_value", SEAM_CLASSIFICATIONS)
+def test_seam_classification_accepts_each_closed_value(tmp_path: Path, seam_value: str) -> None:
+    _project(tmp_path)
+    _write(
+        tmp_path,
+        "openspec/changes/change-one/proposal.md",
+        _focus_card(seam_classification=seam_value),
+    )
+
+    result = _run(tmp_path)
+
+    assert result.returncode == 0, result.stderr
 
 
 def test_none_triggered_policy_requires_a_rationale(tmp_path: Path) -> None:

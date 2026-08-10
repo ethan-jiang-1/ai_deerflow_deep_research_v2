@@ -7,7 +7,6 @@
 Defines the permanent design/admission charter, bounded contributor context, and
 human/AI-facing information-map rules for the downstream Deep Research product.
 ## Requirements
-
 ### Requirement: A canonical Deep Research Agent Charter is discoverable
 
 The project SHALL maintain `openspec/governance/agent-charter/` as the permanent
@@ -47,7 +46,13 @@ contributor to clarify the Focus Card rather than scan unrelated host code.
 `deep_research_harness/CLAUDE.md` SHALL be a thin Claude Code compatibility entrypoint
 that imports the authoritative local `AGENTS.md` rather than copying or overriding its
 guidance. Root `AGENTS.md` and `CLAUDE.md` remain upstream constraints and are not
-modified by this charter. (`DRC-002`)
+modified by this charter. The local-context policy SHALL route a node-behavior
+symptom first to the node's cognitive-program seam — its capability Markdown, prompt
+builders, model-visible context, and structured feedback — before a deterministic
+parser, materializer, gate, route, or bridge edit is admitted as the first
+modification. A deterministic-guardrail or wiring edit for a node-behavior symptom
+SHALL record the seam classification that shows the cognitive-program seam was
+considered first. (`DRC-002`)
 
 #### Scenario: A source change selects bounded context
 - **WHEN** a contributor changes a file under `deep_research_harness/src/deerflow_deep_research/`
@@ -64,6 +69,14 @@ modified by this charter. (`DRC-002`)
 #### Scenario: Claude Code receives the same local focus gate
 - **WHEN** Claude Code begins a change from `deep_research_harness/`
 - **THEN** `deep_research_harness/CLAUDE.md` imports the authoritative `AGENTS.md`, so it receives the same primary-module routing, context-expansion exclusions, and Focus Card rule without a copied local instruction set
+
+#### Scenario: A node-behavior symptom routes to the cognitive program first
+- **WHEN** a contributor starts from a wrong role, malformed candidate, or
+  misaligned feedback symptom in an LLM-Bearing Node
+- **THEN** the local-context policy directs the first inspection to the node's
+  capability Markdown, prompt builder, and feedback path, and does not admit a
+  parser, gate, route, or bridge edit as the first modification without a recorded
+  seam classification
 
 ### Requirement: Contributor entry documents remain bounded information maps
 
@@ -175,7 +188,17 @@ SHALL name the contract and the question it answers; it is not a list of potenti
 useful places to browse. The deterministic charter checker SHALL reject a missing or
 malformed card and required charter navigation/policy surfaces, including the stable
 context-expansion gate anchors, but SHALL not infer semantic correctness from prose.
-(`DRC-004`)
+Every active proposal's Focus Card SHALL include a `Seam classification` field whose
+value is exactly one of `cognitive-program`, `human-decision`,
+`deterministic-guardrail`, or `wiring`, with a short rationale. The field names the
+primary edit target of the change; it SHALL NOT be inferred from the first file
+opened or from the presence or absence of a `run_agent` call. A `cognitive-program`
+classification SHALL state the cognitive hypothesis and observable result that
+justify the edit; `human-decision`, `deterministic-guardrail`, and `wiring` SHALL
+name the deterministic owner that remains authoritative. The deterministic charter
+checker SHALL reject a `Seam classification` that is missing, empty, outside the
+closed value set, or lacks a short rationale, and SHALL NOT judge the semantic truth
+of the classification. (`DRC-004`)
 
 #### Scenario: Missing Focus Card fails governance
 - **WHEN** an active proposal lacks one required Focus Card field
@@ -193,6 +216,25 @@ context-expansion gate anchors, but SHALL not infer semantic correctness from pr
 - **THEN** the contributor records the named contract and the question it must answer
   before widening the change's reading scope, or resolves the ownership ambiguity
   before implementation continues
+
+#### Scenario: A missing seam classification fails governance
+- **WHEN** an active proposal's Focus Card omits `Seam classification`, leaves it
+  empty, uses a value outside the closed set, or supplies no rationale
+- **THEN** the charter checker fails with the proposal path and missing or invalid
+  field before implementation can claim charter conformance
+
+#### Scenario: A cognitive-program classification carries its hypothesis
+- **WHEN** a proposal classifies its seam as `cognitive-program` to adjust a node's
+  capability policy, prompt composition, or feedback
+- **THEN** the Focus Card records the bounded cognitive hypothesis and the
+  observable result or evaluation that will show whether the edit worked, and names
+  the deterministic owner that still admits the candidate
+
+#### Scenario: A guardrail classification names the deterministic owner
+- **WHEN** a proposal classifies its seam as `deterministic-guardrail` or `wiring`
+  for an admission, gate, route, or evidence change
+- **THEN** the Focus Card names the deterministic owner that remains authoritative
+  and does not claim a cognitive quality improvement for the node
 
 ### Requirement: Charter policies preserve source-of-truth discipline and bounded recovery
 

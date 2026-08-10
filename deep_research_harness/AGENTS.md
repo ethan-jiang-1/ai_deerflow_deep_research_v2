@@ -23,6 +23,13 @@ card instead of browsing host code or sibling changes for orientation.
 Record canonical comma-separated `Triggered review policies` on that card, then add
 only the conditional review record required by the selected policy route.
 
+For an LLM-Bearing Node behavior symptom, classify the seam first: capability Markdown,
+prompt builder, and feedback are the first modification seam; a parser, gate, route, or
+bridge edit is a guardrail, not a substitute. Declare `Seam classification` on the Focus
+Card and follow the
+[local-context policy](../openspec/governance/agent-charter/policies/local-context.md)
+seam rule before a deterministic edit for a node symptom.
+
 | Central question | Primary owner to inspect first |
 | --- | --- |
 | Typed meaning, invariant, or pure data contract | `domain/` |

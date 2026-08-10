@@ -75,6 +75,19 @@ proposal declares that policy. Guidance can route attention and prompt an action
 finding into an ordinary task; it cannot run commands, write or complete a task,
 evaluate semantic quality, or decide a native apply/archive transition.
 
+### 9. Cognitive Programs Are The First Modification Seam
+
+An LLM-Bearing Node is a two-part program: a Node Cognitive Control Program
+(capability Markdown, prompt builder, model-visible context, structured feedback)
+directs model behavior, while a Deterministic Control Boundary admits only legal
+candidates, state, and routes. When a node's behavior is wrong, the first
+modification seam is the cognitive control program; the deterministic shell is the
+guardrail that proves it, not a substitute repair site. Editing a parser, gate,
+route, or bridge for a node-behavior symptom requires a seam classification that
+shows the cognitive program was already the adjusted or rejected-first seam.
+Presence or absence of a direct `run_agent` branch is current-mechanism evidence,
+never a node's product identity.
+
 ## Non-Authority Boundary
 
 This charter does not grant a mutation right, create a waiver, define a provider

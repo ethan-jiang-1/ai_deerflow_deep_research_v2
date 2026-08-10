@@ -43,11 +43,16 @@ CONTEXT_EXPANSION_SENTENCE = "A possible future use is not enough to expand scop
 FOCUS_HEADING = "## Change Focus"
 FOCUS_FIELDS = (
     "Primary module / causal owner",
+    "Seam classification",
     "Question",
     "Necessary adjacent/external contracts",
     "Evidence seam",
     "Not in scope",
     "Triggered review policies",
+)
+SEAM_CLASSIFICATION_FIELD = "Seam classification"
+SEAM_CLASSIFICATIONS = frozenset(
+    {"cognitive-program", "human-decision", "deterministic-guardrail", "wiring"}
 )
 TRIGGERED_POLICIES_FIELD = "Triggered review policies"
 LEGACY_TRIGGERED_POLICIES_FIELD = "Triggered charter policies"
@@ -535,6 +540,29 @@ def _validate_focus_card(proposal: str, proposal_path: Path) -> str:
                 "focus.field_missing",
                 f"Focus Card field {field!r} is missing or empty: {proposal_path.as_posix()}",
             )
+    seam_pattern = re.compile(
+        rf"^- \*\*{re.escape(SEAM_CLASSIFICATION_FIELD)}:\*\*[ \t]*(?P<value>\S+)(?P<rest>[^\n]*)$",
+        re.MULTILINE,
+    )
+    seam_match = seam_pattern.search(section)
+    if seam_match is None:
+        raise ContractViolation(
+            "focus.field_missing",
+            f"Focus Card field {SEAM_CLASSIFICATION_FIELD!r} is missing or empty: {proposal_path.as_posix()}",
+        )
+    seam_value = seam_match.group("value")
+    if seam_value not in SEAM_CLASSIFICATIONS:
+        raise ContractViolation(
+            "focus.seam_classification_invalid",
+            f"{SEAM_CLASSIFICATION_FIELD!r} must be exactly one of "
+            f"{', '.join(sorted(SEAM_CLASSIFICATIONS))}, written bare: {proposal_path.as_posix()}",
+        )
+    if not seam_match.group("rest").strip():
+        raise ContractViolation(
+            "focus.seam_classification_rationale_missing",
+            f"{SEAM_CLASSIFICATION_FIELD!r} must give a short rationale after the value: "
+            f"{proposal_path.as_posix()}",
+        )
     return section
 
 
