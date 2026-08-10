@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import re
 from collections.abc import Callable, Mapping
 from datetime import datetime
 from typing import Any
@@ -26,7 +27,9 @@ from deerflow_deep_research.domain.bundle import (
 from deerflow_deep_research.domain.context import NodeAgentContext
 from deerflow_deep_research.domain.invocation import RunEventRecorderProtocol, WorkUnitControllerDependencies
 from deerflow_deep_research.domain.node_spec import PolicyRef
+from deerflow_deep_research.domain.run_observation import RunEventCategory
 from deerflow_deep_research.domain.wave1 import (
+    Wave1SemanticViolation,
     Wave1SourceIntakeResult,
     Wave1SourceRef,
     validate_wave1_worker_output,
@@ -62,11 +65,46 @@ from .prompts import (
 )
 
 WAVE1_REAL_POLICY = PolicyRef(name="real-wave1", version="v1")
+_WAVE1_VALIDATION_CODE = re.compile(r"^wave1_[a-z0-9_]+$")
 
 
 def _content_hash(data: bytes) -> str:
     digest = hashlib.sha256(data).digest()
     return "h_" + base64.urlsafe_b64encode(digest).decode("ascii").rstrip("=")
+
+
+def _canonical_validation_code(error: ValueError) -> str:
+    """Keep only a closed Wave1 validation code, never exception-rendered detail."""
+
+    candidate = str(error)
+    if isinstance(error, Wave1SemanticViolation) and _WAVE1_VALIDATION_CODE.fullmatch(candidate):
+        return candidate
+    if _WAVE1_VALIDATION_CODE.fullmatch(candidate):
+        return candidate
+    return "wave1_worker_output_invalid"
+
+
+async def _observe_validation(
+    recorder: RunEventRecorderProtocol | None,
+    *,
+    spec: WorkSpec,
+    attempt: Attempt,
+    stage: str,
+    codes: tuple[str, ...],
+) -> None:
+    if recorder is None:
+        return
+    try:
+        await recorder.record(
+            category=RunEventCategory.VALIDATION,
+            phase="wave1",
+            work_id=spec.work_id,
+            attempt_id=attempt.attempt_id,
+            validation_stage=stage,
+            validation_codes=codes,
+        )
+    except Exception:
+        return
 
 
 def materialize_wave1_intents(
@@ -116,6 +154,7 @@ async def _wave1_worker(
     topic_registry: tuple[dict, ...] | list[dict] | None,
     wave0_urls: frozenset[str],
     bundle: RunBundleRef,
+    event_recorder: RunEventRecorderProtocol | None,
 ) -> CandidateResult:
     """Real Wave1 worker: build prompt, run agent, parse output, build candidate."""
     topic = {}
@@ -148,6 +187,14 @@ async def _wave1_worker(
         else:
             repair_category = None
     if repair_category is not None:
+        assert initial_error is not None
+        await _observe_validation(
+            event_recorder,
+            spec=spec,
+            attempt=attempt,
+            stage="initial",
+            codes=(_canonical_validation_code(initial_error),),
+        )
         repair_outcome = await invoke_and_normalize(
             lambda: capabilities.run_agent(  # type: ignore[union-attr]
                 context=agent_context,
@@ -167,7 +214,29 @@ async def _wave1_worker(
             output = parse_wave1_worker_output(repaired.summary)
             validate_wave1_worker_output(output, wave0_urls=wave0_urls)
         except ValueError as repair_error:
+            await _observe_validation(
+                event_recorder,
+                spec=spec,
+                attempt=attempt,
+                stage="repair",
+                codes=(_canonical_validation_code(repair_error),),
+            )
             raise WorkerAttemptFailure(WorkerFailureCategory.STRUCTURED_OUTPUT) from repair_error
+        await _observe_validation(
+            event_recorder,
+            spec=spec,
+            attempt=attempt,
+            stage="repair",
+            codes=(),
+        )
+    else:
+        await _observe_validation(
+            event_recorder,
+            spec=spec,
+            attempt=attempt,
+            stage="initial",
+            codes=(),
+        )
     normalized_sources: list[Wave1SourceRef] = []
     source_refs: list[SourceRef] = []
     ordered_sources = tuple(sorted(output.sources, key=lambda source: (source.source_id, source.canonical_url)))
@@ -290,6 +359,7 @@ async def run_wave1_work_units_real(
             topic_registry=topic_registry,
             wave0_urls=wave0_urls,
             bundle=bundle,
+            event_recorder=event_recorder,
         )
 
     return await run_controlled_work_unit_component(

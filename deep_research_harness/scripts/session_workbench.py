@@ -34,6 +34,7 @@ from deerflow_deep_research.domain.session_workbench import (
     WorkbenchArtifactView,
     WorkbenchAvailability,
     WorkbenchCatalogView,
+    WorkbenchDiagnosisView,
     WorkbenchDiscoveryView,
     WorkbenchSessionView,
     WorkbenchTimelineView,
@@ -52,6 +53,7 @@ class WorkbenchRenderedState:
     selected_bundle_id: str | None = None
     can_refresh: bool = False
     can_timeline: bool = False
+    can_diagnosis: bool = False
     can_artifacts: bool = False
     can_cancel: bool = False
 
@@ -80,6 +82,7 @@ def _session_controls(operation: BundleControlResult) -> dict[str, bool]:
     return {
         "can_refresh": available,
         "can_timeline": available,
+        "can_diagnosis": available,
         "can_artifacts": available,
         "can_cancel": available and operation.status not in terminal,
     }
@@ -135,6 +138,8 @@ def render_session(view: WorkbenchSessionView) -> WorkbenchRenderedState:
     lines.append(f"Legal next action: {operation.legal_next_action.value}")
     if view.timeline.availability is WorkbenchAvailability.UNAVAILABLE:
         lines.append("Timeline unavailable.")
+    if view.diagnosis.availability is WorkbenchAvailability.UNAVAILABLE:
+        lines.append("Event Journal unavailable.")
     if view.catalog.availability is WorkbenchAvailability.UNAVAILABLE:
         lines.append("Artifact catalog unavailable.")
     if operation.pending_input is not None:
@@ -178,6 +183,58 @@ def render_timeline(view: WorkbenchTimelineView, operation: BundleControlResult 
     return WorkbenchRenderedState(
         heading="Run Bundle timeline",
         detail="\n".join(lines) if lines else "No bounded lifecycle observations are available.",
+        placeholder="Type the correlated response" if _pending_input_mode(operation) == "answer" else "",
+        input_mode=_pending_input_mode(operation),
+        selected_bundle_id=operation.bundle_id,
+        **_session_controls(operation),
+    )
+
+
+def render_diagnosis(view: WorkbenchDiagnosisView, operation: BundleControlResult | None) -> WorkbenchRenderedState:
+    if not _is_available(operation) or operation is None or operation.bundle_id is None:
+        return _unavailable_state()
+    if view.availability is WorkbenchAvailability.UNAVAILABLE:
+        return WorkbenchRenderedState(
+            heading="Event Journal unavailable",
+            detail="The contained Event Journal is unavailable for this Run Bundle.",
+            placeholder="Type the correlated response" if _pending_input_mode(operation) == "answer" else "",
+            input_mode=_pending_input_mode(operation),
+            selected_bundle_id=operation.bundle_id,
+            **_session_controls(operation),
+        )
+    lines: list[str] = []
+    if view.summary is not None:
+        summary = view.summary
+        lines.extend(
+            (
+                f"Health: {summary.journal_availability.value}",
+                f"Generation: {summary.generation}",
+                f"Phase: {summary.phase}",
+            )
+        )
+        if summary.diagnostic_ref is not None:
+            lines.append(f"Diagnostic: {summary.diagnostic_ref}")
+        if summary.dropped_event_count:
+            lines.append(
+                f"Dropped: {summary.first_dropped_sequence}-{summary.last_dropped_sequence} "
+                f"({summary.dropped_event_count})"
+            )
+    if view.incomplete_reasons:
+        lines.append("Incomplete because: " + ", ".join(reason.value for reason in view.incomplete_reasons))
+    for event in view.events:
+        event_line = f"#{event.sequence} {event.category.value} generation {event.generation} {event.phase}"
+        if event.work_id is not None:
+            event_line += f" work {event.work_id}"
+        if event.attempt_id is not None:
+            event_line += f" attempt {event.attempt_id}"
+        if event.validation_stage is not None:
+            event_line += f" validation {event.validation_stage} {','.join(event.validation_codes) or 'none'}"
+        if event.failure_category is not None:
+            event_line += f" failure {event.failure_category}"
+        lines.append(event_line)
+    return WorkbenchRenderedState(
+        heading="Run Event Journal",
+        detail="\n".join(lines) if lines else "No safe Event Journal facts are available.",
         placeholder="Type the correlated response" if _pending_input_mode(operation) == "answer" else "",
         input_mode=_pending_input_mode(operation),
         selected_bundle_id=operation.bundle_id,
@@ -237,14 +294,14 @@ def render_artifact(view: WorkbenchArtifactView, operation: BundleControlResult 
     )
 
 
-def _retained_root() -> Path:
+def _bundle_root() -> Path:
     return Path(__file__).resolve().parents[1] / ".deep-research-demo-runs"
 
 
 async def build_local_workbench() -> tuple[LocalBundleWorkbench, DemoAdapter]:
     """Construct the fixed local profile without a session/binding controller."""
 
-    adapter = DemoAdapter(retained_root=_retained_root(), operation_enabled=True)
+    adapter = DemoAdapter(bundle_root=_bundle_root())
     try:
         await adapter.open()
         return LocalBundleWorkbench(bundle_workbench=adapter.local_bundle_workbench()), adapter
@@ -264,7 +321,7 @@ class LocalBundleWorkbenchTUI(App[None]):
     #controls { height: 3; margin: 0 2; }
     #actions { height: 3; margin: 0 2 1 2; }
     #composer { width: 1fr; }
-    #discover, #refresh, #timeline, #artifacts, #cancel { margin-left: 1; }
+    #discover, #refresh, #timeline, #journal, #artifacts, #cancel { margin-left: 1; }
     """
 
     BINDINGS = [("ctrl+c", "quit", "Quit")]
@@ -294,6 +351,7 @@ class LocalBundleWorkbenchTUI(App[None]):
             yield Button("Discover", id="discover")
             yield Button("Refresh", id="refresh")
             yield Button("Timeline", id="timeline")
+            yield Button("Journal", id="journal")
             yield Button("Artifacts", id="artifacts")
         with Horizontal(id="actions"):
             yield Button("Cancel", id="cancel", variant="error")
@@ -325,6 +383,7 @@ class LocalBundleWorkbenchTUI(App[None]):
         for widget_id, enabled in (
             ("#refresh", rendered.can_refresh),
             ("#timeline", rendered.can_timeline),
+            ("#journal", rendered.can_diagnosis),
             ("#artifacts", rendered.can_artifacts),
             ("#cancel", rendered.can_cancel),
         ):
@@ -414,6 +473,23 @@ class LocalBundleWorkbenchTUI(App[None]):
             if not isinstance(view, WorkbenchTimelineView):
                 raise ValueError("workbench_timeline_invalid")
             self._render(render_timeline(view, self.selected_operation))
+        except asyncio.CancelledError:
+            raise
+        except (OSError, RuntimeError, TypeError, ValueError):
+            self._render(_unavailable_state())
+
+    @work(group=_WORKER_GROUP, exclusive=True, exit_on_error=False)
+    async def _diagnosis(self) -> None:
+        workbench = self._workbench
+        bundle_id = self.selected_bundle_id
+        if workbench is None or bundle_id is None:
+            self._render(_unavailable_state())
+            return
+        try:
+            view = await workbench.diagnosis(bundle_id)
+            if not isinstance(view, WorkbenchDiagnosisView):
+                raise ValueError("workbench_diagnosis_invalid")
+            self._render(render_diagnosis(view, self.selected_operation))
         except asyncio.CancelledError:
             raise
         except (OSError, RuntimeError, TypeError, ValueError):
@@ -542,6 +618,8 @@ class LocalBundleWorkbenchTUI(App[None]):
             self._refresh()
         elif event.button.id == "timeline":
             self._timeline()
+        elif event.button.id == "journal":
+            self._diagnosis()
         elif event.button.id == "artifacts":
             self._catalog()
         elif event.button.id == "cancel":

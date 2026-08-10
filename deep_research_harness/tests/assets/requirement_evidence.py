@@ -800,14 +800,14 @@ REQUIREMENT_IMPACTS = (
         "RUS-003",
         "research-run-session",
         StableSeam.RUNTIME_INTEGRATION,
-        "tests/integration/test_demo_sessions.py::test_inspect_prints_only_safe_observation_facts",
-        "the inspection command must consume one exact retained projection without invoking execution",
+        "tests/integration/test_demo_sessions.py::test_inspect_command_reads_only_an_existing_selected_bundle",
+        "the inspection command must resolve only one existing selected Bundle without invoking execution",
     ),
     RequirementImpact(
         "RUS-004",
         "research-run-session",
         StableSeam.RUNTIME_INTEGRATION,
-        "tests/integration/test_demo_sessions.py::test_inspect_renders_only_the_verified_terminal_diagnostic",
+        "tests/contract/test_run_experience_failures.py::test_admitted_terminal_diagnostic_has_no_external_support_fallback",
         "a supplied diagnostic reference must be written before any retained projection cites it",
     ),
     RequirementImpact(
@@ -872,7 +872,7 @@ REQUIREMENT_IMPACTS = (
         "workflow-failure-outcomes",
         StableSeam.DOMAIN_ENGINE,
         "tests/contract/test_workflow_node_inventory.py::test_every_discovered_owner_has_success_and_failure_outcome_evidence",
-        "syntax-discovered model owners fail closed without declared phase and projection evidence",
+        "syntax-discovered model owners fail closed without declared phase, journal, and projection evidence",
     ),
     RequirementImpact(
         "CPE-001",
@@ -1165,8 +1165,8 @@ REQUIREMENT_IMPACTS = (
         "RES-005",
         "research-session-lifecycle-binding",
         StableSeam.RUNTIME_INTEGRATION,
-        "tests/integration/test_session_lifecycle_binding.py::test_retained_observation_does_not_reauthorize_a_lost_bundle",
-        "a retained full-fixture binding could otherwise reopen provider or graph work",
+        "tests/integration/test_session_lifecycle_binding.py::test_contained_journal_does_not_reauthorize_a_lost_bundle",
+        "a contained Journal could otherwise be mistaken for authority after Bundle loss",
     ),
     RequirementImpact(
         "DEC-003",

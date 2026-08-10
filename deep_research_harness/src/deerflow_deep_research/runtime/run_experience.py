@@ -934,12 +934,12 @@ class ResearchRunExperience:
             incident = control.terminal_incident
             provider_diagnostic = self._is_provider_diagnostic(control)
             diagnostic_location: str | None = None
-            observation_record_created: bool | None = None
+            journal_record_created: bool | None = None
             if provider_diagnostic:
                 if incident.diagnostic_ref is None:
                     raise ValueError("provider_diagnostic_reference_missing")
                 diagnostic_location = self._provider_diagnostic_location(control, incident.diagnostic_ref)
-                observation_record_created = diagnostic_location == "observation_store"
+                journal_record_created = diagnostic_location == "bundle_journal"
             return self._failure(
                 incident.code,
                 phase=incident.phase,
@@ -949,7 +949,7 @@ class ResearchRunExperience:
                 provider_recovery=incident.provider_recovery,
                 provider_observation=incident.provider_observation,
                 diagnostic_location=diagnostic_location,
-                observation_record_created=observation_record_created,
+                journal_record_created=journal_record_created,
             )
         return self._failure(
             RunFailureCode.RESEARCH_BLOCKED,
@@ -968,7 +968,7 @@ class ResearchRunExperience:
             and session.bundle_id == control.bundle_id
             and session.terminal_diagnostic_ref == diagnostic_ref
         ):
-            return "observation_store"
+            return "bundle_journal"
         return "unavailable"
 
     @staticmethod
@@ -1010,7 +1010,7 @@ class ResearchRunExperience:
         provider_recovery: ProviderRecoveryProjection | None = None,
         provider_observation: ProviderObservation | None = None,
         diagnostic_location: str | None = None,
-        observation_record_created: bool | None = None,
+        journal_record_created: bool | None = None,
         source: Any = None,
     ) -> RunFailure:
         message, next_action, retryable = _FAILURE_COPY[code]
@@ -1026,7 +1026,7 @@ class ResearchRunExperience:
         del source
         reference = diagnostic_ref
         record_created = (
-            self._observation_view is not None if observation_record_created is None else observation_record_created
+            self._observation_view is not None if journal_record_created is None else journal_record_created
         )
         return RunFailure(
             code=code,
@@ -1036,7 +1036,7 @@ class ResearchRunExperience:
             next_action=next_action,
             retryable=retryable,
             diagnostic_ref=reference,
-            observation_record_created=record_created,
+            journal_record_created=record_created,
             worker_failure_category=worker_failure_category,
             provider_recovery=provider_recovery,
             provider_observation=provider_observation,

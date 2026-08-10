@@ -66,6 +66,15 @@ class JournalAvailability(StrEnum):
     COMPLETE = "complete"
 
 
+class JournalIncompleteReason(StrEnum):
+    """Closed safe reasons a readable Journal cannot claim completeness."""
+
+    LEGACY = "legacy"
+    CAPACITY = "capacity"
+    PERSISTENCE = "persistence"
+    SEQUENCE_GAP = "sequence_gap"
+
+
 class RunEventCategory(StrEnum):
     ADMISSION = "admission"
     LIFECYCLE = "lifecycle"
@@ -113,11 +122,13 @@ class RunEvent(FrozenRunObservationContract):
     category: RunEventCategory
     generation: int | None = Field(default=None, ge=0, le=2)
     phase: str = Field(min_length=1, max_length=32, pattern=r"^[a-z][a-z0-9_]*$")
+    outcome: Literal["started", "completed", "failed"] | None = None
     work_id: str | None = Field(default=None, pattern=r"^[A-Za-z0-9:_-]{1,128}$")
     attempt_id: str | None = Field(default=None, pattern=r"^[A-Za-z0-9:_-]{1,128}$")
     validation_code: str | None = Field(default=None, pattern=_VALIDATION_CODE_PATTERN)
     validation_stage: Literal["initial", "repair"] | None = None
     validation_codes: tuple[str, ...] = Field(default=(), max_length=MAX_LIST_ENTRIES)
+    failure_category: str | None = Field(default=None, pattern=_VALIDATION_CODE_PATTERN)
     worker_failure_category: (
         Literal["agent_invocation", "tool_execution", "structured_output", "submission_validation", "unknown", "mixed"]
         | None
@@ -140,11 +151,11 @@ class RunEvent(FrozenRunObservationContract):
             raise ValueError("journal_validation_code_invalid")
         if len(set(self.validation_codes)) != len(self.validation_codes):
             raise ValueError("journal_validation_codes_duplicate")
+        if self.schema_version == 2 and self.validation_code is not None:
+            raise ValueError("journal_validation_code_legacy_forbidden")
         if self.category is RunEventCategory.VALIDATION and self.schema_version == 2:
             if self.validation_stage is None:
                 raise ValueError("journal_validation_stage_required")
-            if self.validation_code is not None:
-                raise ValueError("journal_validation_code_legacy_forbidden")
         elif self.validation_stage is not None or self.validation_codes:
             raise ValueError("journal_validation_fields_unexpected")
         recovery_fields_present = any(
@@ -398,13 +409,25 @@ class RunObservationInspection(FrozenRunObservationContract):
     summary: RunSummary | None = None
     events: tuple[RunEvent, ...] = Field(default=(), max_length=MAX_EVENT_RECORDS)
     journal_availability: JournalAvailability = JournalAvailability.UNAVAILABLE
+    incomplete_reasons: tuple[JournalIncompleteReason, ...] = Field(default=(), max_length=4)
     observation_category: ObservationCategory | None = None
     terminal_diagnostic_ref: str | None = Field(default=None, pattern=r"^diag_[A-Za-z0-9_-]{8,64}$")
     terminal_diagnostic: TerminalDiagnosticProjection | None = None
 
+    @model_validator(mode="after")
+    def validate_incomplete_reasons(self) -> RunObservationInspection:
+        if self.inspectability is not ObservationInspectability.AVAILABLE and self.incomplete_reasons:
+            raise ValueError("unavailable_journal_cannot_expose_incomplete_reasons")
+        if self.journal_availability is not JournalAvailability.INCOMPLETE and self.incomplete_reasons:
+            raise ValueError("journal_incomplete_reasons_require_incomplete_health")
+        if len(set(self.incomplete_reasons)) != len(self.incomplete_reasons):
+            raise ValueError("journal_incomplete_reasons_duplicate")
+        return self
+
 
 __all__ = [
     "JournalAvailability",
+    "JournalIncompleteReason",
     "LifecycleTraceRecord",
     "MAX_EVENT_RECORDS",
     "MAX_LIFECYCLE_SEQUENCE",

@@ -43,6 +43,7 @@ from deerflow_deep_research.domain.run_experience import (
     ProviderObservation,
     RunFailureCode,
 )
+from deerflow_deep_research.domain.run_observation import RunEventCategory
 from deerflow_deep_research.domain.state import WORK_UNIT_GATE_PREVIEW_FIELDS, merge_trace, preview_work_unit_update
 from deerflow_deep_research.domain.wave1 import OpenQuestionState
 from deerflow_deep_research.domain.work_units import (
@@ -65,6 +66,7 @@ from deerflow_deep_research.graph.nodes.wave1.review import (
 )
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
 from deerflow_deep_research.runtime.projection import RuntimeWorkUnitDependencyResolver
+from deerflow_deep_research.runtime.run_observation import RunObservationRecorder, RunObservationStore
 from deerflow_deep_research.runtime.work_unit_storage import WorkUnitStoreError
 from deerflow_deep_research.runtime.work_unit_store import WorkUnitStore
 from tests.assets.provider_shapes import load_provider_shape_cases, thaw_provider_shape_payload
@@ -1137,6 +1139,96 @@ async def test_real_wave1_semantic_rejection_reaches_repair_before_any_artifact_
     assert await store.load_records() == ()
     files = tuple(path.relative_to(tmp_path).as_posix() for path in tmp_path.rglob("*") if path.is_file())
     assert not any("/cache/" in path or path.endswith("/result.json") for path in files)
+
+
+async def test_real_wave1_journal_retains_exact_initial_and_repair_validation_per_attempt(tmp_path) -> None:
+    """@impl REJ-002
+
+    Validation facts remain distinct from worker recovery authority.
+    """
+
+    payload = {
+        "schema_version": 1,
+        "sources": [
+            {
+                "source_id": "source:only",
+                "canonical_url": "https://example.com/only",
+                "title": "Only one source",
+            }
+        ],
+        "claims": [],
+    }
+    topics = (
+        {"topic_id": "storage", "title": "Storage", "scope": "Storage economics"},
+        {"topic_id": "resilience", "title": "Resilience", "scope": "Resilience economics"},
+    )
+    graph_context = GraphContextView(
+        research_scope_id=BUNDLE_ID,
+        workspace_root=f"/mnt/user-data/workspace/deep-research/{BUNDLE_ID}",
+        uploads_root="/mnt/user-data/uploads",
+        outputs_root=f"/mnt/user-data/outputs/deep-research/{BUNDLE_ID}",
+    )
+    capabilities = ScriptedWave1Capabilities(provider_payload=payload)
+    store = _store(tmp_path, token="8" * 32)
+    controller = WorkUnitControllerDependencies(
+        store=store,
+        resolver=RuntimeWorkUnitDependencyResolver(graph_context, BaseResolver(graph_context, capabilities), store),
+    )
+    journal_store = RunObservationStore(
+        bundle_root=BundleLifecycle(workspace_host_path=tmp_path).private_root(BUNDLE),
+        bundle_id=BUNDLE_ID,
+    )
+    recorder = RunObservationRecorder(store=journal_store, bundle_id=BUNDLE_ID)
+    await recorder.establish(generation=0, phase="wave1", durability="restart_durable")
+    state = _state() | {"topic_registry": topics}
+
+    first = await wave1_subgraph.run_wave1_work_units_real(
+        state,
+        controller=controller,
+        topic_registry=topics,
+        capabilities=capabilities,
+        wave0_urls=frozenset(),
+        clock=lambda: NOW,
+        event_recorder=recorder,
+    )
+    retry = await wave1_subgraph.run_wave1_work_units_real(
+        _apply_result(state, first.parent_update),
+        controller=controller,
+        topic_registry=topics,
+        capabilities=capabilities,
+        wave0_urls=frozenset(),
+        clock=lambda: NOW,
+        event_recorder=recorder,
+    )
+    journal = await journal_store.inspect(bundle_id=BUNDLE_ID)
+
+    assert first.parent_update["accepted_submission_refs"] == ()
+    assert retry.parent_update["accepted_submission_refs"] == ()
+    assert first.gate_view.drained and retry.gate_view.drained
+    validation_events = tuple(event for event in journal.events if event.category is RunEventCategory.VALIDATION)
+    attempt_ids = {event.attempt_id for event in validation_events}
+    correlations = {(event.work_id, event.attempt_id) for event in validation_events}
+    assert len(attempt_ids) == len(correlations) == 4
+    assert {event.generation for event in validation_events} == {0}
+    assert {event.phase for event in validation_events} == {"wave1"}
+    assert {work_id for work_id, _attempt_id in correlations} == {"g0_wave1_w0000", "g0_wave1_w0001"}
+    assert all(attempt_id is not None for attempt_id in attempt_ids)
+    assert all("example.com" not in event.model_dump_json() for event in validation_events)
+    for attempt_id in attempt_ids:
+        assert [
+            (event.validation_stage, event.validation_codes)
+            for event in validation_events
+            if event.attempt_id == attempt_id
+        ] == [
+            ("initial", ("wave1_new_source_floor_not_met",)),
+            ("repair", ("wave1_new_source_floor_not_met",)),
+        ]
+
+    retry_events = tuple(event for event in journal.events if event.category is RunEventCategory.RETRY)
+    exhaustion_events = tuple(event for event in journal.events if event.category is RunEventCategory.EXHAUSTION)
+    assert {event.attempt_id for event in retry_events} == {"g0_wave1_w0000_a01", "g0_wave1_w0001_a01"}
+    assert all(event.retry_count == 1 for event in retry_events)
+    assert {event.attempt_id for event in exhaustion_events} == attempt_ids
 
 
 async def test_real_wave1_repair_keeps_baseline_as_scope_not_candidate_evidence(tmp_path) -> None:

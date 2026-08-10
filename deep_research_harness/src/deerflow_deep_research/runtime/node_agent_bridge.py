@@ -253,6 +253,18 @@ class RuntimeNodeAgentBridge:
         context: NodeAgentContext,
         request: NodeExecutionRequest,
     ) -> NodeExecutionResult:
+        """Run the bounded agent and publish one safe terminal invocation fact."""
+
+        result = await self._run_agent(context=context, request=request)
+        await self._record_result(context, result)
+        return result
+
+    async def _run_agent(
+        self,
+        *,
+        context: NodeAgentContext,
+        request: NodeExecutionRequest,
+    ) -> NodeExecutionResult:
         if context.bundle_context is None:
             return self._safe_failure(
                 context,
@@ -260,7 +272,7 @@ class RuntimeNodeAgentBridge:
                 error_code="selected_bundle_context_missing",
                 code=RunFailureCode.PERSISTENCE_UNAVAILABLE,
             )
-        await self._record(context, "started")
+        await self._record(context, outcome="started")
         if self.envelope.parent_sandbox is None:
             return self._safe_failure(
                 context,
@@ -577,10 +589,50 @@ class RuntimeNodeAgentBridge:
                 code=RunFailureCode.OUTPUT_STRUCTURED_INVALID,
             )
         self._emit(context, operation="run_agent", status="completed")
-        await self._record(context, "completed")
         return node_result
 
-    async def _record(self, context: NodeAgentContext, status: str) -> None:
+    async def _record_result(self, context: NodeAgentContext, result: NodeExecutionResult) -> None:
+        problem = result.problem
+        if problem is None:
+            await self._record(context, outcome="completed")
+            return
+        code = problem.code.value
+        provider_category = (
+            code
+            if code
+            in {
+                RunFailureCode.PROVIDER_TIMEOUT.value,
+                RunFailureCode.PROVIDER_UNAVAILABLE.value,
+                RunFailureCode.PROVIDER_AUTHENTICATION_FAILED.value,
+            }
+            else None
+        )
+        worker_failure_category = (
+            "tool_execution"
+            if problem.code in {RunFailureCode.TOOL_UNAVAILABLE, RunFailureCode.TOOL_EXECUTION_FAILED}
+            else "structured_output"
+            if problem.code is RunFailureCode.OUTPUT_STRUCTURED_INVALID
+            else "agent_invocation"
+            if problem.certainty is FailureCertainty.DIRECT
+            else "unknown"
+        )
+        await self._record(
+            context,
+            outcome="failed",
+            failure_category=code,
+            worker_failure_category=worker_failure_category,
+            provider_category=provider_category,
+        )
+
+    async def _record(
+        self,
+        context: NodeAgentContext,
+        *,
+        outcome: str,
+        failure_category: str | None = None,
+        worker_failure_category: str | None = None,
+        provider_category: str | None = None,
+    ) -> None:
         factory = self.envelope.event_recorder_factory
         if factory is None:
             return
@@ -589,10 +641,14 @@ class RuntimeNodeAgentBridge:
                 category=RunEventCategory.MODEL_TOOL,
                 phase=context.node_name,
                 attempt_id=context.attempt_id,
-                validation_code=f"model_tool.{status}",
+                outcome=outcome,
+                failure_category=failure_category,
+                worker_failure_category=worker_failure_category,
+                provider_category=provider_category,
             )
         except Exception:
             return
+        self._emit(context, operation="journal", status=outcome)
 
     @staticmethod
     def _problem(
@@ -730,14 +786,18 @@ class RuntimeNodeAgentBridge:
         emitter = self.envelope.progress
         if emitter is None:
             return
-        emitter.emit(
-            build_progress_event(
-                kind="node_agent",
-                ref=context.research_scope_id,
-                operation=f"{context.node_name}.{operation}",
-                status=status,
+        try:
+            emitter.emit(
+                build_progress_event(
+                    kind="node_agent",
+                    ref=context.research_scope_id,
+                    operation=f"{context.node_name}.{operation}",
+                    status=status,
+                )
             )
-        )
+        except Exception:
+            # A DeerFlow custom-stream subscriber is only a live projection.
+            return
 
     def _ephemeral_child_state(self, context: NodeAgentContext, user_message: str) -> dict[str, Any]:
         sandbox = self.envelope.parent_sandbox

@@ -12,7 +12,9 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections import deque
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -83,6 +85,11 @@ class RecordingObservationPublisher:
             retention_state=RetentionState.RETAINED,
             durability=fact.durability,
         )
+
+
+class FailingObservationPublisher:
+    async def publish(self, _fact: RecordBearingLifecycleFact) -> RunObservationView:
+        raise OSError("journal_write_failed")
 
 
 def _pending() -> PendingResearchInterrupt:
@@ -272,6 +279,43 @@ async def test_observation_is_published_only_from_a_shared_available_result() ->
     assert [fact.bundle_id for fact in publisher.facts] == [BUNDLE_ID]
     assert update.snapshot.observation is not None
     assert update.snapshot.observation.bundle_id == BUNDLE_ID
+
+
+@pytest.mark.asyncio
+async def test_rejected_pre_admission_request_creates_no_bundle_or_journal(tmp_path: Path) -> None:
+    from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
+
+    lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
+    scope = ("journal-user", "journal-thread")
+
+    with pytest.raises(ValueError, match="start_request_invalid"):
+        await lifecycle.start(scope=scope, request_text="")
+
+    assert await lifecycle.discover_active(scope=scope) is None
+    journal_manifests = await asyncio.to_thread(lambda: tuple(tmp_path.rglob("journal-manifest.json")))
+    assert not journal_manifests
+
+
+@pytest.mark.asyncio
+async def test_journal_publication_failure_does_not_change_the_typed_lifecycle_projection() -> None:
+    baseline = await ResearchRunExperience(
+        transport=ReplayTransport([_suspension()]),
+        mode="fake",
+    ).handle(StartRun(question="Compare storage options"))
+    failed_publication = await ResearchRunExperience(
+        transport=ReplayTransport([_suspension()]),
+        mode="fake",
+        observation_publisher=FailingObservationPublisher(),
+    ).handle(StartRun(question="Compare storage options"))
+
+    assert isinstance(baseline, AwaitingInput)
+    assert isinstance(failed_publication, AwaitingInput)
+    assert failed_publication.prompt == baseline.prompt
+    assert failed_publication.trace_delta == baseline.trace_delta
+    assert failed_publication.snapshot.bundle_id == baseline.snapshot.bundle_id
+    assert failed_publication.snapshot.completed_trace == baseline.snapshot.completed_trace
+    assert failed_publication.snapshot.pending_input == baseline.snapshot.pending_input
+    assert failed_publication.snapshot.observation is None
 
 
 @pytest.mark.asyncio

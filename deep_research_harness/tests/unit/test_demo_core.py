@@ -153,7 +153,7 @@ def test_demo_readiness_report_is_safe_and_non_network(_scripts_path):
     assert real.ready is False
     assert real.failure is not None
     assert "API_KEY" not in str(real.model_dump(mode="json"))
-    assert real.failure.observation_record_created is False
+    assert real.failure.journal_record_created is False
 
 
 def test_demo_model_selector_restricts_to_configured_models(_scripts_path):
@@ -175,7 +175,7 @@ async def test_demo_adapter_close_is_idempotent(_scripts_path, tmp_path):
     """@impl DPL-001"""
     from _demo_core import DemoAdapter
 
-    adapter = DemoAdapter(retained_root=tmp_path / ".deep-research-demo-runs")
+    adapter = DemoAdapter(bundle_root=tmp_path / ".deep-research-demo-runs")
     await adapter.aclose()
     await adapter.aclose()
     assert adapter._closed is True
@@ -305,8 +305,8 @@ def test_real_recipe_selects_all_real_adapters(_scripts_path):
 async def test_demo_adapter_provides_legal_unique_sandbox(_scripts_path, tmp_path):
     from _demo_core import DemoAdapter
 
-    first = DemoAdapter(retained_root=tmp_path / "first")
-    second = DemoAdapter(retained_root=tmp_path / "second")
+    first = DemoAdapter(bundle_root=tmp_path / "first")
+    second = DemoAdapter(bundle_root=tmp_path / "second")
     try:
         first_envelope = await first.adapt(object())
         second_envelope = await second.adapt(object())
@@ -327,7 +327,7 @@ async def test_demo_adapter_accepts_only_a_runtime_bound_bundle_for_work_unit_st
 
     from deerflow_deep_research.domain.bundle import BundleId, RunBundleRef
 
-    adapter = DemoAdapter(retained_root=tmp_path / ".deep-research-demo-runs")
+    adapter = DemoAdapter(bundle_root=tmp_path / ".deep-research-demo-runs")
     bundle = RunBundleRef(bundle_id=BundleId("b_" + "A" * 43), scope_bucket="s_" + "B" * 43)
     try:
         store = await adapter.create_work_unit_store(object(), bundle=bundle)

@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import inspect
 from collections.abc import Mapping
 from dataclasses import replace
@@ -52,11 +53,21 @@ async def _record_node_event(
     category: RunEventCategory,
     phase: str,
     attempt_id: str,
+    outcome: str,
+    failure_category: str | None = None,
+    worker_failure_category: str | None = None,
 ) -> None:
     if context.event_recorder is None:
         return
     try:
-        await context.event_recorder.record(category=category, phase=phase, attempt_id=attempt_id)
+        await context.event_recorder.record(
+            category=category,
+            phase=phase,
+            attempt_id=attempt_id,
+            outcome=outcome,
+            failure_category=failure_category,
+            worker_failure_category=worker_failure_category,
+        )
     except Exception:
         # Observation must never change graph/checkpoint/route authority.
         return
@@ -78,6 +89,7 @@ def _node_wrapper(
             category=RunEventCategory.NODE,
             phase=logical_name,
             attempt_id=current_attempt,
+            outcome="started",
         )
         dependencies = context.dependency_resolver.resolve(
             logical_name=logical_name,
@@ -149,6 +161,7 @@ def _node_wrapper(
             category=RunEventCategory.TERMINAL if result.get("terminal_status") else RunEventCategory.NODE,
             phase=logical_name,
             attempt_id=current_attempt,
+            outcome="completed",
         )
 
         gate_view = result.pop(WORK_UNIT_GATE_VIEW_KEY, None)
@@ -224,18 +237,28 @@ def _node_wrapper(
             if overlap:
                 raise ValueError(f"node_gate_write_conflict:{','.join(sorted(overlap))}")
             result = {**result, **gate_update}
-        if result.get("terminal_status"):
-            await _record_node_event(
-                context,
-                category=RunEventCategory.TERMINAL,
-                phase=logical_name,
-                attempt_id=current_attempt,
-            )
-
         return result
 
-    run.__name__ = f"run_{logical_name}"
-    return run
+    async def observed_run(state: ResearchState, runtime: Runtime[GraphInvocationContext]) -> dict[str, Any]:
+        try:
+            return await run(state, runtime)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            context = runtime.context
+            await _record_node_event(
+                context,
+                category=RunEventCategory.NODE,
+                phase=logical_name,
+                attempt_id=make_attempt_id(state, logical_name),
+                outcome="failed",
+                failure_category="internal.unexpected",
+                worker_failure_category="unknown",
+            )
+            raise
+
+    observed_run.__name__ = f"run_{logical_name}"
+    return observed_run
 
 
 def _route(state: ResearchState) -> str:

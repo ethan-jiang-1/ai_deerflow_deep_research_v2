@@ -32,7 +32,9 @@ def _bundle_and_request(command: Command) -> tuple[str, dict[str, object]]:
 
 @pytest.mark.asyncio
 async def test_fixture_graph_transport_runs_to_final_delivery_and_projects_its_durable_mode(tmp_path: Path) -> None:
-    adapter = DemoAdapter(retained_root=tmp_path / "fixture-graph-runs")
+    """@impl REJ-001"""
+
+    adapter = DemoAdapter(bundle_root=tmp_path / "fixture-graph-runs")
     transport = DemoLifecycleTransport()
     runtime = build_demo_runtime(mode="fixture_graph", adapter=adapter)
     transport.bind(runtime=runtime)
@@ -54,7 +56,13 @@ async def test_fixture_graph_transport_runs_to_final_delivery_and_projects_its_d
         ).inspect(bundle_id=bundle_id)
         assert journal.inspectability is ObservationInspectability.AVAILABLE
         assert [event.category for event in journal.events[:1]] == [RunEventCategory.ADMISSION]
-        assert any(event.category is RunEventCategory.NODE for event in journal.events)
+        first_node = next(
+            index for index, event in enumerate(journal.events) if event.category is RunEventCategory.NODE
+        )
+        assert first_node > 0
+        # The transport has returned only the graph's suspension at this point. Its
+        # presentation publisher has not yet observed a lifecycle result.
+        assert not any(event.category is RunEventCategory.LIFECYCLE for event in journal.events[: first_node + 1])
 
         response = HumanMessage(
             content="Use broad public sources.",
@@ -76,12 +84,38 @@ async def test_fixture_graph_transport_runs_to_final_delivery_and_projects_its_d
         assert completed["implementation_mode"] == "fixture"
         assert "final_delivery" in completed["execution_trace"]
 
+        refined = await transport.dispatch(
+            action="refine",
+            bundle_id=bundle_id,
+            messages=(start, response),
+            context={"refinement": "Prioritize primary public sources."},
+        )
+        assert isinstance(refined, dict)
+        assert refined["code"] == "refinement_applied"
+        assert refined["generation"] == 1
+
+        reopened_journal = await RunObservationStore(
+            bundle_root=lifecycle.private_root(bundle),
+            bundle_id=bundle_id,
+        ).inspect(bundle_id=bundle_id)
+        first_refinement_node = next(
+            index
+            for index, event in enumerate(reopened_journal.events)
+            if event.category is RunEventCategory.NODE and event.generation == 1
+        )
+        assert reopened_journal.events[first_refinement_node].phase == "topic_planning"
+        assert not any(
+            event.category in {RunEventCategory.LIFECYCLE, RunEventCategory.TERMINAL} and event.generation == 1
+            for event in reopened_journal.events[: first_refinement_node + 1]
+        )
+
         status = await adapter.local_bundle_workbench().status(bundle_id=bundle_id)
         assert status.status is LifecycleStatus.COMPLETED
         assert status.implementation_mode is ImplementationMode.FIXTURE
 
         state = await lifecycle.read_state(bundle)
         assert state.implementation_mode is ImplementationMode.FIXTURE
+        assert state.generation == 1
 
         reprojected = await runtime.executor.reproject(
             lifecycle=lifecycle,
@@ -101,7 +135,8 @@ async def test_fixture_graph_transport_runs_to_final_delivery_and_projects_its_d
         assert checkpoint.values["phase"] == "final_delivery"
         assert checkpoint.values["terminal_status"] == "completed"
         assert checkpoint.values["terminal_reason"] == "completed"
+        assert checkpoint.values["generation"] == 1
         assert checkpoint.values["gate_attempts_by_phase"]["final_delivery"] == 1
-        assert checkpoint.values["report_refs"] == ()
+        assert tuple(checkpoint.values["report_refs"]) == ()
     finally:
         await adapter.aclose()

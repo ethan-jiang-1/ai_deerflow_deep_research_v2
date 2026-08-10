@@ -33,12 +33,14 @@ from deerflow_deep_research.domain.lifecycle import (
     ResultCode,
 )
 from deerflow_deep_research.domain.run_experience import PendingInputProjection
+from deerflow_deep_research.domain.run_observation import JournalIncompleteReason
 from deerflow_deep_research.domain.session_workbench import (
     ArtifactCatalogKey,
     WorkbenchArtifactMetadata,
     WorkbenchArtifactView,
     WorkbenchAvailability,
     WorkbenchCatalogView,
+    WorkbenchDiagnosisView,
     WorkbenchDiscoveryView,
     WorkbenchSessionView,
     WorkbenchTimelineEntry,
@@ -324,9 +326,8 @@ async def test_fixed_workbench_profile_exposes_only_a_bundle_workbench(
     bundle_workbench = object()
 
     class FixedProfileAdapter:
-        def __init__(self, *, retained_root: Path, operation_enabled: bool) -> None:
-            captured["retained_root"] = retained_root
-            captured["operation_enabled"] = operation_enabled
+        def __init__(self, *, bundle_root: Path) -> None:
+            captured["bundle_root"] = bundle_root
 
         async def open(self) -> None:
             captured["opened"] = True
@@ -338,14 +339,13 @@ async def test_fixed_workbench_profile_exposes_only_a_bundle_workbench(
             captured["bundle_workbench_requested"] = True
             return bundle_workbench
 
-    monkeypatch.setattr(session_workbench, "_retained_root", lambda: tmp_path)
+    monkeypatch.setattr(session_workbench, "_bundle_root", lambda: tmp_path)
     monkeypatch.setattr(session_workbench, "DemoAdapter", FixedProfileAdapter)
 
     workbench, adapter = await session_workbench.build_local_workbench()
 
     assert workbench is not None
-    assert captured["retained_root"] == tmp_path
-    assert captured["operation_enabled"] is True
+    assert captured["bundle_root"] == tmp_path
     assert captured["opened"] is True
     assert captured["bundle_workbench_requested"] is True
     assert workbench._bundle_workbench is bundle_workbench
@@ -360,3 +360,21 @@ def test_rendered_workbench_state_is_pure_and_does_not_include_sensitive_authori
     assert "provider" not in rendered.detail.lower()
     assert "checkpoint" not in rendered.detail.lower()
     assert ANSWER_SENTINEL not in rendered.detail
+
+
+def test_workbench_journal_projection_renders_only_safe_incomplete_reasons() -> None:
+    rendered = session_workbench.render_diagnosis(
+        WorkbenchDiagnosisView(
+            availability=WorkbenchAvailability.AVAILABLE,
+            incomplete_reasons=(
+                JournalIncompleteReason.LEGACY,
+                JournalIncompleteReason.CAPACITY,
+                JournalIncompleteReason.PERSISTENCE,
+            ),
+        ),
+        _operation(),
+    )
+
+    assert "Incomplete because: legacy, capacity, persistence" in rendered.detail
+    assert "manifest" not in rendered.detail.lower()
+    assert "journal-manifest.json" not in rendered.detail

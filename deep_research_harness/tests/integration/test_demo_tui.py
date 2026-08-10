@@ -70,7 +70,7 @@ def _failed_report() -> ReadinessReport:
             message="Local setup failed.",
             next_action="Configure a model.",
             retryable=True,
-            observation_record_created=False,
+            journal_record_created=False,
         ),
         durability_note="No research record was created.",
     )
@@ -334,8 +334,8 @@ def test_tui_renders_safe_provider_facts_without_recovery_invention() -> None:
     assert "deepseek-v4-pro" in rendered
     assert "https://api.example.test" in rendered
     assert "400" in rendered
-    assert "support_journal" in rendered
-    assert str(demo_tui.DEFAULT_DEMO_DIAGNOSTIC_RELATIVE_PATH) in rendered
+    assert "support_journal" not in rendered
+    assert "Retained observation is unavailable" in rendered
     assert "make demo-real" not in rendered
     assert "demo-sessions" not in rendered
     assert "automatic retries" not in rendered.lower()

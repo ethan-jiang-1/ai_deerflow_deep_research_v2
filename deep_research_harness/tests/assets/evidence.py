@@ -1180,10 +1180,11 @@ EVIDENCE_CLAIMS = (
         authenticity=AuthenticityLevel.REAL_NODE_FAKE_CAPABILITIES,
     ),
     _correctness_claim(
-        "node-agent-closed-failure-problem",
-        "tests/unit/test_node_agent_bridge.py::test_bridge_projects_closed_safe_problem_for_each_runtime_source[model-configuration.model_missing]",
+        "run-event-journal-node-agent-bridge-failures",
+        "tests/unit/test_node_agent_bridge.py::test_bridge_projects_closed_safe_problem_for_each_runtime_source[model-configuration.model_missing-agent_invocation-None]",
         StableSeam.RUNTIME_INTEGRATION,
-        requirement_ids=("NOA-007", "RER-003"),
+        requirement_ids=("NOA-007", "RER-003", "WFO-002"),
+        authenticity=AuthenticityLevel.REAL_NODE_FAKE_CAPABILITIES,
     ),
     _correctness_claim(
         "node-prompt-bridge-conformance",
@@ -1349,7 +1350,7 @@ EVIDENCE_CLAIMS = (
     ),
     _correctness_claim(
         "retired-fixture-binding-rejection",
-        "tests/integration/test_session_lifecycle_binding.py::test_retained_observation_does_not_reauthorize_a_lost_bundle",
+        "tests/integration/test_session_lifecycle_binding.py::test_contained_journal_does_not_reauthorize_a_lost_bundle",
         StableSeam.RUNTIME_INTEGRATION,
         requirement_ids=("RES-005", "RUI-003"),
     ),
@@ -1505,7 +1506,7 @@ EVIDENCE_CLAIMS = (
     ),
     _correctness_claim(
         "retained-session-exact-terminal-diagnostic",
-        "tests/integration/test_demo_sessions.py::test_inspect_renders_only_the_verified_terminal_diagnostic",
+        "tests/contract/test_run_experience_failures.py::test_admitted_terminal_diagnostic_has_no_external_support_fallback",
         StableSeam.RUNTIME_INTEGRATION,
         requirement_ids=("RUS-004", "RUS-006"),
     ),
@@ -1523,13 +1524,13 @@ EVIDENCE_CLAIMS = (
     ),
     _correctness_claim(
         "standalone-inspection-observation-projection",
-        "tests/integration/test_demo_sessions.py::test_inspect_prints_only_safe_observation_facts",
+        "tests/integration/test_demo_sessions.py::test_inspect_renders_safe_contained_journal_facts",
         StableSeam.RUNTIME_INTEGRATION,
         requirement_ids=("RUS-003",),
     ),
     _correctness_claim(
         "standalone-inspection-command-execution",
-        "tests/integration/test_demo_sessions.py::test_rendered_inspection_command_is_executable_from_harness_root",
+        "tests/integration/test_demo_sessions.py::test_inspect_command_reads_only_an_existing_selected_bundle",
         StableSeam.RUNTIME_INTEGRATION,
         requirement_ids=("RUS-003", "REC-005", "REC-006"),
     ),
@@ -1882,7 +1883,7 @@ EVIDENCE_CLAIMS = (
     ),
     _correctness_claim(
         "session-operations-cli-profile",
-        "tests/integration/test_demo_sessions.py::test_demo_sessions_parser_exposes_only_a_bundle_observation_target",
+        "tests/integration/test_demo_sessions.py::test_demo_sessions_parser_exposes_only_a_bundle_target",
         StableSeam.PUBLIC_ENTRY,
         requirement_ids=("REC-004", "RDO-001", "RDO-003", "RDO-004"),
     ),

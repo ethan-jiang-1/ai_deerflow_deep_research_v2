@@ -51,6 +51,7 @@ prefixes:
   REG: research-graph-lifecycle
   RUI: runtime-integration
   REC: research-cli-onboarding
+  REJ: run-event-journal
   RER: research-run-experience
   RUS: research-run-session
   RES: research-session-lifecycle-binding
@@ -275,6 +276,13 @@ REC-006: research-cli-onboarding — The standalone real CLI renders a redacted 
 REC-007: research-cli-onboarding — The standalone real CLI accepts natural proposal confirmation, revision, question, and clarification, while rendering numbered shared fallback controls that submit generic control selection rather than action ids, magic phrases, or JSON-only recovery
 REC-008: research-cli-onboarding — Real CLI uses one Bundle lifecycle vocabulary and gives truthful unavailable-Run guidance
 
+# run-event-journal
+REJ-001: run-event-journal — An admitted Run establishes one correlated Bundle-local Event Journal before graph execution and retains it only for the Bundle lifetime
+REJ-002: run-event-journal — Shared lifecycle, graph, work-attempt, invocation, validation, retry, exhaustion, and terminal seams retain only bounded canonical safe process facts
+REJ-003: run-event-journal — Bounded Journal retention truthfully reports complete, incomplete, or unavailable history without changing lifecycle or recovery authority
+REJ-004: run-event-journal — Read-only inspection exposes only safe selected-Bundle Journal facts and never obtains external historical diagnostic or control authority
+REJ-005: run-event-journal — DeerFlow runtime context and custom streaming are ingress and best-effort projection boundaries, never Journal identity, durable evidence, or lifecycle authority
+
 # research-run-experience
 RER-001: research-run-experience — One runtime-owned module converts lifecycle wire results into shared safe run updates for presentation adapters
 RER-002: research-run-experience — Lifecycle projection distinguishes committed checkpoint phase from graph-owned pending human interaction without a second control authority
@@ -298,6 +306,7 @@ RUS-004: research-run-session — Retained sessions expose bounded redacted diag
 RUS-005: research-run-session — Retained Wave0 diagnosis preserves closed redacted worker failure classes without becoming lifecycle authority or raw logs
 RUS-006: research-run-session — Retained diagnostics record bounded provider attempt, retry, backoff, and exhaustion observations correlated to the terminal incident without raw provider data
 RUS-007: research-run-session — Retained session material is observation-only after Bundle authority migration and cannot recover a deleted Run
+RUS-008: research-run-session — Available Bundle inspection exposes only bounded redacted Event Journal facts and reports post-loss diagnostics unavailable without an external fallback
 
 # deep-research-wave0-worker-failure-classification
 WFC-001: deep-research-wave0-worker-failure-classification — Real Wave0 maps trusted worker boundaries to closed redacted per-attempt failure classes and honest exhausted-work aggregates

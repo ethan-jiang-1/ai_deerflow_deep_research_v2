@@ -126,6 +126,7 @@ _NODE_ROWS = (
         evidence_links=(
             _node_link("workflow-hitl1-zero-tool-bridge", EvidenceClassification.COGNITIVE_PROGRAM),
             _node_link("hitl1-typed-failure-incident", EvidenceClassification.WIRING),
+            _node_link("run-event-journal-node-agent-bridge-failures", EvidenceClassification.WIRING),
             _node_link("workflow-outcome-hitl1-lifecycle-projection", EvidenceClassification.WIRING),
             _node_link("hitl1-complete-response", EvidenceClassification.DETERMINISTIC_GUARDRAIL),
             _node_link("hitl1-run-agent-failure", EvidenceClassification.DETERMINISTIC_GUARDRAIL),
@@ -149,6 +150,7 @@ _NODE_ROWS = (
         evidence_links=(
             _node_link("workflow-topic-planning-zero-tool-bridge", EvidenceClassification.COGNITIVE_PROGRAM),
             _node_link("workflow-outcome-topic-planning-known-invocation", EvidenceClassification.WIRING),
+            _node_link("run-event-journal-node-agent-bridge-failures", EvidenceClassification.WIRING),
             _node_link("workflow-outcome-topic-planning-lifecycle-projection", EvidenceClassification.WIRING),
             _node_link("topic-planning-valid-plan", EvidenceClassification.DETERMINISTIC_GUARDRAIL),
             _node_link("topic-planning-invalid-output", EvidenceClassification.DETERMINISTIC_GUARDRAIL),
@@ -172,6 +174,7 @@ _NODE_ROWS = (
         evidence_links=(
             _node_link("workflow-wave0-worker-bridge", EvidenceClassification.COGNITIVE_PROGRAM),
             _node_link("workflow-outcome-wave0-known-invocation", EvidenceClassification.WIRING),
+            _node_link("run-event-journal-node-agent-bridge-failures", EvidenceClassification.WIRING),
             _node_link("wave0-complete-lifecycle", EvidenceClassification.DETERMINISTIC_GUARDRAIL),
             _node_link("wave0-all-workers-fail", EvidenceClassification.DETERMINISTIC_GUARDRAIL),
         ),
@@ -203,6 +206,7 @@ _NODE_ROWS = (
         evidence_links=(
             _node_link("workflow-wave1-worker-bridge", EvidenceClassification.COGNITIVE_PROGRAM),
             _node_link("workflow-outcome-wave1-known-invocation", EvidenceClassification.WIRING),
+            _node_link("run-event-journal-node-agent-bridge-failures", EvidenceClassification.WIRING),
             _node_link("wave1-worker-ledger-success", EvidenceClassification.DETERMINISTIC_GUARDRAIL),
             _node_link("wave1-malformed-worker-output", EvidenceClassification.DETERMINISTIC_GUARDRAIL),
         ),
@@ -226,6 +230,7 @@ _NODE_ROWS = (
         evidence_links=(
             _node_link("workflow-wave2-zero-tool-bridge", EvidenceClassification.COGNITIVE_PROGRAM),
             _node_link("workflow-outcome-wave2-known-invocation", EvidenceClassification.WIRING),
+            _node_link("run-event-journal-node-agent-bridge-failures", EvidenceClassification.WIRING),
             _node_link("wave2-canonical-findings", EvidenceClassification.DETERMINISTIC_GUARDRAIL),
             _node_link("wave2-malformed-output", EvidenceClassification.DETERMINISTIC_GUARDRAIL),
         ),
@@ -257,6 +262,7 @@ _NODE_ROWS = (
         evidence_links=(
             _node_link("workflow-targeted-evidence-worker-bridge", EvidenceClassification.COGNITIVE_PROGRAM),
             _node_link("workflow-outcome-targeted-evidence-known-invocation", EvidenceClassification.WIRING),
+            _node_link("run-event-journal-node-agent-bridge-failures", EvidenceClassification.WIRING),
             _node_link("targeted-evidence-valid-artifact", EvidenceClassification.DETERMINISTIC_GUARDRAIL),
             _node_link("targeted-evidence-malformed-output", EvidenceClassification.DETERMINISTIC_GUARDRAIL),
         ),
@@ -316,6 +322,7 @@ _NODE_ROWS = (
         evidence_links=(
             _node_link("workflow-readiness-evidence-critic-bridge", EvidenceClassification.COGNITIVE_PROGRAM),
             _node_link("readiness-critic-conservative-failure", EvidenceClassification.WIRING),
+            _node_link("run-event-journal-node-agent-bridge-failures", EvidenceClassification.WIRING),
             _node_link("readiness-all-clear", EvidenceClassification.DETERMINISTIC_GUARDRAIL),
             _node_link("readiness-no-evidence", EvidenceClassification.DETERMINISTIC_GUARDRAIL),
         ),
@@ -340,6 +347,7 @@ _NODE_ROWS = (
         evidence_links=(
             _node_link("nac-final-delivery-composer-success", EvidenceClassification.COGNITIVE_PROGRAM),
             _node_link("workflow-outcome-final-delivery-known-invocation", EvidenceClassification.WIRING),
+            _node_link("run-event-journal-node-agent-bridge-failures", EvidenceClassification.WIRING),
             _node_link("nac-final-delivery-composer-risk", EvidenceClassification.WIRING),
             _node_link("final-delivery-completed", EvidenceClassification.DETERMINISTIC_GUARDRAIL),
             _node_link("final-delivery-empty-evidence", EvidenceClassification.DETERMINISTIC_GUARDRAIL),

@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import os
 import secrets
@@ -182,7 +183,7 @@ def demo_readiness_report(*, mode: str, environ: Mapping[str, str] | None = None
             message=message,
             next_action=next_action,
             retryable=True,
-            observation_record_created=False,
+            journal_record_created=False,
         ),
         durability_note="尚未创建 Run Bundle 或保留观察。",
     )
@@ -297,9 +298,13 @@ def _install_demo_storage_patch() -> None:
 
 
 class DemoAdapter:
-    def __init__(self, *, retained_root: Path | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        bundle_root: Path | None = None,
+    ) -> None:
         agent_root = Path(__file__).resolve().parents[1]
-        root = retained_root or agent_root / _DEMO_BUNDLE_ROOT_NAME
+        root = bundle_root or agent_root / _DEMO_BUNDLE_ROOT_NAME
         workspace = root / "workspace"
         uploads = root / "uploads"
         outputs = root / "outputs"
@@ -318,12 +323,14 @@ class DemoAdapter:
                 PathMapping(container_path="/mnt/user-data/outputs", local_path=str(outputs)),
             ],
         )
-        _suffix = secrets.token_hex(4)
+        profile_key = hashlib.sha256(str(root.resolve()).encode("utf-8")).hexdigest()[:16]
         self._bundle_lifecycle = BundleLifecycle(workspace_host_path=workspace)
         self._envelope = TrustedRuntimeEnvelope(
             effective_user_id="demo-user",
-            outer_thread_id=f"demo-thread-{_suffix}",
-            outer_run_id=f"demo-run-{_suffix}",
+            # A stable local profile lets an operator reopen the same Bundle through
+            # its lifecycle scope. Bundle ids remain independently generated.
+            outer_thread_id=f"demo-thread-{profile_key}",
+            outer_run_id=f"demo-run-{secrets.token_hex(4)}",
             app_config=DemoAppConfig(),
             workspace_host_path=workspace,
             uploads_host_path=uploads,

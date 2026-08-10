@@ -82,8 +82,8 @@ class ProviderTerminalDetails:
     final_observation: SafeProviderObservation | None
     recovery: SafeRecoveryProjection | None
     diagnostic_ref: str | None
-    diagnostic_location: Literal["observation_store", "support_journal", "unavailable"] | None
-    observation_record_created: bool
+    diagnostic_location: Literal["bundle_journal", "unavailable"] | None
+    journal_record_created: bool
     recovery_action: Literal["fresh_start"] | None
     inspection_bundle_id: str | None
 
@@ -125,7 +125,7 @@ def provider_terminal_details(*, failure: RunFailure, snapshot: object | None) -
         recovery=recovery,
         diagnostic_ref=diagnostic_ref,
         diagnostic_location=location,
-        observation_record_created=getattr(failure, "observation_record_created", None) is True,
+        journal_record_created=getattr(failure, "journal_record_created", None) is True,
         recovery_action="fresh_start" if fresh_start else None,
         inspection_bundle_id=_matching_inspection_bundle_id(
             snapshot=snapshot,
@@ -246,8 +246,8 @@ def _safe_diagnostic_reference(value: object) -> str | None:
 
 def _safe_diagnostic_location(
     value: object,
-) -> Literal["observation_store", "support_journal", "unavailable"] | None:
-    if value in {"observation_store", "support_journal", "unavailable"}:
+) -> Literal["bundle_journal", "unavailable"] | None:
+    if value in {"bundle_journal", "unavailable"}:
         return value
     return None
 
@@ -270,9 +270,9 @@ def _matching_inspection_bundle_id(
     *,
     snapshot: object | None,
     diagnostic_ref: str | None,
-    diagnostic_location: Literal["observation_store", "support_journal", "unavailable"] | None,
+    diagnostic_location: Literal["bundle_journal", "unavailable"] | None,
 ) -> str | None:
-    if diagnostic_location != "observation_store" or diagnostic_ref is None:
+    if diagnostic_location != "bundle_journal" or diagnostic_ref is None:
         return None
     bundle_id = getattr(snapshot, "bundle_id", None)
     observation = getattr(snapshot, "observation", None)

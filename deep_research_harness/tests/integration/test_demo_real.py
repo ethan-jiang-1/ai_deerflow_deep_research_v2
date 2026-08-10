@@ -64,7 +64,7 @@ def _failed_report() -> ReadinessReport:
             message="Model setup is missing.",
             next_action="Configure a model.",
             retryable=True,
-            observation_record_created=False,
+            journal_record_created=False,
         ),
         durability_note="No research record was created.",
     )

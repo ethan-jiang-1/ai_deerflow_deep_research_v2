@@ -44,7 +44,6 @@ from deerflow_deep_research.domain.run_experience import (
     Terminal,
     Working,
 )
-from deerflow_deep_research.runtime.run_diagnostics import DEFAULT_DEMO_DIAGNOSTIC_RELATIVE_PATH
 from deerflow_deep_research.runtime.run_experience import ResearchRunExperience
 
 SCRIPTED_DEFAULT_QUESTION = (
@@ -86,7 +85,7 @@ def _print_readiness(report: ReadinessReport) -> None:
                 print(f"  下一步: {check.next_action}")
     if report.failure is not None and report.failure.diagnostic_ref:
         print(f"  诊断引用: {report.failure.diagnostic_ref}")
-    if report.failure is not None and not report.failure.observation_record_created:
+    if report.failure is not None and not report.failure.journal_record_created:
         print("  尚未创建保留观察。")
     print(f"  {report.durability_note}")
 
@@ -155,9 +154,8 @@ def _failure_lines(failure, *, snapshot: object | None = None) -> tuple[str, ...
     lines.append(f"  可重试: {'是' if failure.retryable else '否'}")
     if failure.diagnostic_ref:
         lines.append(f"  诊断引用: {failure.diagnostic_ref}")
-        lines.append(f"  本地诊断: {DEFAULT_DEMO_DIAGNOSTIC_RELATIVE_PATH}")
-    if not failure.observation_record_created:
-        lines.append("  尚未创建保留观察。")
+    if not failure.journal_record_created:
+        lines.append("  Bundle 内 Event Journal 记录不可用。")
     return tuple(lines)
 
 
@@ -176,14 +174,11 @@ def _provider_failure_lines(details: ProviderTerminalDetails) -> tuple[str, ...]
         lines.append(f"  恢复处置: {details.recovery.disposition}")
     if details.diagnostic_ref:
         lines.append(f"  诊断引用: {details.diagnostic_ref}")
-    if details.diagnostic_location == "observation_store":
-        lines.append("  诊断位置: 保留观察存储")
-    elif details.diagnostic_location == "support_journal":
-        lines.append("  诊断位置: 支持诊断日志")
-        lines.append(f"  本地诊断: {DEFAULT_DEMO_DIAGNOSTIC_RELATIVE_PATH}")
+    if details.diagnostic_location == "bundle_journal":
+        lines.append("  诊断位置: Bundle 内 Event Journal")
     elif details.diagnostic_location == "unavailable":
         lines.append("  诊断位置: 本地诊断记录不可用")
-    lines.append(f"  保留观察: {'已创建' if details.observation_record_created else '未创建'}")
+    lines.append(f"  Event Journal: {'已创建' if details.journal_record_created else '不可用'}")
     if details.recovery_action == "fresh_start":
         lines.append("  新启动: make demo-real")
     else:
@@ -384,8 +379,8 @@ def main() -> None:
         epilog=(
             "A local, non-network preflight runs before question entry. HITL prompts describe "
             "research scope or graph-owned decisions; terminal failures show only a safe category, "
-            "next action, and opaque diagnostic reference. Records are retained at "
-            f"{DEFAULT_DEMO_DIAGNOSTIC_RELATIVE_PATH}. Ctrl-C ends this local wait and does not "
+            "next action, and opaque diagnostic reference. Records live only in the returned "
+            "Run Bundle's Event Journal. Ctrl-C ends this local wait and does not "
             "claim to cancel the graph. A returned lifecycle record retains an inspectable local bundle; "
             "inspection is not cross-process resume."
         ),

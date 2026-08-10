@@ -379,7 +379,7 @@ class RunFailure(FrozenRunContract):
     next_action: str = Field(min_length=1, max_length=512)
     retryable: bool
     diagnostic_ref: str | None = Field(default=None, pattern=r"^diag_[A-Za-z0-9_-]{8,64}$")
-    observation_record_created: bool = False
+    journal_record_created: bool = False
     worker_failure_category: (
         Literal["agent_invocation", "tool_execution", "structured_output", "submission_validation", "unknown", "mixed"]
         | None
@@ -387,7 +387,7 @@ class RunFailure(FrozenRunContract):
     provider_recovery: ProviderRecoveryProjection | None = None
     provider_observation: ProviderObservation | None = None
     recovery_action: Literal["fresh_start"] | None = None
-    diagnostic_location: Literal["observation_store", "support_journal", "unavailable"] | None = None
+    diagnostic_location: Literal["bundle_journal", "unavailable"] | None = None
 
     @model_validator(mode="after")
     def validate_provider_diagnostic_projection(self) -> RunFailure:
@@ -396,7 +396,7 @@ class RunFailure(FrozenRunContract):
         if provider_diagnostic:
             if self.diagnostic_ref is None or self.diagnostic_location is None:
                 raise ValueError("provider_diagnostic_location_required")
-            if self.observation_record_created != (self.diagnostic_location == "observation_store"):
+            if self.journal_record_created != (self.diagnostic_location == "bundle_journal"):
                 raise ValueError("provider_diagnostic_record_truth_invalid")
         elif self.diagnostic_location is not None:
             raise ValueError("legacy_failure_diagnostic_location_invalid")

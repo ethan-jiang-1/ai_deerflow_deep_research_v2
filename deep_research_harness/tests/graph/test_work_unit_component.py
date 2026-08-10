@@ -146,17 +146,21 @@ class _UnusedResolver:
 class _Recorder:
     def __init__(self, *, fail: bool = False) -> None:
         self.fail = fail
-        self.events: list[tuple[RunEventCategory, str, str | None, str | None, str | None, int | None]] = []
+        self.events: list[tuple[object, ...]] = []
 
     async def record(
         self,
         *,
         category: RunEventCategory,
         phase: str,
+        outcome: str | None = None,
         work_id: str | None = None,
         attempt_id: str | None = None,
-        validation_code: str | None = None,
+        validation_stage: str | None = None,
+        validation_codes: tuple[str, ...] = (),
+        failure_category: str | None = None,
         worker_failure_category: str | None = None,
+        provider_category: str | None = None,
         retry_count: int | None = None,
         diagnostic_ref: str | None = None,
     ) -> None:
@@ -164,7 +168,19 @@ class _Recorder:
         if self.fail:
             raise OSError("observation unavailable")
         self.events.append(
-            (category, phase, work_id, attempt_id, validation_code, retry_count, worker_failure_category)
+            (
+                category,
+                phase,
+                work_id,
+                attempt_id,
+                outcome,
+                validation_stage,
+                validation_codes,
+                failure_category,
+                worker_failure_category,
+                provider_category,
+                retry_count,
+            )
         )
 
 
@@ -190,6 +206,8 @@ async def test_component_runs_three_concurrent_workers_and_multiple_refill_batch
 
 
 async def test_component_emits_closed_attempt_validation_and_submit_events_without_authority() -> None:
+    """@impl REJ-002"""
+
     recorder = _Recorder()
     result = await run_work_unit_component(
         {},
@@ -236,6 +254,7 @@ async def test_component_recorder_failure_cannot_change_submit_or_gate_results()
 
 
 async def test_worker_category_is_separate_from_validation_code() -> None:
+    """@impl RUS-005"""
     recorder = _Recorder()
 
     async def failed_worker(_spec, _attempt):
@@ -258,7 +277,7 @@ async def test_worker_category_is_separate_from_validation_code() -> None:
 
     attempt_id = next(iter(result.parent_update["attempts_by_id"]))
     assert result.parent_update["attempts_by_id"][attempt_id]["failure_category"] == "structured_output"
-    assert any(event[-1] == "structured_output" and event[4] is None for event in recorder.events)
+    assert any(event[8] == "structured_output" and event[6] == () for event in recorder.events)
 
 
 async def test_failed_worker_cannot_publish_a_candidate_or_control_update() -> None:

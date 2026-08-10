@@ -21,15 +21,18 @@ from deerflow_deep_research.domain.lifecycle import (
     Durability,
     InfrastructureResultCode,
     LegalNextAction,
-    LifecycleStatus,
     LifecycleAction,
+    LifecycleStatus,
     ResultCode,
     WorkUnitStorageReason,
 )
 from deerflow_deep_research.domain.run_experience import Fault, RunFailureCode, StartRun, Terminal
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
 from deerflow_deep_research.runtime.run_experience import ResearchRunExperience
-from deerflow_deep_research.runtime.run_observation import BundleRunObservationPublisher, RunObservationStore
+from deerflow_deep_research.runtime.run_observation import (
+    BundleRunObservationPublisher,
+    RunObservationStore,
+)
 
 BUNDLE_ID = "b_" + "B" * 43
 SENTINEL = "secret=sentinel /Users/alice/private https://provider.invalid/body"
@@ -106,7 +109,11 @@ async def test_admitted_terminal_diagnostic_has_no_external_support_fallback(tmp
     scope = ("experience-user", "experience-thread")
     bundle = await lifecycle.start(scope=scope, request_text="Research journal diagnostics.")
     state = await lifecycle.end(bundle=bundle, terminal_status=LifecycleStatus.BLOCKED)
-    result = lifecycle.result_for_state(action=LifecycleAction.START, bundle=bundle, state=state).model_dump(mode="json")
+    result = lifecycle.result_for_state(
+        action=LifecycleAction.START,
+        bundle=bundle,
+        state=state,
+    ).model_dump(mode="json")
     support_path = tmp_path / "support-records.jsonl"
     experience = ResearchRunExperience(
         transport=ReplayTransport([result]),

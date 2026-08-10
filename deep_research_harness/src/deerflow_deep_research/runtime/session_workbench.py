@@ -37,6 +37,7 @@ from deerflow_deep_research.domain.lifecycle import (
     ResponseKind,
     ResultCode,
 )
+from deerflow_deep_research.domain.run_observation import ObservationInspectability
 from deerflow_deep_research.domain.session_workbench import (
     MAX_WORKBENCH_ARTIFACT_BYTES,
     ArtifactCatalogKey,
@@ -57,6 +58,7 @@ from deerflow_deep_research.runtime.bundle_lifecycle import (
     BundleLifecycleError,
     CurrentBundleHandle,
 )
+from deerflow_deep_research.runtime.run_observation import RunObservationStore
 
 
 class BundleWorkbench:
@@ -253,6 +255,28 @@ class BundleWorkbench:
             return WorkbenchTimelineView(availability=WorkbenchAvailability.UNAVAILABLE)
         return WorkbenchTimelineView(availability=WorkbenchAvailability.UNAVAILABLE)
 
+    async def diagnosis(self, *, bundle_id: str) -> WorkbenchDiagnosisView:
+        """Read only the selected available Bundle's contained Journal."""
+
+        bundle = await self._available_bundle(bundle_id)
+        if bundle is None or self._lifecycle is None:
+            return WorkbenchDiagnosisView(availability=WorkbenchAvailability.UNAVAILABLE)
+        try:
+            inspection = await RunObservationStore(
+                bundle_root=self._lifecycle.private_root(bundle),
+                bundle_id=bundle.bundle_id.value,
+            ).inspect(bundle_id=bundle.bundle_id.value)
+        except (OSError, RuntimeError, TypeError, ValueError):
+            return WorkbenchDiagnosisView(availability=WorkbenchAvailability.UNAVAILABLE)
+        if inspection.inspectability is not ObservationInspectability.AVAILABLE:
+            return WorkbenchDiagnosisView(availability=WorkbenchAvailability.UNAVAILABLE)
+        return WorkbenchDiagnosisView(
+            availability=WorkbenchAvailability.AVAILABLE,
+            summary=inspection.summary,
+            events=inspection.events[-8:],
+            incomplete_reasons=inspection.incomplete_reasons,
+        )
+
     async def _selected_bundle(self, bundle_id: str) -> RunBundleRef | None:
         if self._lifecycle is None or self._scope is None:
             return None
@@ -372,6 +396,9 @@ class LocalBundleWorkbench:
     async def timeline(self, bundle_id: str) -> WorkbenchTimelineView:
         return await self._bundle_workbench.timeline(bundle_id=bundle_id)
 
+    async def diagnosis(self, bundle_id: str) -> WorkbenchDiagnosisView:
+        return await self._bundle_workbench.diagnosis(bundle_id=bundle_id)
+
     async def catalog(self, bundle_id: str) -> WorkbenchCatalogView:
         return await self._bundle_workbench.catalog(bundle_id=bundle_id)
 
@@ -429,7 +456,7 @@ class LocalBundleWorkbench:
             operation=result,
             timeline=await self._bundle_workbench.timeline(bundle_id=result.bundle_id),
             catalog=await self._bundle_workbench.catalog(bundle_id=result.bundle_id),
-            diagnosis=WorkbenchDiagnosisView(availability=WorkbenchAvailability.UNAVAILABLE),
+            diagnosis=await self._bundle_workbench.diagnosis(bundle_id=result.bundle_id),
         )
 
 

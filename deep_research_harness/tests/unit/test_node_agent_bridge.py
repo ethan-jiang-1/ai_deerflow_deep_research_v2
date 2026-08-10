@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import asyncio
 import errno
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -348,11 +349,65 @@ def _bridge(model_factory, *, envelope=None, policy=None, tools_resolver=lambda 
     )
 
 
+class _JournalRecorder:
+    def __init__(self) -> None:
+        self.events: list[dict[str, object]] = []
+
+    async def record(self, **event: object) -> None:
+        self.events.append(dict(event))
+
+
 async def test_run_agent_completes_within_budget() -> None:
     bridge = _bridge(lambda: ScriptedChatModel(responses=[ai_message("the summary")]))
     result = await bridge.run_agent(context=_context(), request=_request())
     assert result.finish_reason == NodeFinishReason.SUCCESS
     assert result.summary == "the summary"
+
+
+async def test_bridge_records_safe_model_tool_start_and_completion_to_the_shared_journal() -> None:
+    """@impl REJ-002"""
+
+    recorder = _JournalRecorder()
+    envelope = replace(_envelope(), event_recorder_factory=lambda _scope: recorder)
+
+    result = await _bridge(
+        lambda: ScriptedChatModel(responses=[ai_message("the summary")]),
+        envelope=envelope,
+    ).run_agent(context=_context(), request=_request())
+
+    assert result.finish_reason is NodeFinishReason.SUCCESS
+    assert [(event["category"], event["outcome"]) for event in recorder.events] == [
+        ("model_tool", "started"),
+        ("model_tool", "completed"),
+    ]
+    assert all("validation_code" not in event for event in recorder.events)
+    assert all(event["attempt_id"] == "a1" for event in recorder.events)
+
+
+async def test_bridge_records_closed_failure_when_the_live_projection_subscriber_fails() -> None:
+    """@impl REJ-005"""
+
+    recorder = _JournalRecorder()
+
+    class FailingProgress:
+        def emit(self, _event: dict[str, object]) -> None:
+            raise RuntimeError("subscriber disconnected")
+
+    envelope = replace(
+        _envelope(),
+        progress=FailingProgress(),
+        event_recorder_factory=lambda _scope: recorder,
+    )
+    result = await _bridge(
+        lambda: (_ for _ in ()).throw(NodeAgentConfigurationError("model_not_configured", "raw secret")),
+        envelope=envelope,
+    ).run_agent(context=_context(), request=_request())
+
+    assert result.problem is not None
+    assert result.problem.code is RunFailureCode.CONFIGURATION_MODEL_MISSING
+    assert recorder.events[-1]["outcome"] == "failed"
+    assert recorder.events[-1]["failure_category"] == RunFailureCode.CONFIGURATION_MODEL_MISSING.value
+    assert recorder.events[-1]["worker_failure_category"] == "agent_invocation"
 
 
 async def test_request_requiring_tool_execution_rejects_direct_model_answer() -> None:
@@ -672,26 +727,30 @@ async def test_missing_parent_isolation_fails_closed() -> None:
 
 
 @pytest.mark.parametrize(
-    ("source", "expected"),
+    ("source", "expected", "expected_worker_failure_category", "expected_provider_category"),
     [
-        ("model", RunFailureCode.CONFIGURATION_MODEL_MISSING),
-        ("tools", RunFailureCode.TOOL_UNAVAILABLE),
-        ("timeout", RunFailureCode.PROVIDER_TIMEOUT),
-        ("unavailable", RunFailureCode.PROVIDER_UNAVAILABLE),
-        ("structured", RunFailureCode.OUTPUT_STRUCTURED_INVALID),
-        ("unknown", RunFailureCode.INTERNAL_UNEXPECTED),
+        ("model", RunFailureCode.CONFIGURATION_MODEL_MISSING, "agent_invocation", None),
+        ("tools", RunFailureCode.TOOL_UNAVAILABLE, "tool_execution", None),
+        ("timeout", RunFailureCode.PROVIDER_TIMEOUT, "agent_invocation", "provider.timeout"),
+        ("unavailable", RunFailureCode.PROVIDER_UNAVAILABLE, "agent_invocation", "provider.unavailable"),
+        ("structured", RunFailureCode.OUTPUT_STRUCTURED_INVALID, "structured_output", None),
+        ("unknown", RunFailureCode.INTERNAL_UNEXPECTED, "unknown", None),
     ],
 )
 async def test_bridge_projects_closed_safe_problem_for_each_runtime_source(
     monkeypatch: pytest.MonkeyPatch,
     source: str,
     expected: RunFailureCode,
+    expected_worker_failure_category: str,
+    expected_provider_category: str | None,
 ) -> None:
     """@impl NOA-007
 
     Runtime failures must not cross into graph nodes as raw exceptions or text.
     """
     sentinel = "provider-body secret=sentinel /Users/alice/private"
+    recorder = _JournalRecorder()
+    envelope = replace(_envelope(), event_recorder_factory=lambda _scope: recorder)
 
     class ExplodingAgent:
         async def ainvoke(self, *_args, **_kwargs):
@@ -707,7 +766,7 @@ async def test_bridge_projects_closed_safe_problem_for_each_runtime_source(
 
     if source == "model":
         bridge = RuntimeNodeAgentBridge(
-            envelope=_envelope(),
+            envelope=envelope,
             policy=_policy(),
             model_resolver=lambda _envelope: (_ for _ in ()).throw(
                 NodeAgentConfigurationError("model_not_configured", sentinel)
@@ -716,7 +775,7 @@ async def test_bridge_projects_closed_safe_problem_for_each_runtime_source(
         )
     elif source == "tools":
         bridge = RuntimeNodeAgentBridge(
-            envelope=_envelope(),
+            envelope=envelope,
             policy=_policy(),
             model_resolver=lambda _envelope: ScriptedChatModel(responses=[]),
             tools_resolver=lambda _envelope, _policy: (_ for _ in ()).throw(
@@ -724,7 +783,7 @@ async def test_bridge_projects_closed_safe_problem_for_each_runtime_source(
             ),
         )
     else:
-        bridge = _bridge(lambda: ScriptedChatModel(responses=[]))
+        bridge = _bridge(lambda: ScriptedChatModel(responses=[]), envelope=envelope)
         agent = StructuredOutputAgent() if source == "structured" else ExplodingAgent()
         monkeypatch.setattr(bridge_module, "build_phase_agent", lambda **_kwargs: agent)
         if source == "structured":
@@ -739,6 +798,16 @@ async def test_bridge_projects_closed_safe_problem_for_each_runtime_source(
     assert result.problem is not None
     assert result.problem.code is expected
     assert sentinel not in str(result.model_dump(mode="json"))
+    assert recorder.events[-1] == {
+        "category": "model_tool",
+        "phase": "collect",
+        "attempt_id": "a1",
+        "outcome": "failed",
+        "failure_category": expected.value,
+        "worker_failure_category": expected_worker_failure_category,
+        "provider_category": expected_provider_category,
+    }
+    assert sentinel not in str(recorder.events)
 
 
 async def test_source_failure_progress_event_never_contains_raw_error_text() -> None:

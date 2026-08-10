@@ -169,11 +169,47 @@ def test_missing_declared_outcome_class_reports_node_id() -> None:
         )
 
 
-@pytest.mark.parametrize("role", ["phase", "projection"])
+def test_missing_journal_claim_reports_owner_and_outcome_class() -> None:
+    entry = MODEL_WORKFLOW_COVERAGE[0]
+    outcome = entry.outcome_evidence[0]
+    missing_journal = replace(outcome, journal_claim_id="missing-run-event-journal-claim")
+    entries = (replace(entry, outcome_evidence=(missing_journal,)), *MODEL_WORKFLOW_COVERAGE[1:])
+
+    with pytest.raises(
+        WorkflowCoverageError,
+        match=rf"hitl1: {outcome.outcome_class.value} journal claim is unknown",
+    ):
+        validate_model_workflow_coverage(
+            entries,
+            claims=claim_index(EVIDENCE_CLAIMS),
+            discovered_owners=EXPECTED_OWNERS,
+            focused_selectors=_collect_focused_selectors(),
+        )
+
+
+def test_lifecycle_projection_cannot_substitute_for_journal_evidence() -> None:
+    entry = MODEL_WORKFLOW_COVERAGE[0]
+    outcome = entry.outcome_evidence[0]
+    projection_as_journal = replace(outcome, journal_claim_id=outcome.projection_claim_id)
+    entries = (replace(entry, outcome_evidence=(projection_as_journal,)), *MODEL_WORKFLOW_COVERAGE[1:])
+
+    with pytest.raises(
+        WorkflowCoverageError,
+        match=rf"hitl1: {outcome.outcome_class.value} journal claim is not at a journal seam",
+    ):
+        validate_model_workflow_coverage(
+            entries,
+            claims=claim_index(EVIDENCE_CLAIMS),
+            discovered_owners=EXPECTED_OWNERS,
+            focused_selectors=_collect_focused_selectors(),
+        )
+
+
+@pytest.mark.parametrize("role", ["phase", "journal", "projection"])
 def test_stale_outcome_selector_reports_owner_and_evidence_role(role: str) -> None:
     entry = MODEL_WORKFLOW_COVERAGE[0]
     outcome = entry.outcome_evidence[0]
-    claim_id = outcome.phase_claim_id if role == "phase" else outcome.projection_claim_id
+    claim_id = getattr(outcome, f"{role}_claim_id")
     claims = claim_index(EVIDENCE_CLAIMS)
     claim = claims[claim_id]
     claims[claim_id] = replace(

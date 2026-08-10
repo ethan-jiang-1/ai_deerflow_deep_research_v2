@@ -52,7 +52,6 @@ from deerflow_deep_research.domain.run_experience import (
     Terminal,
     Working,
 )
-from deerflow_deep_research.runtime.run_diagnostics import DEFAULT_DEMO_DIAGNOSTIC_RELATIVE_PATH
 from deerflow_deep_research.runtime.run_experience import ResearchRunExperience
 
 
@@ -79,9 +78,8 @@ def _failure_detail(failure, *, snapshot: object | None = None) -> str:
     lines.append("Retryable" if failure.retryable else "Not retryable")
     if failure.diagnostic_ref:
         lines.append(f"Diagnostic: {failure.diagnostic_ref}")
-        lines.append(f"Local record: {DEFAULT_DEMO_DIAGNOSTIC_RELATIVE_PATH}")
-    if not failure.observation_record_created:
-        lines.append("No retained observation was created.")
+    if not failure.journal_record_created:
+        lines.append("Contained Event Journal record is unavailable.")
     return "\n".join(lines)
 
 
@@ -100,16 +98,16 @@ def _provider_failure_detail(details: ProviderTerminalDetails) -> str:
         lines.append(f"Recovery disposition: {details.recovery.disposition}")
     if details.diagnostic_ref:
         lines.append(f"Diagnostic: {details.diagnostic_ref}")
-    if details.diagnostic_location == "observation_store":
-        lines.append("Diagnostic location: observation_store")
-    elif details.diagnostic_location == "support_journal":
-        lines.append("Diagnostic location: support_journal")
-        lines.append(f"Local record: {DEFAULT_DEMO_DIAGNOSTIC_RELATIVE_PATH}")
+    if details.diagnostic_location == "bundle_journal":
+        lines.append("Diagnostic location: bundle_journal")
     elif details.diagnostic_location == "unavailable":
         lines.append("Diagnostic location: unavailable")
-    lines.append(
-        "Retained observation created" if details.observation_record_created else "No retained observation was created."
+    journal_message = (
+        "Contained Event Journal record created"
+        if details.journal_record_created
+        else "Contained Event Journal record is unavailable."
     )
+    lines.append(journal_message)
     if details.recovery_action == "fresh_start":
         lines.append("Fresh run from deep_research_harness/: make demo-real")
     else:
@@ -165,7 +163,7 @@ def _presentation_fault() -> Fault:
             message="The local presentation adapter could not continue.",
             next_action="Restart the standalone demo and provide a diagnostic reference if the issue repeats.",
             retryable=False,
-            observation_record_created=False,
+            journal_record_created=False,
         )
     )
 
@@ -465,8 +463,8 @@ def main() -> None:
         description="Run the standalone Deep Research Textual demo.",
         epilog=(
             "Preflight runs before a question can be submitted. Prompts and failures render only "
-            "safe shared run updates; diagnostic records are retained at "
-            f"{DEFAULT_DEMO_DIAGNOSTIC_RELATIVE_PATH}. A returned lifecycle record retains an "
+            "safe shared run updates; diagnostic records live in the returned Run Bundle's Event Journal. "
+            "A returned lifecycle record retains an "
             "inspectable local bundle; inspection is not cross-process resume."
         ),
     )

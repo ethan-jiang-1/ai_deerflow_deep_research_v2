@@ -490,8 +490,11 @@ async def run_work_unit_component(
         *,
         work_id: str | None = None,
         attempt_id: str | None = None,
-        validation_code: str | None = None,
+        validation_stage: str | None = None,
+        validation_codes: tuple[str, ...] = (),
+        failure_category: str | None = None,
         worker_failure_category: str | None = None,
+        provider_category: str | None = None,
         retry_count: int | None = None,
     ) -> None:
         if config.event_recorder is None:
@@ -502,8 +505,11 @@ async def run_work_unit_component(
                 phase=config.phase,
                 work_id=work_id,
                 attempt_id=attempt_id,
-                validation_code=validation_code,
+                validation_stage=validation_stage,
+                validation_codes=validation_codes,
+                failure_category=failure_category,
                 worker_failure_category=worker_failure_category,
+                provider_category=provider_category,
                 retry_count=retry_count,
             )
         except Exception:
@@ -593,6 +599,7 @@ async def run_work_unit_component(
                 work_id=work_id,
                 attempt_id=attempt_id,
                 worker_failure_category=worker_failure.category.value if worker_failure is not None else None,
+                provider_category=worker_failure.provider_category if worker_failure is not None else None,
             )
             return {
                 "terminal_updates_by_attempt_id": terminal,
@@ -612,7 +619,8 @@ async def run_work_unit_component(
                     RunEventCategory.VALIDATION,
                     work_id=work_id,
                     attempt_id=attempt_id,
-                    validation_code="submission.failed",
+                    validation_stage="initial" if attempts[attempt_id].attempt_ordinal == 0 else "repair",
+                    validation_codes=tuple(str(code.value) for code in exc.codes),
                 )
                 terminal[attempt_id] = AttemptTerminalUpdate(
                     attempt_id=attempt_id,
@@ -624,7 +632,13 @@ async def run_work_unit_component(
                 )
                 continue
             records[work_id] = submitted_record
-            await observe(RunEventCategory.VALIDATION, work_id=work_id, attempt_id=attempt_id)
+            await observe(
+                RunEventCategory.VALIDATION,
+                work_id=work_id,
+                attempt_id=attempt_id,
+                validation_stage="initial" if attempts[attempt_id].attempt_ordinal == 0 else "repair",
+                validation_codes=(),
+            )
             await observe(RunEventCategory.SUBMIT, work_id=work_id, attempt_id=attempt_id)
             terminal[attempt_id] = AttemptTerminalUpdate(
                 attempt_id=attempt_id,
@@ -738,7 +752,7 @@ async def run_work_unit_component(
                 RunEventCategory.EXHAUSTION,
                 work_id=attempt.work_id,
                 attempt_id=attempt_id,
-                validation_code=failure_code.value.replace("_", "."),
+                failure_category=failure_code.value.replace("_", "."),
                 worker_failure_category=(terminal.failure_category.value if terminal.failure_category else None),
                 retry_count=attempt.attempt_ordinal,
             )

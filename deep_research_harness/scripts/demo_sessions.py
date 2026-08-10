@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""Read bounded retained Deep Research observations.
+"""Inspect the safe Event Journal contained in one local Run Bundle.
 
-This command is deliberately inspection-only. A retained observation can describe a
-previous Bundle outcome but can never locate, resume, cancel, refine, or recreate a
-Run Bundle.
+This command is deliberately inspection-only. It first resolves the supplied opaque
+Bundle id through the fixed local lifecycle profile, then reads only that selected
+Bundle's diagnostics subtree. It has no external retained-observation fallback.
 
 @impl RUS-003
-@impl REC-004
+@impl RUS-008
+@impl REJ-004
 """
 
 from __future__ import annotations
@@ -15,66 +16,88 @@ import argparse
 import asyncio
 from pathlib import Path
 
-from deerflow_deep_research.domain.run_observation import (
-    JournalAvailability,
-    ObservationInspectability,
-    RunObservationInspection,
-)
-from deerflow_deep_research.runtime.run_observation import RunObservationStore
+from _demo_core import DemoAdapter
+
+from deerflow_deep_research.domain.bundle import BundleId
+from deerflow_deep_research.domain.run_observation import JournalAvailability
+from deerflow_deep_research.domain.session_workbench import WorkbenchAvailability, WorkbenchDiagnosisView
 
 
-def _observation_store() -> RunObservationStore:
-    project_root = Path(__file__).resolve().parents[1]
-    return RunObservationStore(retained_root=RunObservationStore.project_default_root(project_root))
+def _bundle_root() -> Path:
+    return Path(__file__).resolve().parents[1] / ".deep-research-demo-runs"
 
 
-def _render(inspection: RunObservationInspection) -> tuple[str, ...]:
-    if inspection.inspectability is ObservationInspectability.INVALID_REFERENCE:
-        return ("Run Bundle id is invalid.",)
-    if inspection.inspectability is ObservationInspectability.NOT_FOUND:
-        return ("No retained observation was found for this Run Bundle.",)
-    if inspection.inspectability is ObservationInspectability.UNAVAILABLE:
-        return ("Retained observation is unavailable for safe inspection.",)
+async def _diagnosis(bundle_id: str) -> WorkbenchDiagnosisView:
+    adapter = DemoAdapter(bundle_root=_bundle_root())
+    try:
+        await adapter.open()
+        return await adapter.local_bundle_workbench().diagnosis(bundle_id=bundle_id)
+    finally:
+        await adapter.aclose()
 
-    lines = [f"Run Bundle: {inspection.bundle_id}"]
-    if inspection.retention_state is not None:
-        lines.append(f"Retention: {inspection.retention_state.value}")
-    if inspection.durability is not None:
-        lines.append(f"Durability: {inspection.durability}")
-    if inspection.summary is not None:
-        lines.append(f"Observed summary: {inspection.summary.status}@{inspection.summary.phase}")
-    if inspection.terminal_diagnostic is not None:
-        diagnostic = inspection.terminal_diagnostic
-        lines.extend(
-            (
-                f"Diagnostic reference: {diagnostic.reference}",
-                f"Diagnostic category: {diagnostic.category}",
-                f"Diagnostic phase: {diagnostic.phase}",
+
+def _render(*, bundle_id: str, diagnosis: WorkbenchDiagnosisView) -> tuple[str, ...]:
+    if diagnosis.availability is WorkbenchAvailability.UNAVAILABLE:
+        return ("Run Bundle or its contained Event Journal is unavailable for safe inspection.",)
+
+    lines = [f"Run Bundle: {bundle_id}"]
+    summary = diagnosis.summary
+    if summary is not None:
+        lines.append(f"Observed summary: {summary.status}@{summary.phase} generation {summary.generation}")
+        lines.append(f"Journal health: {summary.journal_availability.value}")
+        if summary.diagnostic_ref is not None:
+            lines.append(f"Diagnostic reference: {summary.diagnostic_ref}")
+        if summary.dropped_event_count:
+            lines.append(
+                "Dropped event interval: "
+                f"{summary.first_dropped_sequence}-{summary.last_dropped_sequence} "
+                f"({summary.dropped_event_count} events)"
             )
-        )
-    if inspection.journal_availability is JournalAvailability.COMPLETE:
-        lines.extend(
-            f"Observed event #{event.sequence}: {event.category.value}@{event.phase}"
-            for event in inspection.events[-8:]
-        )
-    else:
-        lines.append("Observation journal: unavailable")
-    lines.append("Observation does not resume or control this Run Bundle.")
+    elif diagnosis.events:
+        lines.append(f"Journal health: {JournalAvailability.INCOMPLETE.value}")
+    if diagnosis.incomplete_reasons:
+        reasons = ", ".join(reason.value for reason in diagnosis.incomplete_reasons)
+        lines.append(f"Journal incomplete because: {reasons}")
+
+    for event in diagnosis.events:
+        correlation = [f"generation {event.generation}", event.phase]
+        if event.work_id is not None:
+            correlation.append(f"work {event.work_id}")
+        if event.attempt_id is not None:
+            correlation.append(f"attempt {event.attempt_id}")
+        fact = f"Observed event #{event.sequence}: {event.category.value} {' '.join(correlation)}"
+        if event.outcome is not None:
+            fact += f" {event.outcome}"
+        if event.validation_stage is not None:
+            fact += f" validation {event.validation_stage} codes {','.join(event.validation_codes) or 'none'}"
+        if event.failure_category is not None:
+            fact += f" failure {event.failure_category}"
+        if event.provider_category is not None:
+            fact += f" provider {event.provider_category}"
+        if event.diagnostic_ref is not None:
+            fact += f" diagnostic {event.diagnostic_ref}"
+        lines.append(fact)
+    lines.append("Event Journal is read-only; lifecycle controls remain independent.")
     return tuple(lines)
 
 
 async def run(args: argparse.Namespace) -> int:
-    inspection = await _observation_store().inspect(bundle_id=args.bundle_id)
-    for line in _render(inspection):
+    try:
+        BundleId(args.bundle_id)
+    except (TypeError, ValueError):
+        print("Run Bundle id is invalid.")
+        return 2
+    diagnosis = await _diagnosis(args.bundle_id)
+    for line in _render(bundle_id=args.bundle_id, diagnosis=diagnosis):
         print(line)
-    return 0 if inspection.inspectability is ObservationInspectability.AVAILABLE else 2
+    return 0 if diagnosis.availability is WorkbenchAvailability.AVAILABLE else 2
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Read one retained Deep Research observation.")
+    parser = argparse.ArgumentParser(description="Inspect one contained Deep Research Event Journal.")
     commands = parser.add_subparsers(dest="command", required=True)
-    inspect = commands.add_parser("inspect", help="Read one retained observation.")
-    inspect.add_argument("bundle_id", help="Opaque Run Bundle id from a prior lifecycle result.")
+    inspect = commands.add_parser("inspect", help="Read one selected Bundle's Event Journal.")
+    inspect.add_argument("bundle_id", help="Opaque Run Bundle id from a lifecycle result.")
     return parser
 
 

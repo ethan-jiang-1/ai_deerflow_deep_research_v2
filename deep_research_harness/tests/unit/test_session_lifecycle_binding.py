@@ -10,14 +10,14 @@ from __future__ import annotations
 from deerflow_deep_research.runtime.run_observation import RunObservationStore
 
 
-def test_retained_observation_store_has_no_bundle_control_or_discovery_interface() -> None:
+def test_bundle_journal_store_has_no_bundle_control_or_discovery_interface() -> None:
     public_methods = {
         name
         for name in dir(RunObservationStore)
         if not name.startswith("_") and callable(getattr(RunObservationStore, name))
     }
 
-    assert public_methods == {"cleanup", "inspect", "project_default_root", "publish", "record_event"}
+    assert public_methods == {"cleanup", "inspect", "publish", "record_event"}
     assert public_methods.isdisjoint(
         {
             "bind",

@@ -148,6 +148,7 @@ def _context(
     request_bundle: _FakeRequestStore | None = None,
     final_delivery_bundle: _FakeFinalDeliveryStore | None = None,
     resolver_request_bundle: _FakeRequestStore | None = None,
+    event_recorder: object | None = None,
 ) -> GraphInvocationContext:
     gc = _graph_context()
     return GraphInvocationContext(
@@ -156,6 +157,7 @@ def _context(
         bootstrap_bundle=store,
         request_bundle=request_bundle,
         final_delivery_bundle=final_delivery_bundle,
+        event_recorder=event_recorder,  # type: ignore[arg-type]
     )
 
 
@@ -190,6 +192,14 @@ def _compile(mode: str):
     builder.add_edge(START, "bootstrap")
     builder.add_conditional_edges("bootstrap", _route, {"needs_input": END, "profile_complete": END, "exhausted": END})
     return builder.compile(checkpointer=InMemorySaver())
+
+
+class _JournalRecorder:
+    def __init__(self) -> None:
+        self.events: list[dict[str, object]] = []
+
+    async def record(self, **event: object) -> None:
+        self.events.append(dict(event))
 
 
 def _config() -> dict:
@@ -315,6 +325,40 @@ class TestWrapperFinalDeliveryBundleAttach:
         with pytest.raises(ValueError, match="final_delivery_bundle_capability_missing"):
             await graph.ainvoke(_state(), config=_config(), context=_context(None))
         assert seen == []
+
+
+class TestWrapperJournalEvents:
+    async def test_wrapper_records_node_start_and_completion_without_gaining_control_authority(self) -> None:
+        recorder = _JournalRecorder()
+        graph = _compile("fixture")
+
+        await graph.ainvoke(_state(), config=_config(), context=_context(None, event_recorder=recorder))
+
+        assert [(event["category"], event["outcome"], event["phase"]) for event in recorder.events] == [
+            ("node", "started", "bootstrap"),
+            ("node", "completed", "bootstrap"),
+        ]
+        assert all(event["attempt_id"] == "g0-bootstrap-a1" for event in recorder.events)
+
+    async def test_wrapper_records_safe_unknown_boundary_failure_and_preserves_the_exception(self) -> None:
+        recorder = _JournalRecorder()
+        seen: list[object] = []
+        spec = _request_bundle_spec(declares=False, seen=seen)
+
+        def failing_factory(_dependencies: NodeBuildDependencies):
+            async def run(_state: ResearchState) -> dict[str, str]:
+                raise RuntimeError("raw exception text must not enter the journal")
+
+            return run
+
+        graph = _compile_custom(spec, NodeAdapter(failing_factory, AdapterKind.FIXTURE, requires_gate=False))
+        with pytest.raises(RuntimeError, match="raw exception"):
+            await graph.ainvoke(_state(), config=_config(), context=_context(None, event_recorder=recorder))
+
+        assert recorder.events[-1]["outcome"] == "failed"
+        assert recorder.events[-1]["failure_category"] == "internal.unexpected"
+        assert recorder.events[-1]["worker_failure_category"] == "unknown"
+        assert "raw exception" not in str(recorder.events)
 
     async def test_fixture_declaring_factory_does_not_receive_request_bundle(self) -> None:
         seen: list[object] = []

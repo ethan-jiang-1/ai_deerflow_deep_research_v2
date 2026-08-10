@@ -237,7 +237,7 @@ def provider_fault() -> Fault:
             next_action="Try again later.",
             retryable=True,
             diagnostic_ref="diag_ABCDEFGHIJKL",
-            observation_record_created=True,
+            journal_record_created=True,
         ),
     )
 
@@ -269,7 +269,7 @@ def typed_hitl1_terminal(*, code: RunFailureCode) -> Terminal:
             next_action=next_action,
             retryable=code is RunFailureCode.OUTPUT_STRUCTURED_INVALID,
             diagnostic_ref=DIAGNOSTIC_REF,
-            observation_record_created=True,
+            journal_record_created=True,
         ),
     )
 
@@ -325,11 +325,11 @@ def exhausted_provider_terminal(
             next_action=FRESH_START_NEXT_ACTION,
             retryable=True,
             diagnostic_ref=DIAGNOSTIC_REF,
-            observation_record_created=observation_available,
+            journal_record_created=observation_available,
             provider_recovery=recovery,
             provider_observation=final_observation,
             recovery_action="fresh_start",
-            diagnostic_location="observation_store" if observation_available else "support_journal",
+            diagnostic_location="bundle_journal" if observation_available else "unavailable",
         ),
     )
 
@@ -357,10 +357,10 @@ def controller_provider_terminal() -> Terminal:
             next_action="Check service availability, then start a distinct run.",
             retryable=True,
             diagnostic_ref=DIAGNOSTIC_REF,
-            observation_record_created=True,
+            journal_record_created=True,
             worker_failure_category="agent_invocation",
             provider_observation=observation,
-            diagnostic_location="observation_store",
+            diagnostic_location="bundle_journal",
         ),
     )
 
@@ -396,7 +396,7 @@ def repair_slot_provider_terminal() -> Terminal:
             next_action=FRESH_START_NEXT_ACTION,
             retryable=True,
             diagnostic_ref=DIAGNOSTIC_REF,
-            observation_record_created=False,
+            journal_record_created=False,
             provider_recovery=recovery,
             provider_observation=observation,
             recovery_action="fresh_start",
@@ -405,16 +405,16 @@ def repair_slot_provider_terminal() -> Terminal:
     )
 
 
-def nonretryable_http_provider_terminal(*, observation_store: bool = False) -> Terminal:
+def nonretryable_http_provider_terminal(*, journal_available: bool = False) -> Terminal:
     """Build a final safe HTTP observation without fabricated retry history."""
-    location = "observation_store" if observation_store else "support_journal"
+    location = "bundle_journal" if journal_available else "unavailable"
     return Terminal(
         snapshot=RunSnapshot(
             bundle_id=BUNDLE_ID,
             durability="same_process",
             lifecycle_phase="hitl1",
             completed_trace=("bootstrap", "hitl1"),
-            observation=_observation() if observation_store else None,
+            observation=_observation() if journal_available else None,
         ),
         outcome="blocked",
         failure=RunFailure(
@@ -425,7 +425,7 @@ def nonretryable_http_provider_terminal(*, observation_store: bool = False) -> T
             next_action="Review the diagnostic reference before starting a distinct run.",
             retryable=False,
             diagnostic_ref=DIAGNOSTIC_REF,
-            observation_record_created=observation_store,
+            journal_record_created=journal_available,
             provider_observation=ProviderObservation(
                 configured_service_label="deepseek-v4-pro",
                 configured_endpoint_authority="https://api.example.test",

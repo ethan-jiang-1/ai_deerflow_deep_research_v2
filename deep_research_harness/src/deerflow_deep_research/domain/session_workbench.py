@@ -22,7 +22,14 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from deerflow_deep_research.domain.lifecycle import BundleControlResult
-from deerflow_deep_research.domain.run_observation import MAX_EVENT_RECORDS, MAX_TRACE_RECORDS, RunEvent, RunSummary
+from deerflow_deep_research.domain.run_observation import (
+    MAX_EVENT_RECORDS,
+    MAX_TRACE_RECORDS,
+    JournalAvailability,
+    JournalIncompleteReason,
+    RunEvent,
+    RunSummary,
+)
 
 MAX_WORKBENCH_ARTIFACT_BYTES = 2 * 1024 * 1024
 MAX_WORKBENCH_CATALOG_ENTRIES = 4
@@ -134,11 +141,22 @@ class WorkbenchDiagnosisView(FrozenSessionWorkbenchContract):
     availability: WorkbenchAvailability
     summary: RunSummary | None = None
     events: tuple[RunEvent, ...] = Field(default=(), max_length=min(MAX_EVENT_RECORDS, 8))
+    incomplete_reasons: tuple[JournalIncompleteReason, ...] = Field(default=(), max_length=4)
 
     @model_validator(mode="after")
     def validate_shape(self) -> WorkbenchDiagnosisView:
-        if self.availability is WorkbenchAvailability.UNAVAILABLE and (self.summary is not None or self.events):
+        if self.availability is WorkbenchAvailability.UNAVAILABLE and (
+            self.summary is not None or self.events or self.incomplete_reasons
+        ):
             raise ValueError("unavailable_diagnosis_cannot_expose_facts")
+        if (
+            self.summary is not None
+            and self.summary.journal_availability is not JournalAvailability.INCOMPLETE
+            and self.incomplete_reasons
+        ):
+            raise ValueError("complete_diagnosis_cannot_expose_incomplete_reasons")
+        if len(set(self.incomplete_reasons)) != len(self.incomplete_reasons):
+            raise ValueError("diagnosis_incomplete_reasons_duplicate")
         return self
 
 

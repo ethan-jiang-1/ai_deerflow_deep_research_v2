@@ -30,10 +30,11 @@ class WorkflowOutcomeClass(StrEnum):
 
 @dataclass(frozen=True)
 class WorkflowOutcomeEvidence:
-    """One declared failure class and its phase plus projection evidence."""
+    """One declared failure class and its phase, journal, and projection evidence."""
 
     outcome_class: WorkflowOutcomeClass
     phase_claim_id: str
+    journal_claim_id: str
     projection_claim_id: str
 
 
@@ -50,7 +51,11 @@ class ModelWorkflowCoverage:
             *(
                 claim_id
                 for outcome in self.outcome_evidence
-                for claim_id in (outcome.phase_claim_id, outcome.projection_claim_id)
+                for claim_id in (
+                    outcome.phase_claim_id,
+                    outcome.journal_claim_id,
+                    outcome.projection_claim_id,
+                )
             ),
         )
 
@@ -67,6 +72,7 @@ MODEL_WORKFLOW_COVERAGE = (
             WorkflowOutcomeEvidence(
                 WorkflowOutcomeClass.KNOWN_INVOCATION_FAILURE,
                 "hitl1-typed-failure-incident",
+                "run-event-journal-node-agent-bridge-failures",
                 "workflow-outcome-hitl1-lifecycle-projection",
             ),
         ),
@@ -78,6 +84,7 @@ MODEL_WORKFLOW_COVERAGE = (
             WorkflowOutcomeEvidence(
                 WorkflowOutcomeClass.KNOWN_INVOCATION_FAILURE,
                 "workflow-outcome-topic-planning-known-invocation",
+                "run-event-journal-node-agent-bridge-failures",
                 "workflow-outcome-topic-planning-lifecycle-projection",
             ),
         ),
@@ -89,6 +96,7 @@ MODEL_WORKFLOW_COVERAGE = (
             WorkflowOutcomeEvidence(
                 WorkflowOutcomeClass.KNOWN_INVOCATION_FAILURE,
                 "workflow-outcome-wave0-known-invocation",
+                "run-event-journal-node-agent-bridge-failures",
                 "workflow-outcome-wave0-known-invocation",
             ),
         ),
@@ -100,6 +108,7 @@ MODEL_WORKFLOW_COVERAGE = (
             WorkflowOutcomeEvidence(
                 WorkflowOutcomeClass.KNOWN_INVOCATION_FAILURE,
                 "workflow-outcome-wave1-known-invocation",
+                "run-event-journal-node-agent-bridge-failures",
                 "workflow-outcome-wave1-known-invocation",
             ),
         ),
@@ -111,6 +120,7 @@ MODEL_WORKFLOW_COVERAGE = (
             WorkflowOutcomeEvidence(
                 WorkflowOutcomeClass.KNOWN_INVOCATION_FAILURE,
                 "workflow-outcome-wave2-known-invocation",
+                "run-event-journal-node-agent-bridge-failures",
                 "workflow-outcome-wave2-known-invocation",
             ),
         ),
@@ -122,6 +132,7 @@ MODEL_WORKFLOW_COVERAGE = (
             WorkflowOutcomeEvidence(
                 WorkflowOutcomeClass.KNOWN_INVOCATION_FAILURE,
                 "workflow-outcome-targeted-evidence-known-invocation",
+                "run-event-journal-node-agent-bridge-failures",
                 "workflow-outcome-targeted-evidence-known-invocation",
             ),
         ),
@@ -133,6 +144,7 @@ MODEL_WORKFLOW_COVERAGE = (
             WorkflowOutcomeEvidence(
                 WorkflowOutcomeClass.KNOWN_INVOCATION_FAILURE,
                 "readiness-critic-conservative-failure",
+                "run-event-journal-node-agent-bridge-failures",
                 "readiness-critic-conservative-failure",
             ),
         ),
@@ -144,6 +156,7 @@ MODEL_WORKFLOW_COVERAGE = (
             WorkflowOutcomeEvidence(
                 WorkflowOutcomeClass.KNOWN_INVOCATION_FAILURE,
                 "workflow-outcome-final-delivery-known-invocation",
+                "run-event-journal-node-agent-bridge-failures",
                 "nac-final-delivery-composer-risk",
             ),
         ),
@@ -233,6 +246,15 @@ def validate_model_workflow_coverage(
             _validate_outcome_claim(
                 entry.logical_name,
                 outcome.outcome_class,
+                "journal",
+                outcome.journal_claim_id,
+                claims,
+                focused_selectors,
+                errors,
+            )
+            _validate_outcome_claim(
+                entry.logical_name,
+                outcome.outcome_class,
                 "projection",
                 outcome.projection_claim_id,
                 claims,
@@ -263,6 +285,11 @@ def _validate_outcome_claim(
         AssetClass.DETERMINISTIC_WORKFLOW_CONFORMANCE,
     }:
         errors.append(f"{label} claim is not deterministic outcome evidence")
+    if role == "journal" and claim.seam not in {
+        StableSeam.NODE_INTERFACE,
+        StableSeam.RUNTIME_INTEGRATION,
+    }:
+        errors.append(f"{label} claim is not at a journal seam")
     direct_lifecycle_projection = (
         role == "projection"
         and claim.asset_class is AssetClass.CODE_CORRECTNESS

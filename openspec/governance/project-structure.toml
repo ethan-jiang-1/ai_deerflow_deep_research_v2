@@ -171,11 +171,6 @@ kind = "file"
 owner = "PRS-006"
 
 [[required_paths]]
-path = "deep_research_harness/src/deerflow_deep_research/runtime/run_diagnostics.py"
-kind = "file"
-owner = "PRS-005"
-
-[[required_paths]]
 path = "deep_research_harness/src/deerflow_deep_research/runtime/work_unit_storage.py"
 kind = "file"
 owner = "PRS-001"
