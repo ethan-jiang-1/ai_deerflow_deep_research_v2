@@ -1,6 +1,6 @@
 # BUG-024: real demo (`make demo-real-scripted`) flakily fails at different nodes; model attribution is unresolved
 
-> 严重级别: P1 | 发现: 2026-08-10 | 状态: 活跃（topic-planning 已部分确诊；Wave1 仍待独立验证）
+> 严重级别: P1 | 发现: 2026-08-10 | 状态: 活跃（topic-planning envelope 已修复；Wave0/Wave1 的工具后结构化输出仍不可靠）
 
 ## 症状
 
@@ -50,7 +50,7 @@ token、wall-time、repair、route 和 terminal authority 不变。先以 focuse
 evidence 锁定此契约，再以同一 Bundle Journal loop 验证两个 explicit profile 都能越过
 topic planning。
 
-### 尚未确诊：Wave1 structured output
+### 已确诊：Wave1 structured output（后续复查前的初始证据）
 
 第二个 `deepseek-v4-pro` Bundle 成功越过 topic planning 后，Wave1 两个 work item 在各自三轮
 有界 attempt 中均产生 `wave1_worker_output_json_invalid` 并最终 `structured_output`。这是一条
@@ -67,14 +67,14 @@ cap 修改顺手放宽 Wave1 的 schema、retry、tool window、budget 或默认
 ## 复现
 
 ```bash
-cd deep_research_harness && make demo-real-scripted
+cd deep_research_harness && DEERFLOW_DEMO_MODEL=<profile> make demo-real-scripted
 ```
-无 `--question`，用默认问题。每次 run 约 4 分钟，适合确认整体症状，但不是模型特定根因的紧反馈回路；当前命令也没有显式选择模型。
+无 `--question`，用默认问题。当前 demo 要求一个显式支持的 profile；每次 full run 约 4 分钟，适合确认整体症状，但不是模型特定根因的紧反馈回路。
 
 ## 修复关联
 
 - 已归档: `openspec/changes/archive/2026-08-10-tool-window-truncates-eager-parallel-calls/` —— 修 wave1 工具窗口（模型超额调用 → 截断而非 fail run）。
-- 未解决（本 bug 的范围）: topic_planning `budget.exhausted`、Wave0 `structured_output`，以及它们是否与 selected model/profile 有关。下一步不是在“换模型”和“放宽预算”之间二选一，而是先补齐证据归因；研究结论见下文。
+- 未解决（本 bug 的范围）: Wave0/Wave1 的工具后结构化输出，以及它们与 selected model/profile 的差异。topic-planning `budget.exhausted` 已由归档的 `align-topic-planning-output-envelope` change 修复；下一步不是在“换模型”和“放宽预算”之间二选一，而是针对真实候选输出的认知 envelope 做受控验证。
 
 ## 研究补充（2026-08-10，本地一手证据）
 
@@ -97,17 +97,17 @@ cd deep_research_harness && make demo-real-scripted
 - Wave1 的并发工具窗口已由提交 `bcc7bf8` 修复：现在保留能放进窗口的前 N 个调用而不使 run 失败，锁定测试在 `deep_research_harness/tests/unit/test_tool_policy.py:138-154`；归档任务也明确修后两次 real run 分别止于 topic planning 和 Wave0，而非把全链路宣称为稳定（`openspec/changes/archive/2026-08-10-tool-window-truncates-eager-parallel-calls/tasks.md:37-45`）。它是已修的独立根因，不应再混入剩余问题。
 - 各节点并非同一套“小预算”：topic planning 的确是零工具、每次 invocation 一次模型调用、`2048` output cap / `8192` total / `60s`（`deep_research_harness/src/deerflow_deep_research/runtime/research.py:274-295`）；Wave0/Wave1 的外层 policy 则是 `50` calls、`64000` output cap、`900s`（`deep_research_harness/src/deerflow_deep_research/runtime/research.py:418-485`），请求窗口另行限制 Wave0 为 3、Wave1 为 1（`deep_research_harness/src/deerflow_deep_research/graph/nodes/wave0/prompts.py:86-126`；`deep_research_harness/src/deerflow_deep_research/graph/nodes/wave1/prompts.py:85-118`）。
 
-### 原条目中仍是推测的部分
+### 历史记录中曾是推测的部分（校准前）
 
-- `make demo-real-scripted` 自己不设置 `DEERFLOW_DEMO_MODEL`（`deep_research_harness/Makefile:62-69`）。未设 selector 时，demo 会收集所有有凭据的模型配置（`deep_research_harness/scripts/_demo_core.py:192-213`），registry 中 `deepseek-v4-pro` 排在 flash 前（`deep_research_harness/scripts/_demo_core.py:69-96`），bridge 再取 `models[0]`（`deep_research_harness/src/deerflow_deep_research/runtime/node_agent_bridge.py:116-129`）。只有 `deep_research_harness/run/real-research.sh:6-12` 显式默认 flash。因此三条历史诊断没有足够证据证明实际模型都是 flash；若仅有 DeepSeek 凭据且 selector 缺失，当前代码反而会首先选择 pro。
-- `budget.exhausted` 不能反推是 output cap、wall time、token admission、总 token、模型调用或并行工具上限中的哪一个；它们在 middleware 中共享同一闭合类别（`deep_research_harness/src/deerflow_deep_research/agents/middleware.py:90-119`）。Wave0 的旧记录也不能证明是 `sources`、`baseline_facts` 或 `limitations` 中的哪项不合规。
+- 早期 `make demo-real-scripted` 自己不设置 `DEERFLOW_DEMO_MODEL`（`deep_research_harness/Makefile:62-69`）。当时未设 selector 会收集有凭据的模型配置并由 bridge 取 `models[0]`，因此三条历史诊断没有足够证据证明实际模型。现在 `_demo_core.py` 已拒绝缺少或不唯一的 selector；新的 Bundle 一律保留显式 profile/revision。
+- 旧的 `budget.exhausted` 记录仍不能反推是 output cap、wall time、token admission、总 token、模型调用或并行工具上限中的哪一个。校准后的 Bundle 已保留闭合 budget subreason；Wave0 的旧记录仍不能证明是 `sources`、`baseline_facts` 或 `limitations` 中的哪项不合规。
 - 当前 credentialed canary 的 DeepSeek 配置固定为 `deepseek-v4-pro`（`deep_research_harness/tests/scenarios/canaries.py:83-91`），所以已有 live lane 不能验证实际 demo 所选的 flash 或未指定模型。
 
 ### 当前 Event Journal 的诊断粒度
 
 新 Journal 已比旧 terminal 强：`RunEvent` 能保存 `generation`、work/attempt correlation、validation stage 和 canonical validation codes（`deep_research_harness/src/deerflow_deep_research/domain/run_observation.py:116-160`）；Wave1 明确把初始与 repair 的 canonical code 写入 Journal（`deep_research_harness/src/deerflow_deep_research/graph/nodes/wave1/subgraph.py:76-105,175-239`），共享 work-unit 层也记录 submission validation codes（`deep_research_harness/src/deerflow_deep_research/graph/components/work_units.py:617-641`）。
 
-但本 bug 的两个关键归因仍有缺口：`RunEvent`/`RunSummary` 没有 selected-model 或 budget-subreason 字段（`deep_research_harness/src/deerflow_deep_research/domain/run_observation.py:116-144,223-243`），bridge 只记录闭合 `failure_category` / `worker_failure_category`（`deep_research_harness/src/deerflow_deep_research/runtime/node_agent_bridge.py:594-648`）；Wave0 的 parser 初始/repair 失败目前直接收敛为 `structured_output`（`deep_research_harness/src/deerflow_deep_research/graph/nodes/wave0/subgraph.py:143-165`），没有在该分支写具体 canonical code。Topic-planning 的 parse/materialize repair 分支同样没有验证事件写入（`deep_research_harness/src/deerflow_deep_research/graph/nodes/topic_planning/node.py:263-306`）。
+校准 change 已补上 selected profile、budget subreason，以及 Wave0/Wave1 的初始/repair parser code。剩余缺口是 parser 通过后的 Wave0 post-candidate validation code，及不暴露原文的最终 response shape；它们在本次 flash/pro 复查中变成了实际阻碍，而非历史推测。
 
 ### 建议的下一步与 Change 边界
 
@@ -118,3 +118,82 @@ cd deep_research_harness && make demo-real-scripted
 3. 让受控 live canary 复用同一个显式 profile，先逐节点跑 topic planning、单-topic Wave0、单-topic Wave1，再对每个候选模型以固定问题运行多个独立 Bundle。结果只据 Journal 的 model/profile、阶段、闭合类别和 canonical codes 决定后续是选默认模型、调某一节点预算，还是改善该节点 repair。
 
 这也是最低成本的证据循环：先用确定性测试锁定 selector、Journal payload 与归因，再做有限的真实调用；不要在没有模型身份和失败子原因的情况下进行全链路 trial-and-error。另有一个独立规格清理项：`openspec/specs/node-agent-runtime/spec.md:22-38` 仍写“超窗口即拒绝”，但同一文件 `:54-75` 与现有 middleware 都是“截断超额调用”，应单独统一，不应当作 Wave1 回归。
+
+## 复查（2026-08-10，topic-planning 修复后）
+
+### 当前结论
+
+BUG-024 **仍然存在**，但已经不再是 topic-planning budget blocker：两个显式
+profile 都通过 topic planning，随后在证据 worker 的结构化候选边界出现不同终态。
+不能通过换默认模型、增加 Wave0/Wave1 budget、放宽 parser/schema、或撤销工具窗口截断来
+解决它。直接因果 owner 是 Wave0/Wave1 initial 与 repair cognitive program 的
+model-visible output envelope；它没有可靠地把一次检索后的最终模型回答收束为现有的
+严格 JSON candidate。
+
+### 新的 Bundle 证据
+
+所有以下检查只读取 Bundle-local Journal 的安全投影；没有读取或保存模型正文、prompt、
+工具结果、异常文本或 provider body。
+
+| Profile / revision | Fresh Bundle | Result | Safe Journal facts |
+| --- | --- | --- | --- |
+| `deepseek-v4-pro` / `v1` | `b_xZRfvHtFAOxUkeMBSeW0eb9Q04wacTUa7ZC8pFDwWUk` | `blocked@wave1` | Topic planning completed. Wave0 initial responses sometimes emitted `wave0_worker_output_json_invalid`, but its bounded repairs recovered. One Wave1 work item emitted `wave1_worker_output_json_invalid` on `a00`--`a02`; the final repair emitted `wave1_worker_output_invalid`; the existing controller then exhausted. |
+| `deepseek-v4-flash` / `v1` | `b_RP3lS3ygD4NQwQXIX89Z6e-jo4X-vu-YapfHkU8_bCg` | `blocked@wave0` | Topic planning completed. One Wave0 work item emitted `wave0_worker_output_json_invalid` on `a00` and `a01`; `a02` had no parser code but still failed before submission, so the exact post-parser rule is not yet present in the Journal. |
+
+The pro Bundle independently repeats the former Wave1 pattern after the topic-planning
+change. The flash Bundle reaches a different phase, so it does **not** prove that the
+profiles are equivalent; it does prove that neither explicit profile currently makes the
+whole real demo reliable.
+
+### Minimal causal reproduction
+
+A temporary one-worker invocation used the production Wave1 bridge, the production
+normal evidence-intake request, a real web tool, and a freshly created selected Bundle.
+It completed without a provider or budget error. Its redacted in-memory response-shape
+projection recorded two requested `web_search` calls in the first model response (the
+existing window correctly executed only one), followed by a 247-character final
+`prose` response with no JSON keys. The Wave1 parser therefore rejected the final
+candidate as `wave1_worker_output_json_invalid`.
+
+This removes the graph, topic planning, Wave0 ledger, terminal routing, and raw tool
+result content from the minimal cause. It also confirms that the old eager-parallel
+tool-window defect is not the active failure: truncation behaved as designed, but the
+model still did not provide the required JSON after the retained retrieval.
+
+### Evidence gaps discovered during the review
+
+- `tests/scenarios/evidence_intake_live.py` constructs a direct Wave0/Wave1
+  calibration without a `SelectedBundleContext`. The real bridge correctly stops it
+  at `selected_bundle_context_missing` before a provider call. Its current
+  `requires_llm` test is therefore not a live output-contract signal and cannot be
+  used as BUG-024's regression loop until the calibration binds a real selected Bundle.
+- Wave0 now records initial and repair parser codes, but a later work failure after a
+  parser-accepted `a02` has no safe canonical post-candidate validation code in the
+  Bundle Journal. The flash terminal is consequently classified but not yet explained.
+- The current `59` focused deterministic Wave0/Wave1 tests pass. They validate the
+  parser, repair routing, provenance and controller boundaries, but their scripted
+  candidate seams cannot detect a real model returning prose after a valid tool turn.
+
+### Next Change Boundary
+
+The next OpenSpec change should own the Wave0/Wave1 evidence-worker output program,
+with the Wave1 initial/repair capability and prompt builders as the primary causal
+seam. It should:
+
+1. Define compact, model-visible initial **and repair** JSON envelopes for Wave0 and
+   Wave1 that state the required tool-then-final sequence, exact allowed keys,
+   minimum candidate shape, and a final no-prose/no-fence self-check.
+2. Preserve all deterministic authority: existing schemas and semantic validators,
+   source/newness/provenance floors, tool windows, one-shot repair, work-unit retry,
+   budgets, ledger, gate, route, and selected-model policy remain unchanged.
+3. Repair the direct evidence-intake live calibration by creating and threading a
+   real `SelectedBundleContext`, then make it assert the production parser/semantic
+   verdict for a single Wave0 or Wave1 worker under each explicit profile.
+4. Extend Bundle-local validation evidence only where needed: retain a closed,
+   redacted final-response shape (`empty`, `prose`, `fenced`, `embedded_json`, or
+   `json_object`) and canonical post-candidate validation codes. Do not retain any
+   raw response, prompt, tool result, exception text, or provider body.
+
+The change should first prove the compact envelope deterministically, then run the
+repaired one-worker live loop and a small explicit-profile Bundle matrix. A full
+real demo must advance through both Wave0 and Wave1 before it can be called stable.
