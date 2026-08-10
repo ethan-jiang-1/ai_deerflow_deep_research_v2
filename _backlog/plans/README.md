@@ -1,6 +1,6 @@
 # Active Plans — 活跃 plan/分析文档列表
 
-> 最后更新: 2026-08-09 | `_backlog/plans/` — 活跃 plan 在此，完成移入 [`../_done/_closed_plans/`](../_done/_closed_plans/)。
+> 最后更新: 2026-08-10 | `_backlog/plans/` — 活跃 plan 在此，完成移入 [`../_done/_closed_plans/`](../_done/_closed_plans/)。
 >
 > **plan 没有编号，文件名即标识。完成后文件名不变，位置即状态。**
 
@@ -19,11 +19,11 @@
 
 | Plan | 说明 |
 |------|------|
-| [diagnostics-event-journal.md](diagnostics-event-journal.md) | 中间态诊断日志架构：为什么 demo 只记结果不记过程、怎么把每个失败留痕（2026-08-10，实施走 openspec/changes） |
+| — | 当前没有活跃 plan。 |
 
 新的分析或设计应在此创建，完成后再移入归档。
 
-**Next available plan ID: CLS-034**（移入 `_closed_plans/` 时分配）
+**Next available plan ID: CLS-035**（移入 `_closed_plans/` 时分配）
 
 ## 已归档（移至 `_done/_closed_plans/`）
 
