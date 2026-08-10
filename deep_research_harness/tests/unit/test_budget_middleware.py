@@ -5,13 +5,17 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pytest
-from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 
 from deerflow_deep_research.agents.middleware import AgentBudgetError, BudgetMiddleware
+from deerflow_deep_research.agents.phase_prompt import render_phase_agent_prompt
 from deerflow_deep_research.agents.policies import ExecutionBudget
 from deerflow_deep_research.domain.enums import NodeFinishReason
 from deerflow_deep_research.domain.run_observation import BudgetStopReason
+from deerflow_deep_research.graph.nodes.topic_planning.prompts import PlannerAssignment, build_planner_prompt
 
 
 def _budget(**overrides) -> ExecutionBudget:
@@ -60,6 +64,46 @@ def _handler_for(message: AIMessage):
     return handler
 
 
+def _topic_planning_policy():
+    from deerflow_deep_research.runtime.research import _topic_planning_node_agent_policy
+
+    return _topic_planning_node_agent_policy(
+        SimpleNamespace(
+            workspace_root="/mnt/user-data/workspace/deep-research/fixed",
+            uploads_root="/mnt/user-data/uploads",
+        )
+    )
+
+
+def _fixed_demo_request() -> FakeRequest:
+    assignment = PlannerAssignment(
+        request_text=(
+            "Compare lithium-ion batteries and pumped-hydro storage on grid-balancing cost and deployment risk."
+        ),
+        research_depth="",
+        target_audience="",
+        output_format="",
+        cost_tolerance="",
+        time_budget="",
+        must_answer_questions=(),
+        degraded_profile=True,
+        comparison_subjects=(
+            "lithium-ion batteries",
+            "pumped-hydro storage on grid-balancing cost and deployment risk.",
+        ),
+        request_language="en",
+        output_language="en",
+    )
+    rendered = render_phase_agent_prompt(
+        build_planner_prompt(assignment),
+        attempt_workspace="/mnt/user-data/workspace/deep-research/fixed/topic_planning",
+    )
+    return FakeRequest(
+        messages=[HumanMessage(rendered.user_message)],
+        system=SystemMessage(rendered.system_policy),
+    )
+
+
 async def test_normal_call_updates_counters() -> None:
     mw = BudgetMiddleware(_budget())
     await mw.awrap_model_call(FakeRequest(), _handler_for(_ai(output_tokens=5)))
@@ -106,6 +150,41 @@ async def test_token_admission_upper_bound_refused_before_handler() -> None:
         await mw.awrap_model_call(FakeRequest(messages=[big]), handler)
     assert excinfo.value.budget_stop_reason is BudgetStopReason.TOKEN_ADMISSION
     assert called is False
+
+
+async def test_topic_planning_fixed_demo_render_is_admitted_but_oversized_request_is_not() -> None:
+    """@impl TOP-010
+
+    Use the final renderer for both sides of the local admission boundary.
+    """
+    policy = _topic_planning_policy()
+    middleware = BudgetMiddleware(policy.budget)
+    fixed_request = _fixed_demo_request()
+    fixed_upper_bound = middleware._request_upper_bound(fixed_request)
+    called = False
+
+    async def admitted_handler(_request):
+        nonlocal called
+        called = True
+        return FakeResponse(_ai(input_tokens=100, output_tokens=100))
+
+    assert fixed_upper_bound + policy.budget.per_call_output_token_cap <= policy.budget.total_token_budget
+    await middleware.awrap_model_call(fixed_request, admitted_handler)
+    assert called is True
+
+    oversized = FakeRequest(messages=[HumanMessage("x" * (policy.budget.total_token_budget + 1))])
+    rejected = BudgetMiddleware(policy.budget)
+    provider_called = False
+
+    async def rejected_handler(_request):
+        nonlocal provider_called
+        provider_called = True
+        return FakeResponse(_ai())
+
+    with pytest.raises(AgentBudgetError) as excinfo:
+        await rejected.awrap_model_call(oversized, rejected_handler)
+    assert excinfo.value.budget_stop_reason is BudgetStopReason.TOKEN_ADMISSION
+    assert provider_called is False
 
 
 async def test_missing_usage_is_terminal_usage_unavailable() -> None:

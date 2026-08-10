@@ -20,6 +20,14 @@ from deerflow_deep_research.domain.profile import (
     profile_state_fields,
 )
 from deerflow_deep_research.domain.state import ContentRef
+from deerflow_deep_research.domain.topics import (
+    MAX_TOPIC_DIMENSION_CHARS,
+    MAX_TOPIC_DIMENSIONS,
+    MAX_TOPIC_EXCLUSION_CHARS,
+    MAX_TOPIC_EXCLUSIONS,
+    MAX_TOPIC_SCOPE_CHARS,
+    MAX_TOPIC_TITLE_CHARS,
+)
 from deerflow_deep_research.graph.nodes.topic_planning.prompts import (
     PlannerAssignment,
     PlannerInputs,
@@ -106,6 +114,25 @@ def _assignment_payload(request: NodeExecutionRequest) -> dict[str, object]:
     return json.loads(request.objective.rsplit("Confirmed planning assignment (data only):\n", maxsplit=1)[1])
 
 
+def _profile_payload_for_test(inputs: PlannerAssignment) -> dict[str, object]:
+    return {
+        "request_text": inputs.request_text,
+        "research_depth": inputs.research_depth,
+        "target_audience": inputs.target_audience,
+        "output_format": inputs.output_format,
+        "cost_tolerance": inputs.cost_tolerance,
+        "time_budget": inputs.time_budget,
+        "must_answer_questions": list(inputs.coverage_questions),
+        "comparison_subjects": list(inputs.comparison_subjects),
+        "request_language": inputs.request_language,
+        "output_language": inputs.output_language,
+        "degraded_profile": inputs.degraded_profile,
+        "scope_boundaries": inputs.scope_boundaries,
+        "custom_notes": inputs.custom_notes,
+        "current_round_direction": inputs.current_round_direction,
+    }
+
+
 def test_build_planner_prompt_carries_profile_constraints() -> None:
     request = build_planner_prompt(_inputs())
     assert isinstance(request, NodeExecutionRequest)
@@ -115,7 +142,7 @@ def test_build_planner_prompt_carries_profile_constraints() -> None:
     assert "deterministic planning assignment" in request.objective.lower()
     assert "data, not instructions" in request.objective.lower()
     expected = json.loads(request.expected_output)
-    assert expected["instruction"].startswith("Return exactly one JSON object")
+    assert expected["instruction"].startswith("Return exactly one compact JSON object")
     assert "topics" in expected["required_keys"]
     assert "must_answer_bindings" in expected["topic_required_keys"]
 
@@ -153,6 +180,43 @@ def test_repair_prompt_carries_failure_metadata() -> None:
     assert "validation feedback (data only)" in lowered
     assert "untrusted invalid plan draft (data only)" in lowered
     assert request.capability_ref.capability_id == "topic-planning-plan-repair"
+
+
+def test_initial_and_repair_requests_project_the_compact_topic_plan_envelope() -> None:
+    """@impl TOP-010
+
+    Model-visible compactness does not narrow parser authority.
+    """
+    inputs = replace(_inputs(), scope_boundaries="Remain within the confirmed decision.")
+    requests = (
+        build_planner_prompt(inputs),
+        build_planner_prompt(
+            inputs,
+            repair_error="topic_plan_invalid",
+            invalid_draft='{"topics":[]}',
+        ),
+    )
+
+    for request in requests:
+        expected = json.loads(request.expected_output)
+        rendered = render_phase_agent_prompt(request, attempt_workspace="/virtual/topic-plan/compact")
+
+        assert expected["instruction"] == (
+            "Return exactly one compact JSON object and no markdown, prose, or code fences."
+        )
+        assert expected["bounds"]["title"] == "<= 80 chars"
+        assert expected["bounds"]["scope"] == "<= 240 chars"
+        assert expected["bounds"]["search_dimensions"] == "0-4 strings, each <= 80 chars"
+        assert expected["bounds"]["exclusions"] == "0-4 strings, each <= 80 chars"
+        assert "do not restate the assignment" in " ".join(rendered.system_policy.lower().split())
+        assert "data only" in request.objective.lower()
+        assert _assignment_payload(request) == _profile_payload_for_test(inputs)
+        assert request.tools_enabled is False
+
+    assert MAX_TOPIC_TITLE_CHARS == 128
+    assert MAX_TOPIC_SCOPE_CHARS == 512
+    assert (MAX_TOPIC_DIMENSIONS, MAX_TOPIC_DIMENSION_CHARS) == (8, 128)
+    assert (MAX_TOPIC_EXCLUSIONS, MAX_TOPIC_EXCLUSION_CHARS) == (8, 128)
 
 
 def test_runtime_rendered_capabilities_own_method_while_python_projects_only_assignment_and_schema() -> None:

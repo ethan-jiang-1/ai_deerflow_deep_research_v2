@@ -403,6 +403,33 @@ REQUIREMENT_IMPACTS = (
         "a planner candidate cannot bypass confirmed-profile coverage or zero-tool posture",
     ),
     RequirementImpact(
+        "TOP-010",
+        "topic-planning-node",
+        StableSeam.NODE_INTERFACE,
+        (
+            "tests/graph/test_topic_planning_prompts.py::"
+            "test_initial_and_repair_requests_project_the_compact_topic_plan_envelope"
+        ),
+        "initial and repair prompts could drift from the compact candidate contract",
+    ),
+    RequirementImpact(
+        "TOP-010",
+        "topic-planning-node",
+        StableSeam.RUNTIME_INTEGRATION,
+        (
+            "tests/unit/test_budget_middleware.py::"
+            "test_topic_planning_fixed_demo_render_is_admitted_but_oversized_request_is_not"
+        ),
+        "the final rendered request could be rejected before the provider or exceed the local admission budget",
+    ),
+    RequirementImpact(
+        "TOP-010",
+        "topic-planning-node",
+        StableSeam.NODE_INTERFACE,
+        ("tests/graph/test_topic_planning_node.py::test_compact_plan_above_old_structured_truncation_routes_next"),
+        "a retained compact candidate could still be clipped before parser/materializer state admission",
+    ),
+    RequirementImpact(
         "WAN-007",
         "wave0-node",
         StableSeam.RUNTIME_INTEGRATION,

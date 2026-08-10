@@ -2429,6 +2429,33 @@ EVIDENCE_CLAIMS = (
         authenticity=AuthenticityLevel.REAL_NODE_FAKE_CAPABILITIES,
     ),
     _correctness_claim(
+        "topic-planning-compact-prompt-envelope",
+        (
+            "tests/graph/test_topic_planning_prompts.py::"
+            "test_initial_and_repair_requests_project_the_compact_topic_plan_envelope"
+        ),
+        StableSeam.NODE_INTERFACE,
+        requirement_ids=("TOP-010",),
+        authenticity=AuthenticityLevel.REAL_NODE_FAKE_CAPABILITIES,
+    ),
+    _correctness_claim(
+        "topic-planning-output-admission-envelope",
+        (
+            "tests/unit/test_budget_middleware.py::"
+            "test_topic_planning_fixed_demo_render_is_admitted_but_oversized_request_is_not"
+        ),
+        StableSeam.RUNTIME_INTEGRATION,
+        requirement_ids=("TOP-010",),
+        authenticity=AuthenticityLevel.REAL_NODE_FAKE_CAPABILITIES,
+    ),
+    _correctness_claim(
+        "topic-planning-retained-compact-candidate",
+        ("tests/graph/test_topic_planning_node.py::test_compact_plan_above_old_structured_truncation_routes_next"),
+        StableSeam.NODE_INTERFACE,
+        requirement_ids=("TOP-010",),
+        authenticity=AuthenticityLevel.REAL_NODE_FAKE_CAPABILITIES,
+    ),
+    _correctness_claim(
         "wave0-validation-observation",
         "tests/integration/test_wave0_work_units.py::test_real_wave0_valid_initial_parser_observation_is_closed_and_correlated",
         StableSeam.RUNTIME_INTEGRATION,

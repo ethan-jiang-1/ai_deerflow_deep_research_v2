@@ -1,6 +1,6 @@
 # BUG-024: real demo (`make demo-real-scripted`) flakily fails at different nodes; model attribution is unresolved
 
-> 严重级别: P1 | 发现: 2026-08-10 | 状态: 活跃
+> 严重级别: P1 | 发现: 2026-08-10 | 状态: 活跃（topic-planning 已部分确诊；Wave1 仍待独立验证）
 
 ## 症状
 
@@ -13,6 +13,50 @@
 | 3（修复后） | wave0 | `structured_output` | 1/3 topic 三次尝试全败；旧终态未保留具体 parser/validator rule。 |
 
 诊断引用: `diag_49S1w5uxd8C_1bcU_Fu5ZPgX`（wave1）、`diag_4dfKqbo-2X8Y3F_jgw8Q5Bjt`（topic_planning）、`diag_YIGwIwtleMN6mnybBiwJqDwb`（wave0）。指纹分别为 `754e1a58…`（wave1）、`26c9dcf2…`（topic_planning）。
+
+## 受控校准结果（2026-08-10，诊断 change 之后）
+
+`calibrate-real-demo-model-contracts` 已将显式 profile、闭合 budget subreason 和
+canonical validation code 写入 Bundle-local Journal。随后以同一固定 scripted 问题运行了
+四个独立 Bundle；未读取或保留模型原始输出、prompt、异常文本或 provider body。
+
+| Profile | Bundle | 终态 | 可归因事实 |
+| --- | --- | --- | --- |
+| `deepseek-v4-pro` | `b_PPyIVKWK9L4qQFzNMNt7tJ9uOiOwbQbFV_rDAYk64Dk` | `blocked@topic_planning` | `budget.exhausted`，`budget_stop_reason=per_call_output_cap` |
+| `deepseek-v4-flash` | `b_oM9xWQawuKU2YZHvlE6wMC472RWxUOqBWMt_AGF-9zM` | `blocked@topic_planning` | `budget.exhausted`，`budget_stop_reason=per_call_output_cap` |
+| `deepseek-v4-flash` | `b_UtD8E6jYOc83h31f5D9rZImykt6xuTSzcbgrI98nNeg` | `blocked@topic_planning` | `budget.exhausted`，`budget_stop_reason=per_call_output_cap` |
+| `deepseek-v4-pro` | `b_S849xv_SzRf-GHAyzbij5Rv3s9uNbjYa4K4J-1C44bs` | `blocked@wave1` | 两个 Wave1 work item 的 `a00`--`a02` 都记录 `wave1_worker_output_json_invalid`，最终为 `structured_output` |
+
+### Topic-planning envelope calibration (2026-08-10)
+
+| Profile / revision | Bundle | Topic-planning phase | Terminal category | Budget-stop reason | Validation codes |
+| --- | --- | --- | --- | --- | --- |
+| `deepseek-v4-pro` / `v1` | `b_yl-J4DR0lQDM36qdKrX1RiRbw29TpRA8P21nEBjaBB8` | initial validation succeeded; advanced to Wave0 then Wave1 | `blocked@wave1`, `research.blocked`, worker `structured_output` | none at topic planning | topic planning: `[]`; Wave1: `wave1_worker_output_json_invalid`, `wave1_worker_output_invalid` |
+| `deepseek-v4-flash` / `v1` | `b_DNtPmLPzHEqBQGc4GpHhRcUiB_jqRmHu4tEztEeEqzc` | initial validation succeeded; advanced to Wave0 then Wave1 | `blocked@wave1`, `research.blocked` | none at topic planning | topic planning: `[]`; observed Wave0/Wave1 validation facts: `[]` |
+
+### 已确诊：topic-planning 的输出 envelope 与单次 cap 不相容
+
+前 3 个独立 Bundle、2 个显式 profile 都在同一零工具 planning invocation 以
+`per_call_output_cap` 终止。因此这不是 profile 选择、provider 瞬时异常或旧 Wave1
+工具窗口的问题。直接 deterministic owner 是
+`runtime/research.py::_topic_planning_node_agent_policy()` 的 `2048` output-token cap；
+但 TopicPlan 允许最多 8 个含 scope、bindings、dimensions 和 exclusions 的 topic，且当前
+planner cognitive program 只要求遵守 schema/bounds，没有规定一个与该 cap 相容的紧凑输出
+envelope。
+
+下一 change 应只解决这一已证实的 blocker：定义紧凑 TopicPlan 输出 envelope，并把该节点的
+per-call output cap 校准到与合法 envelope 相容的有界值；保持一次 invocation、零工具、总
+token、wall-time、repair、route 和 terminal authority 不变。先以 focused deterministic
+evidence 锁定此契约，再以同一 Bundle Journal loop 验证两个 explicit profile 都能越过
+topic planning。
+
+### 尚未确诊：Wave1 structured output
+
+第二个 `deepseek-v4-pro` Bundle 成功越过 topic planning 后，Wave1 两个 work item 在各自三轮
+有界 attempt 中均产生 `wave1_worker_output_json_invalid` 并最终 `structured_output`。这是一条
+真实且已经有 canonical code 的独立故障线，但目前只有一个 Bundle。不得以 topic-planning
+cap 修改顺手放宽 Wave1 的 schema、retry、tool window、budget 或默认 profile。待上游 blocker
+解除后，以同一显式 profile 和 Journal 重新复现、最小化并单独提出 change。
 
 ## 当前诊断
 

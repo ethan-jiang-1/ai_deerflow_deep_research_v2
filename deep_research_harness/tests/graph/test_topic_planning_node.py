@@ -36,7 +36,7 @@ from deerflow_deep_research.domain.run_experience import (
     RunFailureCode,
 )
 from deerflow_deep_research.domain.run_observation import RunEventCategory
-from deerflow_deep_research.domain.state import ContentRef, PhaseStatus
+from deerflow_deep_research.domain.state import MAX_TOPIC_REGISTRY_BYTES, ContentRef, PhaseStatus
 from deerflow_deep_research.graph.nodes.topic_planning import node as topic_planning_node
 
 BUNDLE = RunBundleRef(bundle_id=BundleId("b_" + "A" * 43), scope_bucket="s_" + "B" * 43)
@@ -188,6 +188,36 @@ def _covering_plan() -> str:
     )
 
 
+def _large_compact_plan() -> str:
+    topics: list[dict[str, object]] = []
+    for index in range(8):
+        topics.append(
+            {
+                "title": f"Topic {index} " + "t" * 70,
+                "scope": f"Distinct scope {index} " + "s" * 220,
+                "must_answer_bindings": ["Q1" if index != 1 else "Q2"],
+                "search_dimensions": [f"dimension {index}-{item} " + "d" * 64 for item in range(4)],
+                "exclusions": [f"exclusion {index}-{item} " + "e" * 64 for item in range(4)],
+            }
+        )
+    return _plan_json(*topics)
+
+
+def _broad_parser_valid_plan() -> str:
+    topics: list[dict[str, object]] = []
+    for index, binding in enumerate(("Q1", "Q2")):
+        topics.append(
+            {
+                "title": f"Broad topic {index} " + "t" * 88,
+                "scope": f"Broad distinct scope {index} " + "s" * 300,
+                "must_answer_bindings": [binding],
+                "search_dimensions": [f"dimension {index}-{item} " + "d" * 84 for item in range(5)],
+                "exclusions": [f"exclusion {index}-{item} " + "e" * 84 for item in range(5)],
+            }
+        )
+    return _plan_json(*topics)
+
+
 async def test_valid_plan_routes_next_and_records_registry() -> None:
     """@impl TOP-006
     @impl EVH-015
@@ -205,6 +235,39 @@ async def test_valid_plan_routes_next_and_records_registry() -> None:
     assert request.capability_ref is not None
     assert request.capability_ref.capability_id == "topic-planning-profile-decomposition"
     assert {topic["must_answer_bindings"][0] for topic in result["topic_registry"]} == {"Q1", "Q2"}
+
+
+async def test_compact_plan_above_old_structured_truncation_routes_next() -> None:
+    """@impl TOP-010
+
+    A retained compact candidate is not clipped at the old 4096-byte cap.
+    """
+    summary = _large_compact_plan()
+    assert 4_096 < len(summary.encode("utf-8")) <= 16_384
+
+    result = await topic_planning_node.build_real(_deps(_Caps(_result(summary))))(_state())
+
+    registry = result["topic_registry"]
+    assert result["route"] == "next"
+    assert len(registry) == 8
+    assert len(json.dumps(registry, sort_keys=True, separators=(",", ":")).encode("utf-8")) <= MAX_TOPIC_REGISTRY_BYTES
+
+
+async def test_broad_parser_valid_plan_remains_admitted_by_parser_and_materializer() -> None:
+    """@impl TOP-010
+
+    Compact prompt guidance does not narrow retained legal candidates.
+    """
+    summary = _broad_parser_valid_plan()
+    assert len(summary.encode("utf-8")) <= 16_384
+
+    result = await topic_planning_node.build_real(_deps(_Caps(_result(summary))))(_state())
+
+    assert result["route"] == "next"
+    assert len(result["topic_registry"]) == 2
+    assert all(len(topic["title"]) > 80 for topic in result["topic_registry"])
+    assert all(len(topic["scope"]) > 240 for topic in result["topic_registry"])
+    assert all(len(topic["search_dimensions"]) == len(topic["exclusions"]) == 5 for topic in result["topic_registry"])
 
 
 async def test_topic_planning_uses_current_direction_and_canonical_profile_data() -> None:
@@ -561,6 +624,38 @@ async def test_closed_phase_stops_do_not_enter_provider_recovery(code: str) -> N
         "phase": "topic_planning",
         "certainty": "direct",
     }
+
+
+@pytest.mark.parametrize(
+    "budget_stop_reason",
+    (
+        pytest.param("per_call_output_cap", id="response-output-cap"),
+        pytest.param("token_admission", id="pre-provider-token-admission"),
+    ),
+)
+async def test_topic_planning_budget_stops_publish_no_state_or_recovery(budget_stop_reason: str) -> None:
+    """@impl TOP-010
+
+    Budget details stay bridge-owned; the node remains a closed stop.
+    """
+    problem = NodeProblem(
+        code=RunFailureCode.BUDGET_EXHAUSTED,
+        phase="topic_planning",
+        certainty=FailureCertainty.DIRECT,
+    )
+    caps = _Caps(_result("untrusted budget body", finish_reason=NodeFinishReason.FAILED, problem=problem))
+    recorder = _RecoveryRecorder()
+
+    result = await topic_planning_node.build_real(_deps(caps, recorder=recorder))(_state())
+
+    assert budget_stop_reason in {"per_call_output_cap", "token_admission"}
+    assert result["route"] == "exhausted"
+    assert result["terminal_status"] == LifecycleStatus.BLOCKED.value
+    assert result["latest_incident"]["code"] == "budget.exhausted"
+    assert "topic_refs" not in result
+    assert "topic_registry" not in result
+    assert len(caps.requests) == 1
+    assert recorder.calls == []
 
 
 @pytest.mark.parametrize(

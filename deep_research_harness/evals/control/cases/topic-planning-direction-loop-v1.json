@@ -9,12 +9,12 @@
         {
           "name": "initial_capability_digest",
           "source_path": "src/deerflow_deep_research/graph/nodes/topic_planning/capabilities/topic-planning-profile-decomposition.md",
-          "digest": "d28b1e20d07b31f8810e900ff546ce01520174cb56195a6ae260c3b0336e314c"
+          "digest": "6a522687f742952c5c999d1f1def808a06953ad60dbc7fa6f73eb5bd0a8f6aab"
         },
         {
           "name": "repair_capability_digest",
           "source_path": "src/deerflow_deep_research/graph/nodes/topic_planning/capabilities/topic-planning-plan-repair.md",
-          "digest": "821c70f65e5aa2c6328a80e5b177958107594efd7c13601e1ea8256515ff6b80"
+          "digest": "d3a532ec0c3e172789a8e1c8fef54b3971f88220ec414085d0b4a828ba1c52cb"
         },
         {
           "name": "topic_schema_digest",

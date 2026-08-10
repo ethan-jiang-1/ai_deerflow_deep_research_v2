@@ -145,3 +145,20 @@ def test_zero_tool_policies_remain_independently_bounded() -> None:
     assert policies[1].provider_observation_admission is ProviderObservationAdmission.CONFIGURED_MODEL_SERVICE
     assert policies[2].provider_observation_admission is ProviderObservationAdmission.DENIED
     assert len({policy.policy_name for policy in policies}) == len(policies)
+
+
+def test_topic_planning_policy_has_its_own_calibrated_output_envelope() -> None:
+    """@impl TOP-010
+
+    Planning alone carries the wider retained structured candidate.
+    """
+    from deerflow_deep_research.runtime.research import _topic_planning_node_agent_policy
+
+    policy = _topic_planning_node_agent_policy(_graph_context())
+
+    assert policy.allowed_tool_names == frozenset()
+    assert policy.budget.max_model_calls == 1
+    assert policy.budget.per_call_output_token_cap == 4_096
+    assert policy.budget.structured_result_bytes == 16_384
+    assert policy.budget.total_token_budget == 12_288
+    assert policy.budget.wall_time_seconds == 60.0

@@ -18,7 +18,11 @@ inventing requirements or external facts.
 
 Before returning one candidate, check that every supplied must-answer question has a
 binding, no two topics duplicate the same research job, and every scope/exclusion stays
-inside the assignment. Follow the expected output schema and bounds exactly. Return a
-TopicPlan candidate only: do not assert sources or findings, assign ids, write state,
-choose a route, or use a tool. The graph owns validation, stable identifiers,
-materialization, checkpoint state, routes, and recovery.
+inside the assignment. Follow the expected output schema and bounds exactly. Return
+exactly one compact JSON TopicPlan object: no prose, markdown, or code fences; do not
+restate the assignment or profile data. Keep each title at most 80 characters, each
+scope at most 240 characters, and include no more than four search dimensions and four
+exclusions per topic, each at most 80 characters. Return a TopicPlan candidate only:
+do not assert sources or findings, assign ids, write state, choose a route, or use a
+tool. The graph owns validation, stable identifiers, materialization, checkpoint state,
+routes, and recovery.

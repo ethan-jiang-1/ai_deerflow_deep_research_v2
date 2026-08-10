@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+from types import SimpleNamespace
+
 import pytest
 
 from deerflow_deep_research.agents.policies import ExecutionBudget, ExecutionPolicy
@@ -43,6 +46,32 @@ def test_success_result_is_bounded_to_structured_cap() -> None:
     result = project_success("A" * 5_000, (), policy=_policy(structured_result_bytes=100))
     assert result.finish_reason == NodeFinishReason.SUCCESS
     assert len(result.summary.encode("utf-8")) <= 100
+
+
+def test_topic_planning_policy_retains_valid_json_above_the_old_truncation_point() -> None:
+    """@impl TOP-010
+
+    Topic planning may retain a full compact-envelope candidate.
+    """
+    from deerflow_deep_research.runtime.research import _topic_planning_node_agent_policy
+
+    policy = _topic_planning_node_agent_policy(
+        SimpleNamespace(workspace_root=WORKSPACE, uploads_root="/mnt/user-data/uploads")
+    )
+    topic = {
+        "title": "T" * 128,
+        "scope": "S" * 512,
+        "must_answer_bindings": ["Q1"],
+        "search_dimensions": ["D" * 128 for _ in range(8)],
+        "exclusions": ["E" * 128 for _ in range(8)],
+    }
+    candidate = json.dumps({"schema_version": 1, "topics": [topic, topic | {"title": "U" * 128, "scope": "V" * 512}]})
+
+    assert 4_096 < len(candidate.encode("utf-8")) <= 16_384
+    result = project_success(candidate, (), policy=policy)
+
+    assert result.summary == candidate
+    assert result.finish_reason is NodeFinishReason.SUCCESS
 
 
 def test_artifact_ref_within_roots_is_accepted() -> None:

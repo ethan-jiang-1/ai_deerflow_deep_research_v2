@@ -20,12 +20,6 @@ from deerflow_deep_research.domain.profile import (
 from deerflow_deep_research.domain.state import ContentRef
 from deerflow_deep_research.domain.topics import (
     MAX_TOPIC_BINDING_CHARS,
-    MAX_TOPIC_DIMENSION_CHARS,
-    MAX_TOPIC_DIMENSIONS,
-    MAX_TOPIC_EXCLUSION_CHARS,
-    MAX_TOPIC_EXCLUSIONS,
-    MAX_TOPIC_SCOPE_CHARS,
-    MAX_TOPIC_TITLE_CHARS,
     MAX_TOPICS,
     TOPIC_SCHEMA_VERSION,
     parse_plan_output,
@@ -72,6 +66,15 @@ class PlannerAssignment:
 
 
 PlannerInputs = PlannerAssignment
+
+
+# These are prompt targets, deliberately narrower than the parser's legal bounds.
+COMPACT_TOPIC_TITLE_CHARS = 80
+COMPACT_TOPIC_SCOPE_CHARS = 240
+COMPACT_TOPIC_DIMENSIONS = 4
+COMPACT_TOPIC_DIMENSION_CHARS = 80
+COMPACT_TOPIC_EXCLUSIONS = 4
+COMPACT_TOPIC_EXCLUSION_CHARS = 80
 
 
 def _profile_payload(inputs: PlannerAssignment) -> dict[str, object]:
@@ -122,7 +125,7 @@ def build_planner_prompt(
     if len(objective) > MAX_PLANNER_OBJECTIVE_CHARS:
         raise ValueError("planner_objective_too_large")
     expected = {
-        "instruction": "Return exactly one JSON object and no markdown, prose, or code fences.",
+        "instruction": "Return exactly one compact JSON object and no markdown, prose, or code fences.",
         "schema_version": TOPIC_SCHEMA_VERSION,
         "required_keys": ["schema_version", "topics"],
         "topic_required_keys": [
@@ -135,10 +138,12 @@ def build_planner_prompt(
         "bounds": {
             "topics": "exactly 1 entry" if single_topic else f"1-{MAX_TOPICS} entries",
             "must_answer_bindings": "1-8 strings drawn from the profile must_answer_questions",
-            "title": f"<= {MAX_TOPIC_TITLE_CHARS} chars",
-            "scope": f"<= {MAX_TOPIC_SCOPE_CHARS} chars",
-            "search_dimensions": f"0-{MAX_TOPIC_DIMENSIONS} strings, each <= {MAX_TOPIC_DIMENSION_CHARS} chars",
-            "exclusions": f"0-{MAX_TOPIC_EXCLUSIONS} strings, each <= {MAX_TOPIC_EXCLUSION_CHARS} chars",
+            "title": f"<= {COMPACT_TOPIC_TITLE_CHARS} chars",
+            "scope": f"<= {COMPACT_TOPIC_SCOPE_CHARS} chars",
+            "search_dimensions": (
+                f"0-{COMPACT_TOPIC_DIMENSIONS} strings, each <= {COMPACT_TOPIC_DIMENSION_CHARS} chars"
+            ),
+            "exclusions": f"0-{COMPACT_TOPIC_EXCLUSIONS} strings, each <= {COMPACT_TOPIC_EXCLUSION_CHARS} chars",
             "must_answer_binding_chars": f"<= {MAX_TOPIC_BINDING_CHARS}",
         },
     }

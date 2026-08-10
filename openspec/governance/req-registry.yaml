@@ -433,6 +433,7 @@ TOP-006: topic-planning-node — Topic planning and structured repair bind disti
 TOP-007: topic-planning-node — Topic-planning calibration policies preserve confirmed-profile fidelity, bounded distinct coverage, degraded-profile conservatism, and deterministic materialization authority
 TOP-008: topic-planning-node — Topic planning consumes Bundle-local profile facts and writes contained planning artifacts through the selected Bundle
 TOP-009: topic-planning-node — Topic planning retains closed initial and repair parser/materialization Journal evidence without altering planner recovery, checkpoint, or route authority
+TOP-010: topic-planning-node — Topic planning aligns a compact model-visible TopicPlan envelope with one admitted local execution budget while preserving existing parser/materializer, recovery, checkpoint, route, and lifecycle authority
 
 # wave0-node
 WAN-001: wave0-node — Real Wave0 reads the planner topic registry and materializes one immutable source-intake WorkSpec per topic through the existing work-unit controller and shared fan-out/fan-in component without a second controller or work authority

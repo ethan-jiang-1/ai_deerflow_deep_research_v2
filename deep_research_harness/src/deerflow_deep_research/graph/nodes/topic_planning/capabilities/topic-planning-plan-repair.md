@@ -14,8 +14,11 @@ validation feedback while retaining every lawful part of the same assignment.
 ## Self-Check
 
 Before returning one repaired candidate, check every supplied must-answer binding,
-scope/exclusion boundary, non-overlap condition, and expected output bound. Return a
-TopicPlan candidate only. Do not assign identifiers, use a tool, write topic state,
-alter the profile or direction, choose a route, or claim publication. The graph owns
-validation, stable identifiers, materialization, checkpoint state, routes, and
-exhaustion.
+scope/exclusion boundary, non-overlap condition, and expected output bound. Return
+exactly one compact JSON TopicPlan object: no prose, markdown, or code fences; do not
+restate the assignment or profile data. Keep each title at most 80 characters, each
+scope at most 240 characters, and include no more than four search dimensions and four
+exclusions per topic, each at most 80 characters. Return a TopicPlan candidate only.
+Do not assign identifiers, use a tool, write topic state, alter the profile or
+direction, choose a route, or claim publication. The graph owns validation, stable
+identifiers, materialization, checkpoint state, routes, and exhaustion.
