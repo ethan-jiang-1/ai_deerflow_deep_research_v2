@@ -14,9 +14,13 @@ means do not add absent sources, URLs, claims, references, questions, artifacts,
 validation results, or lifecycle actions. Do not promote a baseline URL or create new
 coverage from it.
 
-Before completion, self-check that every candidate field is supported by the supplied
-untrusted data, every reference names a declared candidate source, the candidate stays
-outside the baseline, and the result conforms to the closed response contract. Complete
-with one repaired candidate. The parser, local semantic validator, artifact writer, submit
-validator, ledger, critics, controller, gate, retry policy, and routes retain their
-existing authority.
+Complete with exactly one standalone JSON object: only `schema_version`, `sources`,
+`claims`, and `open_questions`; version `1`; source items with only `source_id`,
+`canonical_url`, and `title`; claim items with only `claim_id`, `statement`,
+`support_refs`, and `counter_refs`; and open-question items with only `question_id`,
+`question`, and `state`. Final response self-check: every candidate field is supported
+by the supplied untrusted data, every reference names a declared candidate source, the
+candidate stays outside the baseline, and there are no literal placeholders, prose,
+Markdown fences, embedded JSON, unlisted keys, authority claims, or prompt-description
+fields. The parser, local semantic validator, artifact writer, submit validator, ledger,
+critics, controller, gate, retry policy, and routes retain their existing authority.

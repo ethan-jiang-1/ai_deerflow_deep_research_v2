@@ -1334,6 +1334,108 @@ REQUIREMENT_IMPACTS = (
         "tests/integration/test_wave0_work_units.py::test_real_wave0_valid_initial_parser_observation_is_closed_and_correlated",
         "Wave0 parser evidence could otherwise be lost before candidate admission or lose work/attempt correlation",
     ),
+    RequirementImpact(
+        "REJ-002",
+        "run-event-journal",
+        StableSeam.RUNTIME_INTEGRATION,
+        "tests/unit/test_run_observation_store.py::test_v3_journal_retains_redacted_shape_and_post_candidate_facts",
+        "a Journal event could conflate a worker response boundary with a later submit rejection",
+    ),
+    RequirementImpact(
+        "REJ-004",
+        "run-event-journal",
+        StableSeam.RUNTIME_INTEGRATION,
+        "tests/unit/test_run_observation_store.py::test_v3_journal_retains_redacted_shape_and_post_candidate_facts",
+        "read-only inspection could expose response content rather than closed diagnostic facts",
+    ),
+    RequirementImpact(
+        "REJ-006",
+        "run-event-journal",
+        StableSeam.RUNTIME_INTEGRATION,
+        "tests/unit/test_run_observation_store.py::test_v3_journal_retains_redacted_shape_and_post_candidate_facts",
+        "a versioned Journal update could drop safe profile provenance while recording a new validation fact",
+    ),
+    RequirementImpact(
+        "REJ-007",
+        "run-event-journal",
+        StableSeam.RUNTIME_INTEGRATION,
+        "tests/unit/test_run_observation_store.py::test_v3_journal_retains_redacted_shape_and_post_candidate_facts",
+        "a v3 validation projection could retain parser detail instead of its closed shape and canonical code",
+    ),
+    RequirementImpact(
+        "WAN-011",
+        "wave0-node",
+        StableSeam.NODE_INTERFACE,
+        "tests/graph/test_wave0_worker.py::test_wave0_initial_and_repair_requests_expose_the_same_closed_completion_contract",
+        "initial and repair prompts could drift into different output envelopes or tool postures",
+    ),
+    RequirementImpact(
+        "WAN-012",
+        "wave0-node",
+        StableSeam.RUNTIME_INTEGRATION,
+        (
+            "tests/integration/test_wave0_work_units.py::"
+            "test_real_wave0_post_candidate_submission_validation_does_not_enter_repair"
+        ),
+        "a later submit rejection could be mislabeled as a worker repair or re-enter model recovery",
+    ),
+    RequirementImpact(
+        "WON-011",
+        "wave1-node",
+        StableSeam.NODE_INTERFACE,
+        (
+            "tests/unit/test_wave1_critic_prompts.py::TestWave1LocalCriticPrompts::"
+            "test_worker_and_repair_render_only_bounded_assignment_and_closed_feedback"
+        ),
+        "initial and repair requests could lose the shared closed final envelope while retaining stale tool context",
+    ),
+    RequirementImpact(
+        "WON-012",
+        "wave1-node",
+        StableSeam.RUNTIME_INTEGRATION,
+        (
+            "tests/integration/test_wave1_work_units.py::"
+            "test_real_wave1_post_candidate_submission_validation_does_not_enter_repair"
+        ),
+        "a parser-accepted candidate could conceal its later deterministic rejection or trigger a second repair",
+    ),
+    RequirementImpact(
+        "WOU-012",
+        "work-unit-kernel",
+        StableSeam.RUNTIME_INTEGRATION,
+        (
+            "tests/graph/test_work_unit_component.py::"
+            "test_component_records_one_post_candidate_fact_for_submission_rejection"
+        ),
+        (
+            "successful submit paths could fabricate a failure fact or rejected candidates "
+            "could lose their distinct boundary"
+        ),
+    ),
+    RequirementImpact(
+        "EVH-030",
+        "evaluation-hardening",
+        StableSeam.RUNTIME_INTEGRATION,
+        (
+            "tests/unit/test_evidence_intake_calibration.py::"
+            "test_offline_evidence_intake_branches_are_explicit_profile_bundle_bound_and_redacted"
+        ),
+        "calibration setup could resolve a bridge without a selected Bundle, profile provenance, or redacted Journal",
+    ),
+    RequirementImpact(
+        "EVH-030",
+        "evaluation-hardening",
+        StableSeam.NODE_INTERFACE,
+        (
+            "tests/live/test_evidence_intake_live_calibration.py::"
+            "test_live_evidence_intake_calibration[calibrate-evidence-intake-wave0-worker-normal]"
+        ),
+        "only a credentialed explicit-profile branch call can observe a real model's final response distribution",
+        (
+            "The deterministic Bundle-bound proof covers authority and redaction; this opt-in "
+            "call covers only model output behavior."
+        ),
+    ),
 )
 
 

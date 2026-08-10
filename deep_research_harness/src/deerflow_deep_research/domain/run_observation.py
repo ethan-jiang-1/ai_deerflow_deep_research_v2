@@ -14,6 +14,7 @@ Bundle lifecycle boundary remains the sole owner of those facts.
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 from datetime import datetime
 from enum import StrEnum
@@ -110,6 +111,43 @@ class BudgetStopReason(StrEnum):
     UNKNOWN = "unknown"
 
 
+class FinalResponseShape(StrEnum):
+    """Closed structural classification for unretained worker response text."""
+
+    EMPTY = "empty"
+    PROSE = "prose"
+    FENCED = "fenced"
+    EMBEDDED_JSON = "embedded_json"
+    JSON_OBJECT = "json_object"
+
+
+def classify_final_response_shape(response: str) -> FinalResponseShape:
+    """Classify a response without extracting or retaining any of its content."""
+
+    stripped = response.strip()
+    if not stripped:
+        return FinalResponseShape.EMPTY
+    if "```" in response:
+        return FinalResponseShape.FENCED
+    try:
+        if isinstance(json.loads(stripped), dict):
+            return FinalResponseShape.JSON_OBJECT
+    except json.JSONDecodeError:
+        pass
+
+    decoder = json.JSONDecoder()
+    for index, character in enumerate(stripped):
+        if character != "{":
+            continue
+        try:
+            value, _ = decoder.raw_decode(stripped[index:])
+        except json.JSONDecodeError:
+            continue
+        if isinstance(value, dict):
+            return FinalResponseShape.EMBEDDED_JSON
+    return FinalResponseShape.PROSE
+
+
 class RetainedRecoverySummary(FrozenRunObservationContract):
     """Read-only terminal recovery observation with no control effect."""
 
@@ -138,7 +176,7 @@ class RetainedRecoverySummary(FrozenRunObservationContract):
 class RunEvent(FrozenRunObservationContract):
     """One redacted historical event, never a raw log or lifecycle cursor."""
 
-    schema_version: Literal[1, 2] = 1
+    schema_version: Literal[1, 2, 3] = 1
     sequence: int = Field(ge=1, le=MAX_LIFECYCLE_SEQUENCE)
     timestamp: datetime
     category: RunEventCategory
@@ -148,8 +186,9 @@ class RunEvent(FrozenRunObservationContract):
     work_id: str | None = Field(default=None, pattern=r"^[A-Za-z0-9:_-]{1,128}$")
     attempt_id: str | None = Field(default=None, pattern=r"^[A-Za-z0-9:_-]{1,128}$")
     validation_code: str | None = Field(default=None, pattern=_VALIDATION_CODE_PATTERN)
-    validation_stage: Literal["initial", "repair"] | None = None
+    validation_stage: Literal["initial", "repair", "post_candidate"] | None = None
     validation_codes: tuple[str, ...] = Field(default=(), max_length=MAX_LIST_ENTRIES)
+    response_shape: FinalResponseShape | None = None
     failure_category: str | None = Field(default=None, pattern=_VALIDATION_CODE_PATTERN)
     worker_failure_category: (
         Literal["agent_invocation", "tool_execution", "structured_output", "submission_validation", "unknown", "mixed"]
@@ -169,17 +208,31 @@ class RunEvent(FrozenRunObservationContract):
 
     @model_validator(mode="after")
     def validate_recovery_event(self) -> RunEvent:
-        if self.schema_version == 2 and self.generation is None:
+        if self.schema_version in (2, 3) and self.generation is None:
             raise ValueError("journal_event_generation_required")
         if any(re.fullmatch(_VALIDATION_CODE_PATTERN, code) is None for code in self.validation_codes):
             raise ValueError("journal_validation_code_invalid")
         if len(set(self.validation_codes)) != len(self.validation_codes):
             raise ValueError("journal_validation_codes_duplicate")
-        if self.schema_version == 2 and self.validation_code is not None:
+        if self.schema_version in (2, 3) and self.validation_code is not None:
             raise ValueError("journal_validation_code_legacy_forbidden")
-        if self.category is RunEventCategory.VALIDATION and self.schema_version == 2:
-            if self.validation_stage is None:
+        if self.category is RunEventCategory.VALIDATION:
+            if self.schema_version in (2, 3) and self.validation_stage is None:
                 raise ValueError("journal_validation_stage_required")
+            if self.schema_version == 3 and self.validation_stage == "post_candidate":
+                if self.response_shape is not None:
+                    raise ValueError("journal_post_candidate_response_shape_unexpected")
+                if not self.validation_codes:
+                    raise ValueError("journal_post_candidate_codes_required")
+            elif self.schema_version == 3 and self.validation_stage in {"initial", "repair"}:
+                if self.phase in {"wave0", "wave1"} and self.response_shape is None:
+                    raise ValueError("journal_validation_response_shape_required")
+                if self.phase not in {"wave0", "wave1"} and self.response_shape is not None:
+                    raise ValueError("journal_validation_response_shape_unexpected")
+            elif self.response_shape is not None:
+                raise ValueError("journal_validation_response_shape_unexpected")
+        elif self.response_shape is not None:
+            raise ValueError("journal_validation_response_shape_unexpected")
         elif self.validation_stage is not None or self.validation_codes:
             raise ValueError("journal_validation_fields_unexpected")
         if self.execution_profile is not None and self.category is not RunEventCategory.ADMISSION:
@@ -363,7 +416,7 @@ class RetainedDiagnosticRecord(FrozenRunObservationContract):
 class RunObservationManifest(FrozenRunObservationContract):
     """Metadata for one Bundle-local Journal, never a Run locator."""
 
-    schema_version: Literal[1, 2] = 1
+    schema_version: Literal[1, 2, 3] = 1
     bundle_id: str = Field(pattern=_BUNDLE_ID_PATTERN)
     created_at: datetime
     updated_at: datetime
@@ -389,7 +442,7 @@ class RunObservationManifest(FrozenRunObservationContract):
             raise ValueError("journal_manifest_drop_interval_required")
         elif self.first_dropped_sequence > self.last_dropped_sequence:
             raise ValueError("journal_manifest_drop_interval_invalid")
-        if self.schema_version == 2 and self.event_high_watermark is None:
+        if self.schema_version in (2, 3) and self.event_high_watermark is None:
             raise ValueError("journal_high_watermark_required")
         return self
 
@@ -469,6 +522,7 @@ __all__ = [
     "JournalAvailability",
     "JournalIncompleteReason",
     "BudgetStopReason",
+    "FinalResponseShape",
     "ExecutionProfileEvidence",
     "LifecycleTraceRecord",
     "MAX_EVENT_RECORDS",
@@ -493,4 +547,5 @@ __all__ = [
     "RunSummary",
     "TerminalDiagnosticProjection",
     "derive_diagnostic_reference",
+    "classify_final_response_shape",
 ]

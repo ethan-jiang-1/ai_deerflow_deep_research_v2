@@ -37,7 +37,7 @@ from deerflow_deep_research.domain.run_experience import (
     ProviderObservation,
     RunFailureCode,
 )
-from deerflow_deep_research.domain.run_observation import RunEventCategory
+from deerflow_deep_research.domain.run_observation import FinalResponseShape, RunEventCategory
 from deerflow_deep_research.domain.state import (
     WORK_UNIT_GATE_PREVIEW_FIELDS,
     ContentRef,
@@ -377,7 +377,8 @@ async def test_real_wave0_worker_binds_the_required_capability_before_artifact_a
 
 
 async def test_real_wave0_valid_initial_parser_observation_is_closed_and_correlated(tmp_path) -> None:
-    """@impl WAN-010"""
+    """@impl WAN-010
+    @impl WAN-012"""
 
     capabilities = _ResultCapabilities(
         NodeExecutionResult(
@@ -402,11 +403,16 @@ async def test_real_wave0_valid_initial_parser_observation_is_closed_and_correla
     )
 
     assert [
-        (event["validation_stage"], event["validation_codes"], event["work_id"], event["attempt_id"])
+        (
+            event["validation_stage"],
+            event["response_shape"],
+            event["validation_codes"],
+            event["work_id"],
+            event["attempt_id"],
+        )
         for event in _validation_events(recorder)
     ] == [
-        ("initial", (), "g0_wave0_w0000", "g0_wave0_w0000_a00"),
-        ("initial", (), "g0_wave0_w0000", "g0_wave0_w0000_a00"),
+        ("initial", FinalResponseShape.JSON_OBJECT, (), "g0_wave0_w0000", "g0_wave0_w0000_a00"),
     ]
     assert "https://example.com/storage" not in str(recorder.events)
     assert len(capabilities.requests) == 1
@@ -535,12 +541,23 @@ async def test_real_wave0_repair_keeps_tools_disabled_and_preserves_worker_admis
         assert forbidden not in repair.objective
     assert len(component.parent_update["accepted_submission_refs"]) == 1
     assert [
-        (event["validation_stage"], event["validation_codes"], event["work_id"], event["attempt_id"])
+        (
+            event["validation_stage"],
+            event["response_shape"],
+            event["validation_codes"],
+            event["work_id"],
+            event["attempt_id"],
+        )
         for event in _validation_events(recorder)
     ] == [
-        ("initial", ("wave0_worker_output_json_invalid",), "g0_wave0_w0000", "g0_wave0_w0000_a00"),
-        ("repair", (), "g0_wave0_w0000", "g0_wave0_w0000_a00"),
-        ("initial", (), "g0_wave0_w0000", "g0_wave0_w0000_a00"),
+        (
+            "initial",
+            FinalResponseShape.PROSE,
+            ("wave0_worker_output_json_invalid",),
+            "g0_wave0_w0000",
+            "g0_wave0_w0000_a00",
+        ),
+        ("repair", FinalResponseShape.JSON_OBJECT, (), "g0_wave0_w0000", "g0_wave0_w0000_a00"),
     ]
     assert "not-json" not in str(recorder.events)
     assert "wave0 retained observation" not in str(recorder.events)
@@ -578,11 +595,29 @@ async def test_real_wave0_malformed_repair_fails_without_artifact_admission(tmp_
     assert component.parent_update["accepted_submission_refs"] == ()
     assert await store.load_records() == ()
     assert [
-        (event["validation_stage"], event["validation_codes"], event["work_id"], event["attempt_id"])
+        (
+            event["validation_stage"],
+            event["response_shape"],
+            event["validation_codes"],
+            event["work_id"],
+            event["attempt_id"],
+        )
         for event in _validation_events(recorder)
     ] == [
-        ("initial", ("wave0_worker_output_json_invalid",), "g0_wave0_w0000", "g0_wave0_w0000_a00"),
-        ("repair", ("wave0_worker_output_json_invalid",), "g0_wave0_w0000", "g0_wave0_w0000_a00"),
+        (
+            "initial",
+            FinalResponseShape.PROSE,
+            ("wave0_worker_output_json_invalid",),
+            "g0_wave0_w0000",
+            "g0_wave0_w0000_a00",
+        ),
+        (
+            "repair",
+            FinalResponseShape.PROSE,
+            ("wave0_worker_output_json_invalid",),
+            "g0_wave0_w0000",
+            "g0_wave0_w0000_a00",
+        ),
     ]
     assert "still-not-json" not in str(recorder.events)
 
@@ -710,11 +745,17 @@ async def test_one_bundle_journal_retains_topic_planning_and_wave0_validation_as
     ]
     wave0_events = tuple(event for event in validation_events if event.phase == "wave0")
     assert [
-        (event.validation_stage, event.validation_codes, event.work_id, event.attempt_id) for event in wave0_events
+        (event.validation_stage, event.response_shape, event.validation_codes, event.work_id, event.attempt_id)
+        for event in wave0_events
     ] == [
-        ("initial", ("wave0_worker_output_json_invalid",), "g0_wave0_w0000", "g0_wave0_w0000_a00"),
-        ("repair", (), "g0_wave0_w0000", "g0_wave0_w0000_a00"),
-        ("initial", (), "g0_wave0_w0000", "g0_wave0_w0000_a00"),
+        (
+            "initial",
+            FinalResponseShape.PROSE,
+            ("wave0_worker_output_json_invalid",),
+            "g0_wave0_w0000",
+            "g0_wave0_w0000_a00",
+        ),
+        ("repair", FinalResponseShape.JSON_OBJECT, (), "g0_wave0_w0000", "g0_wave0_w0000_a00"),
     ]
 
     retained = "\n".join(event.model_dump_json() for event in validation_events)
@@ -726,6 +767,8 @@ async def test_one_bundle_journal_retains_topic_planning_and_wave0_validation_as
 
 async def test_real_wave0_post_candidate_submission_validation_does_not_enter_repair(monkeypatch, tmp_path) -> None:
     """@impl WAN-008
+    @impl WAN-012
+    @impl WOU-012
 
     The shared controller, not the Wave0 subgraph, owns a later validation failure.
     """
@@ -742,6 +785,12 @@ async def test_real_wave0_post_candidate_submission_validation_does_not_enter_re
     )
     context, store = _context(tmp_path, capabilities)
     assert context.work_units is not None
+    journal_store = RunObservationStore(
+        bundle_root=BundleLifecycle(workspace_host_path=tmp_path).private_root(BUNDLE),
+        bundle_id=BUNDLE_ID,
+    )
+    recorder = RunObservationRecorder(store=journal_store, bundle_id=BUNDLE_ID)
+    await recorder.establish(generation=0, phase="wave0", durability="restart_durable")
 
     async def reject_after_candidate(*_args, **_kwargs):
         raise work_unit_component.SubmissionValidationFailure((SubmissionValidationCode.CONTENT_HASH_MISMATCH,))
@@ -752,7 +801,9 @@ async def test_real_wave0_post_candidate_submission_validation_does_not_enter_re
         controller=context.work_units,
         topic_registry=({"topic_id": "storage", "title": "Storage", "scope": "Storage economics"},),
         clock=lambda: NOW,
+        event_recorder=recorder,
     )
+    journal = await journal_store.inspect(bundle_id=BUNDLE_ID)
 
     attempt = next(iter(component.parent_update["attempts_by_id"].values()))
     assert len(capabilities.requests) == 1
@@ -764,6 +815,11 @@ async def test_real_wave0_post_candidate_submission_validation_does_not_enter_re
     assert "content_hash_mismatch" not in capabilities.requests[0].objective
     assert component.parent_update["accepted_submission_refs"] == ()
     assert await store.load_records() == ()
+    validation_events = tuple(event for event in journal.events if event.category is RunEventCategory.VALIDATION)
+    assert [(event.validation_stage, event.response_shape, event.validation_codes) for event in validation_events] == [
+        ("initial", FinalResponseShape.JSON_OBJECT, ()),
+        ("post_candidate", None, ("content_hash_mismatch",)),
+    ]
 
 
 @pytest.mark.parametrize(

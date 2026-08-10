@@ -205,8 +205,8 @@ async def test_component_runs_three_concurrent_workers_and_multiple_refill_batch
     assert result.parent_update["pending_work_ids"] == ()
 
 
-async def test_component_emits_closed_attempt_validation_and_submit_events_without_authority() -> None:
-    """@impl REJ-002"""
+async def test_component_emits_submit_event_without_a_post_candidate_fact_on_success() -> None:
+    """@impl WOU-012"""
 
     recorder = _Recorder()
     result = await run_work_unit_component(
@@ -227,10 +227,51 @@ async def test_component_emits_closed_attempt_validation_and_submit_events_witho
     assert result.gate_view.drained
     assert [(event[0], event[1]) for event in recorder.events] == [
         (RunEventCategory.ATTEMPT, "wave0"),
-        (RunEventCategory.VALIDATION, "wave0"),
         (RunEventCategory.SUBMIT, "wave0"),
     ]
     assert all("/" not in (event[2] or "") for event in recorder.events)
+
+
+async def test_component_records_one_post_candidate_fact_for_submission_rejection() -> None:
+    """@impl WOU-012"""
+
+    recorder = _Recorder()
+
+    async def rejected_submit(_spec, _attempt, _candidate):
+        raise SubmissionValidationFailure((SubmissionValidationCode.CONTENT_HASH_MISMATCH,))
+
+    result = await run_work_unit_component(
+        {},
+        config=WorkUnitComponentConfig(
+            bundle_id=BUNDLE_ID,
+            generation=0,
+            phase="wave0",
+            intents=_intents(1),
+            max_concurrency=1,
+            clock=lambda: NOW,
+            event_recorder=recorder,
+        ),
+        worker=_worker,
+        submit=rejected_submit,
+    )
+
+    assert result.gate_view.drained
+    validation_events = [event for event in recorder.events if event[0] is RunEventCategory.VALIDATION]
+    assert validation_events == [
+        (
+            RunEventCategory.VALIDATION,
+            "wave0",
+            "g0_wave0_w0000",
+            "g0_wave0_w0000_a00",
+            None,
+            "post_candidate",
+            (SubmissionValidationCode.CONTENT_HASH_MISMATCH.value,),
+            None,
+            None,
+            None,
+            None,
+        )
+    ]
 
 
 async def test_component_recorder_failure_cannot_change_submit_or_gate_results() -> None:

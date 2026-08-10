@@ -33,6 +33,7 @@ from deerflow_deep_research.domain.run_observation import (
     MAX_TRACE_SNAPSHOT_BYTES,
     BudgetStopReason,
     ExecutionProfileEvidence,
+    FinalResponseShape,
     JournalAvailability,
     JournalIncompleteReason,
     ObservationCategory,
@@ -163,6 +164,7 @@ class RunObservationStore:
         attempt_id: str | None = None,
         validation_stage: str | None = None,
         validation_codes: tuple[str, ...] = (),
+        response_shape: FinalResponseShape | None = None,
         failure_category: str | None = None,
         worker_failure_category: str | None = None,
         budget_stop_reason: BudgetStopReason | None = None,
@@ -193,6 +195,7 @@ class RunObservationStore:
                     attempt_id,
                     validation_stage,
                     validation_codes,
+                    response_shape,
                     failure_category,
                     worker_failure_category,
                     budget_stop_reason,
@@ -257,13 +260,20 @@ class RunObservationStore:
         existing = self._read_model(manifest_path, RunObservationManifest)
         if existing is not None and existing.bundle_id != self._bundle_id:
             raise RunObservationError("journal_manifest_mismatch")
+        if existing is not None and existing.schema_version != 3:
+            return RunObservationView(
+                bundle_id=self._bundle_id,
+                inspectability=ObservationInspectability.AVAILABLE,
+                retention_state=existing.retention_state,
+                durability=existing.durability,
+            )
         now = datetime.now(UTC)
         events = self._read_lines(journal_root / _EVENTS_FILENAME, RunEvent)
         summary = self._read_model(journal_root / _SUMMARY_FILENAME, RunSummary)
         manifest = existing
         if not events:
             admission = RunEvent(
-                schema_version=2,
+                schema_version=3,
                 sequence=1,
                 timestamp=now,
                 category=RunEventCategory.ADMISSION,
@@ -322,7 +332,7 @@ class RunObservationStore:
         manifest = self._required_bundle_manifest(journal_root)
         events = self._read_lines(journal_root / _EVENTS_FILENAME, RunEvent)
         event = RunEvent(
-            schema_version=2,
+            schema_version=3,
             sequence=self._next_sequence(manifest, events),
             timestamp=now,
             category=(RunEventCategory.TERMINAL if fact.terminal_outcome is not None else RunEventCategory.LIFECYCLE),
@@ -415,6 +425,7 @@ class RunObservationStore:
         attempt_id: str | None,
         validation_stage: str | None,
         validation_codes: tuple[str, ...],
+        response_shape: FinalResponseShape | None,
         failure_category: str | None,
         worker_failure_category: str | None,
         budget_stop_reason: BudgetStopReason | None,
@@ -435,7 +446,7 @@ class RunObservationStore:
         events = self._read_lines(journal_root / _EVENTS_FILENAME, RunEvent)
         try:
             event = RunEvent(
-                schema_version=2,
+                schema_version=3,
                 sequence=self._next_sequence(manifest, events),
                 timestamp=datetime.now(UTC),
                 category=category,
@@ -446,6 +457,7 @@ class RunObservationStore:
                 attempt_id=attempt_id,
                 validation_stage=validation_stage,  # type: ignore[arg-type]
                 validation_codes=validation_codes,
+                response_shape=response_shape,
                 failure_category=failure_category,
                 worker_failure_category=worker_failure_category,  # type: ignore[arg-type]
                 budget_stop_reason=budget_stop_reason,
@@ -529,7 +541,7 @@ class RunObservationStore:
         high_watermark: int,
     ) -> RunObservationManifest:
         return RunObservationManifest(
-            schema_version=2,
+            schema_version=3,
             bundle_id=self._bundle_id,
             created_at=now,
             updated_at=now,
@@ -544,13 +556,13 @@ class RunObservationStore:
         manifest = self._read_model(journal_root / _JOURNAL_MANIFEST_FILENAME, RunObservationManifest)
         if manifest is None or manifest.bundle_id != self._bundle_id:
             raise RunObservationError("journal_manifest_invalid")
-        if manifest.schema_version != 2 or manifest.event_high_watermark is None:
+        if manifest.schema_version != 3 or manifest.event_high_watermark is None:
             raise RunObservationError("journal_manifest_legacy")
         return manifest
 
     @staticmethod
     def _next_sequence(manifest: RunObservationManifest, events: tuple[RunEvent, ...]) -> int:
-        if manifest.schema_version != 2 or manifest.event_high_watermark is None:
+        if manifest.schema_version != 3 or manifest.event_high_watermark is None:
             raise RunObservationError("journal_manifest_legacy")
         if events and max(event.sequence for event in events) > manifest.event_high_watermark:
             raise RunObservationError("journal_sequence_high_watermark_invalid")
@@ -564,7 +576,7 @@ class RunObservationStore:
         manifest: RunObservationManifest,
         event: RunEvent,
     ) -> tuple[tuple[RunEvent, ...], RunObservationManifest]:
-        if manifest.schema_version != 2 or manifest.event_high_watermark is None:
+        if manifest.schema_version != 3 or manifest.event_high_watermark is None:
             raise RunObservationError("journal_manifest_legacy")
         events = self._read_lines(journal_root / _EVENTS_FILENAME, RunEvent)
         sequences = tuple(item.sequence for item in events)
@@ -645,7 +657,7 @@ class RunObservationStore:
 
     @staticmethod
     def _journal_availability(manifest: RunObservationManifest) -> JournalAvailability:
-        if manifest.schema_version != 2 or manifest.event_high_watermark is None:
+        if manifest.schema_version != 3 or manifest.event_high_watermark is None:
             return JournalAvailability.INCOMPLETE
         if manifest.dropped_event_count or manifest.persistence_failure_count:
             return JournalAvailability.INCOMPLETE
@@ -660,8 +672,8 @@ class RunObservationStore:
         if not events or sequences != tuple(sorted(set(sequences))):
             raise RunObservationError("journal_events_invalid")
         incomplete_reasons: list[JournalIncompleteReason] = []
-        legacy = manifest.schema_version != 2 or manifest.event_high_watermark is None
-        if legacy or any(event.schema_version != 2 or event.generation is None for event in events):
+        legacy = manifest.schema_version != 3 or manifest.event_high_watermark is None
+        if legacy or any(event.schema_version != 3 or event.generation is None for event in events):
             incomplete_reasons.append(JournalIncompleteReason.LEGACY)
         if manifest.dropped_event_count:
             incomplete_reasons.append(JournalIncompleteReason.CAPACITY)

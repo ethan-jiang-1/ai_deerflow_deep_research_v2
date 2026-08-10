@@ -17,9 +17,13 @@ admission, or source quality.
 When retrieval is unavailable, unreachable, sparse, duplicated, or otherwise
 insufficient, record the observed degraded status and an honest shortfall. Do not
 invent sources, content, facts, quality verdicts, accepted coverage, or successful
-retrieval. Before completion, self-check that every proposed field is supported by an
-observation, candidates remain independent where observed, and the result contains
-only the closed source-intake response contract. Complete with one candidate response.
+retrieval. After the permitted retrieval, complete with exactly one standalone JSON object:
+only `schema_version`, `sources`, `baseline_facts`, and `limitations`; version
+`1`; and source items with only `source_id`, `canonical_url`, `title`, and
+`fetch_status`. Final response self-check: every field is supported by an observation,
+candidates remain independent where observed, and there are no literal placeholders,
+prose, Markdown fences, embedded JSON, unlisted keys, authority claims, or
+prompt-description fields.
 
 Propose metadata only. The deterministic parser, artifact writer, submit validator,
 ledger, controller, gate, retry policy, and routes retain their existing authority.

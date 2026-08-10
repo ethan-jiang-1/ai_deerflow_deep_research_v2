@@ -43,7 +43,7 @@ from deerflow_deep_research.domain.run_experience import (
     ProviderObservation,
     RunFailureCode,
 )
-from deerflow_deep_research.domain.run_observation import RunEventCategory
+from deerflow_deep_research.domain.run_observation import FinalResponseShape, RunEventCategory
 from deerflow_deep_research.domain.state import WORK_UNIT_GATE_PREVIEW_FIELDS, merge_trace, preview_work_unit_update
 from deerflow_deep_research.domain.wave1 import OpenQuestionState
 from deerflow_deep_research.domain.work_units import (
@@ -595,6 +595,8 @@ async def test_real_wave1_baseline_duplicate_is_not_admitted_as_new_coverage(tmp
 
 async def test_real_wave1_post_candidate_submission_validation_does_not_enter_repair(monkeypatch, tmp_path) -> None:
     """@impl WON-008
+    @impl WON-012
+    @impl WOU-012
 
     A later typed submission rejection stays with the shared controller even when
     the initial candidate already passed Wave1's local semantic boundary.
@@ -618,6 +620,12 @@ async def test_real_wave1_post_candidate_submission_validation_does_not_enter_re
 
     monkeypatch.setattr(work_unit_component, "submit_candidate_if_active", reject_after_candidate)
     topics = ({"topic_id": "storage", "title": "Storage", "scope": "Storage economics"},)
+    journal_store = RunObservationStore(
+        bundle_root=BundleLifecycle(workspace_host_path=tmp_path).private_root(BUNDLE),
+        bundle_id=BUNDLE_ID,
+    )
+    recorder = RunObservationRecorder(store=journal_store, bundle_id=BUNDLE_ID)
+    await recorder.establish(generation=0, phase="wave1", durability="restart_durable")
     result = await wave1_subgraph.run_wave1_work_units_real(
         _state() | {"topic_registry": topics},
         controller=controller,
@@ -625,7 +633,9 @@ async def test_real_wave1_post_candidate_submission_validation_does_not_enter_re
         capabilities=capabilities,
         wave0_urls=frozenset(),
         clock=lambda: NOW,
+        event_recorder=recorder,
     )
+    journal = await journal_store.inspect(bundle_id=BUNDLE_ID)
 
     attempt = next(iter(result.parent_update["attempts_by_id"].values()))
     assert len(capabilities.requests) == 1
@@ -637,6 +647,11 @@ async def test_real_wave1_post_candidate_submission_validation_does_not_enter_re
     assert "content_hash_mismatch" not in capabilities.requests[0].objective
     assert result.parent_update["accepted_submission_refs"] == ()
     assert await store.load_records() == ()
+    validation_events = tuple(event for event in journal.events if event.category is RunEventCategory.VALIDATION)
+    assert [(event.validation_stage, event.response_shape, event.validation_codes) for event in validation_events] == [
+        ("initial", FinalResponseShape.JSON_OBJECT, ()),
+        ("post_candidate", None, ("content_hash_mismatch",)),
+    ]
 
 
 async def test_real_wave1_factory_derives_the_authoritative_wave0_baseline_before_dispatch(
@@ -1143,6 +1158,7 @@ async def test_real_wave1_semantic_rejection_reaches_repair_before_any_artifact_
 
 async def test_real_wave1_journal_retains_exact_initial_and_repair_validation_per_attempt(tmp_path) -> None:
     """@impl REJ-002
+    @impl WON-012
 
     Validation facts remain distinct from worker recovery authority.
     """
@@ -1216,12 +1232,12 @@ async def test_real_wave1_journal_retains_exact_initial_and_repair_validation_pe
     assert all("example.com" not in event.model_dump_json() for event in validation_events)
     for attempt_id in attempt_ids:
         assert [
-            (event.validation_stage, event.validation_codes)
+            (event.validation_stage, event.response_shape, event.validation_codes)
             for event in validation_events
             if event.attempt_id == attempt_id
         ] == [
-            ("initial", ("wave1_new_source_floor_not_met",)),
-            ("repair", ("wave1_new_source_floor_not_met",)),
+            ("initial", FinalResponseShape.JSON_OBJECT, ("wave1_new_source_floor_not_met",)),
+            ("repair", FinalResponseShape.JSON_OBJECT, ("wave1_new_source_floor_not_met",)),
         ]
 
     retry_events = tuple(event for event in journal.events if event.category is RunEventCategory.RETRY)

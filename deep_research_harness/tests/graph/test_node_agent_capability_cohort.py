@@ -221,22 +221,46 @@ def test_targeted_worker_capability_declares_exact_runtime_policy_subset() -> No
     [
         pytest.param(
             "wave0/worker",
-            ("source-intake method", "untrusted data", "honest shortfall", "self-check"),
+            (
+                "source-intake method",
+                "untrusted data",
+                "honest shortfall",
+                "standalone json object",
+                "final response self-check",
+            ),
             id="wave0-initial",
         ),
         pytest.param(
             "wave0/repair",
-            ("repair method", "untrusted draft", "no evidence invention", "self-check"),
+            (
+                "repair method",
+                "untrusted draft",
+                "no evidence invention",
+                "standalone json object",
+                "final response self-check",
+            ),
             id="wave0-repair",
         ),
         pytest.param(
             "wave1/worker",
-            ("evidence-extraction method", "wave0 baseline", "untrusted data", "self-check"),
+            (
+                "evidence-extraction method",
+                "wave0 baseline",
+                "untrusted data",
+                "standalone json object",
+                "final response self-check",
+            ),
             id="wave1-initial",
         ),
         pytest.param(
             "wave1/repair",
-            ("evidence-extraction repair method", "untrusted draft", "no invention", "self-check"),
+            (
+                "evidence-extraction repair method",
+                "untrusted draft",
+                "no invention",
+                "standalone json object",
+                "final response self-check",
+            ),
             id="wave1-repair",
         ),
         pytest.param(

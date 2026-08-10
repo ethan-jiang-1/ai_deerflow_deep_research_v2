@@ -13,8 +13,11 @@ Reformat only the retained draft and observations into one closed source-intake
 candidate. No evidence invention: do not add absent sources, URLs, titles, facts,
 fetch outcomes, limitations, artifacts, validation results, or lifecycle actions.
 
-Before completion, self-check that the candidate stays within the same assignment,
-contains only fields supported by the supplied untrusted data, and conforms to the
-closed response contract. Complete with one repaired candidate. The parser,
-artifact writer, submit validator, ledger, controller, gate, retry policy, and routes
-retain their existing authority.
+Complete with exactly one standalone JSON object: only `schema_version`, `sources`,
+`baseline_facts`, and `limitations`; version `1`; and source items with only
+`source_id`, `canonical_url`, `title`, and `fetch_status`. Final response self-check:
+the candidate stays within the same assignment, contains only fields supported by the
+supplied untrusted data, and has no literal placeholders, prose, Markdown fences,
+embedded JSON, unlisted keys, authority claims, or prompt-description fields. The
+parser, artifact writer, submit validator, ledger, controller, gate, retry policy, and
+routes retain their existing authority.

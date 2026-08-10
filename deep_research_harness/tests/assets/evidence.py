@@ -56,7 +56,7 @@ _INTAKE_PLANNING_CALIBRATION_CASES = tuple(
 _EVIDENCE_INTAKE_CALIBRATION_CASES = tuple(
     (
         case.case_id,
-        ("EVH-019", "WAN-008" if case.branch_id.startswith("wave0/") else "WON-008"),
+        ("EVH-030", "WAN-012" if case.branch_id.startswith("wave0/") else "WON-012"),
     )
     for case in EVIDENCE_INTAKE_CALIBRATION_CASES
 )
@@ -2459,8 +2459,66 @@ EVIDENCE_CLAIMS = (
         "wave0-validation-observation",
         "tests/integration/test_wave0_work_units.py::test_real_wave0_valid_initial_parser_observation_is_closed_and_correlated",
         StableSeam.RUNTIME_INTEGRATION,
-        requirement_ids=("WAN-010",),
+        requirement_ids=("WAN-010", "WAN-012"),
         authenticity=AuthenticityLevel.REAL_NODE_FAKE_CAPABILITIES,
+    ),
+    _correctness_claim(
+        "wave0-completion-envelope",
+        "tests/graph/test_wave0_worker.py::test_wave0_initial_and_repair_requests_expose_the_same_closed_completion_contract",
+        StableSeam.NODE_INTERFACE,
+        requirement_ids=("WAN-011",),
+        authenticity=AuthenticityLevel.REAL_NODE_FAKE_CAPABILITIES,
+    ),
+    _correctness_claim(
+        "wave1-completion-envelope",
+        (
+            "tests/unit/test_wave1_critic_prompts.py::TestWave1LocalCriticPrompts::"
+            "test_worker_and_repair_render_only_bounded_assignment_and_closed_feedback"
+        ),
+        StableSeam.NODE_INTERFACE,
+        requirement_ids=("WON-011",),
+        authenticity=AuthenticityLevel.REAL_NODE_FAKE_CAPABILITIES,
+    ),
+    _correctness_claim(
+        "journal-v3-response-shape-and-post-candidate",
+        "tests/unit/test_run_observation_store.py::test_v3_journal_retains_redacted_shape_and_post_candidate_facts",
+        StableSeam.RUNTIME_INTEGRATION,
+        requirement_ids=("REJ-002", "REJ-004", "REJ-006", "REJ-007"),
+    ),
+    _correctness_claim(
+        "wave0-post-candidate-validation-observation",
+        (
+            "tests/integration/test_wave0_work_units.py::"
+            "test_real_wave0_post_candidate_submission_validation_does_not_enter_repair"
+        ),
+        StableSeam.RUNTIME_INTEGRATION,
+        requirement_ids=("WAN-012", "WOU-012"),
+        authenticity=AuthenticityLevel.REAL_NODE_FAKE_CAPABILITIES,
+    ),
+    _correctness_claim(
+        "wave1-post-candidate-validation-observation",
+        (
+            "tests/integration/test_wave1_work_units.py::"
+            "test_real_wave1_post_candidate_submission_validation_does_not_enter_repair"
+        ),
+        StableSeam.RUNTIME_INTEGRATION,
+        requirement_ids=("WON-012", "WOU-012"),
+        authenticity=AuthenticityLevel.REAL_NODE_FAKE_CAPABILITIES,
+    ),
+    _correctness_claim(
+        "shared-submit-post-candidate-observation",
+        "tests/graph/test_work_unit_component.py::test_component_records_one_post_candidate_fact_for_submission_rejection",
+        StableSeam.RUNTIME_INTEGRATION,
+        requirement_ids=("WOU-012",),
+    ),
+    _correctness_claim(
+        "evidence-intake-explicit-profile-bundle-calibration",
+        (
+            "tests/unit/test_evidence_intake_calibration.py::"
+            "test_offline_evidence_intake_branches_are_explicit_profile_bundle_bound_and_redacted"
+        ),
+        StableSeam.RUNTIME_INTEGRATION,
+        requirement_ids=("EVH-030", "WAN-012", "WON-012"),
     ),
 )
 

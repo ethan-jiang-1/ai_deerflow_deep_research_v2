@@ -27,6 +27,29 @@ _WAVE1_TOPIC_ASSIGNMENT_KEYS = frozenset({"topic_id", "title", "scope", "must_an
 _WAVE1_ASSIGNMENT_KEYS = frozenset({"topic", "wave0_baseline_urls"})
 
 
+def _wave1_completion_contract(*, initial: bool) -> str:
+    """Render the model-visible final candidate contract for either worker turn."""
+
+    tool_instruction = (
+        "First complete exactly the existing permitted retrieval work, then finish the final assistant turn. "
+        if initial
+        else "This repair is zero-tool: do not call a tool or infer new observations. "
+    )
+    return (
+        tool_instruction + "Return exactly one standalone JSON object with no leading or trailing text. "
+        "Only these top-level keys are allowed: schema_version, sources, claims, open_questions. "
+        "Set schema_version to 1. Sources must contain at least two distinct new source URLs "
+        "not present in the assigned Wave0 baseline. Source items contain exactly source_id, canonical_url, and title. "
+        "Claim items contain exactly claim_id, statement, support_refs, and counter_refs, and every reference "
+        "must name a declared source_id. Open-question items contain exactly question_id, question, and state; "
+        "state is resolved, targeted_search, deferred, or requires_internal_data. "
+        "Final response self-check: preserve the closed keys, new-source floor, baseline-newness, and declared "
+        "references; no literal placeholders, prose, Markdown fences, embedded JSON, unlisted keys, authority "
+        "claims, or prompt-description fields. The returned candidate is only a proposal for the existing "
+        "deterministic parser and validators."
+    )
+
+
 def build_wave1_assignment_projection(
     topic: Mapping[str, object],
     wave0_urls: frozenset[str],
@@ -95,22 +118,7 @@ def build_wave1_worker_prompt(
     )
     return NodeExecutionRequest(
         objective=objective,
-        expected_output=(
-            "Return exactly one JSON object and no markdown, prose, or code fences. Use this response shape, "
-            "replacing every placeholder with observed data: "
-            '{"schema_version":1,"sources":[{"source_id":"source:...","canonical_url":"https://...",'
-            '"title":"..."},{"source_id":"source:...","canonical_url":"https://...",'
-            '"title":"..."}],"claims":[{"claim_id":"claim:w1_...","statement":"...",'
-            '"support_refs":[],"counter_refs":[]}],"open_questions":[{"question_id":"q:w1_...",'
-            '"question":"...","state":"deferred"}]}. '
-            "Include at least two distinct new source URLs not present in the accepted Wave0 baseline. "
-            "Only these top-level keys are allowed: schema_version, sources, claims, open_questions. Source items "
-            "contain only source_id, canonical_url, and title. Claim refs must name declared source ids. Allowed "
-            "open-question states are resolved, targeted_search, deferred, and requires_internal_data. Never return "
-            "literal placeholders. Do not return the prompt description fields instruction, required_keys, "
-            "source_required_keys, claim_required_keys, question_required_keys, or bounds; do not return source_ids, "
-            "fetch_status, baseline_facts, limitations, routes, gate results, or authority fields."
-        ),
+        expected_output=_wave1_completion_contract(initial=True),
         minimum_tool_calls=1,
         tool_call_limit=1,
         capability_binding="required",
@@ -158,10 +166,7 @@ def build_wave1_repair_prompt(
     )
     return NodeExecutionRequest(
         objective=objective,
-        expected_output=(
-            "A JSON object with schema_version=1, at least two distinct new source URLs, sources, optional claims, "
-            "and optional open_questions."
-        ),
+        expected_output=_wave1_completion_contract(initial=False),
         tools_enabled=False,
         capability_binding="required",
         capability_ref=WAVE1_EVIDENCE_EXTRACTION_REPAIR,

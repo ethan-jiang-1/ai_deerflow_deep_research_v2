@@ -16,10 +16,15 @@ or invent a URL to satisfy the distinct-new-source floor.
 
 For each candidate claim, bind support and counter references only to declared candidate
 source ids. Represent counterevidence and unresolved material as bounded open questions
-with a permitted resolution state instead of inventing certainty. Before completion,
-self-check that candidates are distinct from the baseline, every reference is declared,
-all fields are supported by an observation, and the response contains only the closed
-Wave1 candidate contract. Complete with one candidate response.
+with a permitted resolution state instead of inventing certainty. After the permitted retrieval,
+complete with exactly one standalone JSON object: only `schema_version`,
+`sources`, `claims`, and `open_questions`; version `1`; source items with only
+`source_id`, `canonical_url`, and `title`; claim items with only `claim_id`,
+`statement`, `support_refs`, and `counter_refs`; and open-question items with only
+`question_id`, `question`, and `state`. Final response self-check: candidates are
+distinct from the baseline, every reference is declared, all fields are supported by an
+observation, and there are no literal placeholders, prose, Markdown fences, embedded
+JSON, unlisted keys, authority claims, or prompt-description fields.
 
 Propose candidates only. The deterministic parser, local semantic validator, artifact
 writer, submit validator, ledger, critics, controller, gate, retry policy, and routes

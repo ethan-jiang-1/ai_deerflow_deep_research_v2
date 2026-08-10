@@ -2,6 +2,7 @@
 
 @impl WAN-001
 @impl WAN-002
+@impl WAN-011
 """
 
 from __future__ import annotations
@@ -131,8 +132,11 @@ def test_build_wave0_worker_prompt_carries_topic_constraints() -> None:
     assert "honest limitation" not in request.objective
     assert request.minimum_tool_calls == 1
     assert request.tool_call_limit == 3
-    assert "Return exactly one JSON object" in request.expected_output
-    assert '"schema_version":1,"sources":[' in request.expected_output
+    assert "Return exactly one standalone JSON object" in request.expected_output
+    assert (
+        "Only these top-level keys are allowed: schema_version, sources, baseline_facts, limitations."
+        in request.expected_output
+    )
     assert all(field in request.expected_output for field in WorkerSource.model_fields)
     assert "content_ref" not in request.objective
     assert "content_hash" not in request.objective
@@ -142,8 +146,11 @@ def test_build_wave0_worker_prompt_carries_topic_constraints() -> None:
 def test_wave0_worker_expected_output_is_a_response_shape_not_a_schema_descriptor() -> None:
     request = build_wave0_worker_prompt(_spec(), (_topic(),))
 
-    assert '"schema_version":1,"sources":[' in request.expected_output
-    assert "Return exactly one JSON object" in request.expected_output
+    assert (
+        "Only these top-level keys are allowed: schema_version, sources, baseline_facts, limitations."
+        in request.expected_output
+    )
+    assert "Return exactly one standalone JSON object" in request.expected_output
     for forbidden in (
         '"instruction"',
         '"required_keys"',
@@ -153,6 +160,46 @@ def test_wave0_worker_expected_output_is_a_response_shape_not_a_schema_descripto
         '"questions"',
     ):
         assert forbidden not in request.expected_output
+
+
+def test_wave0_initial_and_repair_requests_expose_the_same_closed_completion_contract() -> None:
+    assignment = build_wave0_assignment_projection(_spec(), (_topic(),))
+    initial = build_wave0_worker_prompt(_spec(), (_topic(),))
+    repair = build_wave0_repair_prompt(
+        "draft prose",
+        assignment=assignment,
+        validation_category=WAVE0_REPAIR_VALIDATION_CATEGORY,
+    )
+
+    for request in (initial, repair):
+        assert "Return exactly one standalone JSON object" in request.expected_output
+        assert (
+            "Only these top-level keys are allowed: schema_version, sources, baseline_facts, limitations."
+            in request.expected_output
+        )
+        assert (
+            "Source items contain exactly source_id, canonical_url, title, and fetch_status." in request.expected_output
+        )
+        assert "Final response self-check" in request.expected_output
+        assert (
+            "no literal placeholders, prose, Markdown fences, embedded JSON, unlisted keys" in request.expected_output
+        )
+
+    assert initial.minimum_tool_calls == 1
+    assert initial.tool_call_limit == 3
+    assert repair.tools_enabled is False
+
+
+@pytest.mark.parametrize(
+    "candidate",
+    (
+        '```json\n{"schema_version":1}\n```',
+        'Here is the candidate: {"schema_version":1}',
+    ),
+)
+def test_wave0_parser_keeps_non_standalone_json_outside_the_contract(candidate: str) -> None:
+    with pytest.raises(ValueError, match="wave0_worker_output_json_invalid"):
+        parse_wave0_worker_output(candidate)
 
 
 def test_parse_wave0_worker_output_round_trip_and_rejects_invalid() -> None:

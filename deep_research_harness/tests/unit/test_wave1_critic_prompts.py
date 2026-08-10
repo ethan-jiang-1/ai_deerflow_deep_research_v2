@@ -2,6 +2,7 @@
 
 @impl WON-003
 @impl WON-007
+@impl WON-011
 """
 
 from __future__ import annotations
@@ -18,6 +19,7 @@ from deerflow_deep_research.graph.nodes.wave1.prompts import (
     build_wave1_repair_prompt,
     build_wave1_source_diagnostic_prompt,
     build_wave1_worker_prompt,
+    parse_wave1_worker_output,
 )
 
 
@@ -49,7 +51,7 @@ class TestWave1LocalCriticPrompts:
         assert "accepted Wave0 baseline constrains newness only" in worker_method
         assert "accepted Wave0 baseline constrains newness only" not in worker.objective
         assert "at least two distinct new source URLs" in worker.expected_output
-        assert worker.expected_output.count('"canonical_url"') >= 2
+        assert "Source items contain exactly source_id, canonical_url, and title." in worker.expected_output
         assert "bind support and counter references only to declared candidate source ids" in normalized_worker_method
         assert "counterevidence" in worker_method
         assert "counterevidence" not in worker.objective
@@ -77,10 +79,16 @@ class TestWave1LocalCriticPrompts:
             frozenset({"https://example.com/wave0-baseline"}),
         )
 
-        assert '"schema_version":1,"sources":[' in worker.expected_output
-        assert '"claims":[' in worker.expected_output
-        assert '"open_questions":[' in worker.expected_output
-        assert "Return exactly one JSON object" in worker.expected_output
+        assert (
+            "Only these top-level keys are allowed: schema_version, sources, claims, open_questions."
+            in worker.expected_output
+        )
+        assert "Source items contain exactly source_id, canonical_url, and title." in worker.expected_output
+        assert (
+            "Claim items contain exactly claim_id, statement, support_refs, and counter_refs" in worker.expected_output
+        )
+        assert "Open-question items contain exactly question_id, question, and state" in worker.expected_output
+        assert "Return exactly one standalone JSON object" in worker.expected_output
         for forbidden in (
             '"instruction"',
             '"required_keys"',
@@ -93,6 +101,48 @@ class TestWave1LocalCriticPrompts:
             '"limitations"',
         ):
             assert forbidden not in worker.expected_output
+
+    def test_initial_and_repair_share_the_closed_wave1_completion_contract(self) -> None:
+        topic = {
+            "topic_id": "storage",
+            "title": "Grid storage",
+            "scope": "Grid storage trade-offs",
+            "must_answer_bindings": ["Q1"],
+        }
+        baseline = frozenset({"https://example.com/wave0-baseline"})
+        initial = build_wave1_worker_prompt(topic, baseline)
+        repair = build_wave1_repair_prompt(
+            "draft prose",
+            assignment=build_wave1_assignment_projection(topic, baseline),
+            validation_category=WAVE1_REPAIR_PARSE_CATEGORY,
+        )
+
+        for request in (initial, repair):
+            assert "Return exactly one standalone JSON object" in request.expected_output
+            assert (
+                "Only these top-level keys are allowed: schema_version, sources, claims, open_questions."
+                in request.expected_output
+            )
+            assert "Source items contain exactly source_id, canonical_url, and title." in request.expected_output
+            assert "Final response self-check" in request.expected_output
+            assert (
+                "no literal placeholders, prose, Markdown fences, embedded JSON, unlisted keys"
+                in request.expected_output
+            )
+
+        assert initial.minimum_tool_calls == initial.tool_call_limit == 1
+        assert repair.tools_enabled is False
+
+    @pytest.mark.parametrize(
+        "candidate",
+        (
+            '```json\n{"schema_version":1}\n```',
+            'Here is the candidate: {"schema_version":1}',
+        ),
+    )
+    def test_wave1_parser_keeps_non_standalone_json_outside_the_contract(self, candidate: str) -> None:
+        with pytest.raises(ValueError, match="wave1_worker_output_json_invalid"):
+            parse_wave1_worker_output(candidate)
 
     def test_repair_rejects_raw_assignment_and_unknown_feedback_category(self) -> None:
         with pytest.raises(ValueError, match="wave1_repair_assignment_invalid"):

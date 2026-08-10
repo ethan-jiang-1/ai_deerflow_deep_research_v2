@@ -30,6 +30,28 @@ WAVE0_REPAIR_VALIDATION_CATEGORY = "initial_structured_output_invalid"
 _WAVE0_ASSIGNMENT_KEYS = frozenset({"topic_id", "title", "scope", "must_answer_bindings"})
 
 
+def _wave0_completion_contract(*, initial: bool) -> str:
+    """Render the model-visible final candidate contract for either worker turn."""
+
+    tool_instruction = (
+        "First complete only the existing permitted retrieval work, then finish the final assistant turn. "
+        if initial
+        else "This repair is zero-tool: do not call a tool or infer new observations. "
+    )
+    return (
+        tool_instruction + "Return exactly one standalone JSON object with no leading or trailing text. "
+        "Only these top-level keys are allowed: schema_version, sources, baseline_facts, limitations. "
+        "Set schema_version to 1. Sources must contain 1-"
+        f"{MAX_SOURCE_REFS} independent items. Source items contain exactly source_id, canonical_url, title, "
+        "and fetch_status. Titles are at most "
+        f"{MAX_SOURCE_TITLE_CHARS} characters, and fetch_status is fetched or degraded. "
+        "baseline_facts is an array and limitations is a string. "
+        "Final response self-check: preserve the closed keys and minimum source shape; no literal placeholders, "
+        "prose, Markdown fences, embedded JSON, unlisted keys, authority claims, or prompt-description fields. "
+        "The returned candidate is only a proposal for the existing deterministic parser and validators."
+    )
+
+
 def _topic_from_scope(spec: WorkSpec, topic_registry: tuple[dict, ...] | list[dict] | None) -> dict:
     """Resolve the topic registry entry bound to this work spec's scope."""
     topic_id = spec.scope[0] if spec.scope else ""
@@ -95,17 +117,7 @@ def build_wave0_worker_prompt(
     )
     return NodeExecutionRequest(
         objective=objective,
-        expected_output=(
-            "Return exactly one JSON object and no markdown, prose, or code fences. Use this response shape, "
-            "replacing every placeholder with observed data: "
-            '{"schema_version":1,"sources":[{"source_id":"source:...","canonical_url":"https://...",'
-            '"title":"...","fetch_status":"fetched"}],"baseline_facts":[],"limitations":""}. '
-            f"Include 1-{MAX_SOURCE_REFS} independent source items; title is at most {MAX_SOURCE_TITLE_CHARS} "
-            "characters and fetch_status is either fetched or degraded. Only these top-level keys are allowed: "
-            "schema_version, sources, baseline_facts, limitations. Never return literal placeholders. Do not "
-            "return the prompt description fields instruction, required_keys, source_required_keys, or bounds, "
-            "and do not return claims, questions, routes, gate results, or authority fields."
-        ),
+        expected_output=_wave0_completion_contract(initial=True),
         minimum_tool_calls=1,
         tool_call_limit=3,
         capability_binding="required",
@@ -153,10 +165,7 @@ def build_wave0_repair_prompt(
     )
     return NodeExecutionRequest(
         objective=objective,
-        expected_output=(
-            "A JSON object with schema_version=1, a non-empty sources array whose items contain source_id, "
-            "canonical_url, title, and fetch_status, plus optional baseline_facts and limitations."
-        ),
+        expected_output=_wave0_completion_contract(initial=False),
         tools_enabled=False,
         capability_binding="required",
         capability_ref=WAVE0_SOURCE_INTAKE_REPAIR,

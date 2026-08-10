@@ -27,7 +27,11 @@ from deerflow_deep_research.domain.bundle import (
 from deerflow_deep_research.domain.context import NodeAgentContext
 from deerflow_deep_research.domain.invocation import RunEventRecorderProtocol, WorkUnitControllerDependencies
 from deerflow_deep_research.domain.node_spec import PolicyRef
-from deerflow_deep_research.domain.run_observation import RunEventCategory
+from deerflow_deep_research.domain.run_observation import (
+    FinalResponseShape,
+    RunEventCategory,
+    classify_final_response_shape,
+)
 from deerflow_deep_research.domain.wave1 import (
     Wave1SemanticViolation,
     Wave1SourceIntakeResult,
@@ -91,6 +95,7 @@ async def _observe_validation(
     attempt: Attempt,
     stage: str,
     codes: tuple[str, ...],
+    response_shape: FinalResponseShape,
 ) -> None:
     if recorder is None:
         return
@@ -102,6 +107,7 @@ async def _observe_validation(
             attempt_id=attempt.attempt_id,
             validation_stage=stage,
             validation_codes=codes,
+            response_shape=response_shape,
         )
     except Exception:
         return
@@ -172,6 +178,7 @@ async def _wave1_worker(
     if isinstance(outcome, InvocationFailure):
         raise worker_failure_for_invocation(outcome.problem)
     result = outcome.result
+    initial_response_shape = classify_final_response_shape(result.summary)
     initial_error: ValueError | None = None
     try:
         output = parse_wave1_worker_output(result.summary)
@@ -194,6 +201,7 @@ async def _wave1_worker(
             attempt=attempt,
             stage="initial",
             codes=(_canonical_validation_code(initial_error),),
+            response_shape=initial_response_shape,
         )
         repair_outcome = await invoke_and_normalize(
             lambda: capabilities.run_agent(  # type: ignore[union-attr]
@@ -210,6 +218,7 @@ async def _wave1_worker(
         if isinstance(repair_outcome, InvocationFailure):
             raise worker_failure_for_invocation(repair_outcome.problem) from initial_error
         repaired = repair_outcome.result
+        repair_response_shape = classify_final_response_shape(repaired.summary)
         try:
             output = parse_wave1_worker_output(repaired.summary)
             validate_wave1_worker_output(output, wave0_urls=wave0_urls)
@@ -220,6 +229,7 @@ async def _wave1_worker(
                 attempt=attempt,
                 stage="repair",
                 codes=(_canonical_validation_code(repair_error),),
+                response_shape=repair_response_shape,
             )
             raise WorkerAttemptFailure(WorkerFailureCategory.STRUCTURED_OUTPUT) from repair_error
         await _observe_validation(
@@ -228,6 +238,7 @@ async def _wave1_worker(
             attempt=attempt,
             stage="repair",
             codes=(),
+            response_shape=repair_response_shape,
         )
     else:
         await _observe_validation(
@@ -236,6 +247,7 @@ async def _wave1_worker(
             attempt=attempt,
             stage="initial",
             codes=(),
+            response_shape=initial_response_shape,
         )
     normalized_sources: list[Wave1SourceRef] = []
     source_refs: list[SourceRef] = []

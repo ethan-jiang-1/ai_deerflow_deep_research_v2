@@ -9,12 +9,12 @@
         {
           "name": "source_intake_capability_digest",
           "source_path": "src/deerflow_deep_research/graph/nodes/wave0/capabilities/wave0-authoritative-source-intake.md",
-          "digest": "a06216d61c2d4ed2ea70230bf939637afd1288849e5c2d6ac0be360e8f3b234e"
+          "digest": "47770687ebd132c42073cada3c72d1cae64991f356cbdfb10db7d52de0c13576"
         },
         {
           "name": "source_intake_repair_capability_digest",
           "source_path": "src/deerflow_deep_research/graph/nodes/wave0/capabilities/wave0-source-intake-repair.md",
-          "digest": "ff54a0343e165099194fca9716a03135244beffeb9f454c8a07f098961ae841f"
+          "digest": "d3972ea7282d238d5f88e1ac8632eed1bdcf3c01393702c461d947626247c88b"
         },
         {
           "name": "worker_schema_digest",

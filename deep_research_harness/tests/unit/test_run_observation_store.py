@@ -4,6 +4,10 @@
 @impl RUS-002
 @impl RUS-004
 @impl RUS-007
+@impl REJ-002
+@impl REJ-004
+@impl REJ-006
+@impl REJ-007
 """
 
 from __future__ import annotations
@@ -18,6 +22,7 @@ import pytest
 from deerflow_deep_research.domain.run_observation import (
     BudgetStopReason,
     ExecutionProfileEvidence,
+    FinalResponseShape,
     JournalAvailability,
     JournalIncompleteReason,
     ObservationInspectability,
@@ -27,6 +32,7 @@ from deerflow_deep_research.domain.run_observation import (
     RunEventCategory,
     RunObservationManifest,
     RunSummary,
+    classify_final_response_shape,
 )
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
 from deerflow_deep_research.runtime.run_observation import (
@@ -54,6 +60,117 @@ def _fact(**overrides: object) -> RecordBearingLifecycleFact:
             **overrides,
         }
     )
+
+
+@pytest.mark.parametrize(
+    ("response", "expected"),
+    (
+        pytest.param("   ", FinalResponseShape.EMPTY, id="empty"),
+        pytest.param("```json\n{}\n```", FinalResponseShape.FENCED, id="fenced"),
+        pytest.param('{"sources":[]}', FinalResponseShape.JSON_OBJECT, id="standalone-object"),
+        pytest.param('prose {"outer":{"nested":true}} after', FinalResponseShape.EMBEDDED_JSON, id="nested-object"),
+        pytest.param('{"first":1} {"second":2}', FinalResponseShape.EMBEDDED_JSON, id="multiple-objects"),
+        pytest.param('[{"nested":true}]', FinalResponseShape.EMBEDDED_JSON, id="object-inside-array"),
+        pytest.param("final prose only", FinalResponseShape.PROSE, id="prose"),
+    ),
+)
+def test_final_response_shape_classifier_retains_only_the_closed_enum(
+    response: str,
+    expected: FinalResponseShape,
+) -> None:
+    original = response
+
+    assert classify_final_response_shape(response) is expected
+    assert response == original
+
+
+def test_v3_validation_contract_rejects_impossible_shape_and_stage_pairs() -> None:
+    base = {
+        "schema_version": 3,
+        "sequence": 2,
+        "timestamp": datetime.now(UTC),
+        "category": RunEventCategory.VALIDATION,
+        "generation": 0,
+        "phase": "wave1",
+        "work_id": "work-1",
+        "attempt_id": "work-1_a00",
+    }
+
+    accepted = RunEvent(
+        **{
+            **base,
+            "validation_stage": "initial",
+            "validation_codes": ("wave1_worker_output_json_invalid",),
+            "response_shape": FinalResponseShape.PROSE,
+        }
+    )
+    assert accepted.response_shape is FinalResponseShape.PROSE
+
+    with pytest.raises(ValueError, match="journal_validation_response_shape_required"):
+        RunEvent(**{**base, "validation_stage": "repair"})
+    with pytest.raises(ValueError, match="journal_post_candidate_response_shape_unexpected"):
+        RunEvent(
+            **{
+                **base,
+                "validation_stage": "post_candidate",
+                "validation_codes": ("submission_source_missing",),
+                "response_shape": FinalResponseShape.JSON_OBJECT,
+            }
+        )
+    with pytest.raises(ValueError, match="journal_post_candidate_codes_required"):
+        RunEvent(**{**base, "validation_stage": "post_candidate"})
+    with pytest.raises(ValueError, match="journal_validation_response_shape_unexpected"):
+        RunEvent(
+            **{
+                **base,
+                "category": RunEventCategory.NODE,
+                "validation_stage": None,
+                "response_shape": FinalResponseShape.JSON_OBJECT,
+            }
+        )
+
+
+@pytest.mark.asyncio
+async def test_v3_journal_retains_redacted_shape_and_post_candidate_facts(tmp_path: Path) -> None:
+    bundle_root = tmp_path / "bundle"
+    (bundle_root / "diagnostics").mkdir(mode=0o700, parents=True)
+    os.chmod(bundle_root / "diagnostics", 0o700)
+    store = RunObservationStore(bundle_root=bundle_root, bundle_id=BUNDLE_ID)
+    recorder = RunObservationRecorder(store=store, bundle_id=BUNDLE_ID)
+    await recorder.establish(generation=0, phase="wave1", durability="restart_durable")
+    await recorder.record(
+        category=RunEventCategory.VALIDATION,
+        phase="wave1",
+        work_id="work-1",
+        attempt_id="work-1_a00",
+        validation_stage="initial",
+        validation_codes=("wave1_worker_output_json_invalid",),
+        response_shape=FinalResponseShape.PROSE,
+    )
+    await recorder.record(
+        category=RunEventCategory.VALIDATION,
+        phase="wave1",
+        work_id="work-1",
+        attempt_id="work-1_a00",
+        validation_stage="post_candidate",
+        validation_codes=("submission_source_missing",),
+    )
+
+    inspection = await store.inspect(bundle_id=BUNDLE_ID)
+    manifest = RunObservationManifest.model_validate_json(
+        (bundle_root / "diagnostics" / "journal-manifest.json").read_bytes()
+    )
+
+    assert manifest.schema_version == 3
+    assert inspection.summary is not None and inspection.summary.schema_version == 2
+    assert [
+        (event.validation_stage, event.response_shape, event.validation_codes) for event in inspection.events[1:]
+    ] == [
+        ("initial", FinalResponseShape.PROSE, ("wave1_worker_output_json_invalid",)),
+        ("post_candidate", None, ("submission_source_missing",)),
+    ]
+    serialized = inspection.model_dump_json(exclude_none=True)
+    assert "final prose body must never persist" not in serialized
 
 
 @pytest.mark.asyncio
@@ -136,6 +253,7 @@ async def test_admitted_bundle_journal_retains_correlated_validation_evidence_in
         attempt_id="work-1_a00",
         validation_stage="initial",
         validation_codes=("wave1_new_source_floor_not_met",),
+        response_shape=FinalResponseShape.JSON_OBJECT,
     )
     inspection = await store.inspect(bundle_id=BUNDLE_ID)
 
@@ -326,6 +444,7 @@ async def test_capacity_preserves_diagnostic_anchors_without_renumbering_retaine
         attempt_id="work-1_a00",
         validation_stage="initial",
         validation_codes=("wave1_new_source_floor_not_met",),
+        response_shape=FinalResponseShape.JSON_OBJECT,
     )
     await store.publish(
         _fact(
@@ -369,6 +488,7 @@ async def test_bundle_journal_keeps_generation_scoped_canonical_events_and_rejec
         attempt_id="work-1_a00",
         validation_stage="initial",
         validation_codes=("wave1_new_source_floor_not_met",),
+        response_shape=FinalResponseShape.JSON_OBJECT,
     )
     await recorder.establish(generation=1, phase="rerun", durability="restart_durable")
     await recorder.record(
@@ -400,14 +520,18 @@ async def test_bundle_journal_keeps_generation_scoped_canonical_events_and_rejec
 
 
 @pytest.mark.asyncio
-async def test_bundle_journal_marks_readable_legacy_correlation_incomplete(tmp_path: Path) -> None:
+@pytest.mark.parametrize("schema_version", (1, 2))
+async def test_bundle_journal_marks_readable_legacy_correlation_incomplete_without_writing_or_upgrading(
+    tmp_path: Path,
+    schema_version: int,
+) -> None:
     bundle_root = tmp_path / "bundle"
     journal_root = bundle_root / "diagnostics"
     journal_root.mkdir(mode=0o700, parents=True)
     os.chmod(journal_root, 0o700)
     now = datetime.now(UTC)
     manifest = RunObservationManifest(
-        schema_version=1,
+        schema_version=schema_version,
         bundle_id=BUNDLE_ID,
         created_at=now,
         updated_at=now,
@@ -415,9 +539,10 @@ async def test_bundle_journal_marks_readable_legacy_correlation_incomplete(tmp_p
         durability="restart_durable",
         summary_path="run-summary.json",
         events_path="diagnostics/events.jsonl",
+        event_high_watermark=1 if schema_version == 2 else None,
     )
     summary = RunSummary(
-        schema_version=1,
+        schema_version=schema_version,
         bundle_id=BUNDLE_ID,
         status="active",
         phase="bootstrap",
@@ -428,11 +553,12 @@ async def test_bundle_journal_marks_readable_legacy_correlation_incomplete(tmp_p
         latest_event_sequence=1,
     )
     event = RunEvent(
-        schema_version=1,
+        schema_version=schema_version,
         sequence=1,
         timestamp=now,
         category=RunEventCategory.ADMISSION,
         phase="bootstrap",
+        generation=0 if schema_version == 2 else None,
     )
     for path, content in (
         (journal_root / "journal-manifest.json", manifest.model_dump_json().encode("utf-8")),
@@ -442,6 +568,18 @@ async def test_bundle_journal_marks_readable_legacy_correlation_incomplete(tmp_p
         path.write_bytes(content)
         os.chmod(path, 0o600)
     store = RunObservationStore(bundle_root=bundle_root, bundle_id=BUNDLE_ID)
+    recorder = RunObservationRecorder(store=store, bundle_id=BUNDLE_ID)
+    before = {
+        path.name: path.read_bytes()
+        for path in (
+            journal_root / "journal-manifest.json",
+            journal_root / "run-summary.json",
+            journal_root / "events.jsonl",
+        )
+    }
+
+    await recorder.establish(generation=0, phase="bootstrap", durability="restart_durable")
+    await recorder.record(category=RunEventCategory.NODE, phase="bootstrap", attempt_id="bootstrap_a00")
 
     inspection = await store.inspect(bundle_id=BUNDLE_ID)
 
@@ -449,7 +587,15 @@ async def test_bundle_journal_marks_readable_legacy_correlation_incomplete(tmp_p
     assert inspection.journal_availability is JournalAvailability.INCOMPLETE
     assert inspection.summary is not None
     assert inspection.summary.journal_availability is JournalAvailability.INCOMPLETE
-    assert inspection.incomplete_reasons == (JournalIncompleteReason.LEGACY,)
+    assert inspection.incomplete_reasons == (JournalIncompleteReason.LEGACY, JournalIncompleteReason.PERSISTENCE)
+    assert {
+        path.name: path.read_bytes()
+        for path in (
+            journal_root / "journal-manifest.json",
+            journal_root / "run-summary.json",
+            journal_root / "events.jsonl",
+        )
+    } == before
 
 
 @pytest.mark.asyncio

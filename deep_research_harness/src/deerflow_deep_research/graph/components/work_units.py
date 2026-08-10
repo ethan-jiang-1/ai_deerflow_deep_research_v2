@@ -619,7 +619,7 @@ async def run_work_unit_component(
                     RunEventCategory.VALIDATION,
                     work_id=work_id,
                     attempt_id=attempt_id,
-                    validation_stage="initial" if attempts[attempt_id].attempt_ordinal == 0 else "repair",
+                    validation_stage="post_candidate",
                     validation_codes=tuple(str(code.value) for code in exc.codes),
                 )
                 terminal[attempt_id] = AttemptTerminalUpdate(
@@ -632,13 +632,6 @@ async def run_work_unit_component(
                 )
                 continue
             records[work_id] = submitted_record
-            await observe(
-                RunEventCategory.VALIDATION,
-                work_id=work_id,
-                attempt_id=attempt_id,
-                validation_stage="initial" if attempts[attempt_id].attempt_ordinal == 0 else "repair",
-                validation_codes=(),
-            )
             await observe(RunEventCategory.SUBMIT, work_id=work_id, attempt_id=attempt_id)
             terminal[attempt_id] = AttemptTerminalUpdate(
                 attempt_id=attempt_id,

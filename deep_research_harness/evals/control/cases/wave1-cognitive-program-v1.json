@@ -6,8 +6,8 @@
     "execution": {
       "repeat_count": 2,
       "runtime_controls": [
-        {"name": "evidence_extraction_capability_digest", "source_path": "src/deerflow_deep_research/graph/nodes/wave1/capabilities/wave1-evidence-extraction.md", "digest": "e04f76280da08f738541e098f368a6e2aa38f5215e8edbaaf741d0a87e192689"},
-        {"name": "evidence_extraction_repair_capability_digest", "source_path": "src/deerflow_deep_research/graph/nodes/wave1/capabilities/wave1-evidence-extraction-repair.md", "digest": "d7b50470f8e4e59dfba2008ce224dec32faebd4f40c7769c04f2ab10806ba754"},
+        {"name": "evidence_extraction_capability_digest", "source_path": "src/deerflow_deep_research/graph/nodes/wave1/capabilities/wave1-evidence-extraction.md", "digest": "bd38e25fc5897a9b14e6613bbeef69e846834ec7256b4fb426428f2328588e74"},
+        {"name": "evidence_extraction_repair_capability_digest", "source_path": "src/deerflow_deep_research/graph/nodes/wave1/capabilities/wave1-evidence-extraction-repair.md", "digest": "175b54d24542361259460dae3a702bdd69ed2ff1f2cfdf918ae821fda0aef73d"},
         {"name": "worker_schema_digest", "source_path": "src/deerflow_deep_research/domain/wave1.py", "digest": "375eb6995126723a17c91e8f18356184daa4076b8dc865141c6e277b721d2659"}
       ],
       "required_resource_fields": ["provider", "model", "composed_prompt_digest", "evidence_extraction_capability_digest", "evidence_extraction_repair_capability_digest", "worker_schema_digest", "input_tokens", "output_tokens", "cost_usd", "latency_ms"]

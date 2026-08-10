@@ -446,6 +446,8 @@ WAN-007: wave0-node — Wave0 source intake retains its existing 1--3 permitted 
 WAN-008: wave0-node — Wave0 calibration makes bounded assignment-faithful source-intake judgment and parser-only non-inventive repair criteria model-visible while preserving deterministic admission and controller authority
 WAN-009: wave0-node — Wave0 runtime-loaded capability resources own bounded source-intake cognition while deterministic tool, source-admission, and lifecycle owners remain non-bypassable
 WAN-010: wave0-node — Wave0 retains closed initial and repair structural parser Journal evidence before candidate admission without altering controller, gate, or route authority
+WAN-011: wave0-node — Wave0 initial and zero-tool repair workers expose one compact source-intake JSON completion envelope while preserving existing parser, validation, controller, and lifecycle authority
+WAN-012: wave0-node — Wave0 retains closed response-shape and later post-candidate validation Journal observations without retaining raw output or altering admission, recovery, or lifecycle authority
 
 # workflow-failure-outcomes
 WFO-001: workflow-failure-outcomes — Production model invocation boundaries normalize successful results, classified failures, local unknown failures, and cancellation into a bounded phase-owned outcome without raw exception or provider content
@@ -462,6 +464,8 @@ WON-007: wave1-node — Wave1 initial and repair requests bind distinct local ca
 WON-008: wave1-node — Wave1 calibration makes baseline-aware evidence, bounded non-broadening repair, and assignment-bound review criteria model-visible while preserving deterministic admission, materialization, and gate authority
 WON-009: wave1-node — Wave1 evidence work remains bound to its selected Run Bundle and stops publication on Bundle loss
 WON-010: wave1-node — Wave1 runtime capabilities own bounded baseline-aware extraction and pre-persistence repair cognition while deterministic owners retain admission and lifecycle authority
+WON-011: wave1-node — Wave1 initial and zero-tool repair workers expose one compact baseline-aware evidence JSON completion envelope while preserving existing parser, validation, controller, and lifecycle authority
+WON-012: wave1-node — Wave1 retains closed response-shape and later post-candidate validation Journal observations without retaining raw output or altering admission, recovery, or lifecycle authority
 
 # wave2-synthesis-node
 WSN-006: wave2-synthesis-node — Wave2 calibration makes evidence-grounded findings, relations, uncertainty, and honest gaps model-visible while preserving deterministic materialization, searchable-gap projection, gate, and route authority
@@ -535,6 +539,7 @@ EVH-026: evaluation-hardening — Verification and evidence paths use the canoni
 EVH-027: evaluation-hardening — A closed deterministic Wave0 cognitive-program corpus verifies source-intake capability ownership and handoff boundaries without receiving selected-live or release evidence status
 EVH-028: evaluation-hardening — A closed deterministic Wave1 cognitive-program corpus verifies extraction and repair capability ownership and handoff boundaries without receiving selected-live or release evidence status
 EVH-029: evaluation-hardening — A closed deterministic Wave2 cognitive-program corpus verifies synthesis and repair capability ownership and handoff boundaries without receiving selected-live or release evidence status
+EVH-030: evaluation-hardening — Selected evidence-intake live calibration resolves an explicit profile and admitted Bundle before direct branch invocation, retaining only bounded branch-applicable diagnostic facts without full-pipeline authority
 
 TEL-001: targeted-evidence-loop — Deterministic gap router converts synthesis gaps to bounded targeted WorkSpecs per gap with scoped search dimensions
 TEL-006: targeted-evidence-loop — Targeted-evidence calibration makes gap-scoped provenance, uncertainty, non-resolution, and assigned-reference review criteria model-visible while preserving deterministic artifact, ledger, convergence-gate, and route authority
@@ -555,6 +560,7 @@ WOU-008: work-unit-kernel — A generic drain check permits phase gating only wh
 WOU-009: work-unit-kernel — Work-unit artifacts and content references derive from the checkpoint-selected canonical bundle locator without changing lifecycle identity
 WOU-010: work-unit-kernel — Work-unit terminal projections preserve closed worker failure diagnosis without changing retry, ledger, gate, or lifecycle authority
 WOU-011: work-unit-kernel — Work-unit, evidence, and content stores use one runtime-bound Run Bundle reference without legacy identity or path overrides
+WOU-012: work-unit-kernel — Shared submit validation records only rejected candidates as correlated post-candidate Journal facts while preserving typed rejection, controller, ledger, and lifecycle authority
 DPL-001: demo-pipeline — A shared demo core module provides DemoAdapter, synthetic tool-call helpers, phase metadata, and importable infrastructure for all demo scripts
 DPL-002: demo-pipeline — Phase progress display reads execution_trace from DeepResearchControlResult and renders completed phases with → and suspended phases with ⏸
 DPL-003: demo-pipeline — Named fixture and all-real demo factories construct their fixed recipes explicitly, without a mode selector or a production fixture fallback

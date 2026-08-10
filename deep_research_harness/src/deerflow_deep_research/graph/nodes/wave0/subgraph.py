@@ -23,7 +23,11 @@ from deerflow_deep_research.domain.bundle import (
 )
 from deerflow_deep_research.domain.invocation import RunEventRecorderProtocol, WorkUnitControllerDependencies
 from deerflow_deep_research.domain.node_spec import PolicyRef
-from deerflow_deep_research.domain.run_observation import RunEventCategory
+from deerflow_deep_research.domain.run_observation import (
+    FinalResponseShape,
+    RunEventCategory,
+    classify_final_response_shape,
+)
 from deerflow_deep_research.domain.work_units import (
     Attempt,
     CandidateResult,
@@ -84,6 +88,7 @@ async def _observe_validation(
     attempt: Attempt,
     stage: str,
     codes: tuple[str, ...],
+    response_shape: FinalResponseShape,
 ) -> None:
     """Publish parser evidence without allowing observation persistence to affect a worker."""
 
@@ -97,6 +102,7 @@ async def _observe_validation(
             attempt_id=attempt.attempt_id,
             validation_stage=stage,
             validation_codes=codes,
+            response_shape=response_shape,
         )
     except Exception:
         return
@@ -180,6 +186,7 @@ async def run_wave0_work_units_real(
         if isinstance(outcome, InvocationFailure):
             raise worker_failure_for_invocation(outcome.problem)
         result = outcome.result
+        initial_response_shape = classify_final_response_shape(result.summary)
         try:
             output = parse_wave0_worker_output(result.summary)
         except ValueError as parse_error:
@@ -189,6 +196,7 @@ async def run_wave0_work_units_real(
                 attempt=attempt,
                 stage="initial",
                 codes=(_canonical_validation_code(parse_error),),
+                response_shape=initial_response_shape,
             )
             assignment = build_wave0_assignment_projection(spec, topic_registry)
             repair_outcome = await invoke_and_normalize(
@@ -206,6 +214,7 @@ async def run_wave0_work_units_real(
             if isinstance(repair_outcome, InvocationFailure):
                 raise worker_failure_for_invocation(repair_outcome.problem) from parse_error
             repaired = repair_outcome.result
+            repair_response_shape = classify_final_response_shape(repaired.summary)
             try:
                 output = parse_wave0_worker_output(repaired.summary)
             except ValueError as repair_error:
@@ -215,6 +224,7 @@ async def run_wave0_work_units_real(
                     attempt=attempt,
                     stage="repair",
                     codes=(_canonical_validation_code(repair_error),),
+                    response_shape=repair_response_shape,
                 )
                 raise WorkerAttemptFailure(WorkerFailureCategory.STRUCTURED_OUTPUT) from repair_error
             await _observe_validation(
@@ -223,6 +233,7 @@ async def run_wave0_work_units_real(
                 attempt=attempt,
                 stage="repair",
                 codes=(),
+                response_shape=repair_response_shape,
             )
         else:
             await _observe_validation(
@@ -231,6 +242,7 @@ async def run_wave0_work_units_real(
                 attempt=attempt,
                 stage="initial",
                 codes=(),
+                response_shape=initial_response_shape,
             )
         metas: list[Wave0SourceMeta] = []
         source_refs: list[SourceRef] = []
