@@ -17,3 +17,18 @@ _Avoid_: runtime authority, product user
 **Required Behavior**:
 An observable product or system outcome approved in an owning specification.
 _Avoid_: a guide recommendation, an unverified implementation detail
+
+**Charter Index**:
+The canonical route from a proposed Deep Research change to one relevant design or
+admission policy and its owning contract.
+_Avoid_: project manual, runtime controller
+
+**External Review Policy**:
+Cross-change design guidance routed by the Charter Index while behavior remains owned
+by capability specifications and runtime authorities.
+_Avoid_: runtime guardrail, permission, approval
+
+**Selected Change Closeout Evidence**:
+Bounded evidence about one explicitly declared committed change range and its
+non-authoritative review disposition.
+_Avoid_: semantic clearance, archive authority, task ledger

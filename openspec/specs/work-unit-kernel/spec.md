@@ -1,6 +1,6 @@
 # work-unit-kernel Specification
 
-> req: WOU-001, WOU-002, WOU-003, WOU-004, WOU-005, WOU-006, WOU-007, WOU-008, WOU-009, WOU-010, WOU-011
+> req: WOU-001, WOU-002, WOU-003, WOU-004, WOU-005, WOU-006, WOU-007, WOU-008, WOU-009, WOU-010, WOU-011, WOU-012
 
 ## Purpose
 The shared work-unit kernel beneath Wave0/Wave1 fixture nodes: immutable controller-assigned work/attempt contracts, bounded `Send`, deterministic file validation, one hash-chained JSONL ledger writer, crash reconciliation, and the shared drain/gate view.

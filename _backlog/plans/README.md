@@ -19,7 +19,7 @@
 
 | Plan | 说明 |
 |------|------|
-| [openspec-extension-readme-restructure.md](openspec-extension-readme-restructure.md) | openspec 三个扩展目录（governance/guardrails/policies）README 去重 + guardrails 契约字段 bug 修复 |
+| [openspec-extension-readme-restructure.md](openspec-extension-readme-restructure.md) | OpenSpec 治理文档分层；先修治理基线，再分别修复 SCC closeout contract 与 DRC 术语漂移 |
 
 新的分析或设计应在此创建，完成后再移入归档。
 

@@ -1,125 +1,206 @@
-# Plan: openspec 扩展目录 README 去重重构
+# Plan: OpenSpec 治理文档分层与契约修复
 
-> 类型: 分析 / 设计 | 更新: 2026-08-11 | 状态: 待 review
+> 类型: 分析 / 设计 | 更新: 2026-08-11 | 状态: 已 review，待分组实施
 
 ## 背景 / 现状
 
-`openspec/` 下有三个非 OpenSpec 原生的扩展目录（governance / guardrails / policies），
-各自带一份 README。它们是 `deep_research_harness` 项目的治理扩展，`openspec/config.yaml`
-是它们的路由入口。
+`openspec/` 下的治理扩展不是一个同质文档集合。四个 README 分属不同层级：
 
-### 三个目录的定位（事实，来自各自 README 顶部声明）
+| Surface | 职责 | 本次定位 |
+|---|---|---|
+| `openspec/governance/README.md` | 治理 registry、policy、checker 的目录导航 | 重构目标 |
+| `openspec/guardrails/README.md` | selected-change closeout 命令的最小可执行契约 | 跟随 SCC 功能修复 change |
+| `openspec/policies/README.md` | 外部 review policy 索引与非权威边界 | 最小修正，跟随 DRC 术语 change |
+| `openspec/governance/agent-charter/README.md` | canonical change/policy routing index | 只读边界参照，不重构 |
 
-| 目录 | 定位 | 内容物 |
-|------|------|--------|
-| `openspec/governance/` | 需求可追踪性 + 确定性归档门禁 | `req-registry.yaml`、`architecture-policy.md`、4 个 checker 脚本、`test-evidence-policy.md`、`agent-charter/` |
-| `openspec/guardrails/` | 单个选中 change 的有界本地证据命令 | `selected_change_closeout.py`（verify-boundary / record-review 两条命令） |
-| `openspec/policies/` | 跨多条本地治理路由的 recurring 设计 review 指引 | `control-placement.md`（被 charter 路由的外部 policy） |
+去重原则不是“README 只能做索引”，而是：**每份 README 完成自己的读者任务，
+不复制由 spec、policy、registry 或另一个 canonical index 拥有的规范语义。**
 
-### Review 发现：三份 README 的"索引/复述"比例失衡
+## Review 后的事实更正
 
-| 目录 | 内容密度 | 问题 |
-|------|---------|------|
-| `governance/README.md` | 重（77 行） | 复述了 5 个页面内容 + 规范本身（ID 缩写规则表、checker 4 查名），没守住索引定位 |
-| `guardrails/README.md` | 中（67 行） | 把整个 JSON v1 contract 和两条命令的语义完整复述了一遍 |
-| `policies/README.md` | 轻（25 行） | 基本合格；V2 延期声明与 `control-placement.md` 有重复，但该重复是 spec 强制 |
+### 1. `planning_home` 不是 attestation 字段
 
-### 重要更正（第一版 plan 声称 guardrails 有契约 bug，已证伪）
+`selected_change_closeout.py` 的 attestation 只有四个必填字段：
+`change_name`、`repository_identity`、`base_commit`、`head_commit`。
+`planning_home` 是脚本从当前工作目录向上发现 `openspec/changes/` 的运行时概念，
+不得加入 JSON contract。实现允许额外 JSON key，因此文档必须写“四个必填字段”，
+不能写“只允许四个字段”。
 
-第一版计划称 `guardrails/README.md` 的 JSON v1 示例"漏了 `planning_home` 字段，是契约 bug"。
-**该声明错误，已撤销。** 证据：
+### 2. closeout command 存在独立的 SCC 契约缺陷
 
-- `selected_change_closeout.py:22-27` 的 `REQUIRED_ATTESTATION_FIELDS` 只有 4 个字段：
-  `change_name` / `repository_identity` / `base_commit` / `head_commit`。
-- `planning_home` 不是 attestation 字段，而是脚本运行时从 `Path.cwd()` 向上查找的目录
-  （`_planning_home()`，`selected_change_closeout.py:65-69`，找 `openspec/changes` 的父目录），
-  用于解析 active change 的 root。README 里 "Run commands from the planning home or a
-  directory below it" 指的就是这个运行时约定，README 写对了。
+这不是 README 重构的一部分，必须单独修复：
 
-结论：guardrails 没有契约 bug。任何 review 若要求"修 planning_home"应直接拒绝。
+- `record-review --output` 当前只要求路径位于 active change root 下，因此可把
+  `tasks.md`、`proposal.md` 等 change artifact 当成输出并覆盖，违反 SCC-002 的
+  “不得创建、完成或改写 tasks”边界。
+- unchecked-task 解析当前接受任意包含 `- [ ]` 的行，不只接受真正的 Markdown
+  unchecked task 行。
+- `missing-boundary` 与 `invalid-review` 是 stdout JSON result，进程仍返回 0；README
+  必须要求调用者解析 `result`，不能依赖 shell exit code 判断 evidence 是否成立。
+- “可从 planning home 或其子目录运行”与 root-relative 示例混在一起。最终示例应明确
+  假定 cwd 为 planning home；从子目录调用时须自行解析脚本和 output 路径。
 
-## 决策 / 方案
+决定：用独立 `selected-change-closeout-evidence` OpenSpec change 修复代码、测试和
+`guardrails/README.md`，不与 governance/policies 文档整理合并。
 
-按"README 只做索引、细节还给各文件"重构，三份 README 各自独立，可分开做。
+### 3. “deferred add-cross-session-cognitive-guardrails” 已失真
 
-### 1. `openspec/governance/README.md` → 索引卡（目标 ≤50 行）
+同名 change 已完成并归档，交付的是 `Selected Change Closeout Evidence`。当前
+`policies/README.md`、`control-placement.md` 与 DRC-009 main spec 仍把一个模糊的
+cross-session guardrail 概念描述为 deferred，容易把已交付 evidence capability 与
+并不存在的 semantic evaluator / automatic task writer / archive coordinator 混为一谈。
 
-保留：
-- 目录定位一句话（需求可追踪性 + 确定性归档门禁，Python 标准库零依赖）。
-- **各文件"何时读"表**：`req-registry.yaml` / `architecture-policy.md` / 4 个 checker /
-  `test-evidence-policy.md` / `agent-charter/README.md` 各一行，何时读 + 读它解决什么。
-- 四个 checker 的运行命令 + 退出码约定（0=PASS / 1=违规，stderr 列明细）。
-- 与上游 JS 版的差异（3 条）。
-- 保留顶部 `@impl DRC-009`（governance 实现归属，spec 要求）。
+决定：不保留这个延期概念。用独立 `deep-research-agent-charter` OpenSpec change：
 
-移出（还给各自文件）：
-- ID 缩写规则表（`custom-tool→CUT` 等）→ `req-registry.yaml` 已自文档化（prefixes 块）。
-- checker 4 查的具体名称（`duplicate`/`unregistered`/`orphan`/`reusedRetired`）→ 各脚本 docstring。
-- `architecture-policy.md` 的权威分工复述 → 该文件本身。
-- `test-evidence-policy.md` 语义复述 → 该文件本身。
-- `agent-charter/` 定位复述 → `agent-charter/README.md` 本身。
+- 从 main spec 和 policy 中移除 deferred roadmap 断言；
+- 用现在时区分 external design guidance 与已交付 closeout evidence；
+- 对 `policies/README.md` 只做最小修正，并链接 canonical Agent Charter index。
 
-### 2. `openspec/guardrails/README.md` → 命令使用说明（目标 ≤50 行）
+### 4. 当前治理验证基线不是全绿
 
-保留：
-- JSON v1 契约示例（4 字段，**与 `REQUIRED_ATTESTATION_FIELDS` 一致，勿加字段**）。
-- 两条命令的用法（verify-boundary / record-review）+ 运行前提（planning home 或其子目录）。
-- 行为边界声明（不写 tasks.md、不拦截/替代原生 archive、证据只作 inspection）。
+clean worktree 下，`check_project_reqs.py` 与 `check_project_req_coverage.py` 因以下
+registry ID 未进入 owning main-spec header 而失败：
 
-压缩：
-- 把"每条命令做了什么"的长段落压缩成命令后的一行结果语义（`boundary-verified` / `missing-boundary` / `review-recorded` / `invalid-review`）。
+`EVH-030`、`WAN-011`、`WAN-012`、`WON-011`、`WON-012`、`WOU-012`。
 
-### 3. `openspec/policies/README.md` → 基本不动
+决定：先单独修复 requirement ownership / coverage baseline，使治理门禁恢复全绿；
+后续两个 OpenSpec change 不在已知红线上实施或归档。
 
-- 仅可选：V2 延期段落措辞微调，避免与 `control-placement.md:55-58` 逐字重复。
-- 其余（Available Policies 表、Boundary 声明、顶部 `> authority:` 行）**保持不变**——
-  这些都是 `check_agent_charter.py` 的受控锚点（见下）。
+### 5. governance 目录 inventory 原计划不完整
 
-## 受控约束（其他 agent review 时必读，改动前必须满足）
+- 不是“四个 checker”这么简单：`make governance` 运行四个 root governance checker，
+  完整 `make verify` 还运行独立的 `check_project_req_coverage.py`。
+- `project-structure.toml` 是 exact structural authority，必须进入导航表。
+- governance README 当前没有 `@impl DRC-009`，DRC-009 也不归属这个总索引；不得新增。
+- focused contract test 要求 governance README 同时保留 `test-evidence-policy.md` 和
+  `evaluation-hardening` 两个 literal pointer。
+- 速查表中的“Requirement 标题不得包含 ID”在其他当前文档中没有 owner；删除前先迁移到
+  `req-registry.yaml` 的 ID 使用约定。
 
-以下来自 `openspec/governance/check_agent_charter.py` 与 `openspec/config.yaml`，
-**不是建议，是机器强制**：
+## 已确认的设计决策
 
-1. **`check_agent_charter.py` 只对 4 个文件做行数预算**（`LINE_BUDGETS`，
-   `check_agent_charter.py:154-159`）：
-   `deep_research_harness/AGENTS.md`（≤160 硬上限）、`deep_research_harness/CLAUDE.md`（≤12 硬上限）、
-   `openspec/config.yaml`（≤180 硬上限）、`deep_research_harness/README.md`（无硬上限，>200 出 warning）。
-   **三份 README 都不在预算内**——本次重构不会触发行数检查，但**不得顺手改动那 4 个文件**。
+1. 功能 bug 与 README 信息架构拆开，按 causal owner 分组。
+2. README 按职责区分：governance 是导航，guardrails 是命令契约，policies 是 policy 索引。
+3. 不保留“延期中的跨会话 guardrail”概念。
+4. 先修绿 requirement ownership / coverage 基线。
+5. 行数只作软目标；完整职责、唯一 owner 和可用性优先。
+6. Agent Charter README 是 canonical 边界参照，不是第四个重写目标。
+7. Requirement 标题的 ID 约定迁移到 `req-registry.yaml`。
+8. “与上游 JS 版差异”压成一句：Python 标准库、零外部依赖。
+9. policies README 只做最小修正。
 
-2. **`openspec/config.yaml` 是受控锚点，本次不动**。`check_agent_charter.py` 要求它包含：
-   `## Default Context Boundary`、`not a project manual`、`## Change Focus`、`Primary module / causal owner`、
-   `Triggered review policies`、`control-placement`、两条 operation guidance 等字符串
-   （`_validate_authoring_pointer`，`check_agent_charter.py:304-416`）。因此 plan 的"上下文"
-   不主张修改 config.yaml 的 context 块——它同时是信息地图锚点。
+## 分组与依赖
 
-3. **`openspec/policies/` 是被 checker 遍历的受控路由**：`POLICY_REGISTRY` 要求
-   `policies/README.md` 链接到 `control-placement.md`，且 `control-placement.md` 必须含
-   `> trigger:` 与 `authority: guidance only`（`check_agent_charter.py:118-238`）。
-   **policies/README.md 的任何改动不得删掉 Available Policies 表或 authority 声明。**
+```text
+requirement ownership baseline repair
+                |
+                +--> SCC closeout contract fix
+                |      + code + focused tests + guardrails README
+                |
+                +--> DRC terminology correction
+                       + main spec + policy + policies README
 
-4. **`> authority: guidance only` 三连是 spec 强制**：`deep-research-agent-charter` spec
-   （DRC-009，`specs/deep-research-agent-charter/spec.md:359-376`）要求外部 policy 声明
-   非权威边界。出现在 `policies/README.md` 和 `control-placement.md` 属合规，不是冗余。
+两条 change 完成后
+                |
+                +--> governance README navigation cleanup
+                       + req-registry wording + backlog indexes
+```
 
-5. **"V2 add-cross-session-cognitive-guardrails 仍延期"是有意重复**：被 DRC-009 spec 要求
-   显式存在（`specs/deep-research-agent-charter/spec.md:365-368` 提及 deferred guardrails）。
+不得把三组工作压成一个 OpenSpec change。baseline repair 是前置；SCC 与 DRC change
+彼此独立；governance 总索引只在 owning 内容稳定后收口。
 
-## 风险 / 取舍
+## 目标文档结构
 
-- [governance README 砍掉 ID 规则表后，读者失去"缩写怎么来"的快速入口]
-  → `req-registry.yaml` 的 prefixes 块已有该映射；README 表头保留一行指向。
-- [guardrails README 压缩命令语义后，读者不理解结果状态]
-  → 保留一行状态枚举（boundary-verified / missing-boundary / review-recorded / invalid-review），
-  详情在脚本输出里自解释。
-- [重构触发 openspec change 义务？]
-  → governance/guardrails 目录有 `@impl DRC-009/010` 归属，但 README 不在
-  `check_agent_charter.py` 的受控内容清单里。倾向：纯文档重构、不动 checker 锚点
-  → 不必然开 change；若 review 判定为受控内容，则用一个 change 承载三份 README。
+### `openspec/governance/README.md`：目录导航
 
-## 落地关联
+保留或新增：
 
-- 本次 plan 先产出三份 README 的目标结构，经 review 后实施。
-- 实施顺序：policies（最小）→ guardrails（中）→ governance（最大）。
-- 实施后验证：`cd 到 repo 根 && python3 openspec/governance/check_agent_charter.py` 必须 PASS；
-  `python3 openspec/governance/check_project_reqs.py` / `check_project_specs.py` /
-  `check_project_architecture.py` 应保持 PASS（README 不在其扫描范围，跑一遍确认）。
+- 一句目录定位，以及“Python 标准库、零外部依赖”。
+- “何时读”表，至少覆盖 `req-registry.yaml`、`architecture-policy.md`、
+  `project-structure.toml`、四个 root governance checker、
+  `check_project_req_coverage.py`、`test-evidence-policy.md` 和
+  `agent-charter/README.md`。
+- checker 命令。正常校验路径使用 0/1，但明确 stderr 也可能包含 non-failing warning，
+  argparse usage error 不属于 0/1 contract。
+- `test-evidence-policy.md` 行必须同时指出 `evaluation-hardening` 是批准语义的 owner。
+
+移出：
+
+- ID 格式、三态、缩写和标题约定，统一由 `req-registry.yaml` 拥有。
+- checker 内部 check-name 枚举，由各脚本 docstring 拥有。
+- architecture/test-evidence/Agent Charter 的权威分工复述，由各自文件拥有。
+- 上游差异清单，仅保留当前“stdlib-only”约束。
+
+### `openspec/guardrails/README.md`：命令契约
+
+跟随 SCC change，至少保留：
+
+- 四个 attestation 必填字段，不添加 `planning_home`，不声称拒绝额外 key。
+- `verify-boundary` 与 `record-review` 的 planning-home-root 示例。
+- `review-required` 与 `inconclusive` 两种 review payload 及精确字段约束。
+- 成功前提：active change、当前 repository、commit ancestry、`HEAD == head`、clean worktree。
+- stdout JSON `result` 的四种结果，并明确 domain rejection 仍 exit 0。
+- output 只能位于 selected change 的专用 `guardrail-evidence/` 路径。
+- receipt、persisted evidence、semantic approval 与 native archive authority 的区别。
+
+### `openspec/policies/README.md`：最小修正
+
+- 保留 scope、authority、Available Policies 表与 Boundary 的当前职责。
+- 直接链接 `../governance/agent-charter/README.md` 作为 canonical routing index。
+- 删除错误的同名 deferred-change 声明，不引入新的未来 roadmap 名称。
+- README 必须继续链接 `control-placement.md`；actual policy 本体继续拥有 trigger 与
+  authority 声明。
+
+### `openspec/governance/agent-charter/README.md`：只读边界
+
+- 不改 `## Policy Route`、`Where Rules Belong` 或 policy links。
+- governance README 只用一行路由到它，不复述 primary owner、evidence seam 或 adjacent
+  contract 规则。
+- policies README 只说明 external policy 由它路由，不复制完整 route semantics。
+
+## 受控约束
+
+必须区分机器约束、spec 义务与本计划 scope：
+
+1. `check_agent_charter.py` 对 `deep_research_harness/AGENTS.md`、
+   `deep_research_harness/CLAUDE.md`、`openspec/config.yaml` 和
+   `deep_research_harness/README.md` 设置预算；本次不改这些 entry surfaces。
+2. Agent Charter index 被机器要求链接 `charter.md`、保留 `## Policy Route` 并链接全部
+   registered policies。
+3. external policies index 被机器要求存在并链接 `control-placement.md`；trigger/authority
+   literal 约束属于 actual `control-placement.md`，不是 index 表头。
+4. governance README 受 focused contract test 约束，必须保留 test-evidence policy 与
+   `evaluation-hardening` owner pointer。
+5. 是否创建 OpenSpec change 取决于是否改变批准语义或可观察 command contract，不取决于
+   README 是否被某个 checker 扫描。
+
+## 验收
+
+### Baseline repair
+
+```bash
+python3 openspec/governance/check_project_reqs.py
+python3 openspec/governance/check_project_req_coverage.py
+python3 openspec/governance/check_project_specs.py
+python3 openspec/governance/check_project_architecture.py
+python3 openspec/governance/check_agent_charter.py
+```
+
+五项必须全绿后才能 apply 后续 change。
+
+### Focused evidence
+
+```bash
+cd deep_research_harness
+.venv/bin/python -m pytest \
+  tests/contract/test_selected_change_closeout.py \
+  tests/contract/test_agent_charter_governance.py \
+  tests/contract/test_test_evidence_documentation.py
+```
+
+### Change 与最终收口
+
+- 两个 active change 分别通过 `openspec validate <change-name> --strict`。
+- 完成后运行 `cd deep_research_harness && UV_OFFLINE=1 make verify`。
+- 运行 `git diff --check`，并确认未修改 `deerflow/`。
+- 计划落地后按 `_backlog/plans/README.md` 的规则关闭并同步索引。

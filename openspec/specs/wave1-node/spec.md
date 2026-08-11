@@ -1,6 +1,6 @@
 # wave1-node Specification
 
-> req: WON-001, WON-002, WON-003, WON-004, WON-005, WON-006, WON-007, WON-008, WON-009, WON-010
+> req: WON-001, WON-002, WON-003, WON-004, WON-005, WON-006, WON-007, WON-008, WON-009, WON-010, WON-011, WON-012
 
 ## Purpose
 Deep per-topic evidence extraction with new-source floor, structured claims, critic integration, and provenance-aware gate.
