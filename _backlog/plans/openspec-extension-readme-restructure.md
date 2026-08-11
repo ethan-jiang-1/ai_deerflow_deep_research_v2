@@ -1,6 +1,11 @@
 # Plan: OpenSpec 治理文档分层与契约修复
 
-> 类型: 分析 / 设计 | 更新: 2026-08-11 | 状态: 已 review，待分组实施
+> 类型: 分析 / 设计 | 更新: 2026-08-11 | 状态: 已 review；Charter/policy topology 已拆至独立 plan
+
+> 2026-08-11 supersession: Charter 的物理路径、全部 policy 的 canonical home，以及 DRC
+> terminology correction 现在由
+> [`openspec-agent-charter-topology-flattening.md`](openspec-agent-charter-topology-flattening.md)
+> 拥有。本计划不再以“Charter 只读”或“DRC terminology 单独 change”作为实施依据。
 
 ## 背景 / 现状
 
@@ -10,8 +15,8 @@
 |---|---|---|
 | `openspec/governance/README.md` | 治理 registry、policy、checker 的目录导航 | 重构目标 |
 | `openspec/guardrails/README.md` | selected-change closeout 命令的最小可执行契约 | 跟随 SCC 功能修复 change |
-| `openspec/policies/README.md` | 外部 review policy 索引与非权威边界 | 最小修正，跟随 DRC 术语 change |
-| `openspec/governance/agent-charter/README.md` | canonical change/policy routing index | 只读边界参照，不重构 |
+| `openspec/policies/README.md` | unified policy-library index 与非权威边界 | 跟随 Charter/policy topology change |
+| `openspec/agent-charter/README.md` | canonical change/policy routing index | 跟随 Charter/policy topology change |
 
 去重原则不是“README 只能做索引”，而是：**每份 README 完成自己的读者任务，
 不复制由 spec、policy、registry 或另一个 canonical index 拥有的规范语义。**
@@ -50,11 +55,10 @@
 cross-session guardrail 概念描述为 deferred，容易把已交付 evidence capability 与
 并不存在的 semantic evaluator / automatic task writer / archive coordinator 混为一谈。
 
-决定：不保留这个延期概念。用独立 `deep-research-agent-charter` OpenSpec change：
-
-- 从 main spec 和 policy 中移除 deferred roadmap 断言；
-- 用现在时区分 external design guidance 与已交付 closeout evidence；
-- 对 `policies/README.md` 只做最小修正，并链接 canonical Agent Charter index。
+决定：不保留这个延期概念。它与 Charter/policy directory topology 一起由
+`rehome-agent-charter-policy-library` change 修复：main spec、policy library index 和
+`control-placement` 使用现在时区分已交付 closeout evidence 与未实现的 semantic coordinator，
+而不再把同名归档 change 描述为 deferred。
 
 ### 4. 当前治理验证基线不是全绿
 
@@ -84,21 +88,23 @@ registry ID 未进入 owning main-spec header 而失败：
 3. 不保留“延期中的跨会话 guardrail”概念。
 4. 先修绿 requirement ownership / coverage 基线。
 5. 行数只作软目标；完整职责、唯一 owner 和可用性优先。
-6. Agent Charter README 是 canonical 边界参照，不是第四个重写目标。
+6. Agent Charter 是 canonical 边界参照，但其路径和 policy library topology 由独立 change
+   迁移；迁移不重写其原则或 runtime authority boundary。
 7. Requirement 标题的 ID 约定迁移到 `req-registry.yaml`。
 8. “与上游 JS 版差异”压成一句：Python 标准库、零外部依赖。
-9. policies README 只做最小修正。
+9. `policies/README.md` 成为全部十个 policy 的唯一索引；其目录模型与 DRC terminology 一起由
+   独立 topology change 修复。
 
 ## 分组与依赖
 
 ```text
-requirement ownership baseline repair
+requirement ownership baseline repair (archived)
                 |
                 +--> SCC closeout contract fix
                 |      + code + focused tests + guardrails README
                 |
-                +--> DRC terminology correction
-                       + main spec + policy + policies README
+                +--> Charter/policy topology change
+                       + DRC terminology + unified policy index
 
 两条 change 完成后
                 |
@@ -106,8 +112,8 @@ requirement ownership baseline repair
                        + req-registry wording + backlog indexes
 ```
 
-不得把三组工作压成一个 OpenSpec change。baseline repair 是前置；SCC 与 DRC change
-彼此独立；governance 总索引只在 owning 内容稳定后收口。
+不得把 SCC command repair 与 Charter/policy topology 压成一个 OpenSpec change。baseline repair
+已归档；两条后续 change 彼此独立；governance 总索引只在 owning 内容稳定后收口。
 
 ## 目标文档结构
 
@@ -143,20 +149,12 @@ requirement ownership baseline repair
 - output 只能位于 selected change 的专用 `guardrail-evidence/` 路径。
 - receipt、persisted evidence、semantic approval 与 native archive authority 的区别。
 
-### `openspec/policies/README.md`：最小修正
+### Charter 与 Policy Library：独立 topology plan
 
-- 保留 scope、authority、Available Policies 表与 Boundary 的当前职责。
-- 直接链接 `../governance/agent-charter/README.md` 作为 canonical routing index。
-- 删除错误的同名 deferred-change 声明，不引入新的未来 roadmap 名称。
-- README 必须继续链接 `control-placement.md`；actual policy 本体继续拥有 trigger 与
-  authority 声明。
-
-### `openspec/governance/agent-charter/README.md`：只读边界
-
-- 不改 `## Policy Route`、`Where Rules Belong` 或 policy links。
-- governance README 只用一行路由到它，不复述 primary owner、evidence seam 或 adjacent
-  contract 规则。
-- policies README 只说明 external policy 由它路由，不复制完整 route semantics。
+`openspec/agent-charter/`、`openspec/policies/README.md` 和所有 policy 正文的最终路径、索引
+分类、DRC terminology 及迁移验证，均由
+[`openspec-agent-charter-topology-flattening.md`](openspec-agent-charter-topology-flattening.md)
+拥有。本计划仅保留其余 README/command 收口的职责。
 
 ## 受控约束
 

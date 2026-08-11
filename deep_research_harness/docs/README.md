@@ -19,5 +19,5 @@ authority, or coding-agent guide.
   [release attestation](release-attestation-2026-07-17.json), and
   [regression descent](regression-descent.md) preserve specific evaluation evidence.
 - For a code or governance change, start with [`../AGENTS.md`](../AGENTS.md) and the
-  [Deep Research Agent Charter](../../openspec/governance/agent-charter/README.md),
+  [Deep Research Agent Charter](../../openspec/agent-charter/README.md),
   not this operational documentation set.

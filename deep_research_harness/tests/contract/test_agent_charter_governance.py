@@ -24,8 +24,9 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 CHECKER = REPO_ROOT / "openspec" / "governance" / "check_agent_charter.py"
-CHARTER_ROOT = Path("openspec/governance/agent-charter")
-EXTERNAL_POLICY_ROOT = Path("openspec/policies")
+CHARTER_ROOT = Path("openspec/agent-charter")
+LEGACY_CHARTER_ROOT = Path("openspec/governance/agent-charter")
+POLICY_ROOT = Path("openspec/policies")
 CLAUDE_GUIDE_PATH = Path("deep_research_harness/CLAUDE.md")
 README_PATH = Path("deep_research_harness/README.md")
 DOCS_INDEX_PATH = Path("deep_research_harness/docs/README.md")
@@ -99,10 +100,7 @@ CHARTER_POLICY_NAMES = (
     "agent-information-map",
 )
 POLICY_NAMES = (*CHARTER_POLICY_NAMES, CONTROL_PLACEMENT_POLICY)
-POLICY_PATHS = {
-    **{name: CHARTER_ROOT / "policies" / f"{name}.md" for name in CHARTER_POLICY_NAMES},
-    CONTROL_PLACEMENT_POLICY: EXTERNAL_POLICY_ROOT / f"{CONTROL_PLACEMENT_POLICY}.md",
-}
+POLICY_PATHS = {name: POLICY_ROOT / f"{name}.md" for name in POLICY_NAMES}
 WARNING_BUDGETS = (
     (Path("deep_research_harness/AGENTS.md"), 120),
     (CLAUDE_GUIDE_PATH, 10),
@@ -197,8 +195,7 @@ def _focus_card(
 
 
 def _project(root: Path) -> None:
-    links = "\n".join(f"- [policy](policies/{name}.md)" for name in CHARTER_POLICY_NAMES)
-    external_links = f"- [policy](../../policies/{CONTROL_PLACEMENT_POLICY}.md)"
+    links = "\n".join(f"- [policy](../policies/{name}.md)" for name in POLICY_NAMES)
     _write(
         root,
         CHARTER_ROOT / "README.md",
@@ -206,14 +203,14 @@ def _project(root: Path) -> None:
         "## Start Here\n\n"
         "Read `deep_research_harness/AGENTS.md` and `charter.md`.\n\n"
         "## Policy Route\n\n"
-        f"{links}\n{external_links}\n",
+        f"{links}\n",
     )
     _write(
         root,
         CHARTER_ROOT / "charter.md",
         "# Deep Research Agent Charter\n\n> authority: guidance only; never runtime control\n\n## Product Boundary\n",
     )
-    for name in CHARTER_POLICY_NAMES:
+    for name in POLICY_NAMES:
         extra = ""
         if name == "local-context":
             extra = f"\n{CONTEXT_EXPANSION_HEADING}\n{CONTEXT_EXPANSION_SENTENCE}\n"
@@ -228,25 +225,23 @@ def _project(root: Path) -> None:
             )
         _write(
             root,
-            CHARTER_ROOT / "policies" / f"{name}.md",
+            POLICY_PATHS[name],
             f"# {name}\n\n> trigger: fixture\n> authority: guidance only\n{extra}\n## Boundary\n",
         )
     _write(
         root,
-        POLICY_PATHS[CONTROL_PLACEMENT_POLICY],
-        "# control-placement\n\n> trigger: fixture\n> authority: guidance only\n\n## Boundary\n",
-    )
-    _write(
-        root,
-        EXTERNAL_POLICY_ROOT / "README.md",
-        f"# External Policies\n\n- [policy]({CONTROL_PLACEMENT_POLICY}.md)\n",
+        POLICY_ROOT / "README.md",
+        "# OpenSpec Policies\n\n"
+        "Read [the Agent Charter](../agent-charter/README.md) to select a policy.\n\n"
+        + "\n".join(f"- [policy]({name}.md)" for name in POLICY_NAMES)
+        + "\n",
     )
     _write(
         root,
         "deep_research_harness/AGENTS.md",
         "# Deep Research\n\n"
         f"{FOCUS_BEGIN}\n"
-        "Read `../openspec/governance/agent-charter/README.md`.\n"
+        "Read `../openspec/agent-charter/README.md`.\n"
         "Choose one primary module and record `## Change Focus`.\n\n"
         f"{CONTEXT_EXPANSION_SENTENCE}\n\n"
         "| Central question | Primary owner to inspect first |\n"
@@ -271,7 +266,7 @@ def _project(root: Path) -> None:
         "not a project manual\n"
         "rules:\n"
         "  proposal:\n"
-        '    - "Use openspec/governance/agent-charter/README.md and `## Change Focus` '
+        '    - "Use openspec/agent-charter/README.md and `## Change Focus` '
         "with Primary module / causal owner and Triggered review policies. "
         f'{CONTEXT_EXPANSION_SENTENCE}"\n'
         '    - "control-placement requires `## Control Placement Review`."\n'
@@ -344,23 +339,43 @@ def test_missing_index_link_fails(tmp_path: Path) -> None:
     _replace(
         tmp_path,
         CHARTER_ROOT / "README.md",
-        "(policies/local-context.md)",
-        "(policies/other.md)",
+        "(../policies/local-context.md)",
+        "(../policies/other.md)",
     )
 
     _assert_error(tmp_path, "charter.index_link_missing")
 
 
-def test_missing_external_index_link_fails(tmp_path: Path) -> None:
+@pytest.mark.parametrize("policy_name", POLICY_NAMES)
+def test_missing_policy_library_index_link_fails(tmp_path: Path, policy_name: str) -> None:
     _project(tmp_path)
     _replace(
         tmp_path,
-        CHARTER_ROOT / "README.md",
-        f"(../../policies/{CONTROL_PLACEMENT_POLICY}.md)",
-        "(../../policies/other.md)",
+        POLICY_ROOT / "README.md",
+        f"({policy_name}.md)",
+        "(other.md)",
     )
 
-    _assert_error(tmp_path, "charter.index_link_missing")
+    _assert_error(tmp_path, "charter.policy_library_link_missing")
+
+
+def test_legacy_charter_tree_does_not_substitute_for_the_canonical_tree(tmp_path: Path) -> None:
+    _project(tmp_path)
+    legacy_root = tmp_path / LEGACY_CHARTER_ROOT
+    legacy_root.parent.mkdir(parents=True, exist_ok=True)
+    (tmp_path / CHARTER_ROOT).rename(legacy_root)
+
+    result = _run(tmp_path)
+
+    assert result.returncode == 1, result.stdout
+    assert (CHARTER_ROOT / "README.md").as_posix() in result.stderr
+
+
+def test_duplicate_legacy_charter_tree_fails_closed(tmp_path: Path) -> None:
+    _project(tmp_path)
+    _write(tmp_path, LEGACY_CHARTER_ROOT / "README.md", "# Legacy Charter\n")
+
+    _assert_error(tmp_path, "charter.legacy_tree_present")
 
 
 def test_missing_focus_gate_fails(tmp_path: Path) -> None:
@@ -374,7 +389,7 @@ def test_missing_context_expansion_policy_anchor_fails(tmp_path: Path) -> None:
     _project(tmp_path)
     _replace(
         tmp_path,
-        CHARTER_ROOT / "policies" / "local-context.md",
+        POLICY_PATHS["local-context"],
         CONTEXT_EXPANSION_HEADING,
         "",
     )
@@ -484,7 +499,7 @@ def test_information_map_policy_requires_budget_anchor(tmp_path: Path) -> None:
     _project(tmp_path)
     _replace(
         tmp_path,
-        CHARTER_ROOT / "policies" / "agent-information-map.md",
+        POLICY_PATHS["agent-information-map"],
         "## Line Budgets",
         "",
     )
@@ -667,7 +682,7 @@ def test_unknown_triggered_policy_fails_closed(tmp_path: Path) -> None:
     _assert_error(tmp_path, "focus.triggered_policy_unknown")
 
 
-def test_selected_external_policy_requires_an_available_document(tmp_path: Path) -> None:
+def test_selected_cross_cutting_policy_requires_an_available_document(tmp_path: Path) -> None:
     _project(tmp_path)
     (tmp_path / POLICY_PATHS[CONTROL_PLACEMENT_POLICY]).unlink()
     _write(
@@ -682,7 +697,7 @@ def test_selected_external_policy_requires_an_available_document(tmp_path: Path)
     _assert_error(tmp_path, "charter.path_missing")
 
 
-def test_selected_external_policy_with_a_complete_review_record_passes(tmp_path: Path) -> None:
+def test_selected_cross_cutting_policy_with_a_complete_review_record_passes(tmp_path: Path) -> None:
     _project(tmp_path)
     _write(
         tmp_path,

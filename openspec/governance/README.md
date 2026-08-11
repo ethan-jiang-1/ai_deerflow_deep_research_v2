@@ -36,7 +36,7 @@
    负责已批准的规范语义，唯一 active owning delta 负责待批准修改；精确证据 metadata 与
    pytest collection/checker 仍由 `deep_research_harness/` 测试资产拥有，归档 change 只作历史记录。
 
-6. **Deep Research Agent Charter** —— [`agent-charter/README.md`](agent-charter/README.md)
+6. **Deep Research Agent Charter** —— [`agent-charter/README.md`](../agent-charter/README.md)
    是 `deep_research_harness/` 的局部产品总则和 policy 路由入口。它要求每个 change 先选择 primary
    module / causal owner、最小证据 seam 和必要的 adjacent/external contract；它不替代
    capability spec、运行时权威或根目录 DeerFlow 指引。其 information-map policy 为

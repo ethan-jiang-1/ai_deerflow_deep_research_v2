@@ -59,7 +59,7 @@ existing owner and leave a brief pointer:
 - required observable behavior stays in the owning OpenSpec capability spec/delta;
 - current runtime facts stay in code, typed contracts, tests, and retained runtime
   authorities that own them;
-- stable cross-capability principles stay in `charter.md`;
+- stable cross-capability principles stay in [`agent-charter/charter.md`](../agent-charter/charter.md);
 - recurring review rules with a narrow trigger stay in a policy; and
 - product orientation and quick start remain in the human-facing README; detailed
   architecture, operations, and test/evidence reference move to one scoped document

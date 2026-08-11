@@ -537,5 +537,5 @@ seam was already adjusted or rejected first, and `run_agent` presence is
 current-mechanism evidence, never a node's product identity. This discipline comes
 from the archived `node-agent-cognitive-loop-governance-progressive-plan` and is
 routed by the
-[local-context policy](../openspec/governance/agent-charter/policies/local-context.md)
+[local-context policy](../openspec/policies/local-context.md)
 seam rule.

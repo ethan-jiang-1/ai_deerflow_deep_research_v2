@@ -23,9 +23,10 @@ The canonical route from a proposed Deep Research change to one relevant design 
 admission policy and its owning contract.
 _Avoid_: project manual, runtime controller
 
-**External Review Policy**:
-Cross-change design guidance routed by the Charter Index while behavior remains owned
-by capability specifications and runtime authorities.
+**Cross-Cutting Review Guidance**:
+Design guidance in the unified policy library that the Charter Index routes alongside
+its other policies while behavior remains owned by capability specifications and
+runtime authorities.
 _Avoid_: runtime guardrail, permission, approval
 
 **Selected Change Closeout Evidence**:

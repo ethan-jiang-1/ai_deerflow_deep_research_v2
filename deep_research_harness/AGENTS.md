@@ -9,7 +9,7 @@ boundary.
 <!-- BEGIN: DEEP-RESEARCH-FOCUS-GATE -->
 ## Deep Research Focus Gate
 
-Start at the [Agent Charter](../openspec/governance/agent-charter/README.md), then
+Start at the [Agent Charter](../openspec/agent-charter/README.md), then
 select one primary module or causal owner. Read that module's active capability
 spec/delta, closest implementation, and lowest responsible test seam before widening
 scope. Root `AGENTS.md` and `CLAUDE.md` remain upstream constraints; this guide does
@@ -27,7 +27,7 @@ For an LLM-Bearing Node behavior symptom, classify the seam first: capability Ma
 prompt builder, and feedback are the first modification seam; a parser, gate, route, or
 bridge edit is a guardrail, not a substitute. Declare `Seam classification` on the Focus
 Card and follow the
-[local-context policy](../openspec/governance/agent-charter/policies/local-context.md)
+[local-context policy](../openspec/policies/local-context.md)
 seam rule before a deterministic edit for a node symptom.
 
 | Central question | Primary owner to inspect first |
@@ -45,7 +45,7 @@ seam rule before a deterministic edit for a node symptom.
 | Need | Read this first | Do not load by default |
 | --- | --- | --- |
 | Product use, setup, demo, or operator journey | [`README.md`](README.md) reading map | Its entire operational reference for an ordinary code edit |
-| Durable cross-capability design rule | [Agent Charter](../openspec/governance/agent-charter/README.md) | Every charter policy; choose only the triggered one |
+| Durable cross-capability design rule | [Agent Charter](../openspec/agent-charter/README.md) | Every policy in the library; choose only the triggered one |
 | Behavior to change | Owning OpenSpec main spec and active delta | Historical changes or broad roadmap material |
 | Exact paths, layer grammar, and import rules | [`project-structure.toml`](../openspec/governance/project-structure.toml) and its policy | A copied path inventory in this guide |
 | OpenSpec authoring context | [`openspec/config.yaml`](../openspec/config.yaml) | Full DeerFlow/runtime reference material |

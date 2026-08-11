@@ -7,8 +7,9 @@
 > authority: guidance only; never runtime control, permission, or current-state truth
 > @impl DRC-009
 
-Use this policy to locate a changed decision or fact before it turns into a competing
-controller. It complements the Deep Research Agent Charter policies; it does not
+Use this policy through the [Agent Charter policy route](../agent-charter/README.md#policy-route)
+to locate a changed decision or fact before it turns into a competing controller. It
+is cross-cutting review guidance alongside the Charter-routed policies; it does not
 replace Node Agent Review, Workflow Outcome Review, human-interaction-integrity,
 authority-and-projections, or control-and-recovery.
 
@@ -52,6 +53,7 @@ seam, while any owning capability requirement continues to define the behavior.
 
 This policy creates no runtime route, state write, permission, retry, model role,
 lifecycle action, schema, or evaluator. It does not scan source, infer applicability,
-or judge review prose. It does not implement V2
-`add-cross-session-cognitive-guardrails`: there is no guardrail directory, runner,
-dossier, hook, or semantic evaluator here.
+or judge review prose. It remains separate from the delivered, caller-declared
+Git-verified closeout-evidence interface in
+`openspec/guardrails/selected_change_closeout.py`; neither surface creates a semantic
+evaluator, automatic task writer, archive coordinator, or archive blocker.

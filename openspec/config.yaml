@@ -23,7 +23,7 @@ context: |
      current behavior and conformance evidence.
   3. `openspec/governance/project-structure.toml` is the exact structural inventory;
      `architecture-policy.md` defines its update protocol.
-  4. The [Agent Charter](governance/agent-charter/README.md) guides local design and
+  4. The [Agent Charter](agent-charter/README.md) guides local design and
      admission only. It never creates runtime behavior, authority, or permission.
 
   Label unknowns and proposals as such. Do not convert a roadmap idea, DPT reference,
@@ -40,7 +40,7 @@ context: |
   1. Read `deep_research_harness/AGENTS.md` and select one primary module / causal owner.
   2. Read its owning capability spec/delta, closest implementation, and lowest
      responsible evidence seam.
-  3. Use `openspec/governance/agent-charter/README.md` to choose only the policy
+  3. Use `openspec/agent-charter/README.md` to choose only the policy
      triggered by the change.
   4. Add `## Change Focus` to the proposal with Primary module / causal owner,
      Seam classification, Question, Necessary adjacent/external contracts, Evidence
@@ -70,11 +70,11 @@ rules:
     - "New downstream code lives under deep_research_harness/ and may use public deerflow.* APIs. Keep blocking I/O off the async event loop."
     - >
       当 graph、node、state、checkpoint、candidate admission、retry 或 terminal handling 改变时，
-      先从 `openspec/governance/agent-charter/README.md` 选择触发的 policy；node 的 LLM role、
+      先从 `openspec/agent-charter/README.md` 选择触发的 policy；node 的 LLM role、
       tool posture 或 candidate admission 读取
-      `openspec/governance/agent-charter/policies/node-agent-workflow-integrity.md`，而 model、tool、
+      `openspec/policies/node-agent-workflow-integrity.md`，而 model、tool、
       provider、retry、terminal、diagnostic 或 lifecycle projection 读取
-      `openspec/governance/agent-charter/policies/workflow-outcome-review.md`。随后在 design 识别 owning
+      `openspec/policies/workflow-outcome-review.md`。随后在 design 识别 owning
       StateGraph transition/predicate、typed input/output、writer/reducer、evaluator/materializer、
       bounded recovery/terminal disposition 与 deterministic test；不得创建 competing controller 或 authority。
   tasks:

@@ -24,23 +24,23 @@ policy from the route table below.
 
 | Trigger | Read this policy | It answers |
 |---|---|---|
-| Unsure where to start or how much source to inspect | [local context](policies/local-context.md) | Which module owns the decision and what is the minimum context? |
-| Adding a state record, summary, diagnostic, status view, or retained observation | [authority and projections](policies/authority-and-projections.md) | Which existing source owns the fact, and what remains only a projection? |
-| Changing CLI/TUI/API/agent-visible lifecycle output | [participant outcomes](policies/participant-outcomes.md) | What must people and AI consumers receive from the same typed facts? |
-| Adding or revising a human decision, semantic input, visible control, or interaction recovery | [human-interaction integrity](policies/human-interaction-integrity.md) | What does the person mean, which authority interprets it, and how do visible controls remain actionable? |
-| Adding, removing, or materially revising a node's LLM-bearing role, capability policy, tool posture, output admission, repair semantics, or model/non-model classification | [node-agent workflow integrity](policies/node-agent-workflow-integrity.md) | What bounded cognitive job is present, who enforces tools, and which deterministic owner may admit its candidate? |
-| Adding retry, fallback, recovery, terminal handling, or a control check | [control and recovery](policies/control-and-recovery.md) | Who owns the recovery, what is bounded, and what action is legal next? |
-| Adding or changing a model, tool, provider, worker, retry, terminal, diagnostic, or lifecycle projection path | [workflow outcome review](policies/workflow-outcome-review.md) | What failure table, fact owner, bounded recovery, terminal disposition, next action, and proof seam must the proposal record? |
-| Moving a candidate, human judgment, control fact, or deterministic admission/recovery boundary | [control placement](../../policies/control-placement.md) | Which deterministic owner receives the fact, which posture protects the boundary, and what evidence proves the handoff? |
-| Opening, revising, or reviewing an OpenSpec change | [change admission](policies/change-admission.md) | What belongs in the charter, a policy, an owning spec, or an operational procedure? |
-| Adding or revising a contributor entry document | [agent information map](policies/agent-information-map.md) | Which reader needs it, what is the smallest route, and where does detail belong? |
+| Unsure where to start or how much source to inspect | [local context](../policies/local-context.md) | Which module owns the decision and what is the minimum context? |
+| Adding a state record, summary, diagnostic, status view, or retained observation | [authority and projections](../policies/authority-and-projections.md) | Which existing source owns the fact, and what remains only a projection? |
+| Changing CLI/TUI/API/agent-visible lifecycle output | [participant outcomes](../policies/participant-outcomes.md) | What must people and AI consumers receive from the same typed facts? |
+| Adding or revising a human decision, semantic input, visible control, or interaction recovery | [human-interaction integrity](../policies/human-interaction-integrity.md) | What does the person mean, which authority interprets it, and how do visible controls remain actionable? |
+| Adding, removing, or materially revising a node's LLM-bearing role, capability policy, tool posture, output admission, repair semantics, or model/non-model classification | [node-agent workflow integrity](../policies/node-agent-workflow-integrity.md) | What bounded cognitive job is present, who enforces tools, and which deterministic owner may admit its candidate? |
+| Adding retry, fallback, recovery, terminal handling, or a control check | [control and recovery](../policies/control-and-recovery.md) | Who owns the recovery, what is bounded, and what action is legal next? |
+| Adding or changing a model, tool, provider, worker, retry, terminal, diagnostic, or lifecycle projection path | [workflow outcome review](../policies/workflow-outcome-review.md) | What failure table, fact owner, bounded recovery, terminal disposition, next action, and proof seam must the proposal record? |
+| Moving a candidate, human judgment, control fact, or deterministic admission/recovery boundary | [control placement](../policies/control-placement.md) | Which deterministic owner receives the fact, which posture protects the boundary, and what evidence proves the handoff? |
+| Opening, revising, or reviewing an OpenSpec change | [change admission](../policies/change-admission.md) | What belongs in the charter, a policy, an owning spec, or an operational procedure? |
+| Adding or revising a contributor entry document | [agent information map](../policies/agent-information-map.md) | Which reader needs it, what is the smallest route, and where does detail belong? |
 
 ## Where Rules Belong
 
 | Kind of statement | Canonical home | Does not own |
 |---|---|---|
 | Durable, cross-capability Deep Research principle | [charter.md](charter.md) | Runtime behavior or a one-off feature contract |
-| Repeated design/review rule with a concrete trigger | `policies/<topic>.md` | State fields, routes, commands, or permissions |
+| Repeated design/review rule with a concrete trigger | `../policies/<topic>.md` | State fields, routes, commands, or permissions |
 | Observable behavior, schema, action, or security boundary | Owning capability main spec and active delta | A different capability's behavior |
 | Operator procedure or incident response | Scoped runbook or operational document | Current run state or a behavioral requirement |
 | Current fact and conformance evidence | Owning typed contract, checkpoint/ledger/content authority, code, and tests | Future policy or approval |

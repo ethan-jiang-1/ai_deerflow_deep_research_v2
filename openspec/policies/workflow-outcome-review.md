@@ -7,7 +7,7 @@
 
 ## Rule
 
-Before implementation, record the triggered charter policies in the proposal's
+Before implementation, record the triggered policies in the proposal's
 `## Change Focus`. When this policy is selected, add one `## Workflow Outcome
 Review` table. Each row states a failure class, its fact owner, recovery owner and
 bound, terminal disposition, legal next action, and deterministic evidence seam.
@@ -15,7 +15,7 @@ The table exposes missing decisions to review; it does not establish a retry, ro
 state field, permission, or lifecycle transition.
 
 Use canonical policy names separated by commas. Select `none: <short rationale>`
-only when no charter policy is triggered. Do not select this policy for an ordinary
+only when no policy is triggered. Do not select this policy for an ordinary
 documentation-only change merely to satisfy a template.
 
 ## Review Questions

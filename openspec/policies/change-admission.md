@@ -30,7 +30,8 @@ Use this order:
    permission, route, or retry contract, write or modify the owning capability delta.
 2. If it is a recurring design question with a specific trigger across capabilities,
    add or revise a focused policy and route it from the charter index.
-3. If it is durable product posture spanning those policies, revise `charter.md`.
+3. If it is durable product posture spanning those policies, revise
+   [`agent-charter/charter.md`](../agent-charter/charter.md).
 4. If it is a procedure for an operator after behavior already exists, write a
    scoped operational document instead.
 

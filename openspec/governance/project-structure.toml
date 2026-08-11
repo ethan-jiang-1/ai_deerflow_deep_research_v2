@@ -796,57 +796,17 @@ kind = "file"
 owner = "PRS-004"
 
 [[required_paths]]
-path = "openspec/governance/agent-charter"
+path = "openspec/agent-charter"
 kind = "directory"
 owner = "PRS-009"
 
 [[required_paths]]
-path = "openspec/governance/agent-charter/README.md"
+path = "openspec/agent-charter/README.md"
 kind = "file"
 owner = "PRS-009"
 
 [[required_paths]]
-path = "openspec/governance/agent-charter/charter.md"
-kind = "file"
-owner = "PRS-009"
-
-[[required_paths]]
-path = "openspec/governance/agent-charter/policies"
-kind = "directory"
-owner = "PRS-009"
-
-[[required_paths]]
-path = "openspec/governance/agent-charter/policies/local-context.md"
-kind = "file"
-owner = "PRS-009"
-
-[[required_paths]]
-path = "openspec/governance/agent-charter/policies/authority-and-projections.md"
-kind = "file"
-owner = "PRS-009"
-
-[[required_paths]]
-path = "openspec/governance/agent-charter/policies/participant-outcomes.md"
-kind = "file"
-owner = "PRS-009"
-
-[[required_paths]]
-path = "openspec/governance/agent-charter/policies/control-and-recovery.md"
-kind = "file"
-owner = "PRS-009"
-
-[[required_paths]]
-path = "openspec/governance/agent-charter/policies/human-interaction-integrity.md"
-kind = "file"
-owner = "PRS-009"
-
-[[required_paths]]
-path = "openspec/governance/agent-charter/policies/change-admission.md"
-kind = "file"
-owner = "PRS-009"
-
-[[required_paths]]
-path = "openspec/governance/agent-charter/policies/agent-information-map.md"
+path = "openspec/agent-charter/charter.md"
 kind = "file"
 owner = "PRS-009"
 
@@ -857,6 +817,51 @@ owner = "PRS-009"
 
 [[required_paths]]
 path = "openspec/policies/README.md"
+kind = "file"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/policies/local-context.md"
+kind = "file"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/policies/authority-and-projections.md"
+kind = "file"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/policies/participant-outcomes.md"
+kind = "file"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/policies/human-interaction-integrity.md"
+kind = "file"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/policies/node-agent-workflow-integrity.md"
+kind = "file"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/policies/control-and-recovery.md"
+kind = "file"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/policies/workflow-outcome-review.md"
+kind = "file"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/policies/change-admission.md"
+kind = "file"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/policies/agent-information-map.md"
 kind = "file"
 owner = "PRS-009"
 
@@ -878,6 +883,11 @@ owner = "PRS-009"
 [[required_paths]]
 path = "deep_research_harness/tests/contract/test_operation_guidance_probe_evidence.py"
 kind = "file"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/guardrails"
+kind = "directory"
 owner = "PRS-009"
 
 [[required_paths]]

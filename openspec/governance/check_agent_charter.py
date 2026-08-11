@@ -22,8 +22,9 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-CHARTER_ROOT = Path("openspec/governance/agent-charter")
-EXTERNAL_POLICY_ROOT = Path("openspec/policies")
+CHARTER_ROOT = Path("openspec/agent-charter")
+LEGACY_CHARTER_ROOT = Path("openspec/governance/agent-charter")
+POLICY_ROOT = Path("openspec/policies")
 CONFIG_PATH = Path("openspec/config.yaml")
 GUIDE_PATH = Path("deep_research_harness/AGENTS.md")
 CLAUDE_GUIDE_PATH = Path("deep_research_harness/CLAUDE.md")
@@ -108,30 +109,27 @@ class PolicyDocument:
     index_link: str
 
 
-def _charter_policy(name: str) -> PolicyDocument:
+def _policy_document(name: str) -> PolicyDocument:
     return PolicyDocument(
-        path=CHARTER_ROOT / "policies" / f"{name}.md",
-        index_link=f"policies/{name}.md",
+        path=POLICY_ROOT / f"{name}.md",
+        index_link=f"../policies/{name}.md",
     )
 
 
 POLICY_REGISTRY = {
-    "local-context": _charter_policy("local-context"),
-    "authority-and-projections": _charter_policy("authority-and-projections"),
-    "participant-outcomes": _charter_policy("participant-outcomes"),
-    "human-interaction-integrity": _charter_policy("human-interaction-integrity"),
-    "control-and-recovery": _charter_policy("control-and-recovery"),
-    WORKFLOW_OUTCOME_REVIEW_POLICY: _charter_policy(WORKFLOW_OUTCOME_REVIEW_POLICY),
-    NODE_AGENT_WORKFLOW_INTEGRITY_POLICY: _charter_policy(NODE_AGENT_WORKFLOW_INTEGRITY_POLICY),
-    "change-admission": _charter_policy("change-admission"),
-    "agent-information-map": _charter_policy("agent-information-map"),
-    CONTROL_PLACEMENT_POLICY: PolicyDocument(
-        path=EXTERNAL_POLICY_ROOT / "control-placement.md",
-        index_link="../../policies/control-placement.md",
-    ),
+    "local-context": _policy_document("local-context"),
+    "authority-and-projections": _policy_document("authority-and-projections"),
+    "participant-outcomes": _policy_document("participant-outcomes"),
+    "human-interaction-integrity": _policy_document("human-interaction-integrity"),
+    "control-and-recovery": _policy_document("control-and-recovery"),
+    WORKFLOW_OUTCOME_REVIEW_POLICY: _policy_document(WORKFLOW_OUTCOME_REVIEW_POLICY),
+    NODE_AGENT_WORKFLOW_INTEGRITY_POLICY: _policy_document(NODE_AGENT_WORKFLOW_INTEGRITY_POLICY),
+    "change-admission": _policy_document("change-admission"),
+    "agent-information-map": _policy_document("agent-information-map"),
+    CONTROL_PLACEMENT_POLICY: _policy_document(CONTROL_PLACEMENT_POLICY),
 }
-EXTERNAL_POLICY_INDEX = EXTERNAL_POLICY_ROOT / "README.md"
-INFORMATION_MAP_POLICY = CHARTER_ROOT / "policies" / "agent-information-map.md"
+POLICY_LIBRARY_INDEX = POLICY_ROOT / "README.md"
+INFORMATION_MAP_POLICY = POLICY_ROOT / "agent-information-map.md"
 INFORMATION_MAP_POLICY_ANCHORS = (
     "## Reader Roles",
     "## Line Budgets",
@@ -189,6 +187,20 @@ def _validate_charter_tree(root: Path) -> None:
     index = _read_file(root, index_path, code="charter.path_missing")
     charter = _read_file(root, charter_path, code="charter.path_missing")
 
+    legacy_root = root / LEGACY_CHARTER_ROOT
+    if legacy_root.exists() or legacy_root.is_symlink():
+        raise ContractViolation(
+            "charter.legacy_tree_present",
+            f"legacy charter tree must be absent: {LEGACY_CHARTER_ROOT.as_posix()}",
+        )
+
+    nested_policy_root = root / CHARTER_ROOT / "policies"
+    if nested_policy_root.exists() or nested_policy_root.is_symlink():
+        raise ContractViolation(
+            "charter.nested_policy_tree_present",
+            f"charter tree must not contain nested policy prose: {(CHARTER_ROOT / 'policies').as_posix()}",
+        )
+
     _require_fragment(
         index,
         "charter.md",
@@ -208,7 +220,13 @@ def _validate_charter_tree(root: Path) -> None:
         detail=f"charter lacks its non-authority boundary: {charter_path.as_posix()}",
     )
 
-    external_index = _read_file(root, EXTERNAL_POLICY_INDEX, code="charter.path_missing")
+    policy_index = _read_file(root, POLICY_LIBRARY_INDEX, code="charter.path_missing")
+    _require_fragment(
+        policy_index,
+        "../agent-charter/README.md",
+        code="charter.policy_library_route_missing",
+        detail=f"policy library does not route contributors to {index_path.as_posix()}",
+    )
     for policy, document in POLICY_REGISTRY.items():
         policy_text = _read_file(root, document.path, code="charter.path_missing")
         _require_fragment(
@@ -217,13 +235,12 @@ def _validate_charter_tree(root: Path) -> None:
             code="charter.index_link_missing",
             detail=f"charter index does not link to {document.path.as_posix()}",
         )
-        if document.path.is_relative_to(EXTERNAL_POLICY_ROOT):
-            _require_fragment(
-                external_index,
-                document.path.name,
-                code="charter.index_link_missing",
-                detail=f"external policy index does not link to {document.path.as_posix()}",
-            )
+        _require_fragment(
+            policy_index,
+            f"]({document.path.name})",
+            code="charter.policy_library_link_missing",
+            detail=f"policy library does not link to {document.path.as_posix()}",
+        )
         _require_fragment(
             policy_text,
             "> trigger:",
@@ -237,7 +254,7 @@ def _validate_charter_tree(root: Path) -> None:
             detail=f"policy lacks its non-authority boundary: {document.path.as_posix()}",
         )
 
-    local_context_path = CHARTER_ROOT / "policies" / "local-context.md"
+    local_context_path = POLICY_ROOT / "local-context.md"
     local_context = _read_file(root, local_context_path, code="charter.path_missing")
     _require_fragment(
         local_context,
@@ -311,7 +328,7 @@ def _validate_authoring_pointer(root: Path) -> None:
         )
     _require_fragment(
         config,
-        "openspec/governance/agent-charter/README.md",
+        "openspec/agent-charter/README.md",
         code="config.charter_pointer_missing",
         detail=f"OpenSpec configuration lacks the charter pointer: {CONFIG_PATH.as_posix()}",
     )

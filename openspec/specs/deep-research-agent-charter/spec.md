@@ -9,19 +9,28 @@ human/AI-facing information-map rules for the downstream Deep Research product.
 ## Requirements
 ### Requirement: A canonical Deep Research Agent Charter is discoverable
 
-The project SHALL maintain `openspec/governance/agent-charter/` as the permanent
-home for the Deep Research Agent Charter. Its index SHALL route contributors to a
-single relevant policy and SHALL distinguish durable charter principles, focused
-policies, owning capability specifications, scoped operational procedures, and
-current runtime facts. The charter and every policy SHALL state that they are
-design/admission guidance and do not create runtime authority. (`DRC-001`,
+The project SHALL maintain `openspec/agent-charter/` as the permanent home for the
+Deep Research Agent Charter. Its index SHALL route contributors to one relevant policy
+in the canonical `openspec/policies/` library and SHALL distinguish durable charter
+principles, focused policies, owning capability specifications, scoped operational
+procedures, and current runtime facts. The Charter and every policy SHALL state that
+they are design/admission guidance and do not create runtime authority. The Charter
+tree SHALL contain only its routing index and durable principles; it SHALL not contain
+a second nested policy directory or compatibility copy of policy prose. (`DRC-001`,
 `DRC-005`)
 
 #### Scenario: Contributor routes a local change without scanning the repository
 - **WHEN** a contributor begins a Deep Research change affecting one owned module
-- **THEN** the charter index identifies the local-context policy and directs the
-  contributor to the owning capability specification and local evidence seam rather
-  than requiring an undifferentiated read of root DeerFlow documentation
+- **THEN** the Charter index identifies the local-context policy in the canonical
+  policy library and directs the contributor to the owning capability specification
+  and local evidence seam rather than requiring an undifferentiated read of root
+  DeerFlow documentation
+
+#### Scenario: Charter and policy library are discoverable from OpenSpec root
+- **WHEN** a contributor opens `openspec/` to begin a Deep Research change
+- **THEN** it can discover `agent-charter/` as the one routing entry and `policies/`
+  as the one complete policy library without traversing a governance subtree or
+  choosing between duplicate policy homes
 
 #### Scenario: A behavior proposal is placed in its owning contract
 - **WHEN** a proposed policy would add a lifecycle action, state field, graph route,
@@ -238,23 +247,32 @@ of the classification. (`DRC-004`)
 
 ### Requirement: Charter policies preserve source-of-truth discipline and bounded recovery
 
-The charter SHALL include focused policies for authority/projections and
-control/recovery. They SHALL direct changes to use the existing owner of checkpointed
-control state, evidence ledger, sandbox content, typed result, or external contract;
-they SHALL reject shadow control records, silent fallback, unbounded retries, and
-invented recovery actions. A policy that needs to alter an owning contract SHALL
-require a corresponding capability change. (`DRC-005`)
+The Charter SHALL route focused policies from the single `openspec/policies/` library
+for authority/projections and control/recovery. Those policies SHALL direct changes to
+use the existing owner of checkpointed control state, evidence ledger, sandbox
+content, typed result, or external contract; they SHALL reject shadow control records,
+silent fallback, unbounded retries, and invented recovery actions. The policy-library
+index SHALL not become a second Charter, infer applicability, or grant runtime
+authority. A policy that needs to alter an owning contract SHALL require a
+corresponding capability change. (`DRC-005`)
 
 #### Scenario: A diagnostic remains an observation
 - **WHEN** a change retains a diagnostic summary or event record for inspection
-- **THEN** the policy directs it to remain a bounded projection and preserves the
-  owning checkpoint or result contract as the only lifecycle authority
+- **THEN** the authority-and-projections policy directs it to remain a bounded
+  projection and preserves the owning checkpoint or result contract as the only
+  lifecycle authority
 
 #### Scenario: A retry policy has a named owner and bound
 - **WHEN** a change proposes automatic recovery from an external failure
-- **THEN** the policy requires the owning phase or contract to state the closed
-  retryable category, invocation bound, terminal disposition, and nearest legal
-  action instead of adding a presentation-layer retry loop
+- **THEN** the control-and-recovery policy requires the owning phase or contract to
+  state the closed retryable category, invocation bound, terminal disposition, and
+  nearest legal action instead of adding a presentation-layer retry loop
+
+#### Scenario: A policy library does not become a second routing authority
+- **WHEN** a contributor opens a policy directly from `openspec/policies/`
+- **THEN** its trigger guides the contributor back through the Charter's selected
+  policy route and does not create a second Charter, runtime controller, or policy
+  applicability inference mechanism
 
 ### Requirement: Workflow-affecting changes record a triggered outcome review
 
@@ -356,16 +374,19 @@ runtime authority. (`DRC-008`)
   boundary but does not itself create a graph route, state write, tool permission,
   provider call, retry, or result acceptance
 
-### Requirement: Control-placement guidance is externally routed and non-authoritative
+### Requirement: Control-placement guidance is cross-cutting and non-authoritative
 
-The Deep Research Agent Charter SHALL route an external `control-placement` policy
-for a change that adds or changes a gate, validator, readiness check, candidate
-admission, retry/fallback/recovery, next-action diagnostic, durable control fact,
-checkpoint/state writer, or cognitive/control boundary between a Node Agent, a human
-decision, and a deterministic owner. The external policy SHALL remain under
-`openspec/policies/`, distinguish itself from charter routing, governance checks, and
-deferred cross-session guardrails, and state that it creates no runtime route, state
-write, permission, retry, model role, or lifecycle action.
+The Deep Research Agent Charter SHALL route `control-placement` from the canonical
+`openspec/policies/` library for a change that adds or changes a gate, validator,
+readiness check, candidate admission, retry/fallback/recovery, next-action diagnostic,
+durable control fact, checkpoint/state writer, or cognitive/control boundary between a
+Node Agent, a human decision, and a deterministic owner. The policy-library index
+SHALL classify it as cross-cutting review guidance alongside, rather than outside of,
+the Charter-routed policy set. It SHALL distinguish itself from Charter routing,
+deterministic governance checks, and the delivered selected-change closeout-evidence
+capability. It SHALL state that it creates no runtime route, state write, permission,
+retry, model role, lifecycle action, semantic evaluator, automatic task writer, or
+archive coordinator/blocker.
 
 The policy SHALL use only the closed design postures `advisory`, `bounded-repair`,
 `human-decision`, and `non-bypassable`. It SHALL direct an author to identify a
@@ -378,9 +399,9 @@ waiver or human-action contract. (`DRC-009`)
 #### Scenario: A changed admission boundary has a focused review route
 - **WHEN** a change moves comparison, acceptance, retry, or other control admission
   between a candidate/human surface and a deterministic owner
-- **THEN** the charter index and concise authoring route identify
-  `control-placement` as the focused external review policy without treating the
-  policy as runtime authority
+- **THEN** the Charter index and policy-library index identify `control-placement` as
+  the focused cross-cutting review policy without treating the policy as runtime
+  authority
 
 #### Scenario: A durable fact has a handoff-aware evidence expectation
 - **WHEN** a selected control-placement review names a direct fact that crosses a
@@ -398,9 +419,9 @@ waiver or human-action contract. (`DRC-009`)
 ### Requirement: Selected control-placement records are mechanically bounded
 
 Every active Deep Research proposal SHALL use one Focus Card list item named
-`Triggered review policies` to declare a comma-separated list of canonical charter
-and external review-policy names, or `none: <short rationale>` when no review policy
-applies. A proposal selecting `control-placement` SHALL contain exactly one complete
+`Triggered review policies` to declare a comma-separated list of canonical policy
+library names, or `none: <short rationale>` when no review policy applies. A proposal
+selecting `control-placement` SHALL contain exactly one complete
 `## Control Placement Review` table with this header, separator, and at least one row:
 
 ```text
@@ -409,7 +430,7 @@ applies. A proposal selecting `control-placement` SHALL contain exactly one comp
 ```
 
 Every table cell SHALL be non-empty. `Design posture` SHALL be one of the closed
-postures named by the external policy. A change with both a human input and a
+postures named by the control-placement policy. A change with both a human input and a
 non-bypassable invariant SHALL use distinct rows. Existing Node Agent and Workflow
 Outcome Review requirements SHALL remain independently enforced whenever their
 selected policies require them.
@@ -427,9 +448,9 @@ the truth of a review row, or grant runtime authority. (`DRC-009`)
   the proposal's separate selected-review validation
 
 #### Scenario: A malformed selected control-placement review fails closed
-- **WHEN** an active proposal selects `control-placement` but the external policy is
-  unavailable, the Focus Card field is malformed, the review is missing, its header
-  differs, a cell is empty, or a posture is not closed
+- **WHEN** an active proposal selects `control-placement` but the policy-library
+  document is unavailable, the Focus Card field is malformed, the review is missing,
+  its header differs, a cell is empty, or a posture is not closed
 - **THEN** the charter checker reports deterministic conformance failure without
   attempting to infer or repair the missing semantic decision
 
@@ -448,7 +469,7 @@ the truth of a review row, or grant runtime authority. (`DRC-009`)
   failure/recovery behavior
 
 #### Scenario: Archived proposals remain historical records
-- **WHEN** the field migration is applied to the active planning home
+- **WHEN** the policy-library migration is applied to the active planning home
 - **THEN** archived change artifacts remain unmodified and the checker evaluates only
   active proposals against the current admission contract
 
@@ -459,7 +480,7 @@ For an active Deep Research proposal whose `Triggered review policies` includes
 one plan-review obligation and one archive-closeout-review obligation until each has
 an owner, minimal correction or review action, and an honest deterministic or bounded
 evidence done condition. The route SHALL not require those obligations solely because
-the proposal selects another charter or external review policy.
+the proposal selects another policy from the unified policy library.
 
 `openspec/config.yaml` SHALL provide distinct `operations.apply.guidance` and
 `operations.archive.guidance`. OpenSpec SHALL return those configured strings as
@@ -471,8 +492,8 @@ context and turn an actionable finding into an ordinary task. Archive guidance S
 direct the current agent to review the selected change's actual boundary, unresolved
 tasks, and existing deterministic evidence before describing closeout.
 
-When a change uses the selected-change closeout-evidence capability, the authoring
-route SHALL identify it as a separate, caller-declared and Git-verified boundary
+When a change uses the delivered selected-change closeout-evidence capability, the
+authoring route SHALL identify it as a separate, caller-declared and Git-verified boundary
 contract. It SHALL state that the resulting record is non-authoritative and that
 operation guidance remains advisory: neither surface executes commands, creates or
 completes tasks, infers a finding, validates semantic quality, nor blocks a native

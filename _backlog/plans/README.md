@@ -1,6 +1,6 @@
 # Active Plans — 活跃 plan/分析文档列表
 
-> 最后更新: 2026-08-10 | `_backlog/plans/` — 活跃 plan 在此，完成移入 [`../_done/_closed_plans/`](../_done/_closed_plans/)。
+> 最后更新: 2026-08-11 | `_backlog/plans/` — 活跃 plan 在此，完成移入 [`../_done/_closed_plans/`](../_done/_closed_plans/)。
 >
 > **plan 没有编号，文件名即标识。完成后文件名不变，位置即状态。**
 
@@ -19,7 +19,8 @@
 
 | Plan | 说明 |
 |------|------|
-| [openspec-extension-readme-restructure.md](openspec-extension-readme-restructure.md) | OpenSpec 治理文档分层；先修治理基线，再分别修复 SCC closeout contract 与 DRC 术语漂移 |
+| [openspec-agent-charter-topology-flattening.md](openspec-agent-charter-topology-flattening.md) | 将 Charter、全部十个 policy 与 guardrail 明确为 `openspec/` 一级职责；以独立 change 迁移路径并吸收 DRC terminology correction |
+| [openspec-extension-readme-restructure.md](openspec-extension-readme-restructure.md) | OpenSpec 治理文档分层；已完成基线修复，保留 SCC closeout contract 与最终 governance README 收口计划 |
 
 新的分析或设计应在此创建，完成后再移入归档。
 
