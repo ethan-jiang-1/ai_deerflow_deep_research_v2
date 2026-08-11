@@ -19,7 +19,7 @@
 
 | Plan | 说明 |
 |------|------|
-| — | 当前没有活跃 plan。 |
+| [openspec-extension-readme-restructure.md](openspec-extension-readme-restructure.md) | openspec 三个扩展目录（governance/guardrails/policies）README 去重 + guardrails 契约字段 bug 修复 |
 
 新的分析或设计应在此创建，完成后再移入归档。
 
