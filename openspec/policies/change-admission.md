@@ -3,7 +3,6 @@
 > role: lightweight admission and policy-placement guidance
 > trigger: opening, revising, reviewing, or applying an OpenSpec change
 > authority: guidance only; the active delta and accepted spec own behavior
-> @impl DRC-004
 
 ## Focus Before Work
 

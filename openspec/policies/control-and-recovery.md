@@ -3,7 +3,6 @@
 > role: bounded recovery and actionable failure design guidance
 > trigger: adding retry, backoff, fallback, terminal incident, cancellation path, or control check
 > authority: guidance only; phase behavior, budgets, and routes remain with their owning capability
-> @impl DRC-005
 
 ## Rule
 

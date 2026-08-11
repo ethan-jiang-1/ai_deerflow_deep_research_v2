@@ -3,7 +3,6 @@
 > role: review guidance for bounded LLM cognition inside deterministic workflow nodes
 > trigger: adding, removing, or materially revising a node's LLM-bearing cognitive role, capability policy, tool posture, output-admission boundary, repair semantics, or model/non-model classification
 > authority: guidance only; exact behavior, state writes, routes, tool permissions, and recovery remain in the owning capability specification and executable contracts
-> @impl DRC-008
 
 ## Rule
 

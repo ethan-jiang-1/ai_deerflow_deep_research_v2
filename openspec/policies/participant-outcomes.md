@@ -3,7 +3,6 @@
 > role: human and AI consumer contract guidance
 > trigger: changing a lifecycle result, failure, diagnostic, CLI/TUI/API output, or machine-consumed outcome
 > authority: guidance only; exact result fields remain owned by the relevant capability contract
-> @impl DRC-003
 
 ## Rule
 

@@ -3,7 +3,6 @@
 > role: focus selection for Deep Research changes
 > trigger: beginning a change, choosing a code-reading scope, or explaining a cross-layer patch
 > authority: guidance only; module ownership and behavior remain in the owning spec and code
-> @impl DRC-002
 
 ## Rule
 

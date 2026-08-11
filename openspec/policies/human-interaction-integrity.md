@@ -3,7 +3,6 @@
 > role: review guidance for human decision and semantic-input surfaces
 > trigger: adding or revising a human decision, semantic input, visible control, or interaction recovery surface
 > authority: guidance only; exact behavior, state writes, and permissions remain in the owning capability specification and typed contracts
-> @impl DRC-007
 
 ## Rule
 

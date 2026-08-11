@@ -3,7 +3,6 @@
 > role: keep Deep Research contributor entry documents small, distinct, and routable
 > trigger: adding material to `deep_research_harness/AGENTS.md`, `deep_research_harness/CLAUDE.md`, `deep_research_harness/README.md`, or `openspec/config.yaml`
 > authority: guidance only; behavior, current facts, and path inventory remain with their owning contracts
-> @impl DRC-006
 
 ## Reader Roles
 

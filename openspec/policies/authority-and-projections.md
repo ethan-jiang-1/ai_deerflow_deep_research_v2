@@ -3,7 +3,6 @@
 > role: source-of-truth discipline for Deep Research changes
 > trigger: adding state, a summary, diagnostic, status view, retained observation, cache, or recovery surface
 > authority: guidance only; it never creates a state writer, route, or permission
-> @impl DRC-005
 
 ## Rule
 

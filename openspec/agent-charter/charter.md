@@ -2,10 +2,6 @@
 
 > role: local product constitution for Deep Research design and change admission
 > scope: `deep_research_harness/` and its OpenSpec governance; root DeerFlow guidance remains an upstream constraint
-> authority: guidance only; current facts and behavior remain with their owning contracts
-> @impl DRC-001
-> @impl DRC-005
-> @impl DRC-010
 
 ## Product Boundary
 

@@ -3,7 +3,6 @@
 > role: workflow-failure design and review guidance
 > trigger: adding or changing a model, tool, provider, worker, retry, terminal, diagnostic, or lifecycle-projection path
 > authority: guidance only; the owning capability contract and runtime authority define behavior
-> @impl DRC-004
 
 ## Rule
 

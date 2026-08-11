@@ -2,9 +2,6 @@
 
 > scope: recurring Deep Research design and review guidance
 > authority: guidance only; never runtime control, permission, or current-state truth
-> @impl DRC-001
-> @impl DRC-005
-> @impl DRC-009
 
 This is the complete library of trigger-bearing Deep Research policies. Read the
 [Agent Charter](../agent-charter/README.md) to select one relevant policy; the Charter

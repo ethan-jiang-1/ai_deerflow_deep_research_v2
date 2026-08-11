@@ -5,7 +5,6 @@
 > state writer, or a cognitive/control boundary between a Node Agent, human decision,
 > and deterministic owner
 > authority: guidance only; never runtime control, permission, or current-state truth
-> @impl DRC-009
 
 Use this policy through the [Agent Charter policy route](../agent-charter/README.md#policy-route)
 to locate a changed decision or fact before it turns into a competing controller. It

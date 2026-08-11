@@ -2,8 +2,6 @@
 
 > scope: `deep_research_harness/` design and OpenSpec change admission
 > authority: guidance only; never runtime control, permission, or current-state truth
-> @impl DRC-001
-> @impl DRC-005
 
 This directory is the permanent starting point for the Deep Research product's
 cross-cutting design principles. It exists because this project is a downstream
