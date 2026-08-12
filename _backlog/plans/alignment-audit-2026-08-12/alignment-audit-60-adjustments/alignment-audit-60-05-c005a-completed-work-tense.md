@@ -2,7 +2,7 @@
 
 > Stage: 2 - `retire-stale-context-concepts`
 > 类型: `UNAMBIGUOUS-RETIRE`
-> 状态: **REVIEW REQUIRED**
+> 状态: **REVIEWED - PLANNING ONLY; NOT AUTHORIZED FOR APPLY**
 
 ## 调整内容到底是什么
 
@@ -26,7 +26,10 @@ CONTEXT 会变短，读者需要沿链接理解结构；如果 owner link 选择
 
 ## 审阅结论
 
-- [ ] 调整内容准确
-- [ ] 风险与副作用已充分披露
-- [ ] 批准进入 Stage 2 planning
+- [x] 调整内容准确：2026-08-12，`evals/control/`、被忽略的 `evals/runs/`、
+  `runtime/evaluation/` 与 `tests/eval/` 都是当前已落地边界；只有“new”及“must
+  explicitly update”的实施时态过期。
+- [x] 风险与副作用已充分披露：不得因清理时态整段删除 control/run-data separation
+  invariant，必须保留或链接当前 owner。
+- [x] 批准进入 Stage 2 planning（不包含创建 OpenSpec change 或 apply 授权）
 - [ ] 需要修改或补充，原因：

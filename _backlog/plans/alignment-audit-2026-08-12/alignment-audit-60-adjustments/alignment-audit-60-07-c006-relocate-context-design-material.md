@@ -1,33 +1,37 @@
-# C-006 - Relocate CONTEXT Design Material
+# C-006 - Withdraw Broad CONTEXT Relocation
 
 > Stage: 2 - `retire-stale-context-concepts`
-> 类型: `RELOCATE-LINK-OWNER`
-> 状态: **REVIEW REQUIRED**
+> 类型: `WITHDRAWN-NO-ACTION`
+> 状态: **WITHDRAWN - NO PLANNING OR APPLY WORK**
 
 ## 调整内容到底是什么
 
-对 `CONTEXT.md:468-541` 六个非 glossary 章节逐段分类；安全部分从 CONTEXT 移出并链接
-ADR/main spec/policy，词典只保留稳定术语与 Avoid。
+撤回原先“把 `CONTEXT.md:468-541` 的六个设计章节逐段迁出”的提议。该提议没有指出一个
+确定错误，而是把“是否应让 CONTEXT 更短”的偏好误包装成对齐任务。
+
+已经确认的具体错误仍由 C-004、C-005.a、C-005.b 和后续独立项分别处理；本项不再要求
+移动、删减或链接这六段其余文字。
 
 ## 主要风险
 
-这些章节并非全部错误。整块删除可能丢掉有效设计，尤其可能暗中删掉 A-003
-Rubric/Runner 冲突的一侧证据。
+若继续执行，会扩大 Stage 2 scope，并可能删掉对人和 agent 有用的当前上下文，尤其会
+掩盖尚未决的 A-003 Rubric/Runner 语义问题。
 
 ## 可能副作用
 
-信息从单页集中阅读变成按需导航，agent 的首次发现成本可能上升；错误 relocation 还会
-让冲突“看不见但仍存在”。
+保留现有文字意味着 CONTEXT 不会因本项变短；没有运行时、规格或文档链接副作用。以后若
+发现某一段存在具体的事实错误，必须以新的、单独编号的 adjustment 审阅，不能复活本项的
+宽泛迁移范围。
 
 ## 控制与停止条件
 
-- 逐段、逐句 disposition，禁止整块删除。
-- A-003/A-004 相交内容原样 quarantine。
-- 局部复审必须证明没有通过删除文本伪造 resolved。
+- 本项不创建 OpenSpec change task，也不产生 target edit。
+- C-004/C-005 已审动作仍保持各自独立的范围和控制，不因本项撤回而扩大。
+- A-003/A-004 继续隔离，直到独立产品决定；不得将撤回理解为已解决。
 
 ## 审阅结论
 
-- [ ] 调整内容准确
-- [ ] 风险与副作用已充分披露
-- [ ] 批准进入 Stage 2 planning
-- [ ] 需要修改或补充，原因：
+- [x] 原提议撤回：2026-08-12。它不是确定的错位，也不应通过一般性“精简 CONTEXT”扩大
+  cleanup scope。
+- [x] 不进入 Stage 2 planning 或 apply；无 target edit。
+- [ ] 日后发现具体事实错误时，建立新的独立 adjustment，不复用 C-006。

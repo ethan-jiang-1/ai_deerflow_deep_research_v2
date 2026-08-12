@@ -2,7 +2,7 @@
 
 > Stage: 2 - `retire-stale-context-concepts`
 > 类型: `UNAMBIGUOUS-RETIRE`
-> 状态: **REVIEW REQUIRED**
+> 状态: **REVIEWED - PLANNING ONLY; NOT AUTHORIZED FOR APPLY**
 
 ## 调整内容到底是什么
 
@@ -27,7 +27,10 @@
 
 ## 审阅结论
 
-- [ ] 调整内容准确
-- [ ] 风险与副作用已充分披露
-- [ ] 批准进入 Stage 2 planning
+- [x] 调整内容准确：2026-08-12，一个 change 有唯一 primary module / causal owner，
+  但可有零到多个被实际 trigger 的 review policies；Focus Card 的逗号列表与 checker
+  已按此运行。
+- [x] 风险与副作用已充分披露：改文案时必须同时保留“只读被 trigger 的 policy”，不能变成
+  默认加载全库。
+- [x] 批准进入 Stage 2 planning（不包含创建 OpenSpec change 或 apply 授权）
 - [ ] 需要修改或补充，原因：

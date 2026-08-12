@@ -2,7 +2,7 @@
 
 > Stage: 2 - `retire-stale-context-concepts`
 > 类型: `RELABEL-DORMANT`
-> 状态: **REVIEW REQUIRED**
+> 状态: **REVIEWED - PLANNING ONLY**
 
 ## 调整内容到底是什么
 
@@ -26,7 +26,11 @@ README、CONTEXT、ADR 会出现 current/planned/dormant 多种状态，导航�
 
 ## 审阅结论
 
-- [ ] 调整内容准确
-- [ ] 风险与副作用已充分披露
-- [ ] 批准进入 Stage 2 planning
+- [x] 调整内容准确：2026-08-12，`make demo-tui` / `make demo-tui-fake` 保持 current
+  contributor/operator visualizer；current Primary User route 是 Dedicated Agent + reflected
+  `deep_research` tool。仅 dedicated Primary-User TUI 及以它为首个 scope 的 Local-First
+  Deployment 标为 `dormant`。
+- [x] 风险与副作用已充分披露：`dormant` 是保留历史理由和未来重启可能、但没有 active
+  commitment；不把 demo TUI 或 Cognitive Evaluation 的 local evaluation surface 一并降级。
+- [x] 批准进入 Stage 2 planning（不包含创建 OpenSpec change 或 apply 授权）
 - [ ] 需要修改或补充，原因：

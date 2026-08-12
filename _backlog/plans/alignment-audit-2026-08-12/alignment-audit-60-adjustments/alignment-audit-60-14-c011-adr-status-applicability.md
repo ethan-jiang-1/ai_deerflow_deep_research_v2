@@ -2,7 +2,7 @@
 
 > Stage: 2 - `retire-stale-context-concepts`
 > 类型: historical status
-> 状态: **REVIEW REQUIRED**
+> 状态: **REVIEWED - PLANNING ONLY**
 
 ## 调整内容到底是什么
 
@@ -27,7 +27,12 @@ principle，需要更细的 applicability 描述。
 
 ## 审阅结论
 
-- [ ] 调整内容准确
-- [ ] 风险与副作用已充分披露
-- [ ] 批准进入 Stage 2 planning
+- [x] 调整内容准确：2026-08-12，只为 ADR 0002、0003、0006、0008、0010 添加统一的
+  后记型 status/applicability note；标题和历史正文逐字保留。0002/0003/0006/0010 按子决定
+  区分 current、dormant、planned 或 non-current；0008 的 dedicated-TUI Local-First 路线
+  为 `dormant`，但现有 Bundle lifecycle/isolation 不受影响。
+- [x] 风险与副作用已充分披露：不使用全局 obsolete 标签，不让注记越权定义 runtime；每个
+  applicability claim 都链接现行 owner，Support Handoff 的 Bundle-loss retention 保持 A-004
+  quarantine。
+- [x] 批准进入 Stage 2 planning（不包含创建 OpenSpec change 或 apply 授权）
 - [ ] 需要修改或补充，原因：

@@ -2,7 +2,7 @@
 
 > Stage: 1 - `retire-v1-topology-residue`
 > 类型: `UNAMBIGUOUS-RETIRE`
-> 状态: **REVIEW REQUIRED**
+> 状态: **REVIEWED - APPROVED FOR STAGE 1 PLANNING ONLY**
 
 ## 调整内容到底是什么
 
@@ -27,7 +27,11 @@ checkout 实际使用的 `../deerflow/backend/packages/harness`，同时写清�
 
 ## 审阅结论
 
-- [ ] 调整内容准确
-- [ ] 风险与副作用已充分披露
-- [ ] 批准进入 Stage 1 planning
+- [x] 调整内容准确
+- [x] 风险与副作用已充分披露
+- [x] 批准进入 Stage 1 planning
 - [ ] 需要修改或补充，原因：
+
+> 审阅确认: 2026-08-12。README 示例必须同时校对真实路径和运行目录；不修改
+> `pyproject.toml`、lockfile、dependency metadata、代码或 target authority。未授权
+> 创建/apply OpenSpec change。

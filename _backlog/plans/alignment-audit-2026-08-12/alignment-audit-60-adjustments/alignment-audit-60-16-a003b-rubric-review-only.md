@@ -2,7 +2,7 @@
 
 > Stage: 4 - `reconcile-evaluation-rubric-authority`
 > 类型: mutually exclusive product decision
-> 状态: **PENDING PRODUCT DECISION**
+> 状态: **REJECTED ALTERNATIVE - 2026-08-12**
 
 ## 调整内容到底是什么
 
@@ -25,9 +25,15 @@ required behavior 与当前 admission/typed fixtures 不一致；若只改 spec 
 - 本 Stage 不改实现，不能把 A-003 标成 code-conformant。
 - 选择本项即排除 Option A；实现 work 只能在另一个获授权 code change 中开始。
 
+## 排除理由
+
+产品 owner 选择了 Option A：criterion IDs 可以只作为 admission 的 control-integrity
+metadata。故本项“完全不解析 criteria”的合同不成立。此排除不是对 review-only 价值的否定：
+Rubric criteria 正文、model-facing input 和 quality verdict 仍然完全留在 review 侧。
+
 ## 审阅结论
 
-- [ ] 调整内容准确
-- [ ] 风险与副作用已充分披露
-- [ ] 选择此合同，排除 A-003 Option A
+- [x] 已审阅：本项完整表达了被拒绝的另一条合同及其 code-gap 风险。
+- [x] 已排除：2026-08-12，产品 owner 选择 A-003 Option A，而非 Rubric 完全 review-only。
+- [x] 排除后仍保留其风险记录，避免日后误将 Option A 扩展为 Rubric 正文或 verdict 可执行。
 - [ ] 需要修改或补充，原因：

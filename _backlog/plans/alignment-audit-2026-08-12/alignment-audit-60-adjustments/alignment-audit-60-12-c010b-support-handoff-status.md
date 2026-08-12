@@ -2,7 +2,7 @@
 
 > Stage: 2 - `retire-stale-context-concepts`
 > 类型: `RELABEL-PLANNED`
-> 状态: **REVIEW REQUIRED**
+> 状态: **REVIEWED - PLANNING ONLY**
 
 ## 调整内容到底是什么
 
@@ -26,7 +26,10 @@ CONTEXT 会同时保留未来 capability 和未决 lifecycle 语义；这种张�
 
 ## 审阅结论
 
-- [ ] 调整内容准确
-- [ ] 风险与副作用已充分披露
-- [ ] 批准进入 Stage 2 planning
+- [x] 调整内容准确：2026-08-12，现有 Bundle-local Event Journal、终端诊断和 developer/operator
+  inspection 不构成 Support Handoff；当前没有该 handoff 的 producer、schema 或 public entry，
+  因此标为 `planned`。
+- [x] 风险与副作用已充分披露：`planned` 不等于 external retention 已获批准；Bundle-loss 后
+  能否留存仍保持 A-004 quarantine。
+- [x] 批准进入 Stage 2 planning（不包含创建 OpenSpec change 或 apply 授权）
 - [ ] 需要修改或补充，原因：

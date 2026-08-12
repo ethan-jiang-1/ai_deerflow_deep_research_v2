@@ -2,7 +2,7 @@
 
 > Stage: 1 - `retire-v1-topology-residue`
 > 类型: `UNAMBIGUOUS-RETIRE`; A-002 remains `DEFERRED-CODE-CHANGE`
-> 状态: **REVIEW REQUIRED**
+> 状态: **REVIEWED - APPROVED FOR STAGE 1 PLANNING ONLY**
 
 ## 调整内容到底是什么
 
@@ -29,7 +29,11 @@ proposal/archive 文案，改为普通 change 不拥有 `deerflow/` gitlink，�
 
 ## 审阅结论
 
-- [ ] 调整内容准确
-- [ ] 风险与副作用已充分披露
-- [ ] 批准进入 Stage 1 planning
+- [x] 调整内容准确
+- [x] 风险与副作用已充分披露
+- [x] 批准进入 Stage 1 planning
 - [ ] 需要修改或补充，原因：
+
+> 审阅确认: 2026-08-12。只将错误的假绿规则改为诚实的人工 scope/diff evidence；
+> A-002 继续是 `DEFERRED-CODE-CHANGE`。未授权创建/apply OpenSpec change，未授权
+> 修改 checker、tests、manifest/TOML 或 target authority。

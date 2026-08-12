@@ -2,7 +2,7 @@
 
 > Stage: 2 - `retire-stale-context-concepts`
 > 类型: `UNAMBIGUOUS-RETIRE`
-> 状态: **REVIEW REQUIRED**
+> 状态: **REVIEWED - PLANNING ONLY; NOT AUTHORIZED FOR APPLY**
 
 ## 调整内容到底是什么
 
@@ -28,7 +28,10 @@ planned commitment 存在。
 
 ## 审阅结论
 
-- [ ] 调整内容准确
-- [ ] 风险与副作用已充分披露
-- [ ] 批准进入 Stage 2 planning
+- [x] 调整内容准确：2026-08-12，保留 `limited` / `inconclusive` 不得计作 `pass`、
+  Execution Status 分离以及不可变结构化 Review Record；只退役无 owner 的独立 readable
+  report 要求。
+- [x] 风险与副作用已充分披露：不把当前 JSON Review Record 误称为已交付报告体验；未来
+  人类可读评估报告须以独立产品 change 定义。
+- [x] 批准进入 Stage 2 planning（不包含创建 OpenSpec change 或 apply 授权）
 - [ ] 需要修改或补充，原因：

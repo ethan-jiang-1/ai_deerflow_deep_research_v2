@@ -167,9 +167,9 @@ adjustment 不得 apply，也不得勾选对应完成 checkbox。
 
 - [x] 1.R1 审阅并确认
   [C-001 real upstream topology](alignment-audit-60-adjustments/alignment-audit-60-01-c001-real-upstream-topology.md)。
-- [ ] 1.R2 审阅并确认
+- [x] 1.R2 审阅并确认
   [C-002 proposal and closeout boundary](alignment-audit-60-adjustments/alignment-audit-60-02-c002-closeout-boundary.md)。
-- [ ] 1.R3 审阅并确认
+- [x] 1.R3 审阅并确认
   [C-003 editable harness path](alignment-audit-60-adjustments/alignment-audit-60-03-c003-editable-harness-path.md)。
 
 ### Planning checklist
@@ -221,28 +221,53 @@ adjustment 不得 apply，也不得勾选对应完成 checkbox。
 
 **Change:** `retire-stale-context-concepts`
 
-**只覆盖:** C-004..C-011 / A-005..A-008 的安全子集。
+**只覆盖:** C-004、C-005、C-007..C-011 / A-005..A-008 的安全子集。C-006 已撤回，
+不进入 planning 或 apply。
 
 ### 逐项审阅文件
 
-- [ ] 2.R1 [C-004 workspace / bundle](alignment-audit-60-adjustments/alignment-audit-60-04-c004-workspace-bundle-definition.md)
-- [ ] 2.R2 [C-005.a completed-work tense](alignment-audit-60-adjustments/alignment-audit-60-05-c005a-completed-work-tense.md)
-- [ ] 2.R3 [C-005.b archived change dependency](alignment-audit-60-adjustments/alignment-audit-60-06-c005b-archived-change-dependency.md)
-- [ ] 2.R4 [C-006 relocate CONTEXT design material](alignment-audit-60-adjustments/alignment-audit-60-07-c006-relocate-context-design-material.md)
-- [ ] 2.R5 [C-007 policy cardinality](alignment-audit-60-adjustments/alignment-audit-60-08-c007-policy-cardinality.md)
-- [ ] 2.R6 [C-008 Suite smoke target](alignment-audit-60-adjustments/alignment-audit-60-09-c008-suite-smoke-roadmap-status.md)
-- [ ] 2.R7 [C-009 readable-review-report requirement](alignment-audit-60-adjustments/alignment-audit-60-10-c009-readable-review-report-requirement.md)
-- [ ] 2.R8 [C-010.a report artifact vs export](alignment-audit-60-adjustments/alignment-audit-60-11-c010a-report-artifact-vs-export.md)
-- [ ] 2.R9 [C-010.b Support Handoff status](alignment-audit-60-adjustments/alignment-audit-60-12-c010b-support-handoff-status.md)
-- [ ] 2.R10 [C-010.c TUI / Local-First dormant](alignment-audit-60-adjustments/alignment-audit-60-13-c010c-tui-local-first-dormant.md)
-- [ ] 2.R11 [C-011 ADR status / applicability](alignment-audit-60-adjustments/alignment-audit-60-14-c011-adr-status-applicability.md)
+- [x] 2.R1 审阅并确认 [C-004 workspace / bundle](alignment-audit-60-adjustments/alignment-audit-60-04-c004-workspace-bundle-definition.md)：
+  DeerFlow host workspace、Deep Research Run Bundle 与 Evaluation Run Workspace 是三个不同
+  owner 的概念；限 Stage 2 planning，不包含 change/create/apply 授权。
+- [x] 2.R2 审阅并确认 [C-005.a completed-work tense](alignment-audit-60-adjustments/alignment-audit-60-05-c005a-completed-work-tense.md)：
+  只退役已完成迁移的未来时态；control/run-data separation、Runner 归属和 `tests/eval`
+  的当前角色保留或链接 canonical owner；限 Stage 2 planning，不包含 change/create/apply 授权。
+- [x] 2.R3 审阅并确认 [C-005.b archived change dependency](alignment-audit-60-adjustments/alignment-audit-60-06-c005b-archived-change-dependency.md)：
+  清除 current glossary 对 closed plan 的来源宣称；保留 seam-first 规则及现行 policy 指针，
+  archive 仅作历史追溯；限 Stage 2 planning，不包含 change/create/apply 授权。
+- [x] 2.R4 [C-006 withdraw broad CONTEXT relocation](alignment-audit-60-adjustments/alignment-audit-60-07-c006-relocate-context-design-material.md)：
+  原提议不是确定错位，撤回且无 target edit；具体错误继续由各独立项处理。
+- [x] 2.R5 审阅并确认 [C-007 policy cardinality](alignment-audit-60-adjustments/alignment-audit-60-08-c007-policy-cardinality.md)：
+  primary owner 唯一；review policy 可多选但仅限实际 trigger；每个 selected policy 保留
+  独立 record；限 Stage 2 planning，不包含 change/create/apply 授权。
+- [x] 2.R6 审阅并确认 [C-008 remove false all-node smoke claim](alignment-audit-60-adjustments/alignment-audit-60-09-c008-suite-smoke-roadmap-status.md)：
+  只清除错误的全节点 current claim；registry 是当前范围事实来源，不新增 roadmap、case 或
+  behavior requirement；限 Stage 2 planning，不包含 change/create/apply 授权。
+- [x] 2.R7 审阅并确认 [C-009 readable-review-report requirement](alignment-audit-60-adjustments/alignment-audit-60-10-c009-readable-review-report-requirement.md)：
+  只退役无 owner 的独立 readable-report 要求；保留结构化 Review Record、四态结果和
+  `limited` / `inconclusive` 不得计作 pass；限 Stage 2 planning，不包含 change/create/apply 授权。
+- [x] 2.R8 审阅并确认 [C-010.a report artifact vs export](alignment-audit-60-adjustments/alignment-audit-60-11-c010a-report-artifact-vs-export.md)：
+  `final/report.md` 是 current Bundle artifact；Primary User report reopen/copy/export 没有
+  current public entry，且本轮不把它预先承诺为 `planned`；限 Stage 2 planning，不包含
+  change/create/apply 授权。
+- [x] 2.R9 审阅并确认 [C-010.b Support Handoff status](alignment-audit-60-adjustments/alignment-audit-60-12-c010b-support-handoff-status.md)：
+  当前没有 Support Handoff producer/schema/public entry；标 `planned`，但 Bundle-loss
+  后留存问题保持 A-004 quarantine；限 Stage 2 planning，不包含 change/create/apply 授权。
+- [x] 2.R10 审阅并确认 [C-010.c TUI / Local-First dormant](alignment-audit-60-adjustments/alignment-audit-60-13-c010c-tui-local-first-dormant.md)：
+  dedicated Primary-User TUI 及其首发 Local-First 路线为 `dormant`；不影响 current
+  Dedicated Agent route、demo TUI visualizer 或 Cognitive Evaluation 的 local surface；限
+  Stage 2 planning，不包含 change/create/apply 授权。
+- [x] 2.R11 审阅并确认 [C-011 ADR status / applicability](alignment-audit-60-adjustments/alignment-audit-60-14-c011-adr-status-applicability.md)：
+  只加统一后记型 status/applicability note，不改 ADR 标题或正文；0002、0003、0006、0008、
+  0010 分别说明 current/dormant/planned/non-current 子决定；A-004 继续 quarantine；限
+  Stage 2 planning，不包含 change/create/apply 授权。
 
 ### Planning checklist
 
 - [ ] 2.1 重新确认 Q-001/A-003 与 Q-002/A-004 的精确禁碰位置。
 - [ ] 2.2 用 CLI scaffold；按 `status` / `instructions` 生成需要的 planning artifacts。
 - [ ] 2.3 为每个目标词条记录 keep / retire / relocate-owner / planned / dormant / quarantine。
-- [ ] 2.4 为 C-004..C-011 分别填写完整 Adjustment Record；同一编号的不同语义动作使用
+- [ ] 2.4 为 C-004、C-005、C-007..C-011 分别填写完整 Adjustment Record；同一编号的不同语义动作使用
   子编号，不以“CONTEXT cleanup”总风险代替。
 - [ ] 2.5 Proposal 明确不决定 Rubric/Runner，不决定 Bundle-loss 后 external retention。
 - [ ] 2.6 ADR 方案只增加 status/applicability note，不重写历史正文。
@@ -252,24 +277,25 @@ adjustment 不得 apply，也不得勾选对应完成 checkbox。
 
 ### Apply checklist（尚未授权）
 
-- [ ] 2.9 修正 Evaluation Run Workspace 定义，不承诺 Bundle 是其子目录。
+- [ ] 2.9 修正 Evaluation Run Workspace 定义：明确其为 Runner-owned execution directory，
+  不等同 DeerFlow host workspace 或 Deep Research Run Bundle；同一 execution root 的
+  Evaluation Run Bundle 是 sibling，不承诺为其子目录。
 - [ ] 2.10 移除 “new Suite” / “V1 structural change must...” 等已完成任务语气，以及
   current glossary 对 archived change slug 的依赖。
-- [ ] 2.11 从 CONTEXT 移出安全的重复设计章节并链接唯一 owner；A-003/A-004 相交段保持
-  quarantine，不借结构清理改写其语义。
-- [ ] 2.12 将全节点 Suite smoke 从 current claim 降为 roadmap target，列明有限 registry
-  范围，不新增行为要求。
-- [ ] 2.13 退役 glossary 单独创造的 readable-report required 语气，不自动标 planned。
-- [ ] 2.14 拆分 current Final Report Artifact 与 planned Primary User Report Export。
-- [ ] 2.15 将 Support Handoff 标 `planned`，但不回答其 Bundle-loss retention；将 Dedicated
+- [ ] 2.11 清除“每个 LLM-bearing node 都有 Suite smoke”的错误 current claim；保留定义并
+  以 registry 作为当前范围事实来源，不添加 roadmap、case 或行为要求。
+- [ ] 2.12 退役 glossary 单独创造的 readable-report required 语气，不自动标 planned。
+- [ ] 2.13 拆分 current Final Report Artifact 与不存在的 Primary User Report Export public
+  capability：保留前者；退役后者的 current claim，不将其写成 `planned` 或本轮 roadmap 承诺。
+- [ ] 2.14 将 Support Handoff 标 `planned`，但不回答其 Bundle-loss retention；将 Dedicated
   TUI 与相应 Local-First 路线标 `dormant`，保留 current Dedicated Agent route。
-- [ ] 2.16 修正 policy cardinality：一个 trigger 对应一个 canonical policy，一个 change
+- [ ] 2.15 修正 policy cardinality：一个 trigger 对应一个 canonical policy，一个 change
   可触发多个 policies；不改 checker。
-- [ ] 2.17 给相关 ADR 增加一致 status/applicability note；不静默改写原始决定。
-- [ ] 2.18 运行 docs/governance/strict/full read-only verification；记录证明边界。
-- [ ] 2.19 逐项回填 C-004..C-011 的 observed side effects、remaining mismatch 和 evidence
+- [ ] 2.16 给相关 ADR 增加一致 status/applicability note；不静默改写原始决定。
+- [ ] 2.17 运行 docs/governance/strict/full read-only verification；记录证明边界。
+- [ ] 2.18 逐项回填 C-004、C-005、C-007..C-011 的 observed side effects、remaining mismatch 和 evidence
   bound；空白记录不得进入 archive。
-- [ ] 2.20 Archive 后局部复审 A-005..A-008，并逐项记录哪些已消失、哪些因 quarantine
+- [ ] 2.19 Archive 后局部复审 A-005..A-008，并逐项记录哪些已消失、哪些因 quarantine
   仍存在。
 
 ### Gate 2
@@ -310,18 +336,18 @@ adjustment 不得 apply，也不得勾选对应完成 checkbox。
 
 二选一。两份文件均已列出调整内容、风险、副作用和停止条件：
 
-- [ ] 4.R1 [Option A - Criterion IDs are execution admission metadata](alignment-audit-60-adjustments/alignment-audit-60-15-a003a-criterion-ids-metadata.md)
-- [ ] 4.R2 [Option B - Rubric is completely review-only](alignment-audit-60-adjustments/alignment-audit-60-16-a003b-rubric-review-only.md)
+- [x] 4.R1 [Option A - Criterion IDs are execution admission metadata](alignment-audit-60-adjustments/alignment-audit-60-15-a003a-criterion-ids-metadata.md)：2026-08-12 已确认，限后续 planning。
+- [x] 4.R2 [Option B - Rubric is completely review-only](alignment-audit-60-adjustments/alignment-audit-60-16-a003b-rubric-review-only.md)：2026-08-12 已审并明确排除。
 
 ### Decision checklist
 
-- [ ] 4.1 重新读取 CES、EVH、ADR 0025、相关 CONTEXT 和当前 admission/Runner 证据。
-- [ ] 4.2 分开定义 identity、criterion IDs、Rubric content、model-facing input、quality verdict。
+- [x] 4.1 已重新读取 CES、EVH、ADR 0025、相关 CONTEXT 和当前 admission/Runner 证据。
+- [x] 4.2 已分开定义 identity、criterion IDs、Rubric content、model-facing input、quality verdict。
 - [ ] 4.3 产品 owner 明确选择唯一 required contract：
-  - [ ] criterion IDs 可作为 execution admission 的 control-integrity metadata，但 Rubric
-    content 不面向 model、Runner 不产生 quality verdict；或
-  - [ ] Rubric 完全 review-only，execution admission 不读取 criteria。
-- [ ] 4.4 记录 rejected alternative 与选择理由；不得写“因为代码如此所以 spec 必须如此”。
+  - [x] criterion IDs 可作为 execution admission 的 control-integrity metadata，但 Rubric
+    content 不面向 model、Runner 不产生 quality verdict。
+  - [x] Rubric 完全 review-only，execution admission 不读取 criteria：已排除。
+- [x] 4.4 已记录 rejected alternative 与选择理由；选择不是“因为代码如此所以 spec 必须如此”。
 - [ ] 4.5 为选定方案填写完整 Adjustment Record；apply/archive 后回填实际观察到的
   副作用、未验证范围和 remaining code gap。
 
