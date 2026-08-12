@@ -374,18 +374,20 @@ adjustment 不得 apply，也不得勾选对应完成 checkbox。
 
 二选一。两份文件均已列出调整内容、风险、副作用和停止条件：
 
-- [ ] 5.R1 [Option A - Bundle-local-only](alignment-audit-60-adjustments/alignment-audit-60-17-a004a-bundle-local-only.md)
-- [ ] 5.R2 [Option B - external diagnostic retention](alignment-audit-60-adjustments/alignment-audit-60-18-a004b-external-diagnostic-retention.md)
+- [x] 5.R1 [Option A - Bundle-local-only](alignment-audit-60-adjustments/alignment-audit-60-17-a004a-bundle-local-only.md)：2026-08-12 已确认，限后续 planning。
+- [x] 5.R2 [Option B - external diagnostic retention](alignment-audit-60-adjustments/alignment-audit-60-18-a004b-external-diagnostic-retention.md)：2026-08-12 已审并明确排除。
 
 ### Decision checklist
 
-- [ ] 5.1 重新读取 RER、RUS、REJ、相关 ADR/CONTEXT 与 Bundle deletion 当前证据。
-- [ ] 5.2 分别回答 bytes retention、supported reader、participant presentation。
+- [x] 5.1 已重新读取 RER、RUS、REJ、相关 ADR/CONTEXT 与 Bundle deletion 当前证据。
+- [x] 5.2 已分别回答 bytes retention、supported reader、participant presentation：不对物理残留
+  bytes 作绝对断言；没有 supported external reader；没有 Bundle-loss 后 participant presentation。
 - [ ] 5.3 产品 owner 明确选择唯一 required contract：
-  - [ ] Bundle-local-only；Bundle loss 后 inspection unavailable；或
-  - [ ] external diagnostic 可留存，并明确它仍无 recovery/selection/authorization 权威。
-- [ ] 5.4 若选择 external diagnostic，列出未来 code change 必须拥有的 typed owner、
+  - [x] Bundle-local-only；Bundle loss 后 inspection unavailable。
+  - [x] external diagnostic 可留存，并明确它仍无 recovery/selection/authorization 权威：已排除。
+- [x] 5.4 external-diagnostic 的 typed owner、
   retention/redaction、authorization、reader 和 deletion semantics，但不在本 Stage 实施。
+  不适用：Option B 已排除；其未来实现义务保留在被拒绝替代方案记录中。
 - [ ] 5.5 为选定方案填写完整 Adjustment Record；apply/archive 后回填实际观察到的
   副作用、未验证范围和 remaining code gap。
 

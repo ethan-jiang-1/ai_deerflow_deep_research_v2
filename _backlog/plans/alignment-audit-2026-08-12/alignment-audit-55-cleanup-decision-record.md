@@ -290,7 +290,7 @@ approved main specs / accepted design ----> required behavior
 | ID | 隔离内容 | 原因 | 解除条件 |
 | --- | --- | --- | --- |
 | Q-001 | A-003：CES、EVH、`CONTEXT.md:310-334,502-508`、ADR 0025 的 Rubric/Runner 边界 | 已于 2026-08-12 选择 criterion IDs 仅可作为 admission control-integrity metadata；spec 仍须经独立 change 收口 | 独立 OpenSpec change 完成；不得扩大至 Rubric content、model input 或 quality verdict |
-| Q-002 | A-004：RER/RUS/REJ、External Run Observation、Support Handoff retention、相关 ADR 的 Bundle-loss 后寿命语义 | external retention 与 Bundle-local-only 合同互斥 | 独立产品决定与 OpenSpec change 完成 |
+| Q-002 | A-004：RER/RUS/REJ、External Run Observation、Support Handoff retention、相关 ADR 的 Bundle-loss 后寿命语义 | 已于 2026-08-12 选择 Bundle-local-only；spec 仍须经独立 change 收口 | 独立 OpenSpec change 完成；不得把物理残留 bytes 叙述成 supported external retention |
 | Q-003 | `project-structure.toml` 和 project-structure spec 中阻止下游进入 legacy root `backend/` / `frontend/` 的负向 guard | 这些 token 可能仍是有效 drift guard，不等于把目录称为 upstream mirror | A-002 单独设计机械保护时决定；首轮不得全局替换 |
 | Q-004 | deployment/local-profile 中的 backend environment、compatibility directory、database/persistence backend | 这些是宿主接口或领域术语，不是已证明的 V1 topology residue | 只有 owning contract 提供反证时才能重分类 |
 | Q-005 | A-002 gitlink detector 与 A-009 stronger semantic traceability | 都需要 checker/test/机械机制，不是纯历史概念清理 | 单独代码 change 获得明确授权 |
@@ -330,6 +330,18 @@ Option B（Rubric 完全 review-only、admission 不解析 criteria）已明确�
 边界判断，不是由当前代码反向决定规格。仍须在 `reconcile-evaluation-rubric-authority` 的独立
 OpenSpec change 中形成 delta/main-spec 一致语言；本记录不授权创建、apply 或实现该 change。
 
+## A-004 后续产品决定（2026-08-12）
+
+用户在逐项审阅 17/18 时选择 **A-004 Option A**。所有 supported lifecycle diagnostics
+与 Run Bundle 同寿命；Bundle 被删除或不可读后，supported inspection 与 control 都返回
+`unavailable`，且不读取 external Journal、diagnostic 或 Support Handoff。
+
+该决定只规定 supported product contract，不宣称物理存储上绝无任何残留 bytes。它明确否定
+Bundle-loss 后的 supported external reader 和 participant presentation；Support Handoff 仍为
+`planned`，但若将来实现，必须在 Bundle 可用期间完成。Option B（external diagnostic retention）
+已排除；仍须在 `reconcile-post-loss-diagnostic-authority` 的独立 OpenSpec change 中让
+RER/RUS/REJ 给出一致答案。本记录不授权创建、apply 或实现该 change。
+
 用户随后明确要求保存上述判断上下文，因此 Q12 的物理存放方式调整为：本文保存完整
 决策与证据语义，`60` 引用本文并保存执行 checkbox。这个调整不改变任何产品决定或
 实施授权。
@@ -342,8 +354,8 @@ OpenSpec change 中形成 delta/main-spec 一致语言；本记录不授权创�
   命中支撑上述判定。
 - 没有把字符串出现次数当成错误数量；每个 `backend` / `frontend` / `V1` 命中必须按
   owner 与语境人工分类。
-- A-003 已于 2026-08-12 选定 Option A，仍待独立 OpenSpec change 将 specs 收口；A-004
-  仍是未决产品合同。本文不会代替后续 change 或实现工作。
+- A-003、A-004 均已于 2026-08-12 选定 Option A，仍待各自独立 OpenSpec change 将 specs
+  收口；本文不会代替后续 change 或实现工作。
 
 ## 本记录的变更规则
 

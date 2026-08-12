@@ -29,10 +29,10 @@ apply OpenSpec change。
 | 14 | [C-011 ADR status / applicability](alignment-audit-60-14-c011-adr-status-applicability.md) | 2 | 历史状态 | 已审，限 planning |
 | 15 | [A-003 option A: criterion IDs metadata](alignment-audit-60-15-a003a-criterion-ids-metadata.md) | 4 | 互斥产品决定 | 已确认，限后续 planning |
 | 16 | [A-003 option B: Rubric review-only](alignment-audit-60-16-a003b-rubric-review-only.md) | 4 | 互斥产品决定 | 已审，明确排除 |
-| 17 | [A-004 option A: Bundle-local-only](alignment-audit-60-17-a004a-bundle-local-only.md) | 5 | 互斥产品决定 | 待定 |
-| 18 | [A-004 option B: external diagnostic retention](alignment-audit-60-18-a004b-external-diagnostic-retention.md) | 5 | 互斥产品决定 | 待定 |
-| 19 | [D-001 Rubric / Runner terminology](alignment-audit-60-19-d001-rubric-runner-terminology.md) | 6 | 条件同步 | 等待 A-003 |
-| 20 | [D-002 post-loss terminology](alignment-audit-60-20-d002-post-loss-diagnostic-terminology.md) | 6 | 条件同步 | 等待 A-004 |
+| 17 | [A-004 option A: Bundle-local-only](alignment-audit-60-17-a004a-bundle-local-only.md) | 5 | 互斥产品决定 | 已确认，限后续 planning |
+| 18 | [A-004 option B: external diagnostic retention](alignment-audit-60-18-a004b-external-diagnostic-retention.md) | 5 | 互斥产品决定 | 已审，明确排除 |
+| 19 | [D-001 Rubric / Runner terminology](alignment-audit-60-19-d001-rubric-runner-terminology.md) | 6 | 条件同步 | A-003 已定，待逐项审阅 |
+| 20 | [D-002 post-loss terminology](alignment-audit-60-20-d002-post-loss-diagnostic-terminology.md) | 6 | 条件同步 | A-004 已定，待逐项审阅 |
 
 ## 使用规则
 
