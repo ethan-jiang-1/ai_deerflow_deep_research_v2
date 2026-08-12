@@ -17,6 +17,7 @@
 | [30 - OpenSpec Governance](alignment-audit-30-openspec-governance.md) | `openspec/config.yaml` 的思想、物理边界和门禁是否有历史残渣？ |
 | [40 - Verification](alignment-audit-40-verification.md) | 哪些命令通过、它们能证明什么、不能证明什么？ |
 | [50 - Remediation Roadmap](alignment-audit-50-remediation-roadmap.md) | 应按什么依赖顺序消除错位，完成条件是什么？ |
+| [60 - Progressive Execution Plan](alignment-audit-60-progressive-execution-plan.md) | 如何用逐关 checkbox 和一次一个 OpenSpec change 推进整改？ |
 
 ## 结论
 
@@ -101,6 +102,8 @@ P2 = 会误导后续设计、审查或能力判断；P3 = 文档卫生或低风�
  +-- 30 V2 拓扑与治理残渣 --------------+
  |
  +-- 40 可复现验证与证据边界
+ |
+ +-- 60 Progressive checkbox 执行账本（所有实施项初始未勾选）
 ```
 
 - A-003、A-004 是**决策问题**，不能只靠改代码或改一个文档解决。

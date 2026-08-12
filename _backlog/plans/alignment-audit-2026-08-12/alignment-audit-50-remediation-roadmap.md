@@ -7,6 +7,11 @@
 返回[总览](alignment-audit-00-current-state.md)。本路线只规定依赖、change 边界和验收
 条件；当前未创建 active OpenSpec change，也未授权任何具体行为选择。
 
+本文件是问题拆分与依赖说明；实际执行顺序、checkbox 状态和授权关卡以
+[60 - Progressive Execution Plan](alignment-audit-60-progressive-execution-plan.md) 为准。
+`60` 有意采用一次一个 active change，并先修复 OpenSpec 自己依赖的 V2 topology
+boundary，再处理两组语义冲突。
+
 ## 原则
 
 1. **先解冲突，再清词典。** A-003/A-004 未决时，直接改 CONTEXT 只是在冲突两侧中
@@ -35,7 +40,7 @@ R1, R2, R3 可分别提案；R4 等 R1/R2，R5 可在 R3 后独立进行。
 
 **覆盖 findings:** A-003
 **类型:** 行为/权威决策 change
-**优先级:** 第一
+**语义优先级:** 高；实际执行位于 topology migration 之后
 
 ### 需要决策
 
@@ -68,7 +73,7 @@ R1, R2, R3 可分别提案；R4 等 R1/R2，R5 可在 R3 后独立进行。
 
 **覆盖 findings:** A-004，并约束 A-007 Support Handoff
 **类型:** 生命周期/诊断 authority change
-**优先级:** 第二
+**语义优先级:** 高；实际执行位于 Rubric/Runner 决策之后
 
 ### 推荐基线
 
@@ -98,7 +103,7 @@ authorization、inspection result、deletion semantics 与 no-authority tests。
 
 **覆盖 findings:** A-001、A-002
 **类型:** governance / project structure change
-**优先级:** 与 R1/R2 可并行，但必须在大规模后续 change 前完成
+**执行优先级:** 第一；先让后续 OpenSpec change 使用正确的 V2 boundary 与门禁
 
 ### 一个 change 内必须同步
 
@@ -203,9 +208,9 @@ contracts、authority/lifecycle/security boundaries 与周期审计。
 
 | 顺序 | 建议 change slug | 覆盖 | 为什么独立 |
 | --- | --- | --- | --- |
-| 1 | `reconcile-evaluation-rubric-execution-boundary` | R1 / A-003 | 独立行为决策，影响 evaluation authority |
-| 2 | `reconcile-post-loss-diagnostic-retention` | R2 / A-004 | 独立生命周期与隐私/留存决策 |
-| 3 | `migrate-v2-upstream-gitlink-governance` | R3 / A-001,A-002 | 结构治理迁移，可独立验证且不读上游源码 |
+| 1 | `migrate-v2-upstream-gitlink-governance` | R3 / A-001,A-002 | 先修正后续 change 依赖的 authoring 与 closeout boundary |
+| 2 | `reconcile-evaluation-rubric-execution-boundary` | R1 / A-003 | 独立行为决策，影响 evaluation authority |
+| 3 | `reconcile-post-loss-diagnostic-retention` | R2 / A-004 | 独立生命周期与隐私/留存决策 |
 | 4 | `normalize-context-capability-status` | R4 / A-005..A-008 | 等前两项决策后一次性清词典与 ADR 状态 |
 | 5 | `harden-high-risk-semantic-traceability` | R5 / A-009 | 证据机制升级，不应混入行为修复 |
 
