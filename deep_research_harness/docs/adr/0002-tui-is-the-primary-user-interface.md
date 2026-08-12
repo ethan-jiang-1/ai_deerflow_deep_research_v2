@@ -9,3 +9,12 @@ Workbench remains a host chat interface rather than the Deep Research TUI owner 
 a separately approved integration can consume the Deep Research interaction contract.
 This preserves a user-centered TUI while retaining a direct, scriptable route for
 diagnosing real integrations.
+
+## Current Status And Applicability (2026-08-13)
+
+This postscript records current applicability only. It does not alter this ADR's
+historical title, decision text, or runtime authority.
+
+- **Current applicability:** The distinction between Primary User and operator concerns remains useful.
+- **Non-current / planned / dormant scope:** The dedicated Primary-User TUI is dormant; the current route is the Dedicated Agent plus reflected tool.
+- **Current owner or route:** [deployment-configuration](../../../openspec/specs/deployment-configuration/spec.md#requirement-dedicated-agent-is-provisioned-in-the-effective-user-scope)

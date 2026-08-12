@@ -185,14 +185,16 @@ _Avoid_: a successful preflight, a retained session, a partial graph traversal
 ## Entry Interfaces
 
 **Primary User Interface**:
-The planned dedicated Deep Research TUI through which a Primary User will run and
-follow Deep Research. It is not yet a current runnable entry route.
+`dormant`: the historical dedicated Deep Research TUI route through which a Primary
+User would run and follow Deep Research. It has no active commitment and is not a
+current runnable entry route; the Dedicated Agent and reflected `deep_research` tool
+remain the current route.
 _Avoid_: the standalone demo TUI, the smoke-test CLI, the Host Terminal Workbench, a raw lifecycle payload
 
 **Current Recommended User Route**:
 The Dedicated Agent's ordinary-language workflow and reflected `deep_research` tool.
 It is the current route a Primary User uses to start and follow Deep Research.
-_Avoid_: the planned Primary User Interface, an Operator Interface, a local diagnostic
+_Avoid_: the dormant Primary User Interface, an Operator Interface, a local diagnostic
 
 **Standalone Demo TUI**:
 A contributor/operator visualizer for a shared Deep Research Run experience. It can
@@ -334,10 +336,12 @@ case quality criteria.
 _Avoid_: a Runner input, a replacement Node Cognitive Control Contract, generic evaluator prose
 
 **Evaluation Run Workspace**:
-The newly created private local workspace assigned to exactly one Cognitive Evaluation
-Runner execution. It contains only that execution's inputs, runtime state, artifacts, and
-bundle, preventing earlier or concurrent evaluations from affecting its observation.
-_Avoid_: a shared resume directory, a reused checkpoint namespace
+The newly created, Runner-owned private local execution directory for exactly one
+Cognitive Evaluation Runner invocation. Under one execution root, the immutable
+Evaluation Run Bundle is its sibling; neither is the DeerFlow host workspace or a Deep
+Research Run Bundle. It prevents earlier or concurrent evaluations from affecting its
+observation.
+_Avoid_: a host workspace, a shared resume directory, a reused checkpoint namespace, a Deep Research Run Bundle
 
 **Evaluation Run Bundle**:
 The immutable private local record of one Cognitive Evaluation Runner execution: the
@@ -345,8 +349,10 @@ execution-case input and control-version identity; actual node/flow outputs and 
 and an Observation Trace of events, logs, tool/model observations, resource use, and
 diagnostics. On failure it preserves every material observation the Runner obtained before
 the stop. It lets an evaluator assess the same costly execution without rerunning it.
-Export redaction is not an `evals/` requirement in the current Local-First scope.
-_Avoid_: a mutable conversation transcript, a quality verdict, a shared run directory
+Under one execution root it is the sibling of that execution's Evaluation Run Workspace,
+not a child directory within it. Export redaction is not an `evals/` requirement in the
+current evaluation scope.
+_Avoid_: a Deep Research Run Bundle, a mutable conversation transcript, a quality verdict, a shared run directory
 
 **Observation Trace**:
 The Runner's chronological, objective record of observable execution events between the
@@ -397,9 +403,10 @@ _Avoid_: a quality grade, a provider error silently treated as a cognitive failu
 The minimum bounded, manually runnable Cognitive Evaluation Suite scenario for one
 LLM-Bearing Node. It executes the declared production node branch through the Runner
 under controlled inputs and budget, then preserves a private local, interpretable result
-bundle for later rubric assessment. Every LLM-Bearing Node has at least one such smoke
-scenario.
-_Avoid_: a unit test, a raw provider transcript, a claim that one run proves quality
+bundle for later rubric assessment. The versioned Evaluation Case registry identifies
+which Nodes currently have Suite coverage; this definition makes no all-node coverage
+claim.
+_Avoid_: a unit test, a raw provider transcript, a claim that one run proves quality or that every Node has a scenario
 
 **Node Evaluation Run**:
 A Cognitive Evaluation Runner execution whose subject is one LLM-Bearing Node and an
@@ -419,8 +426,8 @@ The four-state cognitive assessment produced by a Cognitive Evaluation Agent Wor
 `pass` when the observed behavior satisfies its rubric; `limited` when a declared,
 inspectable quality or coverage limitation remains; `inconclusive` when the available
 bundle cannot support an honest assessment; or `failed` when a critical cognitive rubric
-fails. `limited` and `inconclusive` require a readable report and never silently count
-as pass. Execution failure remains a separate Execution Status.
+fails. `limited` and `inconclusive` never silently count as pass. Execution failure
+remains a separate Execution Status.
 _Avoid_: a binary assertion, an unreviewed LLM-judge verdict, a Runner status
 
 ## Service Responsibility
@@ -441,17 +448,14 @@ operational interruption, within declared safety, cost, and evidence limits.
 _Avoid_: a Primary User troubleshooting task, a User Decision
 
 **Support Handoff**:
-A bounded, redacted summary of an interrupted research run that a person can use to
-ask for help without exposing secrets or requiring them to interpret raw runtime data.
-For an admitted Run it is derived while its Bundle remains available and is not retained
-outside that Bundle.
-_Avoid_: an opaque diagnostic reference alone, an external persistent journal, a raw exception dump
+`planned`: a bounded, redacted support summary with no current producer, schema, or
+public entry. Its future behavior is outside this glossary entry.
+_Avoid_: a current support capability, an opaque diagnostic reference alone, a raw exception dump
 
-**Research Report Export**:
-A self-contained Markdown rendering of a completed Research Outcome that the Primary
-User can reopen, copy, or export from its retained Run Bundle. The first
-Local-First release does not promise PDF export, online sharing, or collaboration.
-_Avoid_: raw graph artifacts, a multi-user publishing feature
+**Final Report Artifact**:
+`final/report.md` is the current final-delivery artifact in a Run Bundle. Its presence
+does not establish a Primary User public capability to reopen, copy, or export it.
+_Avoid_: a public export contract, an inferred reader, raw graph artifacts
 
 **Recovery Point**:
 A durable, safe point in a Run Bundle's Research State from which the system can resume
@@ -460,9 +464,10 @@ available.
 _Avoid_: a local UI cursor, an inferred phase
 
 **Local-First Deployment**:
-The first product deployment scope in which one local Primary User owns the dedicated
-TUI and its retained Run Bundles.
-_Avoid_: an already-supported multi-user service, anonymous shared storage
+`dormant`: the historical Local-First first-product route based on the dedicated
+Primary-User TUI. It has no active commitment and does not describe the separate local
+Cognitive Evaluation surface.
+_Avoid_: an active product route, an already-supported multi-user service, anonymous shared storage
 
 
 ---
@@ -512,14 +517,13 @@ Runner objective and lets case-specific cognitive expectations evolve independen
 
 # Evaluation Control And Run Data Are Separate
 
-The new Cognitive Evaluation Suite lives under `deep_research_harness/` but never mixes its
-slow-changing control authority with its fast-changing execution materials. `evals/control/`
-holds versioned Cases, Rubrics, review protocol, and registries. `evals/runs/` is ignored
-local output for isolated workspaces, immutable Bundles, and separate Review Records.
-The Python Runner belongs in the governed `src/deerflow_deep_research/runtime/evaluation/`
-source layer, not either `evals/` subtree. The V1 structural change must explicitly update
-project-structure governance and ignore rules; existing `tests/eval/` remains deterministic
-pytest coverage, not this Suite.
+The Cognitive Evaluation Suite keeps its slow-changing control authority separate from
+its fast-changing execution materials. `evals/control/` holds versioned Cases, Rubrics,
+review protocol, and registries. `evals/runs/` is ignored local output for isolated
+Evaluation Run Workspaces, immutable Evaluation Run Bundles, and separate Review
+Records. The Python Runner belongs in the governed
+`src/deerflow_deep_research/runtime/evaluation/` source layer, not either `evals/`
+subtree; existing `tests/eval/` remains deterministic pytest coverage, not this Suite.
 
 
 ---
@@ -534,8 +538,7 @@ modification seam is the cognitive control program; the deterministic program is
 guardrail that proves it, not a substitute repair site. A deterministic edit for a
 node-behavior symptom records a Seam Classification showing the cognitive-program
 seam was already adjusted or rejected first, and `run_agent` presence is
-current-mechanism evidence, never a node's product identity. This discipline comes
-from the archived `node-agent-cognitive-loop-governance-progressive-plan` and is
-routed by the
+current-mechanism evidence, never a node's product identity. This discipline is routed
+by the
 [local-context policy](../openspec/policies/local-context.md)
 seam rule.

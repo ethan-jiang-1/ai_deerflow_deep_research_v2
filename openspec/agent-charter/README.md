@@ -15,8 +15,9 @@ For a change under `deep_research_harness/`, first read the focus gate at the st
 capability spec/delta, closest implementation, and lowest responsible test seam.
 Read a DeerFlow public interface only when the named local change actually depends
 on it and can state the question that interface must answer. A possible future use is
-not enough to expand scope. Do not load this whole directory by default; choose one
-policy from the route table below.
+not enough to expand scope. Do not load this whole directory by default; select every
+canonical policy from the route table whose trigger actually applies. A change still
+has one primary module or causal owner.
 
 ## Policy Route
 

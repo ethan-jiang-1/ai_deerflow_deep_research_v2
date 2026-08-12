@@ -19,8 +19,9 @@ An observable product or system outcome approved in an owning specification.
 _Avoid_: a guide recommendation, an unverified implementation detail
 
 **Charter Index**:
-The canonical route from a proposed Deep Research change to one relevant design or
-admission policy and its owning contract.
+The canonical route from a proposed Deep Research change to every relevant, actually
+triggered design or admission policy and its owning contract. A change still has one
+primary causal owner.
 _Avoid_: project manual, runtime controller
 
 **Cross-Cutting Review Guidance**:

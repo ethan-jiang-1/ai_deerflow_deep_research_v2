@@ -5,8 +5,9 @@
 > 原始审计证据快照: `65df2571108cc6b4b81f55d3ba8542786a810b39`
 > 计划重排时 HEAD: `ac6989abb46b22a9b0cf50e8a53b47341d762750`
 > 执行基线: 尚未锁定；开始每个 Stage 时重新记录 HEAD
-> 当前状态: **STAGE 1 COMPLETE AND ARCHIVED - STAGE 2 NOT AUTHORIZED**
-> 最近完成的 OpenSpec change: `2026-08-13-retire-v1-topology-residue`（archived；no active change）
+> 当前状态: **STAGE 2 COMPLETE AND ARCHIVED - STAGE 3 NOT AUTHORIZED**
+> 最近完成的 OpenSpec change: `2026-08-13-retire-stale-context-concepts`（archived；
+> `skip_specs: true`；无 active change）
 
 本计划执行时必须同时阅读
 [55 - Cleanup Decision Record](alignment-audit-55-cleanup-decision-record.md) 和
@@ -122,9 +123,9 @@ adjustment 不得 apply，也不得勾选对应完成 checkbox。
 | Stage | Change | 覆盖 | 是否改代码 | 初始状态 |
 | --- | --- | --- | --- | --- |
 | 0 | 无 | 决策、退役登记与执行边界 | 否 | `[x] Decision tree closed; execution not authorized` |
-| 1 | `2026-08-13-retire-v1-topology-residue` | A-001；诚实记录 A-002 | 仅 V-001 format-only test exception | `[x] Archived; Stage 2 not authorized` |
-| 2 | `retire-stale-context-concepts` | A-005..A-008 的安全子集 | 否 | `[ ] Blocked by Stage 1` |
-| 3 | 无，只读 re-audit | 降噪后重建 A-001..A-009 ledger | 否 | `[ ] Blocked by Stage 2` |
+| 1 | `2026-08-13-retire-v1-topology-residue` | A-001；诚实记录 A-002 | 仅 V-001 format-only test exception | `[x] Archived; Stage 2 planning authorized` |
+| 2 | `retire-stale-context-concepts` | A-005..A-008 的安全子集 | 否 | `[x] Completed and archived; Stage 3 not authorized` |
+| 3 | 无，只读 re-audit | 降噪后重建 A-001..A-009 ledger | 否 | `[ ] Awaiting separate Stage 3 authorization` |
 | 4 | `reconcile-evaluation-rubric-authority` | A-003 | 否；实现差异 defer | `[ ] Blocked by Stage 3` |
 | 5 | `reconcile-post-loss-diagnostic-authority` | A-004 | 否；实现差异 defer | `[ ] Blocked by Stage 4` |
 | 6 | `normalize-post-decision-terminology-status` | A-003/A-004 的 CONTEXT/ADR 收口 | 否 | `[ ] Blocked by Stages 4-5` |
@@ -232,7 +233,7 @@ formatter-only maintenance。A-002 保持 open。
 - [x] 所有保留的 `backend` / `frontend` occurrence 都有合法分类理由。
 - [x] A-002 明确保持 `DEFERRED-CODE-CHANGE`，没有 architecture/gitlink 假绿声明。
 - [x] Diff 不含 frozen paths（V-001 已授权 exception 除外）；change 已 archive；无 active change。
-- [ ] 已停止并取得进入 Stage 2 的新授权。
+- [x] 已停止并取得进入 Stage 2 的 planning 授权（2026-08-13）；该授权不包含 apply。
 
 ## Stage 2 - Retire Stale Context Concepts
 
@@ -281,47 +282,55 @@ formatter-only maintenance。A-002 保持 open。
 
 ### Planning checklist
 
-- [ ] 2.1 重新确认 Q-001/A-003 与 Q-002/A-004 的精确禁碰位置。
-- [ ] 2.2 用 CLI scaffold；按 `status` / `instructions` 生成需要的 planning artifacts。
-- [ ] 2.3 为每个目标词条记录 keep / retire / relocate-owner / planned / dormant / quarantine。
-- [ ] 2.4 为 C-004、C-005、C-007..C-011 分别填写完整 Adjustment Record；同一编号的不同语义动作使用
-  子编号，不以“CONTEXT cleanup”总风险代替。
-- [ ] 2.5 Proposal 明确不决定 Rubric/Runner，不决定 Bundle-loss 后 external retention。
-- [ ] 2.6 ADR 方案只增加 status/applicability note，不重写历史正文。
-- [ ] 2.7 Tasks 中无 runtime contract、case、Runner、report schema、handoff schema、UI、
+- [x] 2.1 已重新确认 Q-001/A-003 与 Q-002/A-004 的精确禁碰位置；完整边界见
+  `retire-stale-context-concepts/design.md` 与
+  [Stage 2 planning baseline](alignment-audit-60-adjustments/stage-2-planning/alignment-audit-60-s2-planning-baseline-and-validation.md)。
+- [x] 2.2 已用 CLI scaffold 并依 `status` / `instructions` 生成 planning artifacts：proposal、design、tasks；
+  `skip_specs: true` 经 CLI 确认，未创建伪 delta。
+- [x] 2.3 已为目标术语建立 keep-current / retire / relocate-owner / planned / dormant /
+  quarantine 分类协议、逐 C disposition 和 target allowlist；逐 occurrence 证据表已在 Stage 2
+  apply evidence 中完成。
+- [x] 2.4 C-004、C-005.a、C-005.b、C-007..C-011 已各自完成 Adjustment Record；同一编号的
+  不同语义动作使用子编号，不以“CONTEXT cleanup”总风险代替。Before/After、风险、可能副作用、
+  controls、verification 和 observed side effects 均记录在 `stage-2-apply/`。
+- [x] 2.5 Proposal/design 明确不决定 Rubric/Runner，也不决定 Bundle-loss 后 external retention。
+- [x] 2.6 ADR 方案限定为只增加 status/applicability postscript，不重写历史正文或标题。
+- [x] 2.7 Tasks 中无 runtime contract、case、Runner、report schema、handoff schema、UI、
   checker 或 test 实施。
-- [ ] 2.8 Strict validate、人工 plan review通过；单独获得 Stage 2 apply authorization。
+- [x] 2.8a `openspec validate retire-stale-context-concepts --strict`、`openspec doctor --json`、
+  Charter checker 和 `git diff --check` 已通过；人工 review 结论见 Stage 2 planning baseline。
+- [x] 2.8b 已单独获得 Stage 2 apply authorization（2026-08-13）。
 
-### Apply checklist（尚未授权）
+### Apply checklist（已完成）
 
-- [ ] 2.9 修正 Evaluation Run Workspace 定义：明确其为 Runner-owned execution directory，
+- [x] 2.9 修正 Evaluation Run Workspace 定义：明确其为 Runner-owned execution directory，
   不等同 DeerFlow host workspace 或 Deep Research Run Bundle；同一 execution root 的
   Evaluation Run Bundle 是 sibling，不承诺为其子目录。
-- [ ] 2.10 移除 “new Suite” / “V1 structural change must...” 等已完成任务语气，以及
+- [x] 2.10 移除 “new Suite” / “V1 structural change must...” 等已完成任务语气，以及
   current glossary 对 archived change slug 的依赖。
-- [ ] 2.11 清除“每个 LLM-bearing node 都有 Suite smoke”的错误 current claim；保留定义并
+- [x] 2.11 清除“每个 LLM-bearing node 都有 Suite smoke”的错误 current claim；保留定义并
   以 registry 作为当前范围事实来源，不添加 roadmap、case 或行为要求。
-- [ ] 2.12 退役 glossary 单独创造的 readable-report required 语气，不自动标 planned。
-- [ ] 2.13 拆分 current Final Report Artifact 与不存在的 Primary User Report Export public
+- [x] 2.12 退役 glossary 单独创造的 readable-report required 语气，不自动标 planned。
+- [x] 2.13 拆分 current Final Report Artifact 与不存在的 Primary User Report Export public
   capability：保留前者；退役后者的 current claim，不将其写成 `planned` 或本轮 roadmap 承诺。
-- [ ] 2.14 将 Support Handoff 标 `planned`，但不回答其 Bundle-loss retention；将 Dedicated
+- [x] 2.14 将 Support Handoff 标 `planned`，但不回答其 Bundle-loss retention；将 Dedicated
   TUI 与相应 Local-First 路线标 `dormant`，保留 current Dedicated Agent route。
-- [ ] 2.15 修正 policy cardinality：一个 trigger 对应一个 canonical policy，一个 change
+- [x] 2.15 修正 policy cardinality：一个 trigger 对应一个 canonical policy，一个 change
   可触发多个 policies；不改 checker。
-- [ ] 2.16 给相关 ADR 增加一致 status/applicability note；不静默改写原始决定。
-- [ ] 2.17 运行 docs/governance/strict/full read-only verification；记录证明边界。
-- [ ] 2.18 逐项回填 C-004、C-005、C-007..C-011 的 observed side effects、remaining mismatch 和 evidence
+- [x] 2.16 给相关 ADR 增加一致 status/applicability note；不静默改写原始决定。
+- [x] 2.17 已运行 docs/governance/strict/full read-only verification；记录证明边界。
+- [x] 2.18 已逐项回填 C-004、C-005、C-007..C-011 的 observed side effects、remaining mismatch 和 evidence
   bound；空白记录不得进入 archive。
-- [ ] 2.19 Archive 后局部复审 A-005..A-008，并逐项记录哪些已消失、哪些因 quarantine
-  仍存在。
+- [x] 2.19 已完成局部 re-audit，逐项记录 A-005..A-008 的已消失残渣及继续 quarantine 的
+  A-003/A-004；archive 后结构、active-change 和 gitlink 复核也已通过。
 
 ### Gate 2
 
-- [ ] 安全残渣已清理，CONTEXT 未替 A-003/A-004 选边。
-- [ ] Current/planned/dormant 三类状态不再混用。
-- [ ] 历史 ADR/archive 得到保留，current authority 不再依赖 archived slug。
-- [ ] C-001..C-011 每个实际 adjustment 均有完整内容、风险、副作用和实测回填记录。
-- [ ] Diff 不含 frozen paths；change 已 archive；无 active change。
+- [x] 安全残渣已清理，CONTEXT 未替 A-003/A-004 选边。
+- [x] Current/planned/dormant 三类状态不再混用。
+- [x] 历史 ADR/archive 得到保留，current authority 不再依赖 archived slug。
+- [x] C-001..C-011 每个实际 adjustment 均有完整内容、风险、副作用和实测回填记录。
+- [x] Diff 不含 frozen paths；change 已 archive；无 active change。
 - [ ] 已停止并取得 Stage 3 只读复审授权。
 
 ## Stage 3 - Post-Cleanup Read-Only Re-Audit
@@ -503,7 +512,7 @@ formatter-only maintenance。A-002 保持 open。
 
 ## 当前下一动作
 
-Stage 1 已归档，A-001 已局部关闭，A-002 保持 `DEFERRED-CODE-CHANGE`。下一动作只能是用户
-单独授权 Stage 2 的 planning：创建 `retire-stale-context-concepts` 并重新确认
-Q-001/A-003 与 Q-002/A-004 的禁碰边界。在那之前，不创建 Stage 2 change，不修改
-CONTEXT、ADR、guide、README、代码、tests 或 `deerflow/`。
+Stage 1 与 Stage 2 均已归档；A-001 已局部关闭，A-002 保持 `DEFERRED-CODE-CHANGE`，
+A-003/A-004 继续 quarantine。下一动作只能是用户单独授权 Stage 3 的只读复审：以新的 HEAD
+为基线重建 reduced mismatch ledger。没有该授权，不创建 active change，不修改 CONTEXT、ADR、
+guide、README、代码、tests、main specs、`openspec/config.yaml` 或 `deerflow/`。
