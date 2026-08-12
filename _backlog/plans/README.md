@@ -19,12 +19,11 @@
 
 | Plan | 说明 |
 |------|------|
-| [alignment-audit-2026-08-12/](alignment-audit-2026-08-12/alignment-audit-00-current-state.md) | `alignment-audit-*` 六文档审计集；对齐 Harness、main specs、全部仓库自有 CONTEXT 与 OpenSpec 治理，并给出验证记录和整改依赖 |
-| [openspec-extension-readme-restructure.md](openspec-extension-readme-restructure.md) | OpenSpec 治理文档分层；已完成基线修复，保留 SCC closeout contract 与最终 governance README 收口计划 |
+| [alignment-audit-2026-08-12/](alignment-audit-2026-08-12/alignment-audit-00-current-state.md) | `alignment-audit-*` 七文档审计/计划集；对齐 Harness、main specs、全部仓库自有 CONTEXT 与 OpenSpec 治理，并以 progressive checkbox 账本编排逐个 OpenSpec change |
 
 新的分析或设计应在此创建，完成后再移入归档。
 
-**Next available plan ID: CLS-036**（移入 `_closed_plans/` 时分配）
+**Next available plan ID: CLS-037**（移入 `_closed_plans/` 时分配）
 
 ## 已归档（移至 `_done/_closed_plans/`）
 

@@ -22,6 +22,10 @@
 #
 # 缩写规则: 首单词前 2 字母 + 次单词首字母（如 custom-tool → CUT，memory-policy → MEP）；
 #           单词型 capability 取前 3 字母（如 skills → SKI）。冲突时先查 registry 再定。
+#
+# 需求标题规则: `### Requirement: Foo` 的标题是稳定语义锚点，**不得**内嵌 ID；
+#              `### Requirement: Foo` ✅ / `### Requirement: Foo (CUT-001)` ❌。
+#              ID 只出现在 main spec 的 `> req:` 行、tasks 的 `@impl` 与代码注释。
 
 # ──────────────────────────────────────────────
 # prefixes: 缩写 → kebab-case capability 全称

@@ -54,5 +54,6 @@ plan 完成后从 `_backlog/plans/` 通过 `git mv` 移入本目录：
 | CLS-033 | 2026-08-09 | [cli-tui-entry-integrity-repair_plan.md](cli-tui-entry-integrity-repair_plan.md) | CLI/TUI entry-integrity repair 的五个 OpenSpec changes 已验证、同步主规格并归档；README 已提供受限的 Entry Surfaces 选择地图，配套[研究记录](cli-tui-entry-integrity-repair-research.md)随同保留。 |
 | CLS-034 | 2026-08-10 | [diagnostics-event-journal.md](diagnostics-event-journal.md) | Bundle-local Run Event Journal 的系统性诊断设计已通过 `systemic-run-event-journal` 实现、同步主规格、归档并提交；配套[研究记录](diagnostics-event-journal/research.md)随同保留。 |
 | CLS-035 | 2026-08-11 | [openspec-agent-charter-topology-flattening.md](openspec-agent-charter-topology-flattening.md) | Charter/policy 一级拓扑迁移经 `rehome-agent-charter-policy-library` 落地并归档；charter 边界行被 @impl 清理误删后已恢复，governance 全绿后关闭。 |
+| CLS-036 | 2026-08-12 | [openspec-extension-readme-restructure.md](openspec-extension-readme-restructure.md) | OpenSpec 治理分层收口：SCC closeout 契约经 `selected-change-closeout-evidence` 修复并归档，governance README 改为纯导航索引，ID 约定迁至 req-registry；两项完成后关闭。 |
 
-**Next available plan ID: CLS-036**
+**Next available plan ID: CLS-037**
