@@ -5,8 +5,8 @@
 > 原始审计证据快照: `65df2571108cc6b4b81f55d3ba8542786a810b39`
 > 计划重排时 HEAD: `ac6989abb46b22a9b0cf50e8a53b47341d762750`
 > 执行基线: 尚未锁定；开始每个 Stage 时重新记录 HEAD
-> 当前状态: **PLAN ONLY - NOT AUTHORIZED TO CREATE OR APPLY A CHANGE**
-> 最近确认的 active OpenSpec change: **none**
+> 当前状态: **STAGE 1 PLANNING COMPLETE - APPLY NOT AUTHORIZED**
+> 最近确认的 active OpenSpec change: `retire-v1-topology-residue`（planning complete；未 apply）
 
 本计划执行时必须同时阅读
 [55 - Cleanup Decision Record](alignment-audit-55-cleanup-decision-record.md) 和
@@ -143,17 +143,23 @@ adjustment 不得 apply，也不得勾选对应完成 checkbox。
 
 ### 执行前未完成
 
-- [ ] 0.7 获得“只创建 Stage 1 planning artifacts”的明确授权。
-- [ ] 0.8 记录当时 HEAD、完整 worktree 状态与 `openspec list --json`。
-- [ ] 0.9 若有 active change 或 overlapping user edits，停止并记录 owner，不覆盖。
-- [ ] 0.10 逐项重验 `55` 中 C-001..C-003；外部已解决项标 `resolved externally`。
-- [ ] 0.11 书面记录全部 frozen paths；确认 change tasks 中没有 code/test/detector 工作。
+- [x] 0.7 已获得“只创建 Stage 1 planning artifacts”的明确授权（2026-08-12）。
+- [x] 0.8 已记录 planning baseline：HEAD `5da7e872e2b264dc74512225a66492f5502313ba`；
+  `openspec list --json` 无 active change；Git metadata 显示 `deerflow` gitlink 为
+  `66b9e7f21212490cf92fafac137542b9deb06615`。完整 apply-time baseline 必须在 task 1.1 重取。
+- [x] 0.9 planning 前确认无 active change，且当时 `git status --porcelain=v1 --untracked-files=all`
+  无输出；后续 user edits 或 active changes 仍须在 apply 前重查，不覆盖。
+- [x] 0.10 已逐项重验 `55` 中 C-001..C-003；没有外部已解决项：C-001/C-002/C-003 均仍为
+  明确目标，证据收录于 Stage 1 change proposal/design。
+- [x] 0.11 已书面记录 frozen paths；change tasks 不含 code/test/detector、governance executable、
+  manifest/TOML、registry、generated inventory 或 `deerflow/` 工作。
 
 ### Gate 0
 
-- [ ] 只获得 Stage 1 planning authorization，尚未获得 apply authorization。
-- [ ] 执行基线与用户已有修改已经记录。
-- [ ] 未创建或修改任何代码、测试、detector 或 `deerflow/` 内容。
+- [x] 只获得 Stage 1 planning authorization，尚未获得 apply authorization。
+- [x] Planning baseline 与当时用户 worktree 状态已经记录；apply 前必须按 task 1.1 重取。
+- [x] Stage 1 planning 仅创建 OpenSpec artifacts 与本计划记录；未创建或修改代码、测试、detector
+  或 `deerflow/` 内容。
 
 **Gate 0 未通过时停止。**
 
@@ -174,22 +180,24 @@ adjustment 不得 apply，也不得勾选对应完成 checkbox。
 
 ### Planning checklist
 
-- [ ] 1.1 确认无 active change 后，用
+- [x] 1.1 已确认无 active change，并用
   `openspec new change "retire-v1-topology-residue"` 创建 scaffold。
-- [ ] 1.2 依次运行 `status` / `instructions`，按 schema 生成实际要求的 artifacts；不手工
-  猜测或强造空 delta。
-- [ ] 1.3 Focus Card 将 owner 限定为 V2 repository topology language，不拥有 detector。
-- [ ] 1.4 Proposal 明确 A-001 要关闭、A-002 仍 deferred，并链接 `55` 的精确分类。
-- [ ] 1.5 建立逐 occurrence 清单，只纳入“根 `backend/` / `frontend/` 是 upstream
-  mirror”及错误 sibling install path。
-- [ ] 1.6 为 C-001、C-002、C-003 分别填写完整 Adjustment Record；逐项解释调整内容、
-  风险、可能副作用、控制和验证，不使用一个 topology 总风险代替。
-- [ ] 1.7 明确排除真实 `deerflow/backend/...`、database/persistence backend、host
-  compatibility path、legacy-root negative drift guard 和所有 archive。
-- [ ] 1.8 Delta/spec work 只迁移物理边界语言，不承诺 gitlink mode/diff detector 已存在。
-- [ ] 1.9 Tasks 只包含 config/spec/guide/README/Charter/policy 文案和只读验证；不包含
-  Python、tests、manifest、TOML、registry 或 generated inventory edit。
-- [ ] 1.10 `openspec validate retire-v1-topology-residue --strict` 通过并完成人工 plan review。
+- [x] 1.2 已依次运行 `status` / `instructions`，按 schema 生成实际要求的 artifacts；`skip_specs: true`
+  是 CLI 确认的合法 docs-only disposition，未强造空 delta。
+- [x] 1.3 Focus Card 已将 owner 限定为 V2 repository topology language，不拥有 detector。
+- [x] 1.4 Proposal 已明确 A-001 要关闭、A-002 仍 deferred，并指向 `55` 的精确分类。
+- [x] 1.5 Proposal/design 已建立逐 occurrence allowlist：仅“根 `backend/` / `frontend/` 是
+  upstream mirror”及错误 sibling install path 是目标。
+- [x] 1.6 C-001、C-002、C-003 分别有审阅记录；tasks 要求 apply 后分别完成完整 Adjustment Record，
+  不使用一个 topology 总风险代替。
+- [x] 1.7 Proposal/design 已明确排除真实 `deerflow/backend/...`、database/persistence backend、
+  host compatibility path、legacy-root negative drift guard 和所有 archive。
+- [x] 1.8 CLI 已确认无 delta/spec work；计划不承诺 gitlink mode/diff detector 已存在。
+- [x] 1.9 Tasks 只包含 config/guide/README/Charter 文案、审计记录与只读验证；不含 Python、tests、
+  manifest、TOML、registry 或 generated inventory edit。
+- [x] 1.10 `openspec validate retire-v1-topology-residue --strict` 已通过（2026-08-12）；人工复核
+  `proposal.md`、`design.md`、`tasks.md` 后确认 scope 只含四份说明性 authority、保留 valid
+  legacy-root guard、A-002 仍 deferred，且无 frozen-path edit task。
 - [ ] 1.11 单独获得 Stage 1 apply authorization。
 
 ### Apply checklist（尚未授权）
