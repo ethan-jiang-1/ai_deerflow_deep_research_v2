@@ -53,5 +53,6 @@ plan 完成后从 `_backlog/plans/` 通过 `git mv` 移入本目录：
 | CLS-032 | 2026-08-08 | [deep-research-harness-test-asset-audit.md](deep-research-harness-agent-native/deep-research-harness-test-asset-audit.md) | 测试资产基线、证据真实性分层与缺口审计，已作为 Direction-loop 与认知 ownership deterministic evidence 的历史输入保留。 |
 | CLS-033 | 2026-08-09 | [cli-tui-entry-integrity-repair_plan.md](cli-tui-entry-integrity-repair_plan.md) | CLI/TUI entry-integrity repair 的五个 OpenSpec changes 已验证、同步主规格并归档；README 已提供受限的 Entry Surfaces 选择地图，配套[研究记录](cli-tui-entry-integrity-repair-research.md)随同保留。 |
 | CLS-034 | 2026-08-10 | [diagnostics-event-journal.md](diagnostics-event-journal.md) | Bundle-local Run Event Journal 的系统性诊断设计已通过 `systemic-run-event-journal` 实现、同步主规格、归档并提交；配套[研究记录](diagnostics-event-journal/research.md)随同保留。 |
+| CLS-035 | 2026-08-11 | [openspec-agent-charter-topology-flattening.md](openspec-agent-charter-topology-flattening.md) | Charter/policy 一级拓扑迁移经 `rehome-agent-charter-policy-library` 落地并归档；charter 边界行被 @impl 清理误删后已恢复，governance 全绿后关闭。 |
 
-**Next available plan ID: CLS-035**
+**Next available plan ID: CLS-036**

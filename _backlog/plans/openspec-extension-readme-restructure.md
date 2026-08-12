@@ -153,7 +153,7 @@ requirement ownership baseline repair (archived)
 
 `openspec/agent-charter/`、`openspec/policies/README.md` 和所有 policy 正文的最终路径、索引
 分类、DRC terminology 及迁移验证，均由
-[`openspec-agent-charter-topology-flattening.md`](openspec-agent-charter-topology-flattening.md)
+[`openspec-agent-charter-topology-flattening.md`](../_done/_closed_plans/openspec-agent-charter-topology-flattening.md)（CLS-035）
 拥有。本计划仅保留其余 README/command 收口的职责。
 
 ## 受控约束

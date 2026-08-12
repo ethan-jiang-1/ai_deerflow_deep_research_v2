@@ -19,12 +19,11 @@
 
 | Plan | 说明 |
 |------|------|
-| [openspec-agent-charter-topology-flattening.md](openspec-agent-charter-topology-flattening.md) | 将 Charter、全部十个 policy 与 guardrail 明确为 `openspec/` 一级职责；以独立 change 迁移路径并吸收 DRC terminology correction |
 | [openspec-extension-readme-restructure.md](openspec-extension-readme-restructure.md) | OpenSpec 治理文档分层；已完成基线修复，保留 SCC closeout contract 与最终 governance README 收口计划 |
 
 新的分析或设计应在此创建，完成后再移入归档。
 
-**Next available plan ID: CLS-035**（移入 `_closed_plans/` 时分配）
+**Next available plan ID: CLS-036**（移入 `_closed_plans/` 时分配）
 
 ## 已归档（移至 `_done/_closed_plans/`）
 
