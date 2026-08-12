@@ -2,9 +2,9 @@
 
 This file is the code-change information map for `deep_research_harness/`. Use it to decide what to
 read next; it is not a product handbook, a runtime-status report, or a full path
-inventory. `backend/` and `frontend/` are upstream DeerFlow mirrors. Do not modify
-them for Deep Research work unless a separately approved change explicitly owns that
-boundary.
+inventory. `deerflow/` is the upstream gitlink leveraged by this downstream product.
+Do not modify or source-browse it for Deep Research work unless a separately approved
+change explicitly owns that boundary.
 
 <!-- BEGIN: DEEP-RESEARCH-FOCUS-GATE -->
 ## Deep Research Focus Gate

@@ -53,7 +53,7 @@ page.
 ## Quick Start
 
 Requirements: Python 3.12 or newer, `uv`, and the sibling DeerFlow harness at
-`../backend/packages/harness`.
+`../deerflow/backend/packages/harness`.
 
 From the repository root, run these commands one line at a time:
 

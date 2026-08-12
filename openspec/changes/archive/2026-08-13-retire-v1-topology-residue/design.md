@@ -26,13 +26,17 @@ that the directories are current DeerFlow mirrors. They must remain unchanged.
 - Correct the editable-install command while preserving its repository-root context.
 - Leave a reviewable classification of retained `backend`/`frontend` terms and the
   limits of the available verification.
+- Remove the sole pre-existing formatter failure that prevents the required full
+  verification gate, without changing test inputs, test assertions, or behavior.
 
 **Non-Goals:**
 
 - Create a gitlink pointer/worktree detector, change a governance executable, or claim
   automatic enforcement of the upstream boundary (A-002 remains deferred).
-- Modify application code, tests, dependencies, manifests, TOML registries, generated
-  inventory, main specs, archived changes, or `deerflow/` content/worktree.
+- Modify application code, dependencies, manifests, TOML registries, generated
+  inventory, main specs, archived changes, or `deerflow/` content/worktree. V-001 is
+  the sole test-file exception: configured Ruff formatting of one adjacent-literal
+  expression, with no semantic change.
 - Read DeerFlow source, replace every `backend`/`frontend` token, or weaken a valid
   legacy-root placement guard.
 
@@ -98,6 +102,21 @@ legacy-root negative guard. Historical archives, generated lockfile entries, and
 Rejected alternative: say the gitlink is simply "kept clean." That wording obscures
 which command checked which fact and can be mistaken for mechanical enforcement.
 
+### 5. Admit one formatter-only verification maintenance exception
+
+The required `UV_OFFLINE=1 make verify` gate stopped because configured Ruff formatting
+would join two adjacent string literals in
+`deep_research_harness/tests/contract/test_selected_change_closeout.py`. The literals
+are compiled as one string already; Ruff's rewrite changes neither the resulting
+fixture text nor the test's inputs, assertions, or behavior.
+
+V-001 therefore permits only the formatter's exact rewrite of that expression. It does
+not reopen test behavior, closeout-guardrail design, code scope, or A-002. The task
+records the before/after diff and requires a focused test plus the full existing gate.
+
+Rejected alternative: leave the known formatter failure in place and call the Stage 1
+documentation result verified. That would leave the required evidence incomplete.
+
 ## Risks / Trade-offs
 
 - [A text-only replacement could change a valid path or domain term] -> Use the explicit
@@ -118,6 +137,10 @@ which command checked which fact and can be mistaken for mechanical enforcement.
 - [An active main-spec negative guard may be removed accidentally] -> Treat every
   retained `backend`/`frontend` occurrence as a semantic classification result, not
   cleanup residue.
+- [A formatter maintenance edit may be mistaken for authorization to change a test] ->
+  Limit V-001 to Ruff's exact adjacent-literal rewrite; inspect the diff and run both
+  the focused test and the full gate. Stop if the formatter proposes any other file or
+  semantic edit.
 
 ## Migration Plan
 
@@ -125,9 +148,10 @@ which command checked which fact and can be mistaken for mechanical enforcement.
    overwriting them.
 2. Apply C-001 and C-002 atomically in `openspec/config.yaml`, local `AGENTS.md`, and
    the Charter; apply C-003 only to the README command text.
-3. Run strict OpenSpec validation, Markdown/link and whitespace checks, Git metadata
-   checks, and the existing read-only verification command. Stop on a failure rather
-   than modifying code or tests to obtain green output.
+3. Apply V-001 only if the configured formatter still proposes its recorded one-line
+   adjacent-literal rewrite; inspect the diff, run its focused test, then run strict
+   OpenSpec validation, Markdown/link and whitespace checks, Git metadata checks, and
+   the existing full verification command. Stop if V-001 expands beyond that rewrite.
 4. Complete one Adjustment Record each for C-001, C-002, and C-003, including observed
    side effects and the proof bounds; then obtain separate approval before archive or
    any Stage 2 work.

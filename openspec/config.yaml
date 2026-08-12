@@ -3,10 +3,11 @@ schema: spec-driven
 context: |
   ## Deep Research Change Routing
 
-  Deep Research is the downstream product owned by `deep_research_harness/`. `backend/` and
-  `frontend/` are upstream DeerFlow mirrors and MUST remain unmodified unless a
-  separately approved change explicitly owns that boundary. DeerFlow MUST NOT import
-  the downstream package.
+  Deep Research is the downstream product owned by `deep_research_harness/`.
+  `deerflow/` is the upstream gitlink leveraged as the host dependency; ordinary
+  downstream work MUST neither modify nor source-browse it unless a separately
+  approved change explicitly owns that boundary. DeerFlow MUST NOT import the
+  downstream package.
 
   ## Default Context Boundary
 
@@ -60,7 +61,7 @@ rules:
     - "When Triggered review policies selects `control-placement`, the proposal MUST include one `## Control Placement Review` table with Changed decision or fact, Cognitive candidate or human judgment, Direct fact and deterministic owner/evaluator, Design posture, Protected invariant or legal recovery, Reuse or complexity removed/avoided, and Deterministic evidence seam. The review guides design only; it creates no runtime authority."
     - "When Triggered review policies selects `workflow-outcome-review`, the proposal MUST include one `## Workflow Outcome Review` table with Failure class, Fact owner, Recovery owner and bound, Terminal disposition, Legal next action, and Deterministic evidence seam. This review record guides design and review only; it does not create runtime authority."
     - "When Triggered review policies selects `node-agent-workflow-integrity`, the proposal MUST include one `## Node Agent Review` table with Surface, Classification, Bounded cognitive question or no-agent rationale, Input authority boundary, Tool posture and runtime enforcer, Candidate result and deterministic admission owner, Failure owner and bound, and Deterministic evidence seam. This routes admission only: root `config.yaml`, `openspec/config.yaml`, the review record, and a prompt do not grant a node role, graph route, state write, model invocation, tool permission, or recovery behavior."
-    - "State no modifications under backend/ or frontend/ unless the proposal explicitly owns and approves that boundary. Describe proposed behavior as scope, not current fact."
+    - "State that ordinary downstream work neither modifies nor source-browses the `deerflow/` gitlink unless the proposal explicitly owns and approves that boundary. Describe proposed behavior as scope, not current fact."
     - "For a changed user-facing or AI-facing lifecycle outcome, name the owning typed fact, the evidence seam, and the legal next action; projections and diagnostics do not become lifecycle authority."
   specs:
     - "Requirements describe observable or mechanically verifiable downstream behavior and do not redefine DeerFlow internals. Main specs and active deltas declare owned requirement IDs before their first heading."
@@ -79,7 +80,7 @@ rules:
       bounded recovery/terminal disposition 与 deterministic test；不得创建 competing controller 或 authority。
   tasks:
     - "Pair changed behavior with a red-before-green deterministic test and include the narrowest relevant verification command."
-    - "Before archive, run `cd deep_research_harness && UV_OFFLINE=1 make verify`, `openspec validate <change-name> --strict`, and `git diff HEAD --check`; record `git status --porcelain=v1 --untracked-files=all` and keep backend/ and frontend/ clean."
+    - "Before archive, run `cd deep_research_harness && UV_OFFLINE=1 make verify`, `openspec validate <change-name> --strict`, and `git diff HEAD --check`; record `git status --porcelain=v1 --untracked-files=all`, `git ls-files --stage deerflow`, `git submodule status -- deerflow`, `git -C deerflow status --porcelain=v1 --untracked-files=all`, and review `git diff --submodule=short`. These are manual scope/diff evidence for the observed gitlink pointer and nested worktree only, not automatic detection or protection."
     # @impl DRC-010
     - "When `Triggered review policies` includes `control-placement`, tasks.md MUST retain a plan-review and archive-closeout-review obligation. Each names its current apply/archive agent owner, minimal review or correction action, and deterministic or bounded-evidence done condition; another policy alone does not require either obligation."
 

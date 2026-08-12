@@ -274,8 +274,7 @@ def test_record_review_ignores_prose_containing_checkbox_marker(tmp_path: Path) 
     root, base_commit, head_commit = _project(tmp_path)
     tasks_path = root / "openspec/changes" / CHANGE_NAME / "tasks.md"
     tasks_path.write_text(
-        "## Tasks\n\n- [ ] Real work item\n\n"
-        "Prose that mentions the `- [ ]` marker is not a task.\n",
+        "## Tasks\n\n- [ ] Real work item\n\nProse that mentions the `- [ ]` marker is not a task.\n",
         encoding="utf-8",
     )
     attestation = _attestation(root, base_commit, head_commit)

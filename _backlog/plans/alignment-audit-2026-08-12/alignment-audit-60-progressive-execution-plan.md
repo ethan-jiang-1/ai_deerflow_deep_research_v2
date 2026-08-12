@@ -5,8 +5,8 @@
 > 原始审计证据快照: `65df2571108cc6b4b81f55d3ba8542786a810b39`
 > 计划重排时 HEAD: `ac6989abb46b22a9b0cf50e8a53b47341d762750`
 > 执行基线: 尚未锁定；开始每个 Stage 时重新记录 HEAD
-> 当前状态: **STAGE 1 PLANNING COMPLETE - APPLY NOT AUTHORIZED**
-> 最近确认的 active OpenSpec change: `retire-v1-topology-residue`（planning complete；未 apply）
+> 当前状态: **STAGE 1 COMPLETE AND ARCHIVED - STAGE 2 NOT AUTHORIZED**
+> 最近完成的 OpenSpec change: `2026-08-13-retire-v1-topology-residue`（archived；no active change）
 
 本计划执行时必须同时阅读
 [55 - Cleanup Decision Record](alignment-audit-55-cleanup-decision-record.md) 和
@@ -122,7 +122,7 @@ adjustment 不得 apply，也不得勾选对应完成 checkbox。
 | Stage | Change | 覆盖 | 是否改代码 | 初始状态 |
 | --- | --- | --- | --- | --- |
 | 0 | 无 | 决策、退役登记与执行边界 | 否 | `[x] Decision tree closed; execution not authorized` |
-| 1 | `retire-v1-topology-residue` | A-001；诚实记录 A-002 | 否 | `[ ] Not started` |
+| 1 | `2026-08-13-retire-v1-topology-residue` | A-001；诚实记录 A-002 | 仅 V-001 format-only test exception | `[x] Archived; Stage 2 not authorized` |
 | 2 | `retire-stale-context-concepts` | A-005..A-008 的安全子集 | 否 | `[ ] Blocked by Stage 1` |
 | 3 | 无，只读 re-audit | 降噪后重建 A-001..A-009 ledger | 否 | `[ ] Blocked by Stage 2` |
 | 4 | `reconcile-evaluation-rubric-authority` | A-003 | 否；实现差异 defer | `[ ] Blocked by Stage 3` |
@@ -167,7 +167,8 @@ adjustment 不得 apply，也不得勾选对应完成 checkbox。
 
 **Change:** `retire-v1-topology-residue`
 
-**只覆盖:** C-001..C-003 / A-001。A-002 保持 open。
+**只覆盖:** C-001..C-003 / A-001，以及为恢复既有 full gate 而单独授权的 V-001
+formatter-only maintenance。A-002 保持 open。
 
 ### 逐项审阅文件
 
@@ -198,31 +199,39 @@ adjustment 不得 apply，也不得勾选对应完成 checkbox。
 - [x] 1.10 `openspec validate retire-v1-topology-residue --strict` 已通过（2026-08-12）；人工复核
   `proposal.md`、`design.md`、`tasks.md` 后确认 scope 只含四份说明性 authority、保留 valid
   legacy-root guard、A-002 仍 deferred，且无 frozen-path edit task。
-- [ ] 1.11 单独获得 Stage 1 apply authorization。
+- [x] 1.11 单独获得 Stage 1 apply authorization（2026-08-12；仅 C-001..C-003）。
 
-### Apply checklist（尚未授权）
+### Apply checklist（已完成）
 
-- [ ] 1.12 把 config、local AGENTS 和 Charter 中的 upstream mirror 叙述改为真实
-  `deerflow/` gitlink boundary。
-- [ ] 1.13 把 config proposal/closeout 规则改成诚实的 scope 与人工 evidence 要求；明确
-  当前没有 A-002 机械 detector。
-- [ ] 1.14 修正 README 的 editable harness 路径；保持 `pyproject.toml`、lockfile 不变。
-- [ ] 1.15 仅通过 approved delta 同步真正误称 root upstream 的 main-spec 语言；逐项证明
-  没有删除仍有效的 negative drift guard 或 host-interface term。
-- [ ] 1.16 搜索 active non-archive authority，逐项分类残余 `backend` / `frontend`；验收
-  依据是语义分类完整，不是 token 数归零。
-- [ ] 1.17 运行 strict OpenSpec、Markdown/link、whitespace 和现有只读 verification；失败时
-  停止，不改 code/test 追绿。
-- [ ] 1.18 逐项回填 C-001..C-003 的 observed side effects、remaining mismatch 和 evidence
-  bound；空白记录不得进入 archive。
-- [ ] 1.19 Archive 后做 A-001/A-002 局部复审并记录 before/after evidence。
+- [x] 1.12 把 config、local AGENTS 和 Charter 中的 upstream mirror 叙述改为真实
+  `deerflow/` gitlink boundary（2026-08-12；full gate 尚被独立格式问题阻塞）。
+- [x] 1.13 把 config proposal/closeout 规则改成诚实的 scope 与人工 evidence 要求；明确
+  当前没有 A-002 机械 detector（2026-08-12；full gate 尚被独立格式问题阻塞）。
+- [x] 1.14 修正 README 的 editable harness 路径；保持 `pyproject.toml`、lockfile 不变
+  （2026-08-12；full gate 尚被独立格式问题阻塞）。
+- [x] 1.14a 仅运行 configured Ruff 对
+  `tests/contract/test_selected_change_closeout.py` 的 V-001 adjacent-literal 格式维护；
+  不改变 fixture 字符串、assertion 或测试行为。该例外由用户“继续”于 2026-08-13 单独授权，
+  完整风险和副作用记录见 `stage-1-apply` V-001 record；focused Ruff、Ruff check 和
+  pytest `15 passed` 已通过。
+- [x] 1.15 已复核 main specs：没有真正误称 root upstream 的 current authority；所有命中均为
+  negative drift guard、host-interface 或 domain term，故无需也不得创建 delta/spec sync。
+- [x] 1.16 搜索 active non-archive authority，逐项分类残余 `backend` / `frontend`；验收
+  依据是语义分类完整，不是 token 数归零（分类见 `stage-1-apply` C-001 record）。
+- [x] 1.17 运行 strict OpenSpec、Markdown/link、whitespace 和现有只读 verification；失败时
+  停止，不改 code/test 追绿。V-001 后 strict/doctor/Charter/diff/link 全通过；完整 gate
+  的 targets 亦通过：fast 2495、integration/blocking-I/O 241（4 expected skips）、workflow 35。
+- [x] 1.18 逐项回填 C-001..C-003 的 observed side effects、remaining mismatch 和 evidence
+  bound；空白记录不得进入 archive（另有 V-001 独立 record）。
+- [x] 1.19 Archive 后做 A-001/A-002 局部复审并记录 before/after evidence（见
+  `stage-1-apply/alignment-audit-60-s1-archive-local-reaudit.md`）。
 
 ### Gate 1
 
-- [ ] Current explanatory authority 对真实 V2 topology 给出同一答案。
-- [ ] 所有保留的 `backend` / `frontend` occurrence 都有合法分类理由。
-- [ ] A-002 明确保持 `DEFERRED-CODE-CHANGE`，没有 architecture/gitlink 假绿声明。
-- [ ] Diff 不含 frozen paths；change 已 archive；无 active change。
+- [x] Current explanatory authority 对真实 V2 topology 给出同一答案。
+- [x] 所有保留的 `backend` / `frontend` occurrence 都有合法分类理由。
+- [x] A-002 明确保持 `DEFERRED-CODE-CHANGE`，没有 architecture/gitlink 假绿声明。
+- [x] Diff 不含 frozen paths（V-001 已授权 exception 除外）；change 已 archive；无 active change。
 - [ ] 已停止并取得进入 Stage 2 的新授权。
 
 ## Stage 2 - Retire Stale Context Concepts
@@ -494,6 +503,7 @@ adjustment 不得 apply，也不得勾选对应完成 checkbox。
 
 ## 当前下一动作
 
-本计划与决策记录已经形成，但没有实施授权。下一动作只能是用户单独授权
-“创建 Stage 1 的 OpenSpec planning artifacts”。在那之前，不创建 active change，不修改
-spec、CONTEXT、config、ADR、guide、README、代码或 tests。
+Stage 1 已归档，A-001 已局部关闭，A-002 保持 `DEFERRED-CODE-CHANGE`。下一动作只能是用户
+单独授权 Stage 2 的 planning：创建 `retire-stale-context-concepts` 并重新确认
+Q-001/A-003 与 Q-002/A-004 的禁碰边界。在那之前，不创建 Stage 2 change，不修改
+CONTEXT、ADR、guide、README、代码、tests 或 `deerflow/`。

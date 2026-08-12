@@ -7,9 +7,10 @@
 ## Product Boundary
 
 Deep Research is the downstream product owned by `deep_research_harness/`. DeerFlow is its host
-runtime. The root repository guides, `backend/`, and `frontend/` establish upstream
-facts and boundaries; they are not the default place to design a local Deep Research
-change. This charter neither edits nor overrides root `AGENTS.md` or `CLAUDE.md`.
+runtime, leveraged through the upstream `deerflow/` gitlink. Ordinary downstream work
+neither modifies nor source-browses that gitlink. The root repository guides establish
+upstream facts and boundaries; they are not the default place to design a local Deep
+Research change. This charter neither edits nor overrides root `AGENTS.md` or `CLAUDE.md`.
 
 ## Principles
 
