@@ -17,6 +17,7 @@
 | [30 - OpenSpec Governance](alignment-audit-30-openspec-governance.md) | `openspec/config.yaml` 的思想、物理边界和门禁是否有历史残渣？ |
 | [40 - Verification](alignment-audit-40-verification.md) | 哪些命令通过、它们能证明什么、不能证明什么？ |
 | [50 - Remediation Roadmap](alignment-audit-50-remediation-roadmap.md) | 应按什么依赖顺序消除错位，完成条件是什么？ |
+| [55 - Cleanup Decision Record](alignment-audit-55-cleanup-decision-record.md) | 哪些概念可退役、为什么，以及 Q1-Q20 锁定了哪些边界？ |
 | [60 - Progressive Execution Plan](alignment-audit-60-progressive-execution-plan.md) | 如何用逐关 checkbox 和一次一个 OpenSpec change 推进整改？ |
 
 ## 结论
