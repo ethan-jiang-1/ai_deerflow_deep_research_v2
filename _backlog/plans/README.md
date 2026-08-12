@@ -1,6 +1,6 @@
 # Active Plans — 活跃 plan/分析文档列表
 
-> 最后更新: 2026-08-11 | `_backlog/plans/` — 活跃 plan 在此，完成移入 [`../_done/_closed_plans/`](../_done/_closed_plans/)。
+> 最后更新: 2026-08-12 | `_backlog/plans/` — 活跃 plan 在此，完成移入 [`../_done/_closed_plans/`](../_done/_closed_plans/)。
 >
 > **plan 没有编号，文件名即标识。完成后文件名不变，位置即状态。**
 
@@ -19,6 +19,7 @@
 
 | Plan | 说明 |
 |------|------|
+| [alignment-audit-2026-08-12/](alignment-audit-2026-08-12/alignment-audit-00-current-state.md) | `alignment-audit-*` 六文档审计集；对齐 Harness、main specs、全部仓库自有 CONTEXT 与 OpenSpec 治理，并给出验证记录和整改依赖 |
 | [openspec-extension-readme-restructure.md](openspec-extension-readme-restructure.md) | OpenSpec 治理文档分层；已完成基线修复，保留 SCC closeout contract 与最终 governance README 收口计划 |
 
 新的分析或设计应在此创建，完成后再移入归档。
