@@ -17,7 +17,7 @@ Both operations require an attestation JSON file with non-empty fields:
 }
 ```
 
-Run commands from the planning home or a directory below it:
+Run commands from the planning home as your current working directory:
 
 ```sh
 python3 openspec/guardrails/selected_change_closeout.py verify-boundary \
@@ -32,7 +32,8 @@ and SHA-256 of `git diff --binary base head`. It writes nothing. A rejected requ
 prints `missing-boundary` with a closed condition and no diff or coverage claim.
 
 To retain a local review record, provide the attestation again, a review payload, and
-an explicit output below the selected active change root:
+an explicit output under the selected change's dedicated `guardrail-evidence/`
+subdirectory:
 
 ```sh
 python3 openspec/guardrails/selected_change_closeout.py record-review \
@@ -40,6 +41,17 @@ python3 openspec/guardrails/selected_change_closeout.py record-review \
   --review /path/to/review.json \
   --output openspec/changes/example-change/guardrail-evidence/review.json
 ```
+
+The resolved `--output` must live under `<active change root>/guardrail-evidence/`;
+pointing it at a change artifact such as `tasks.md` or `proposal.md` is rejected, so a
+review record can never overwrite a change artifact.
+
+Note the exit-code contract: both `verify-boundary` and `record-review` return exit
+code 0 even when they emit a domain rejection (`missing-boundary` or `invalid-review`)
+. Callers MUST parse the stdout JSON `result` field — not the shell exit code — to
+determine whether evidence was established. If you call the script from a subdirectory
+of the planning home, resolve the script path and the `--output` path yourself; the
+examples above assume the planning home is the working directory.
 
 The review payload allows only these dispositions:
 
@@ -60,8 +72,9 @@ selected change's `tasks.md`. Alternatively, an evidence-limited record is:
 }
 ```
 
-`record-review` validates the payload and output containment, then re-verifies the
-attestation immediately before its only write. It never edits `tasks.md`, invokes or
+`record-review` validates the payload and output containment (under
+`guardrail-evidence/`), then re-verifies the attestation immediately before its only
+write. It never edits `tasks.md`, invokes or
 blocks native `openspec archive`, infers an undeclared worktree boundary, or emits an
 approval, clearance, or semantic-pass status. A later session must issue a new
 attestation verification; an earlier receipt is inspection evidence only.

@@ -219,7 +219,7 @@ def test_record_review_rejects_semantic_or_incomplete_payloads(
     attestation = _attestation(root, base_commit, head_commit)
     tasks_path = root / "openspec/changes" / CHANGE_NAME / "tasks.md"
     original_tasks = tasks_path.read_text(encoding="utf-8")
-    rejected_output = root / "openspec/changes" / CHANGE_NAME / f"{condition}.json"
+    rejected_output = root / "openspec/changes" / CHANGE_NAME / "guardrail-evidence" / f"{condition}.json"
 
     rejected = _receipt(_run(root, "record-review", attestation, review=review, output=rejected_output))
 
@@ -242,9 +242,21 @@ def test_record_review_rejects_escaping_paths_and_rechecks_before_write(tmp_path
     assert escaped == {
         "schema_version": "selected-change-closeout/v1",
         "result": "invalid-review",
-        "condition": "output-path-outside-change",
+        "condition": "output-path-outside-evidence",
     }
     assert not outside_output.exists()
+
+    # A path under the change root but outside guardrail-evidence/ (e.g. a change
+    # artifact such as tasks.md) must not become the review-record write target.
+    tasks_path = root / "openspec/changes" / CHANGE_NAME / "tasks.md"
+    original_tasks = tasks_path.read_text(encoding="utf-8")
+    overwrite = _receipt(_run(root, "record-review", attestation, review=review, output=tasks_path))
+    assert overwrite == {
+        "schema_version": "selected-change-closeout/v1",
+        "result": "invalid-review",
+        "condition": "output-path-outside-evidence",
+    }
+    assert tasks_path.read_text(encoding="utf-8") == original_tasks
 
     _receipt(_run(root, "verify-boundary", attestation))
     (root / "state-changed-after-receipt.txt").write_text("dirty\n", encoding="utf-8")
@@ -256,6 +268,36 @@ def test_record_review_rejects_escaping_paths_and_rechecks_before_write(tmp_path
         "condition": "dirty-worktree",
     }
     assert not record_output.exists()
+
+
+def test_record_review_ignores_prose_containing_checkbox_marker(tmp_path: Path) -> None:
+    root, base_commit, head_commit = _project(tmp_path)
+    tasks_path = root / "openspec/changes" / CHANGE_NAME / "tasks.md"
+    tasks_path.write_text(
+        "## Tasks\n\n- [ ] Real work item\n\n"
+        "Prose that mentions the `- [ ]` marker is not a task.\n",
+        encoding="utf-8",
+    )
+    attestation = _attestation(root, base_commit, head_commit)
+    output = root / "openspec/changes" / CHANGE_NAME / "guardrail-evidence/review.json"
+
+    # The old parser would have extracted "marker is not a task." from the prose
+    # line; the anchored parser ignores it, so referencing it is not a valid task.
+    rejected = _receipt(
+        _run(
+            root,
+            "record-review",
+            attestation,
+            review={"disposition": "review-required", "task_references": ["marker is not a task."]},
+            output=output,
+        )
+    )
+    assert rejected == {
+        "schema_version": "selected-change-closeout/v1",
+        "result": "invalid-review",
+        "condition": "unknown-unchecked-task",
+    }
+    assert not output.exists()
 
 
 def test_invalid_attestations_do_not_run_git_or_native_archive_or_touch_tasks(tmp_path: Path) -> None:

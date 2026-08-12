@@ -57,10 +57,11 @@ writes the record; a receipt from an earlier invocation is inspection evidence o
 A `review-required` record SHALL include one or more non-empty references that exactly
 match current unchecked task labels in the selected change's `tasks.md`; an
 `inconclusive` record SHALL include a non-empty evidence limitation. When a caller
-requests a persisted record, its resolved output path SHALL remain below that selected
-active change root. The capability SHALL preserve the declared boundary and references
-in the record without evaluating their semantic truth. It SHALL NOT create, complete,
-or rewrite tasks; invoke, wrap, or block native OpenSpec archive; emit `clear`,
+requests a persisted record, its resolved output path SHALL resolve within that
+selected change's dedicated `guardrail-evidence/` subdirectory of the active change
+root. The capability SHALL preserve the declared boundary and references in the record
+without evaluating their semantic truth. It SHALL NOT create, complete, or rewrite
+tasks; invoke, wrap, or block native OpenSpec archive; emit `clear`,
 `approved`, or semantic-pass dispositions; or alter runtime behavior.
 
 #### Scenario: An actionable finding stays in the normal task ledger
@@ -80,7 +81,9 @@ or rewrite tasks; invoke, wrap, or block native OpenSpec archive; emit `clear`,
   record or modifying the task ledger
 
 #### Scenario: Persistent evidence cannot escape the selected change
-- **WHEN** a caller requests an output path outside the resolved active change root
+- **WHEN** a caller requests an output path that resolves outside the selected
+  change's dedicated `guardrail-evidence/` subdirectory (including a change artifact
+  such as `tasks.md` or `proposal.md`)
 - **THEN** the capability rejects the output request without writing any record
 
 #### Scenario: A prior receipt cannot authorize a later persisted record

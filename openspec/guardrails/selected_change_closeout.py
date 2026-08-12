@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -150,6 +151,9 @@ def _verify_boundary(attestation: Attestation) -> tuple[dict[str, object], Path 
     )
 
 
+UNCHECKED_TASK_LINE = re.compile(r"^\s*(?:[-*+])\s+\[ \]\s+(.+?)\s*$")
+
+
 def _unchecked_task_labels(change_root: Path) -> set[str]:
     tasks_path = change_root / "tasks.md"
     try:
@@ -157,15 +161,16 @@ def _unchecked_task_labels(change_root: Path) -> set[str]:
     except OSError:
         return set()
     return {
-        line.split("- [ ]", maxsplit=1)[1].strip()
+        match.group(1).strip()
         for line in task_lines
-        if "- [ ]" in line and line.split("- [ ]", maxsplit=1)[1].strip()
+        if (match := UNCHECKED_TASK_LINE.match(line)) and match.group(1).strip()
     }
 
 
 def _validate_review(review: Any, change_root: Path, output: Path) -> tuple[dict[str, object] | None, dict[str, str] | None]:
-    if not output.is_relative_to(change_root):
-        return None, _result("invalid-review", "output-path-outside-change")
+    evidence_root = change_root / "guardrail-evidence"
+    if not output.is_relative_to(evidence_root):
+        return None, _result("invalid-review", "output-path-outside-evidence")
     if not isinstance(review, dict):
         return None, _result("invalid-review", "missing-review-payload")
     disposition = review.get("disposition")
