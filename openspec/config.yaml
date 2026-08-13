@@ -41,13 +41,14 @@ context: |
   1. Read `deep_research_harness/AGENTS.md` and select one primary module / causal owner.
   2. Read its owning capability spec/delta, closest implementation, and lowest
      responsible evidence seam.
-  3. Use `openspec/agent-charter/README.md` to choose only the policy
-     triggered by the change.
+  3. Use `openspec/agent-charter/README.md` to select every canonical policy whose
+     route-table trigger applies to the change. A change still has one primary module
+     / causal owner.
   4. Add `## Change Focus` to the proposal with Primary module / causal owner,
      Seam classification, Question, Necessary adjacent/external contracts, Evidence
-     seam, Not in scope, and Triggered review policies. List canonical policy names
-     separated by commas on that single list item; do not use continuation lines. Use
-     `none: <short rationale>` only when no policy applies.
+     seam, Not in scope, and Triggered review policies. List every selected canonical
+     policy name separated by commas on that single list item; do not use continuation
+     lines. Use `none: <short rationale>` only when no policy applies.
 
   An adjacent module or public DeerFlow interface enters scope only when the proposal
   names the contract and the interface, authority, compatibility, or observed-failure

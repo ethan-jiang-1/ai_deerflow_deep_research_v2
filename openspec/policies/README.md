@@ -4,10 +4,10 @@
 > authority: guidance only; never runtime control, permission, or current-state truth
 
 This is the complete library of trigger-bearing Deep Research policies. Read the
-[Agent Charter](../agent-charter/README.md) to select one relevant policy; the Charter
-remains the only routing authority. These documents guide proposal authors and
-reviewers while approved specifications, code, and tests retain authority over
-behavior and current facts.
+[Agent Charter](../agent-charter/README.md) to select every canonical policy whose
+route-table trigger applies to the change; the Charter remains the only routing
+authority. These documents guide proposal authors and reviewers while approved
+specifications, code, and tests retain authority over behavior and current facts.
 
 ## Charter-Routed Design And Admission Policies
 

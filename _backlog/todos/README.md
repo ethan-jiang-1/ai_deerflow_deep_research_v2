@@ -1,6 +1,6 @@
 # Active Todos — 活跃 todo + 依赖链 + 执行顺序
 
-> 最后更新: 2026-07-30 | `_backlog/todos/` — 活跃 todo 在此，做完移入 [`../_done/_done_todos/`](../_done/_done_todos/)。
+> 最后更新: 2026-08-13 | `_backlog/todos/` — 活跃 todo 在此，做完移入 [`../_done/_done_todos/`](../_done/_done_todos/)。
 >
 > **本文件是所有活跃工作的中枢。** todo 没有编号，文件名即标识（`todo-<name>.md`）。完成后文件名不变，位置即状态。
 
@@ -17,11 +17,12 @@
 
 ## 活跃列表
 
-_（暂无活跃 todo。新建时在下表加一行，并用下面的模板建 `todo-<name>.md`。）_
-
 | # | 文件 | 优先级 | 简述 | 阻塞 / 备注 |
 |---|------|--------|------|-------------|
-| — | — | — | — | — |
+| 1 | [todo-a002-gitlink-boundary-detector.md](todo-a002-gitlink-boundary-detector.md) | 高 | 为 `deerflow/` gitlink 建立自动边界检测 | 需要独立治理 change；不得读取/修改 DeerFlow 源码 |
+| 2 | [todo-a004t01-openspec-scenario-rename-validator.md](todo-a004t01-openspec-scenario-rename-validator.md) | 中 | 消除 A-004 的 scenario-title tooling residue | 先确认 OpenSpec validator 的真实 owner |
+| 3 | [todo-n002-policy-routing-cardinality.md](todo-n002-policy-routing-cardinality.md) | 中 | 统一 Charter 的多 policy 路由术语 | 当前 alignment plan 关闭前唯一未完成的无代码残差 |
+| 4 | [todo-a009-risk-based-semantic-traceability.md](todo-a009-risk-based-semantic-traceability.md) | 低 | 为高风险改动设计有界语义 traceability | 可选 hardening，未排期 |
 
 ---
 
@@ -34,15 +35,15 @@ _（暂无活跃 todo。新建时在下表加一行，并用下面的模板建 `
 
 ## 依赖链
 
-> 有多个 todo 且存在先后依赖时，在这里用 mermaid 画依赖关系，标出"已完成地基（勿再当下一步）"与"当前应优先的车道"。示例骨架：
+> N-002 是当前应优先的车道；其余三项独立，不得被误作该审计计划的关闭前提。
 
 ```mermaid
 flowchart LR
-  A["todo-a"] --> B["todo-b"]
-  A --> C["todo-c"]
+  N002["N-002 policy-routing cardinality"] --> Close["alignment audit closeout"]
+  A002["A-002 gitlink detector"]
+  T01["A-004-T01 scenario rename validator"]
+  A009["A-009 semantic traceability"]
 ```
-
-_（暂无依赖链。）_
 
 ---
 
@@ -52,7 +53,10 @@ _（暂无依赖链。）_
 
 | 顺序 | 项 | 为什么 |
 |------|-----|--------|
-| — | — | — |
+| 1 | N-002 policy-routing cardinality | 唯一阻止当前 no-code alignment plan 诚实关闭的 current-authority 残差。 |
+| 2 | A-002 gitlink boundary detector | 消除手工检查不能提供的未来 gitlink 机械保护。 |
+| 3 | A-004-T01 scenario-rename validator | 保持已正确的 operative bodies，同时消除误导性的 legacy scenario 标题。 |
+| 4 | A-009 risk-based semantic traceability | 仅当高风险 change 明确需要高于 ID-level 的保证时才启动。 |
 
 _（暂无排期。）_
 

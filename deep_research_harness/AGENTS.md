@@ -20,8 +20,9 @@ interface, authority, compatibility, or observed-failure question it must answer
 A possible future use is not enough to expand scope.
 If local evidence does not identify an owner, clarify the proposal's `## Change Focus`
 card instead of browsing host code or sibling changes for orientation.
-Record canonical comma-separated `Triggered review policies` on that card, then add
-only the conditional review record required by the selected policy route.
+Record every selected canonical policy as comma-separated `Triggered review policies`
+on that card, then add only the conditional review records those selected policy routes
+require.
 
 For an LLM-Bearing Node behavior symptom, classify the seam first: capability Markdown,
 prompt builder, and feedback are the first modification seam; a parser, gate, route, or

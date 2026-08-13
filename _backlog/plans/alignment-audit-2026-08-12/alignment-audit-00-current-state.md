@@ -22,6 +22,17 @@
 
 ## 结论
 
+> **Stage 7 current conclusion (2026-08-13, HEAD `198cf290`):** 原始 A-001、A-003、A-004、
+> A-005、A-006、A-007 已在各自的明确证据边界内完成；A-002 仍是自动 gitlink detector 的
+> `DEFERRED-CODE-CHANGE`，A-004-T01 是 scenario-title validator 的
+> `DEFERRED-TOOLING-CHANGE`，A-009 是 `OPTIONAL-HARDENING`。唯一仍需先完成的 no-code
+> current-authority mismatch 是 A-008/N-002：policy README 与 DRC-001 的 `one relevant
+> policy` 仍和多 trigger 的 canonical route 冲突。因此本 audit plan 尚不能关闭。完整复审见
+> [Stage 7 final matrix](alignment-audit-60-adjustments/stage-7-reaudit/02-current-authority-final-matrix.md)
+> 和 [verification baseline](alignment-audit-60-adjustments/stage-7-reaudit/00-stage-7-baseline-and-verification.md)。
+
+以下“原始审计快照”保留 2026-08-12 的起点，不应再被误读为当前状态。
+
 **当前不能宣称完全对齐。** 更准确的判断是：
 
 - 实现和确定性测试基线健康，49 份 main specs 的 OpenSpec 结构有效，需求
@@ -56,6 +67,19 @@
 | `CONTEXT-MAP.md` | 对齐 | 三个 bounded context 及关系均正确 | 保持 |
 | `openspec/config.yaml` 思想 | 部分对齐 | authority / scope / evidence 原则正确；物理拓扑过期 | A-001、A-002 |
 | 自动 traceability | 部分对齐 | 全局 `@impl` 标签完整，语义断言映射非全局强制 | A-009 |
+
+## Stage 7 当前矩阵
+
+| 对齐面 | 当前状态 | 结论 |
+| --- | --- | --- |
+| V2 拓扑叙述 | 已对齐 | 当前权威正确指向根 `deerflow/` gitlink；有效的 `backend`/`frontend` negative guards 保留。 |
+| Gitlink 自动保护 | Open / deferred | 人工 Git metadata 检查真实但不具自动保护；A-002 已有独立候选 backlog。 |
+| Rubric / Runner authority | 已对齐，有限本地 conformance | CES/EVH/HITL1、glossary 与 ADR 0025 给出同一 metadata/review-only boundary。 |
+| Bundle-loss diagnostics | 已对齐，有限本地 conformance | RER/RUS/REJ、glossary 与 ADR 0006 给出 Bundle-local-only supported reader/presentation boundary。 |
+| CONTEXT / ADR / product status | 已对齐 | 已实现、`planned`、`dormant` 与 `deferred` 已分层；不会声称未实现能力为 current。 |
+| Policy routing cardinality | Open - N-002 | 多 policy route 已被 config/Charter/checker 支持，但 policy README 与 DRC-001 仍用 singular wording。 |
+| Traceability strength | Open - optional hardening | `@impl` green 只证明 ID-level coverage；不声称 assertion-semantic equivalence。 |
+| Deterministic verification | Passed with stated limits | 49 strict specs；fast 2495 passed；integration 237 passed + 4 real-Gateway skips；workflow 35 passed。 |
 
 ## Finding 注册表
 
