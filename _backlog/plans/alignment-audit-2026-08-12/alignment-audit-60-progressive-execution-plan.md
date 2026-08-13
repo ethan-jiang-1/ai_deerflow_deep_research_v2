@@ -433,7 +433,7 @@ formatter-only maintenance。A-002 保持 open。
 - [x] 5.1 已重新读取 RER、RUS、REJ、相关 ADR/CONTEXT 与 Bundle deletion 当前证据。
 - [x] 5.2 已分别回答 bytes retention、supported reader、participant presentation：不对物理残留
   bytes 作绝对断言；没有 supported external reader；没有 Bundle-loss 后 participant presentation。
-- [ ] 5.3 产品 owner 明确选择唯一 required contract：
+- [x] 5.3 产品 owner 已明确选择唯一 required contract（2026-08-12）：
   - [x] Bundle-local-only；Bundle loss 后 inspection unavailable。
   - [x] external diagnostic 可留存，并明确它仍无 recovery/selection/authorization 权威：已排除。
 - [x] 5.4 external-diagnostic 的 typed owner、
