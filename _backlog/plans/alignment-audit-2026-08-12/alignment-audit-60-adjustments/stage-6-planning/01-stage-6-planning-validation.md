@@ -10,7 +10,7 @@
 | --- | --- | --- |
 | `proposal.md` | complete | Limits Stage 6 to explanatory authority, names the three future target documents, preserves the protected concept-map worktree, and leaves A-004-T01 separate. |
 | `design.md` | complete | Defines the exact occurrence allowlist, D-001/D-002 before/after matrices, non-goals, risk controls, ADR postscript protocol, and stop-on-overlap rule. |
-| `tasks.md` | complete | Contains 19 unchecked dependency-ordered tasks; separates apply and archive authorization, requires two Adjustment Records, and contains no code/spec work. |
+| `tasks.md` | complete | At planning validation it contained 20 unchecked dependency-ordered tasks; it separates apply and archive authorization, requires two Adjustment Records, and contains no code/spec work. A later apply-time bookkeeping task may increase the live task count without changing this planning result. |
 | `specs/` | intentionally skipped | `skip_specs: true` is correct because no required behavior changes. The six existing owning main-spec blocks remain the sole behavioral authority. |
 | Stage 6 planning record | complete | Records the two individual adjustments, risks, possible side effects, controls, evidence bounds, user-worktree protection, and remaining A-004-T01 owner. |
 

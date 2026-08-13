@@ -139,21 +139,29 @@ _Avoid_: global session registry, persisted active-bundle index, external run ca
 **Bundle Loss**:
 The external removal or unavailability of a Run Bundle, including while its Run is
 active. It ends the Harness's ability to observe or recover that Run's authoritative
-State; no later action may recreate the Bundle or persist a replacement State for it.
-_Avoid_: a terminal lifecycle status, recoverable cleanup, automatic Bundle recreation
+State and supported retained diagnostic or Journal evidence. A supported retained
+diagnostic or Journal reader, and participant presentation of that retained material,
+require an available selected Bundle and are unavailable after Bundle Loss. This does
+not assert secure erasure or the absence of residual physical bytes. No later action may
+recreate the Bundle or persist a replacement State for it.
+_Avoid_: a terminal lifecycle status, recoverable cleanup, automatic Bundle recreation, secure-erasure guarantee
 
 **External Run Observation**:
-An optional log, diagnostic, audit, or metadata record held outside a Run Bundle. It
-may outlive the Bundle, but cannot establish Run existence, select an active Run,
-authorize an action, recover State, or prevent a fresh Run after Bundle Loss.
-It is not the Run Event Journal.
-_Avoid_: lifecycle authority, run registry, checkpoint, Run Event Journal, resume authorization
+An optional non-authoritative log, diagnostic, audit, or metadata record held outside a
+Run Bundle. It may outlive the Bundle, but is neither the Run Event Journal nor a
+supported retained diagnostic or Journal reader or participant presentation after Bundle
+Loss. It cannot establish Run existence, select an active Run, authorize an action,
+recover State, or prevent a fresh Run.
+_Avoid_: lifecycle authority, run registry, checkpoint, Run Event Journal, post-loss diagnostic fallback, resume authorization
 
 **Run Event Journal**:
 The bounded, redacted, Bundle-local record of material execution facts for one admitted
-Run. It shares the Bundle's lifetime and is neither a raw application log nor lifecycle
-authority.
-_Avoid_: External Run Observation, checkpoint, terminal State, raw log
+Run. It shares the Bundle's lifetime; supported inspection and participant presentation
+require an available selected Bundle and are unavailable after Bundle Loss, without an
+external historical Journal, diagnostic, or Support Handoff fallback. This does not
+assert secure erasure or the absence of residual physical bytes. It is neither a raw
+application log nor lifecycle authority.
+_Avoid_: External Run Observation, checkpoint, terminal State, raw log, external post-loss reader
 
 **Live Progress Projection**:
 A best-effort, non-durable rendering of safe current execution facts to a live DeerFlow
@@ -315,25 +323,33 @@ to the production node or flow, and captures its objective outputs, events, arti
 resource use, and diagnostics as an Evaluation Run Bundle. Every execution receives a
 new isolated local Evaluation Run Workspace and does not reuse another execution's
 checkpoint, artifacts, or bundle. It executes exactly once without retry or recovery,
-then reports whether that execution completed or failed. It makes a best effort to
-preserve every observable input, output, log, and trace needed for later review. It
-neither reads a quality rubric nor decides cognitive quality.
-_Avoid_: a hidden pytest marker, a copied node implementation, an evaluator, a retry controller
+then reports only `completed` or `failed`. Deterministic admission may compare only a
+Case-linked Rubric's identity/version and unique criterion-ID set as non-model
+case-control-integrity metadata. The Runner and its execution subject do not interpret
+those IDs as quality or read Rubric prose, weights, thresholds, evaluator guidance, or
+cognitive results; they produce no cognitive quality verdict. It makes a best effort to
+preserve every observable input, output, log, and trace needed for later review.
+_Avoid_: a hidden pytest marker, a copied node implementation, an evaluator, a quality verdict, a retry controller
 
 **Evaluation Execution Case**:
 A named, versioned, registered declaration of one finite Node Evaluation Run or Flow
 Evaluation Run. It supplies only the execution subject, fixed inputs/fixtures, required
-services, budget, and control-version identity. The Runner accepts this case rather than
-free-form prompts, paths, model overrides, or resume state.
-_Avoid_: an arbitrary script invocation, an evaluator rubric, an unbounded user request
+services, budget, control-version identity, and the linked Rubric identity/version with
+its unique criterion-ID set for deterministic case-control-integrity admission only.
+The Runner accepts this case rather than free-form prompts, paths, model overrides, or
+resume state.
+_Avoid_: an arbitrary script invocation, a Rubric quality input, an unbounded user request
 
 **Evaluation Rubric**:
 The versioned, case-specific cognitive assessment criteria associated with one
 Evaluation Execution Case. It refines the Node Cognitive Control Contract's quality
-standard into observable expectations for that case and is read only by the upper review,
-not the Runner. The Evaluation Review Protocol owns review method and output shape, not
-case quality criteria.
-_Avoid_: a Runner input, a replacement Node Cognitive Control Contract, generic evaluator prose
+standard into observable expectations for that case. Deterministic admission may compare
+only its identity/version and unique criterion-ID set as non-model case-control-integrity
+metadata. Criterion prose, weights, thresholds, evaluator guidance, and cognitive
+judgment remain upper-review content; they do not enter a subject fixture, model-facing
+execution input, execution output, or Runner completion status. The Evaluation Review
+Protocol owns review method and output shape, not case quality criteria.
+_Avoid_: a model-facing quality input, a Runner quality verdict, a replacement Node Cognitive Control Contract, generic evaluator prose
 
 **Evaluation Run Workspace**:
 The newly created, Runner-owned private local execution directory for exactly one
@@ -449,8 +465,11 @@ _Avoid_: a Primary User troubleshooting task, a User Decision
 
 **Support Handoff**:
 `planned`: a bounded, redacted support summary with no current producer, schema, or
-public entry. Its future behavior is outside this glossary entry.
-_Avoid_: a current support capability, an opaque diagnostic reference alone, a raw exception dump
+public entry. It is not a current external retained diagnostic or Journal reader or
+participant presentation after Bundle Loss. A future separately approved capability must
+not create an implicit post-loss fallback. Its future behavior is outside this glossary
+entry.
+_Avoid_: a current support capability, an opaque diagnostic reference alone, a raw exception dump, a post-loss fallback
 
 **Final Report Artifact**:
 `final/report.md` is the current final-delivery artifact in a Run Bundle. Its presence
@@ -508,9 +527,12 @@ follow-up. A review without those links is not an interpretable evaluation resul
 
 The Node Cognitive Control Contract sets each node's enduring responsibility and quality
 standard. A versioned Evaluation Rubric refines that standard for one Evaluation
-Execution Case and is associated with that Case without becoming Runner input. The
-Evaluation Review Protocol governs review method and output shape only. This keeps the
-Runner objective and lets case-specific cognitive expectations evolve independently.
+Execution Case. Deterministic admission may compare its identity/version and unique
+criterion-ID set as non-model case-control-integrity metadata. The criterion content and
+cognitive judgment remain review-only: they do not enter execution or create a Runner
+quality verdict, and the Runner reports only `completed` or `failed`. The Evaluation
+Review Protocol governs review method and output shape only. This keeps the Runner
+objective and lets case-specific cognitive expectations evolve independently.
 
 
 ---

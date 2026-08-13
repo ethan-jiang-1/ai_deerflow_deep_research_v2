@@ -12,6 +12,16 @@ facts. It excludes credentials, raw prompts, raw exception stacks, and private p
 This postscript records current applicability only. It does not alter this ADR's
 historical title, decision text, or runtime authority.
 
-- **Current applicability:** No new current Support Handoff behavior is created.
-- **Non-current / planned / dormant scope:** Dedicated-TUI presentation is dormant; Support Handoff is planned; Bundle-loss semantics remain A-004 quarantine.
-- **Current owner or route:** [Support Handoff](../../CONTEXT.md) is a current terminology/status entry only, not a behavior contract.
+- **Current applicability:** No new current Support Handoff behavior is created. Under
+  the current contract, supported retained diagnostic or Journal inspection and
+  participant presentation require an available selected Bundle and are unavailable after
+  Bundle loss; the contract permits no external diagnostic, Journal, or Support Handoff
+  fallback. This does not assert secure erasure or the absence of residual physical bytes.
+- **Non-current / planned / dormant scope:** Dedicated-TUI presentation is dormant;
+  Support Handoff is planned with no current producer, schema, or public entry. It is not
+  current external retention or a post-loss reader/presentation.
+- **Current owner or route:** [Support Handoff](../../CONTEXT.md) is a current
+  terminology/status entry only, not a behavior contract. The owning current requirements
+  are [research-run-experience](../../../openspec/specs/research-run-experience/spec.md),
+  [research-run-session](../../../openspec/specs/research-run-session/spec.md), and
+  [run-event-journal](../../../openspec/specs/run-event-journal/spec.md).

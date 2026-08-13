@@ -5,9 +5,9 @@
 > 原始审计证据快照: `65df2571108cc6b4b81f55d3ba8542786a810b39`
 > 计划重排时 HEAD: `ac6989abb46b22a9b0cf50e8a53b47341d762750`
 > 执行基线: 尚未锁定；开始每个 Stage 时重新记录 HEAD
-> 当前状态: **STAGE 6 PLANNING COMPLETE - APPLY NOT AUTHORIZED**
-> 最近归档的 OpenSpec change: `2026-08-13-reconcile-post-loss-diagnostic-authority`
-> 当前 active OpenSpec change: `normalize-post-decision-terminology-status`（planning complete；`skip_specs: true`）
+> 当前状态: **STAGE 6 ARCHIVED - STAGE 7 NOT AUTHORIZED**
+> 最近归档的 OpenSpec change: `2026-08-13-normalize-post-decision-terminology-status`
+> 当前 active OpenSpec change: 无
 
 本计划执行时必须同时阅读
 [55 - Cleanup Decision Record](alignment-audit-55-cleanup-decision-record.md) 和
@@ -128,8 +128,8 @@ adjustment 不得 apply，也不得勾选对应完成 checkbox。
 | 3 | 无，只读 re-audit | 降噪后重建 A-001..A-009 ledger | 否 | `[x] Complete; Stage 4 planning authorized` |
 | 4 | `reconcile-evaluation-rubric-authority` | A-003 | 否；实现差异 defer | `[x] Archived; bounded local conformance, no observed deferred gap` |
 | 5 | `reconcile-post-loss-diagnostic-authority` | A-004 | 否；实现差异 defer | `[x] Archived; bounded local conformance, A-004-T01 tooling residue remains` |
-| 6 | `normalize-post-decision-terminology-status` | A-003/A-004 的 CONTEXT/ADR 收口 | 否 | `[x] Planning complete; docs-only APPLY awaits separate authorization` |
-| 7 | 无，最终 re-audit | A-001..A-009 | 否 | `[ ] Blocked by Stage 6` |
+| 6 | `normalize-post-decision-terminology-status` | A-003/A-004 的 CONTEXT/ADR 收口 | 否 | `[x] Archived; no active change; D-001/D-002 no observed side effects within bounded checks` |
+| 7 | 无，最终 re-audit | A-001..A-009 | 否 | `[ ] Requires separate authorization` |
 
 ## Stage 0 - Decision And Scope Lock
 
@@ -488,29 +488,35 @@ formatter-only maintenance。A-002 保持 open。
 - [x] 6.R1 [D-001 Rubric / Runner terminology](alignment-audit-60-adjustments/alignment-audit-60-19-d001-rubric-runner-terminology.md)
 - [x] 6.R2 [D-002 post-loss diagnostic terminology](alignment-audit-60-adjustments/alignment-audit-60-20-d002-post-loss-diagnostic-terminology.md)
 
-- [ ] 6.0 为 D-001、D-002 分别填写 Adjustment Record，并在 apply 后回填实际副作用。
+- [x] 6.0 已为 D-001、D-002 分别填写 apply-time Adjustment Record，并回填实际副作用和
+  evidence bound，见 [Stage 6 apply evidence](alignment-audit-60-adjustments/stage-6-apply/)。
 - [x] 6.1 以 Stages 4-5 的 accepted specs 为唯一 required-behavior 来源，重新列出受影响
   CONTEXT/ADR 语句；完整 before/after、allowlist 与 evidence boundary 见
   [Stage 6 planning record](alignment-audit-60-adjustments/stage-6-planning/00-stage-6-planning-baseline-and-adjustment-records.md)。
 - [x] 6.2 CLI scaffold docs-only change；Focus Card 不拥有 runtime behavior；proposal、design、
   tasks 已完成，`skip_specs: true` 已由 strict validation 接受。
-- [ ] 6.3 同步 Rubric/Runner 的 glossary 和 ADR applicability，不扩大已决定合同。
-- [ ] 6.4 同步 External Run Observation、Support Handoff 与 Bundle-loss 术语；分别说明
-  retention、supported readability 和 participant presentation。
-- [ ] 6.5 若存在 deferred code gap，current behavior 与 required behavior 分开陈述，不能
-  用统一术语掩盖不一致。
-- [ ] 6.6 复核 Stage 2 的 current/planned/dormant 状态仍成立；不重新激活 dormant 路线。
+- [x] 6.3 已同步 Rubric/Runner 的 glossary 和 ADR 0025 applicability；只允许
+  identity/version + unique criterion IDs 的 deterministic metadata，不扩大已决定合同。
+- [x] 6.4 已同步 External Run Observation、Support Handoff 与 Bundle-loss 术语；分别说明
+  physical-residue non-claim、supported Bundle-local readability 和 participant presentation。
+- [x] 6.5 没有新的 observed deferred code gap；保留 Stages 4-5 的 bounded current/required
+  evidence 与 A-004-T01 tooling owner，不用 glossary 掩盖其证明边界。
+- [x] 6.6 已复核 Stage 2 的 `planned` Support Handoff 与 `dormant` Dedicated-TUI 状态仍成立，
+  没有重新激活路线。
 - [x] 6.7a Strict validate、doctor、Charter checker、whitespace 和人工 planning review 已通过；
   这些只证明 planning/doc governance，不证明 apply 或 current behavior。
-- [ ] 6.7b 获得单独 docs-only apply authorization；planning completion、validation 或此前
+- [x] 6.7b 已获得单独 docs-only apply authorization；planning completion、validation 或此前
   Stage 的授权均不构成 apply authorization。
-- [ ] 6.8 Apply/archive 后运行 docs/governance/full read-only verification。
+- [x] 6.8a Apply 后 docs/governance/full deterministic verification 已通过；结果与限制见
+  [Stage 6 scope and verification](alignment-audit-60-adjustments/stage-6-apply/03-stage-6-scope-and-verification.md)。
+- [x] 6.8b 已完成 archive 后验证和 post-archive baseline；没有 active OpenSpec change，详见
+  [Stage 6 post-archive baseline](alignment-audit-60-adjustments/stage-6-apply/06-stage-6-post-archive-baseline.md)。
 
 ### Gate 6
 
-- [ ] CONTEXT 只定义语言，不复制 requirement、ADR 论证或 change task。
-- [ ] Specs、ADR applicability 和 glossary 不再对 A-003/A-004 给出互斥答案。
-- [ ] 所有实现差异均以 deferred gap 明示。
+- [x] CONTEXT 只定义语言，不复制 requirement、ADR 论证或 change task。
+- [x] Specs、ADR applicability 和 glossary 不再对 A-003/A-004 给出互斥答案。
+- [x] 所有已知实现/证明差异均以 bounded evidence 或 deferred gap 明示。
 - [ ] No-code diff；无 active change；已停止并取得 Stage 7 授权。
 
 ### Stage 6 Planning Evidence
@@ -523,9 +529,21 @@ formatter-only maintenance。A-002 保持 open。
   concept-map worktree hunk 受保护。详见
   [Stage 6 planning record](alignment-audit-60-adjustments/stage-6-planning/00-stage-6-planning-baseline-and-adjustment-records.md)
   与 [Stage 6 planning validation](alignment-audit-60-adjustments/stage-6-planning/01-stage-6-planning-validation.md)。
-- [ ] 任何 target 文档 edit 前，必须重新 capture protected worktree baseline，获得明确
-  `APPLY` 授权，并为 D-001/D-002 建立 apply-time Adjustment Record。archive/commit 仍是
-  后续单独 gate。
+- [x] 2026-08-13：target 文档 edit 前已重新 capture protected worktree baseline，获得明确
+  `APPLY` 授权，并为 D-001/D-002 建立 apply-time Adjustment Record；archive/commit 仍通过
+  后续单独 gate 获得授权。
+
+- [x] 2026-08-13：已在 docs-only `APPLY` authorization 下完成并验证 D-001/D-002。HEAD
+  `b54eaea` 的 concept-map commit 使 apply baseline clean；Stage 6 contribution 只包含
+  allowlisted glossary/ADR occurrences、active change task status 及 Stage 6 evidence。
+  验证后出现的 `openspec/CONTEXT.md` Authority Ladder user edit 不重叠且未被吸收。
+  strict/doctor/Charter/whitespace、ADR link 与 `UV_OFFLINE=1 make verify` 都通过；实际
+  副作用为 `none observed`，但不扩张到 physical/live/future/uninspected proof。详细记录见
+  [Stage 6 apply evidence](alignment-audit-60-adjustments/stage-6-apply/)。
+- [x] 2026-08-13：已取得独立 archive/commit authorization；正常 OpenSpec workflow 以
+  `--skip-specs` 归档至 `2026-08-13-normalize-post-decision-terminology-status`，无 delta/main
+  spec sync。归档后检查、最终 disposition 和仍然未获授权的 Stage 7 见
+  [Stage 6 post-archive baseline](alignment-audit-60-adjustments/stage-6-apply/06-stage-6-post-archive-baseline.md)。
 
 ## Stage 7 - Final Honest Re-Audit
 
@@ -589,5 +607,14 @@ main specs；三者对 Bundle loss 后诊断 authority 给出同一 required con
 路径。`A-004-T01` 保持为 scenario-title rename 的 `DEFERRED-TOOLING-CHANGE`。完整风险、副作用、
 验证与 archive 后基线见 [Stage 5 apply evidence](alignment-audit-60-adjustments/stage-5-apply/)。
 
-下一件工作需要新的 planning authorization：Stage 6 的
-`normalize-post-decision-terminology-status`。它不能从 A-004 archive 自动开始。
+Stage 6 已归档：`2026-08-13-normalize-post-decision-terminology-status` 以 docs-only
+`--skip-specs` workflow 完成，没有 main-spec sync。D-001 只将 Rubric identity/version 和 unique
+criterion IDs 作为 deterministic non-model admission metadata 说明清楚；D-002 将 supported
+Bundle-local reader/presentation 与 external records/physical residue 分开说明。两项在已执行的
+docs/governance/deterministic 检查中均为 `none observed` side effects，且不外推到 live、physical、
+future 或未检查路径。`A-004-T01` 仍是独立 validator/scenario-rename change 的
+`DEFERRED-TOOLING-CHANGE`。归档后已无 active change，完整证据见
+[Stage 6 apply evidence](alignment-audit-60-adjustments/stage-6-apply/)。
+
+下一件工作只有在获得新的 Stage 7 authorization 后，才能开始最终诚实复审；Stage 6 archive/commit
+不自动授权该 Stage。
