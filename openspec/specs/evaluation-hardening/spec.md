@@ -872,10 +872,14 @@ for versioned Wave0 source-intake cognitive evidence. Its fixture SHALL contain 
 normal bounded retrieval handoff, adversarial retrieved instruction, retrieval
 shortfall, malformed initial candidate with one repair, and post-candidate validation
 rejection. Every scenario SHALL declare expected Wave0 capability ids, bounded
-assignment fragments, forbidden control effects, and rubric criteria. The evaluator
-SHALL reject missing or duplicate scenario, capability, runtime-control, or rubric
-data, and SHALL bind the two Wave0 capability resources and existing worker schema
-sources by project-relative sha256 controls.
+assignment fragments, forbidden control effects, and a non-empty unique set of
+criterion IDs. Those IDs are Case-control-integrity metadata: deterministic registry
+admission validates the selected Rubric's declared identity/version and the scenarios'
+unique criterion-ID set before subject construction. They SHALL NOT carry criterion
+prose, weights, thresholds, evaluator guidance, or a quality disposition into the Wave0
+execution subject or model-facing input. The evaluator SHALL reject missing or duplicate scenario, capability,
+runtime-control, or criterion-ID metadata, and SHALL bind the two Wave0 capability
+resources and existing worker schema sources by project-relative sha256 controls.
 
 The registered deterministic subject SHALL construct each declared scenario through
 the production Wave0 node/controller boundary with fresh scenario-local dependencies,
@@ -889,9 +893,16 @@ route claim.
 
 #### Scenario: Closed Wave0 corpus rejects incomplete controls
 - **WHEN** a Wave0 cognitive-program case omits a required scenario or contains
-  duplicate capability, runtime-control, or rubric data
+  duplicate capability, runtime-control, or criterion-ID metadata
 - **THEN** evaluation admission rejects the case before subject construction or any
   model, tool, artifact, ledger, or review activity
+
+#### Scenario: Wave0 criterion IDs cannot become quality input
+- **WHEN** a Wave0 case is admitted after its criterion IDs match the selected Rubric control
+- **THEN** any retained criterion IDs are non-model control metadata and are not
+  interpreted as scoring, quality instruction, or a verdict; the subject receives no
+  criterion prose, weights, thresholds, evaluator guidance, or quality disposition
+  from that Rubric
 
 #### Scenario: Deterministic scenarios retain Wave0 admission boundaries
 - **WHEN** the registered Wave0 cognitive-program subject executes every declared
@@ -916,7 +927,12 @@ Wave0-baseline duplicate containment, malformed initial candidate with one parse
 repair, local-semantic candidate rejection with one repair, and post-candidate
 submission-validation rejection. Each scenario SHALL bind only the Wave1 extraction or
 repair capability ids needed by its branch, closed trusted assignment/baseline data,
-bounded untrusted observations or draft, forbidden effects, and review criteria.
+bounded untrusted observations or draft, forbidden effects, and a non-empty unique set
+of criterion IDs. Those IDs are Case-control-integrity metadata: deterministic registry
+admission validates the selected Rubric's declared identity/version and the scenarios'
+unique criterion-ID set before subject construction. They SHALL NOT carry criterion
+prose, weights, thresholds, evaluator guidance, or a quality disposition into the
+Wave1 execution subject or model-facing input.
 
 The case execution plan SHALL bind the two capability digests and Wave1 worker-schema
 digest. Every scenario SHALL invoke fresh production Wave1 node/controller dependencies
@@ -932,10 +948,17 @@ subject, provider invocation, or credentialed-live evidence layer.
 
 #### Scenario: Closed Wave1 corpus rejects incomplete or over-broad controls
 - **WHEN** a Wave1 cognitive-program case omits a required scenario, duplicates a
-  capability/runtime-control/rubric identity, or declares a SourceDiagnostic,
+  capability/runtime-control/criterion-ID identity, or declares a SourceDiagnostic,
   ClaimVerifier, provider, or web dependency
 - **THEN** evaluation admission rejects the case before subject construction or any
   model, tool, artifact, ledger, review, or live-evidence activity
+
+#### Scenario: Wave1 criterion IDs cannot become quality input
+- **WHEN** a Wave1 case is admitted after its criterion IDs match the selected Rubric control
+- **THEN** any retained criterion IDs are non-model control metadata and are not
+  interpreted as scoring, quality instruction, or a verdict; the subject receives no
+  criterion prose, weights, thresholds, evaluator guidance, or quality disposition
+  from that Rubric
 
 #### Scenario: Deterministic Wave1 scenarios preserve the extraction boundary
 - **WHEN** the registered Wave1 cognitive-program subject executes every declared
@@ -959,7 +982,12 @@ instruction-like evidence containment, honest-gap/uncertainty judgment paired wi
 backed finding, malformed initial candidate with one repair, and invalid repaired
 candidate non-publication. Each scenario SHALL bind only the needed Wave2 capability
 id, closed trusted assignment/evidence data, bounded untrusted draft or evidence,
-forbidden effects, and review criteria.
+forbidden effects, and a non-empty unique set of criterion IDs. Those IDs are
+Case-control-integrity metadata: deterministic registry admission validates the
+selected Rubric's declared identity/version and the scenarios' unique criterion-ID set
+before subject construction. They SHALL NOT carry criterion prose, weights, thresholds,
+evaluator guidance, or a quality disposition into the Wave2 execution subject or
+model-facing input.
 
 The case execution plan SHALL bind both Wave2 capability digests and the
 `SynthesisResult` schema digest. Every scenario SHALL use fresh production Wave2
@@ -983,10 +1011,17 @@ manifest, review, subject, provider invocation, or credentialed-live evidence la
 
 #### Scenario: Closed Wave2 corpus rejects incomplete or over-broad controls
 - **WHEN** a Wave2 cognitive-program case omits a required scenario, duplicates a
-  capability/runtime-control/rubric identity, or declares a provider, web, targeted
+  capability/runtime-control/criterion-ID identity, or declares a provider, web, targeted
   evidence, readiness, gate, or route dependency
 - **THEN** evaluation admission rejects the case before subject construction or any
   model, tool, artifact, preview, gate, review, or live-evidence activity
+
+#### Scenario: Wave2 criterion IDs cannot become quality input
+- **WHEN** a Wave2 case is admitted after its criterion IDs match the selected Rubric control
+- **THEN** any retained criterion IDs are non-model control metadata and are not
+  interpreted as scoring, quality instruction, or a verdict; the subject receives no
+  criterion prose, weights, thresholds, evaluator guidance, or quality disposition
+  from that Rubric
 
 #### Scenario: Deterministic Wave2 scenarios preserve the cognitive boundary
 - **WHEN** the registered Wave2 cognitive-program subject executes every declared

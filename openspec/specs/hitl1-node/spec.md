@@ -589,8 +589,14 @@ and malformed candidate repair. Its declared runtime controls SHALL bind the fou
 HITL1 capability resources and the `StructuredBrief` and `SemanticCandidate` schema
 sources by project-relative path and sha256 digest. Every scenario SHALL name its
 expected capability ids, bounded assignment fragments, forbidden control effects, and
-rubric criteria. Deterministic cases SHALL establish exact resource loading, bounded
-input/output, candidate admission, and legal fallback only.
+a non-empty unique set of criterion IDs. Those IDs are Case-control-integrity metadata:
+deterministic registry admission validates the selected Rubric's declared
+identity/version and the scenarios' unique criterion-ID set before subject
+construction. They SHALL NOT carry criterion prose, weights, thresholds, evaluator
+guidance, or a quality disposition into the HITL1 execution subject or model-facing
+input.
+Deterministic cases SHALL establish exact resource loading, bounded input/output,
+candidate admission, and legal fallback only.
 
 The immutable evaluation manifest and review record SHALL identify the evidence layer
 as exactly `deterministic_handoff` or `credentialed_live_quality`. Ordinary
@@ -604,6 +610,13 @@ manifest. Neither layer nor a review result is a release claim or lifecycle auth
 - **THEN** the final rendered context contains the exact corresponding runtime-loaded
   capability method and its closed zero-tool posture, while the bounded assignment and
   output schema remain separate data and contract projections
+
+#### Scenario: HITL1 criterion IDs cannot become quality input
+- **WHEN** a HITL1 cognitive-program case is admitted after its criterion IDs match the selected Rubric control
+- **THEN** any retained criterion IDs are non-model control metadata and are not
+  interpreted as scoring, quality instruction, or a verdict; the subject receives no
+  criterion prose, weights, thresholds, evaluator guidance, or quality disposition
+  from that Rubric
 
 #### Scenario: Semantic ambiguity stays advisory
 - **WHEN** a current correlated proposal receives an ambiguous or adversarial natural-language reply

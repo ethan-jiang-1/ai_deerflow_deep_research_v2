@@ -5,9 +5,9 @@
 > 原始审计证据快照: `65df2571108cc6b4b81f55d3ba8542786a810b39`
 > 计划重排时 HEAD: `ac6989abb46b22a9b0cf50e8a53b47341d762750`
 > 执行基线: 尚未锁定；开始每个 Stage 时重新记录 HEAD
-> 当前状态: **STAGE 2 COMPLETE AND ARCHIVED - STAGE 3 NOT AUTHORIZED**
-> 最近完成的 OpenSpec change: `2026-08-13-retire-stale-context-concepts`（archived；
-> `skip_specs: true`；无 active change）
+> 当前状态: **STAGE 4 ARCHIVED - STAGE 5 PLANNING NOT AUTHORIZED**
+> 最近归档的 OpenSpec change: `2026-08-13-reconcile-evaluation-rubric-authority`
+> 当前 active OpenSpec change: 无
 
 本计划执行时必须同时阅读
 [55 - Cleanup Decision Record](alignment-audit-55-cleanup-decision-record.md) 和
@@ -124,10 +124,10 @@ adjustment 不得 apply，也不得勾选对应完成 checkbox。
 | --- | --- | --- | --- | --- |
 | 0 | 无 | 决策、退役登记与执行边界 | 否 | `[x] Decision tree closed; execution not authorized` |
 | 1 | `2026-08-13-retire-v1-topology-residue` | A-001；诚实记录 A-002 | 仅 V-001 format-only test exception | `[x] Archived; Stage 2 planning authorized` |
-| 2 | `retire-stale-context-concepts` | A-005..A-008 的安全子集 | 否 | `[x] Completed and archived; Stage 3 not authorized` |
-| 3 | 无，只读 re-audit | 降噪后重建 A-001..A-009 ledger | 否 | `[ ] Awaiting separate Stage 3 authorization` |
-| 4 | `reconcile-evaluation-rubric-authority` | A-003 | 否；实现差异 defer | `[ ] Blocked by Stage 3` |
-| 5 | `reconcile-post-loss-diagnostic-authority` | A-004 | 否；实现差异 defer | `[ ] Blocked by Stage 4` |
+| 2 | `retire-stale-context-concepts` | A-005..A-008 的安全子集 | 否 | `[x] Completed and archived; Stage 3 authorized` |
+| 3 | 无，只读 re-audit | 降噪后重建 A-001..A-009 ledger | 否 | `[x] Complete; Stage 4 planning authorized` |
+| 4 | `reconcile-evaluation-rubric-authority` | A-003 | 否；实现差异 defer | `[x] Archived; bounded local conformance, no observed deferred gap` |
+| 5 | `reconcile-post-loss-diagnostic-authority` | A-004 | 否；实现差异 defer | `[ ] Ready for separate planning authorization` |
 | 6 | `normalize-post-decision-terminology-status` | A-003/A-004 的 CONTEXT/ADR 收口 | 否 | `[ ] Blocked by Stages 4-5` |
 | 7 | 无，最终 re-audit | A-001..A-009 | 否 | `[ ] Blocked by Stage 6` |
 
@@ -331,28 +331,32 @@ formatter-only maintenance。A-002 保持 open。
 - [x] 历史 ADR/archive 得到保留，current authority 不再依赖 archived slug。
 - [x] C-001..C-011 每个实际 adjustment 均有完整内容、风险、副作用和实测回填记录。
 - [x] Diff 不含 frozen paths；change 已 archive；无 active change。
-- [ ] 已停止并取得 Stage 3 只读复审授权。
+- [x] 已停止并取得 Stage 3 只读复审授权（2026-08-13）；该授权不包含 Stage 4 planning 或 apply。
 
 ## Stage 3 - Post-Cleanup Read-Only Re-Audit
 
 本 Stage 不创建 OpenSpec change，不修改 target authority；只允许把证据写回本审计目录。
 
-- [ ] 3.1 锁定新 HEAD、worktree、active changes 和 `deerflow` gitlink metadata。
-- [ ] 3.2 对 C-001..C-011 做 before/after 对照，不因文件已编辑自动判 resolved。
-- [ ] 3.3 重扫 non-archive current authority，并逐项人工分类残余 topology/术语命中。
-- [ ] 3.4 重新取证 A-003、A-004，确认清理没有掩盖或意外扩大冲突。
-- [ ] 3.5 重建 A-001..A-009 mismatch ledger，区分：已消失噪声、真实语义冲突、
-  deferred code gap、optional hardening。
-- [ ] 3.6 对新 finding 先登记证据和 disposition；不自动纳入后续 Stage。
-- [ ] 3.7 只有明显同属已授权 scope 的遗漏，才提出 scope amendment；获得新授权前不改。
-- [ ] 3.8 记录 strict validation、现有 deterministic verification、skip/warning 及其证明范围。
+- [x] 3.1 已锁定新 HEAD、worktree、active changes 和 `deerflow` gitlink metadata；完整基线见
+  [Stage 3 baseline](alignment-audit-60-adjustments/stage-3-reaudit/00-stage-3-baseline-and-boundary.md)。
+- [x] 3.2 已对 C-001..C-011 做 before/after 对照；C-006 继续标 withdrawn，C-007 的 main-spec/
+  policy README residual 被诚实列为 partial，而非因文件改过即判 resolved。
+- [x] 3.3 已重扫 non-archive current authority，并按拓扑、术语、历史 ADR、spec 和 policy role
+  分类残余命中；不以 token 数归零为目标。
+- [x] 3.4 已重新取证 A-003、A-004，确认 Stage 2 清理没有掩盖或扩大其互斥合同。
+- [x] 3.5 已重建 A-001..A-009 reduced mismatch ledger，区分 resolved、真实语义冲突、
+  `DEFERRED-CODE-CHANGE` 与 `OPTIONAL-HARDENING`。
+- [x] 3.6 已登记 N-001、N-002 的证据和 disposition；没有顺手处理。
+- [x] 3.7 已判定 N-001 不构成 scope amendment；N-002 需要独立授权的 policy-routing change，
+  不自动塞入 Stage 4。
+- [x] 3.8 已记录 strict validation、现有 deterministic verification 及其 live/semantic 证明边界。
 
 ### Gate 3
 
-- [ ] 有一份以新 HEAD 为基线的 reduced mismatch ledger。
-- [ ] A-003/A-004 是否仍存在由新证据回答，不沿用旧结论猜测。
-- [ ] 所有新 finding 都已登记但未被顺手处理。
-- [ ] 用户已审阅复审结果，并单独授权是否进入 Stage 4。
+- [x] 有一份以新 HEAD 为基线的 reduced mismatch ledger。
+- [x] A-003/A-004 是否仍存在由新证据回答，不沿用旧结论猜测。
+- [x] 所有新 finding 都已登记但未被顺手处理。
+- [x] 用户已审阅复审结果，并单独授权进入 Stage 4 的 planning（2026-08-13）；该授权不包含 apply、sync、archive 或 commit。
 
 ## Stage 4 - Reconcile Rubric / Runner Authority
 
@@ -369,28 +373,49 @@ formatter-only maintenance。A-002 保持 open。
 
 - [x] 4.1 已重新读取 CES、EVH、ADR 0025、相关 CONTEXT 和当前 admission/Runner 证据。
 - [x] 4.2 已分开定义 identity、criterion IDs、Rubric content、model-facing input、quality verdict。
-- [ ] 4.3 产品 owner 明确选择唯一 required contract：
+- [x] 4.3 产品 owner 已明确选择唯一 required contract：
   - [x] criterion IDs 可作为 execution admission 的 control-integrity metadata，但 Rubric
     content 不面向 model、Runner 不产生 quality verdict。
   - [x] Rubric 完全 review-only，execution admission 不读取 criteria：已排除。
 - [x] 4.4 已记录 rejected alternative 与选择理由；选择不是“因为代码如此所以 spec 必须如此”。
-- [ ] 4.5 为选定方案填写完整 Adjustment Record；apply/archive 后回填实际观察到的
-  副作用、未验证范围和 remaining code gap。
+- [x] 4.5 已填写 planning Adjustment Record（含 Before/After、风险、可能副作用、控制、
+  验证和当前 observed-effect boundary），见
+  [Stage 4 planning record](alignment-audit-60-adjustments/stage-4-planning/00-stage-4-planning-baseline-and-decision.md)。
+  apply/archive 后仍必须回填实际观察到的副作用、未验证范围和 remaining code gap。
 
-### OpenSpec checklist（未授权）
+### OpenSpec Planning Checklist（已完成）
 
-- [ ] 4.6 CLI scaffold，完成被 instructions 要求的 proposal/design/deltas/tasks。
-- [ ] 4.7 Deltas 让 CES/EVH 对 required behavior 只有一个答案。
-- [ ] 4.8 若所选合同与当前代码不同，明确登记 `DEFERRED-CODE-CHANGE`；本 Stage 不改实现。
-- [ ] 4.9 Rubric/Runner 的 CONTEXT 最终措辞继续留到 Stage 6，避免半同步。
-- [ ] 4.10 Strict validate、人工 plan review、单独 apply authorization。
-- [ ] 4.11 Apply/sync/archive 后运行现有验证，只报告 conformance，不修改测试或实现。
+- [x] 4.6 在 planning 完成时，CLI scaffold 已生成 instructions 要求的
+  proposal/design/CES-EVH-HITL1 deltas/tasks；当时完整 apply checklist 尚未开始。其后的
+  已授权 apply/sync/verification 由 4.11 和 `stage-4-apply/` 记录，不回写这段 planning 历史。
+- [x] 4.7 Deltas 已将 CES/EVH/HITL1 收敛到一个 required contract：identity/version 与 unique
+  criterion IDs 只作 deterministic admission control-integrity metadata；content 和 verdict
+  不跨进 execution。
+- [x] 4.8 计划已规定：若 apply-time 真实 handoff 与所选合同不同，明确登记
+  `DEFERRED-CODE-CHANGE` 并停止；本 Stage 不改实现。
+- [x] 4.9 Rubric/Runner 的 CONTEXT 最终措辞继续留到 Stage 6，避免半同步。
+- [x] 4.10 Strict validate、doctor、Charter checker、whitespace 和人工 plan review 已完成
+  （2026-08-13）；结果、证明边界和 HITL1 owner 补全记录见
+  [Stage 4 planning validation](alignment-audit-60-adjustments/stage-4-planning/01-stage-4-planning-validation.md)。
+  随后已获得独立 apply authorization；apply/sync 证据、证明边界和无代码边界见
+  [Stage 4 apply record](alignment-audit-60-adjustments/stage-4-apply/00-a003-apply-baseline-and-control-placement-review.md)。
+- [x] 4.11 在独立 apply authorization 后完成真实 handoff inspection、CES/EVH/HITL1
+  main-spec sync、strict/governance/whitespace 和现有 verification；只报告 bounded
+  conformance，不修改测试或实现。CES、EVH 与 HITL1 现给出同一 required contract；在已检查
+  本地路径未发现 `DEFERRED-CODE-CHANGE`，但 invalid-Rubric registry fixture、HITL1/Wave0/
+  Wave1 real-node prompt 和 live evidence 仍是明确未证明范围。详见
+  [Stage 4 apply evidence](alignment-audit-60-adjustments/stage-4-apply/)。
 
 ### Gate 4
 
-- [ ] A-003 已有唯一 product decision 和一致 main specs，或因缺少决定明确停止。
-- [ ] 若代码不满足所选 spec，缺口已命名、定界、defer，没有被文案掩盖。
-- [ ] No-code diff；无 active change；已停止并取得 Stage 5 新授权。
+- [x] A-003 已有唯一 product decision 和一致 main specs：identity/version 与 unique criterion
+  IDs 只作 admission control-integrity metadata；content/judgment 不跨进 execution。
+- [x] 在已检查本地路径未发现所选 spec 的实现缺口；没有把该 bounded 结论写成全路径或未来
+  自动保护。若未来发现 crossing，必须命名、定界并 `DEFERRED-CODE-CHANGE`，不能被文案掩盖。
+- [x] No-code diff；无 active change；已停止。Stage 4 已归档；post-archive baseline、gitlink
+  metadata 与实际 A-003 disposition 见
+  [Stage 4 post-archive record](alignment-audit-60-adjustments/stage-4-apply/09-a003-post-archive-baseline.md)。
+  Stage 5 planning authorization 尚未获得。
 
 ## Stage 5 - Reconcile Post-Loss Diagnostic Authority
 
@@ -512,7 +537,15 @@ formatter-only maintenance。A-002 保持 open。
 
 ## 当前下一动作
 
-Stage 1 与 Stage 2 均已归档；A-001 已局部关闭，A-002 保持 `DEFERRED-CODE-CHANGE`，
-A-003/A-004 继续 quarantine。下一动作只能是用户单独授权 Stage 3 的只读复审：以新的 HEAD
-为基线重建 reduced mismatch ledger。没有该授权，不创建 active change，不修改 CONTEXT、ADR、
-guide、README、代码、tests、main specs、`openspec/config.yaml` 或 `deerflow/`。
+Stage 1、Stage 2 均已归档，Stage 3 只读复审已完成；A-001 已关闭，A-002 保持
+`DEFERRED-CODE-CHANGE`，A-009 保持 `OPTIONAL-HARDENING`。A-008 的 entry-route 修正已完成，
+但 policy README/main-spec 中的 single-policy residual 已登记为 N-002，不能静默合并。
+
+Stage 4 已归档：`2026-08-13-reconcile-evaluation-rubric-authority` 已同步 CES、EVH、HITL1
+main specs；三者对 A-003 给出同一 required contract。在已检查本地 handoff 路径，没有发现
+`DEFERRED-CODE-CHANGE`，但这不代表所有 future/live 路径均已证明；详细 evidence、风险、
+observed side effects 和边界见 `alignment-audit-60-adjustments/stage-4-apply/`。
+
+下一件工作是 Stage 5 的 A-004（Bundle loss 后 diagnostic authority）planning。它需要新的
+planning authorization；在授权前不得创建 `reconcile-post-loss-diagnostic-authority`、修改
+main specs、`CONTEXT.md`、ADR、代码、tests、`openspec/config.yaml` 或 `deerflow/`。
