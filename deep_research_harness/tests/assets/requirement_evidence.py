@@ -1241,6 +1241,13 @@ REQUIREMENT_IMPACTS = (
         "the confirmation boundary could otherwise drift outside registered downstream ownership paths",
     ),
     RequirementImpact(
+        "PRS-018",
+        "project-structure",
+        StableSeam.DOMAIN_ENGINE,
+        "tests/contract/test_live_architecture_contract.py::test_live_repository_satisfies_architecture_contract",
+        "the upstream gitlink could drift, be replaced, or retain hidden nested worktree changes",
+    ),
+    RequirementImpact(
         "EVH-024",
         "evaluation-hardening",
         StableSeam.PUBLIC_ENTRY,

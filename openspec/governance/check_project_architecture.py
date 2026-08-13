@@ -14,6 +14,8 @@ import argparse
 import ast
 import os
 import re
+import stat
+import subprocess
 import sys
 import tomllib
 from dataclasses import dataclass
@@ -23,8 +25,10 @@ from typing import Any
 MANIFEST_RELATIVE = PurePosixPath("openspec/governance/project-structure.toml")
 REGISTRY_RELATIVE = PurePosixPath("openspec/governance/req-registry.yaml")
 MAIN_SPEC_RELATIVE = PurePosixPath("openspec/specs/project-structure/spec.md")
+UPSTREAM_GITLINK_PATH = PurePosixPath("deerflow")
 SPEC_REFERENCE = "> structure: openspec/governance/project-structure.toml"
 ID_RE = re.compile(r"^[A-Z]{3}-\d{3}$")
+GIT_COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 REGISTRY_ID_RE = re.compile(r"^([A-Z]{3}-\d{3}):", re.MULTILINE)
 REQ_HEADER_RE = re.compile(r"^> req:\s*(.+)$", re.MULTILINE)
 PACKAGE_NAME = "deerflow_deep_research"
@@ -58,8 +62,15 @@ class RequiredPath:
 
 
 @dataclass(frozen=True)
+class UpstreamGitlink:
+    path: PurePosixPath
+    commit: str
+
+
+@dataclass(frozen=True)
 class StructureManifest:
     requirement_ids: tuple[str, ...]
+    upstream_gitlink: UpstreamGitlink
     guide_path: PurePosixPath
     begin_marker: str
     end_marker: str
@@ -150,6 +161,20 @@ def load_manifest(root: Path) -> StructureManifest:
             "owner.unknown",
             f"unregistered manifest requirement IDs: {', '.join(unknown_requirements)}",
         )
+
+    upstream_gitlink_raw = data.get("upstream_gitlink")
+    if not isinstance(upstream_gitlink_raw, dict):
+        raise ContractViolation("gitlink.schema", "upstream_gitlink must be a TOML table")
+    upstream_gitlink_data = _expect_mapping(upstream_gitlink_raw, "upstream_gitlink")
+    if set(upstream_gitlink_data) != {"path", "commit"}:
+        raise ContractViolation("gitlink.schema", "upstream_gitlink must contain exactly path and commit")
+    upstream_gitlink_path = _relative_path(upstream_gitlink_data.get("path"), "upstream_gitlink.path")
+    if upstream_gitlink_path != UPSTREAM_GITLINK_PATH:
+        raise ContractViolation("gitlink.path", f"upstream_gitlink.path must be {UPSTREAM_GITLINK_PATH}")
+    upstream_gitlink_commit = _expect_string(upstream_gitlink_data.get("commit"), "upstream_gitlink.commit")
+    if not GIT_COMMIT_RE.fullmatch(upstream_gitlink_commit):
+        raise ContractViolation("gitlink.commit", "upstream_gitlink.commit must be a lower-case 40-hex identifier")
+    upstream_gitlink = UpstreamGitlink(path=upstream_gitlink_path, commit=upstream_gitlink_commit)
 
     guide = _expect_mapping(data.get("guide"), "guide")
     guide_path = _relative_path(guide.get("path"), "guide.path")
@@ -332,6 +357,7 @@ def load_manifest(root: Path) -> StructureManifest:
 
     return StructureManifest(
         requirement_ids=requirement_ids,
+        upstream_gitlink=upstream_gitlink,
         guide_path=guide_path,
         begin_marker=begin_marker,
         end_marker=end_marker,
@@ -507,6 +533,7 @@ def _validate_single_source_root(root: Path, manifest: StructureManifest) -> Non
         PurePosixPath(".git"),
         PurePosixPath(".venv"),
         PurePosixPath("_backlog"),
+        manifest.upstream_gitlink.path,
         PurePosixPath("frontend/.next"),
         PurePosixPath("node_modules"),
         PurePosixPath("openspec/changes/archive"),
@@ -536,6 +563,79 @@ def _validate_single_source_root(root: Path, manifest: StructureManifest) -> Non
             if candidate == manifest.source_root or candidate == manifest.fixture_root:
                 continue
             raise ContractViolation("source.second_root", f"non-canonical package source root found: {candidate}")
+
+
+def _run_git_metadata(arguments: list[str]) -> subprocess.CompletedProcess[str]:
+    try:
+        return subprocess.run(arguments, check=False, capture_output=True, text=True)
+    except OSError as exc:
+        raise ContractViolation("gitlink.command_unavailable", "cannot execute required upstream gitlink metadata command") from exc
+
+
+def _validate_upstream_gitlink(root: Path, manifest: StructureManifest) -> None:
+    """Validate only the declared gitlink's filesystem and Git metadata.
+
+    @impl PRS-018
+    """
+
+    boundary = root / manifest.upstream_gitlink.path
+    try:
+        boundary_stat = boundary.lstat()
+    except OSError as exc:
+        raise ContractViolation("gitlink.path_missing", f"cannot inspect upstream gitlink path: {manifest.upstream_gitlink.path}") from exc
+    if stat.S_ISLNK(boundary_stat.st_mode):
+        raise ContractViolation("gitlink.path_symlink", f"upstream gitlink path is a symlink: {manifest.upstream_gitlink.path}")
+    if not stat.S_ISDIR(boundary_stat.st_mode):
+        raise ContractViolation("gitlink.path_kind", f"upstream gitlink path is not a directory: {manifest.upstream_gitlink.path}")
+    try:
+        (boundary / ".git").lstat()
+    except OSError as exc:
+        raise ContractViolation("gitlink.nested_metadata", "upstream gitlink lacks nested Git metadata") from exc
+
+    index_command = [
+        "git",
+        "-C",
+        str(root),
+        "ls-files",
+        "--stage",
+        "-z",
+        "--",
+        manifest.upstream_gitlink.path.as_posix(),
+    ]
+    index_result = _run_git_metadata(index_command)
+    if index_result.returncode != 0:
+        raise ContractViolation("gitlink.index_query", "cannot inspect upstream gitlink index entry")
+    records = [record for record in index_result.stdout.split("\0") if record]
+    if len(records) != 1:
+        raise ContractViolation("gitlink.index_shape", "upstream gitlink index entry must be exactly one stage-zero record")
+    entry_match = re.fullmatch(r"(\d{6}) ([0-9a-f]{40}) (\d)\t(.+)", records[0])
+    if entry_match is None:
+        raise ContractViolation("gitlink.index_shape", "upstream gitlink index entry is malformed")
+    mode, index_commit, stage, index_path = entry_match.groups()
+    if index_path != manifest.upstream_gitlink.path.as_posix() or stage != "0":
+        raise ContractViolation("gitlink.index_shape", "upstream gitlink index entry must be stage zero at the declared path")
+    if mode != "160000":
+        raise ContractViolation("gitlink.index_entry", "upstream index entry must have gitlink mode 160000")
+    if index_commit != manifest.upstream_gitlink.commit:
+        raise ContractViolation("gitlink.index_commit", "upstream gitlink index commit differs from the declared lock")
+
+    nested_root = str(boundary)
+    head_command = ["git", "-C", nested_root, "rev-parse", "--verify", "HEAD"]
+    head_result = _run_git_metadata(head_command)
+    if head_result.returncode != 0:
+        raise ContractViolation("gitlink.head_query", "cannot resolve upstream gitlink HEAD")
+    head_commit = head_result.stdout.strip()
+    if not GIT_COMMIT_RE.fullmatch(head_commit):
+        raise ContractViolation("gitlink.head_query", "upstream gitlink HEAD output is malformed")
+    if head_commit != manifest.upstream_gitlink.commit:
+        raise ContractViolation("gitlink.head_commit", "upstream gitlink HEAD differs from the declared lock")
+
+    status_command = ["git", "-C", nested_root, "status", "--porcelain=v1", "--untracked-files=all"]
+    status_result = _run_git_metadata(status_command)
+    if status_result.returncode != 0:
+        raise ContractViolation("gitlink.status_query", "cannot inspect upstream gitlink cleanliness")
+    if status_result.stdout:
+        raise ContractViolation("gitlink.status_dirty", "upstream gitlink worktree is not clean")
 
 
 def _python_files(base: Path) -> list[Path]:
@@ -917,6 +1017,7 @@ def validate_project(root: Path, manifest: StructureManifest) -> None:
     _validate_ignored_paths(root, manifest)
     _validate_single_source_root(root, manifest)
     validate_imports(root, manifest)
+    _validate_upstream_gitlink(root, manifest)
 
 
 def check_project(root: Path, *, imports_only: bool = False) -> None:

@@ -19,9 +19,8 @@
 
 | # | 文件 | 优先级 | 简述 | 阻塞 / 备注 |
 |---|------|--------|------|-------------|
-| 1 | [todo-a002-gitlink-boundary-detector.md](todo-a002-gitlink-boundary-detector.md) | 高 | 为 `deerflow/` gitlink 建立自动边界检测 | 需要独立治理 change；不得读取/修改 DeerFlow 源码 |
-| 2 | [todo-a004t01-openspec-scenario-rename-validator.md](todo-a004t01-openspec-scenario-rename-validator.md) | 中 | 消除 A-004 的 scenario-title tooling residue | 先确认 OpenSpec validator 的真实 owner |
-| 3 | [todo-a009-risk-based-semantic-traceability.md](todo-a009-risk-based-semantic-traceability.md) | 低 | 为高风险改动设计有界语义 traceability | 可选 hardening，未排期 |
+| 1 | [todo-a004t01-openspec-scenario-rename-validator.md](todo-a004t01-openspec-scenario-rename-validator.md) | 中 | 消除 A-004 的 scenario-title tooling residue | 先确认 OpenSpec validator 的真实 owner |
+| 2 | [todo-a009-risk-based-semantic-traceability.md](todo-a009-risk-based-semantic-traceability.md) | 低 | 为高风险改动设计有界语义 traceability | 可选 hardening，未排期 |
 
 ---
 
@@ -34,12 +33,12 @@
 
 ## 依赖链
 
-> N-002 已完成并关闭 alignment audit plan。其余三项相互独立，不得被误作彼此的前置条件。
+> N-002 与 A-002 已完成。其余两项相互独立，不得被误作彼此的前置条件。
 
 ```mermaid
 flowchart LR
   N002["N-002 completed"] --> Close["alignment audit closed"]
-  A002["A-002 gitlink detector"]
+  A002["A-002 completed"]
   T01["A-004-T01 scenario rename validator"]
   A009["A-009 semantic traceability"]
 ```
@@ -52,9 +51,8 @@ flowchart LR
 
 | 顺序 | 项 | 为什么 |
 |------|-----|--------|
-| 1 | A-002 gitlink boundary detector | 最高优先级的独立治理缺口；先设计允许的基线与 intentional bump admission。 |
-| 2 | A-004-T01 scenario-rename validator | 仅清除误导性 scenario 标题，保持 A-004 的 operative body 不变。 |
-| 3 | A-009 risk-based semantic traceability | 只在高风险 requirement change 明确需要高于 ID-level 的保证时启动。 |
+| 1 | A-004-T01 scenario-rename validator | 现存的唯一中优先级工具链残渣；先确认 OpenSpec validator 的真实 owner，不能假设 Harness 或 DeerFlow 拥有它。 |
+| 2 | A-009 risk-based semantic traceability | 只在高风险 requirement change 明确需要高于 ID-level 的保证时启动。 |
 
 _（暂无排期。）_
 

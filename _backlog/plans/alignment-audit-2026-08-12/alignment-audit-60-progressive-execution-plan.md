@@ -609,7 +609,39 @@ formatter-only maintenance。A-002 保持 open。
 完整的归档后结论、验证范围和不应过度声称的边界见
 [Stage 7 N-002 closeout](alignment-audit-60-adjustments/stage-7-reaudit/03-n002-post-archive-closeout.md)。
 
-后续不再属于本计划：A-002 是下一条独立的高优先级治理路线，需先设计 gitlink/nested-worktree
-detector 的允许基线、intentional bump admission 和最低测试 seam；A-004-T01 是独立的
-scenario-title rename tooling 调查；A-009 仅在高风险 requirement change 需要更强保证时才启动。
-它们的顺序、风险和重启条件见 [active todo index](../../todos/README.md)。
+后续不再属于本计划：A-004-T01 是独立的 scenario-title rename tooling 调查；A-009 仅在高风险
+requirement change 需要更强保证时才启动。它们的顺序、风险和重启条件见
+[active todo index](../../todos/README.md)。
+
+## 关闭后交接状态
+
+本节只记录已关闭 audit 的后继工作，不重新打开 Stage 0..7，也不把独立实现授权倒灌为
+alignment audit 的 scope。
+
+- [x] 2026-08-13：已从三个独立 backlog 中选定 A-002 为下一项工作；原因是它是唯一高优先级的
+  repository-governance 保护缺口，而非 current-authority 文案矛盾。
+- [x] 2026-08-13：已完成 `establish-gitlink-boundary-detector` 的 OpenSpec **planning only**；
+  [proposal](../../../openspec/changes/archive/2026-08-13-establish-gitlink-boundary-detector/proposal.md)、
+  [delta spec](../../../openspec/changes/archive/2026-08-13-establish-gitlink-boundary-detector/specs/project-structure/spec.md)、
+  [design](../../../openspec/changes/archive/2026-08-13-establish-gitlink-boundary-detector/design.md) 和
+  [tasks](../../../openspec/changes/archive/2026-08-13-establish-gitlink-boundary-detector/tasks.md) 已齐全。方案指定
+  `project-structure` registry/architecture checker 为唯一 metadata-only owner：锁定 `deerflow`
+  路径与 full SHA，要求 root index gitlink、nested `HEAD` 和 nested porcelain 同时一致；intentional
+  bump 只在同一受审 change 同步指针与 lock 时通过。规划没有读取/修改 `deerflow/` 源码，也没有实施
+  Python、测试、registry、gate 或 main-spec sync。`openspec validate ... --strict`、Charter checker、
+  doctor 与 whitespace 检查均通过。
+- [x] A-002：用户于 2026-08-13 明确发出 `APPLY`，独立 change
+  `establish-gitlink-boundary-detector` 已进入实施。准入 baseline、风险/副作用和停止条件记录在
+  [A-002 apply admission](alignment-audit-60-adjustments/a002-gitlink-detector-apply/00-a002-apply-admission-baseline-and-control-review.md)；
+  本授权不包含 archive 或 commit，也不允许读取或修改 `deerflow/` 源码。
+- [x] 2026-08-13：A-002 已完成 archive closeout 并归档为
+  [`2026-08-13-establish-gitlink-boundary-detector`](../../../openspec/changes/archive/2026-08-13-establish-gitlink-boundary-detector/)。
+  `PRS-018` 现在使完整 architecture governance 对 `deerflow` 的 declared lock、root index、nested
+  `HEAD` 与 porcelain 清洁度 fail closed；它只使用三条固定的只读 Git metadata 查询和 `lstat`，不读取
+  或修改上游源码，不批准 future bump，也不证明 compatibility。归档前 strict/doctor、全部 project
+  governance gates、`UV_OFFLINE=1 make verify` 和 `git diff --check` 均通过；归档后无 active
+  change，真实 gitlink pointer/nested `HEAD` 仍为 `66b9e7f21212490cf92fafac137542b9deb06615`，nested
+  porcelain 与 gitlink diff 均为空。完整的风险、副作用和证明边界见
+  [A-002 archive closeout](alignment-audit-60-adjustments/a002-gitlink-detector-apply/02-a002-archive-closeout-review.md)。
+  A-002 todo 已移至 [DONE-002](../../_done/_done_todos/todo-a002-gitlink-boundary-detector.md)；没有
+  自动启动 A-004-T01 或 A-009。

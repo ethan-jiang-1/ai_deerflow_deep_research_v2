@@ -1220,7 +1220,7 @@ EVIDENCE_CLAIMS = (
         "run-experience-canonical-architecture",
         "tests/contract/test_live_architecture_contract.py::test_live_repository_satisfies_architecture_contract",
         StableSeam.DOMAIN_ENGINE,
-        requirement_ids=("PRS-005", "PRS-012", "PRS-013", "PRS-014", "PRS-016", "DER-002"),
+        requirement_ids=("PRS-005", "PRS-012", "PRS-013", "PRS-014", "PRS-016", "PRS-018", "DER-002"),
     ),
     _correctness_claim(
         "prompt-review-workspace-structure",

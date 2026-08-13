@@ -20,5 +20,6 @@ todo 完成后从 `_backlog/todos/` 通过 `git mv` 移入本目录：
 | ID | Date | File | Summary |
 |----|------|------|---------|
 | DONE-001 | 2026-08-13 | [todo-n002-policy-routing-cardinality.md](todo-n002-policy-routing-cardinality.md) | 统一多 policy 路由术语，并归档对应 OpenSpec change。 |
+| DONE-002 | 2026-08-13 | [todo-a002-gitlink-boundary-detector.md](todo-a002-gitlink-boundary-detector.md) | 建立 `deerflow/` metadata-only gitlink boundary detector，并归档对应 OpenSpec change。 |
 
-**Next available DONE ID: DONE-002**
+**Next available DONE ID: DONE-003**

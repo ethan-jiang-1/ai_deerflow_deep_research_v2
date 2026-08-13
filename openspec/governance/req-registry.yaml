@@ -247,6 +247,7 @@ PRS-014: project-structure — Cognitive-node reader validation script and focus
 PRS-015: project-structure — Cognitive Evaluation Runner source, source-controlled evaluation control, and ignored local evaluation runs occupy separate registered downstream paths
 PRS-016: project-structure — The Research Confirmation domain admission boundary and focused deterministic tests occupy registered downstream domain paths without graph, runtime, or upstream placement
 PRS-017: project-structure — Deep Research Harness has one canonical downstream filesystem root without a tracked legacy alias while package and public-tool names remain unchanged
+PRS-018: project-structure — Full architecture governance mechanically validates the declared upstream gitlink path, root index pointer, nested HEAD, and nested worktree cleanliness through read-only metadata only
 
 # research-confirmation
 RCF-001: research-confirmation — A pure typed admission boundary turns only a directly confirmed complete current proposal into accepted research facts while preserving one advisory outstanding decision for semantic revisions, ambiguity, and bounded feedback

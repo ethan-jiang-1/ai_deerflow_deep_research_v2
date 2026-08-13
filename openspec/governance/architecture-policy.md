@@ -30,17 +30,28 @@ main-spec reference.
 
 ## Synchronized Changes
 
-A change that adds, removes, renames, or reassigns a structural path must:
+A change that adds, removes, renames, reassigns a structural path, or changes the
+declared upstream gitlink lock must:
 
 1. update the owning delta when semantic requirements change;
 2. update `project-structure.toml` with the exact current enumeration;
 3. regenerate the bounded locator in `deep_research_harness/AGENTS.md`;
-4. update deterministic contract fixtures; and
+4. update deterministic contract fixtures and the smallest sufficient requirement
+   evidence mapping; and
 5. pass `check_project_architecture.py` before archive.
 
 A new node that conforms to the existing node-package grammar adds its current
 package path to the registry without rewriting the grammar. Changing the grammar
 itself requires a `project-structure` spec change.
+
+The registry's `[upstream_gitlink]` table is one exact metadata lock, not a source,
+runtime, remote, release, or compatibility assertion. Full architecture governance
+checks the declared path, root index gitlink, nested `HEAD`, and nested porcelain
+state through fixed read-only metadata operations only. The imports-only mode validates
+the table's static shape but does not inspect the filesystem or invoke Git. An
+intentional upstream bump requires one reviewed change to update the staged root pointer
+and declared lock together; the checker verifies that consistency but cannot approve
+the bump, recover a mismatch, or determine compatibility.
 
 The generated block is bounded by the markers declared in the registry. It names the
 registry, source root, test root, ownership layers, node grammar, and validation

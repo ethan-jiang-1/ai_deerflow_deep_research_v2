@@ -1,6 +1,10 @@
 schema_version = 1
 contract = "project-structure"
-requirement_ids = ["PRS-001", "PRS-002", "PRS-003", "PRS-004", "PRS-005", "PRS-006", "PRS-007", "PRS-009", "PRS-010", "PRS-011", "PRS-012", "PRS-013", "PRS-014", "PRS-015", "PRS-016", "PRS-017"]
+requirement_ids = ["PRS-001", "PRS-002", "PRS-003", "PRS-004", "PRS-005", "PRS-006", "PRS-007", "PRS-009", "PRS-010", "PRS-011", "PRS-012", "PRS-013", "PRS-014", "PRS-015", "PRS-016", "PRS-017", "PRS-018"]
+
+[upstream_gitlink]
+path = "deerflow"
+commit = "66b9e7f21212490cf92fafac137542b9deb06615"
 
 [guide]
 path = "deep_research_harness/AGENTS.md"

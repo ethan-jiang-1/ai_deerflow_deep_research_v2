@@ -5,6 +5,7 @@
 @impl PRS-006
 @impl PRS-011
 @impl PRS-017
+@impl PRS-018
 """
 
 from __future__ import annotations
@@ -15,8 +16,11 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 CHECKER = REPO_ROOT / "openspec" / "governance" / "check_project_architecture.py"
 MANIFEST_PATH = Path("openspec/governance/project-structure.toml")
 ACTIVE_SPEC_PATH = Path("openspec/changes/change-00/specs/project-structure/spec.md")
@@ -37,7 +41,11 @@ def test_canonical_harness_root_is_the_only_tracked_downstream_root() -> None:
 VALID_MANIFEST = """\
 schema_version = 1
 contract = "project-structure"
-requirement_ids = ["PRS-001", "PRS-002", "PRS-003", "PRS-004", "PRS-006", "PRS-009", "PRS-011"]
+requirement_ids = ["PRS-001", "PRS-002", "PRS-003", "PRS-004", "PRS-006", "PRS-009", "PRS-011", "PRS-018"]
+
+[upstream_gitlink]
+path = "deerflow"
+commit = "0000000000000000000000000000000000000000"
 
 [guide]
 path = "deep_research_harness/AGENTS.md"
@@ -135,7 +143,7 @@ public_export = "NODE_SPEC"
 """
 
 SPEC_TEXT = """\
-> req: PRS-001, PRS-002, PRS-003, PRS-004, PRS-006, PRS-009, PRS-011
+> req: PRS-001, PRS-002, PRS-003, PRS-004, PRS-006, PRS-009, PRS-011, PRS-018
 > structure: openspec/governance/project-structure.toml
 
 ## ADDED Requirements
@@ -157,6 +165,7 @@ PRS-004: project-structure - durable authority
 PRS-006: project-structure - ignored local generated paths
 PRS-009: project-structure - Deep Research charter and human documentation
 PRS-011: project-structure - prompt catalog structure
+PRS-018: project-structure - metadata-only upstream gitlink boundary
 """
 
 VALID_GENERATED_BLOCK = f"""\
@@ -184,6 +193,62 @@ def _write(root: Path, relative_path: Path | str, content: str = "") -> None:
 def _replace(root: Path, relative_path: Path | str, old: str, new: str) -> None:
     path = root / relative_path
     path.write_text(path.read_text(encoding="utf-8").replace(old, new), encoding="utf-8")
+
+
+def _git(root: Path, *arguments: str, input_text: str | None = None) -> subprocess.CompletedProcess[str]:
+    result = subprocess.run(
+        ["git", "-C", str(root), *arguments],
+        check=False,
+        capture_output=True,
+        input=input_text,
+        text=True,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"temporary Git fixture command failed: {result.stderr}")
+    return result
+
+
+def _configure_temporary_git_repository(root: Path) -> None:
+    _git(root, "config", "user.name", "architecture-fixture")
+    _git(root, "config", "user.email", "architecture-fixture@example.invalid")
+
+
+def _initialize_gitlink_fixture(root: Path) -> str:
+    _git(root, "init", "--quiet")
+    _configure_temporary_git_repository(root)
+    _git(root, "commit", "--allow-empty", "--quiet", "-m", "parent fixture")
+
+    nested = root / "deerflow"
+    nested.mkdir()
+    _git(nested, "init", "--quiet")
+    _configure_temporary_git_repository(nested)
+    _git(nested, "commit", "--allow-empty", "--quiet", "-m", "nested fixture")
+    commit = _git(nested, "rev-parse", "--verify", "HEAD").stdout.strip()
+    _stage_gitlink(root, commit)
+    return commit
+
+
+def _stage_gitlink(root: Path, commit: str, *, mode: str = "160000") -> None:
+    _git(root, "update-index", "--add", "--cacheinfo", f"{mode},{commit},deerflow")
+
+
+def _set_gitlink_lock(root: Path, commit: str) -> None:
+    manifest_path = root / MANIFEST_PATH
+    manifest = manifest_path.read_text(encoding="utf-8")
+    start = manifest.index('commit = "', manifest.index("[upstream_gitlink]"))
+    end = manifest.index("\n", start)
+    manifest_path.write_text(manifest[:start] + f'commit = "{commit}"' + manifest[end:], encoding="utf-8")
+
+
+def _commit_nested_probe(root: Path) -> str:
+    nested = root / "deerflow"
+    (nested / "boundary-probe.txt").write_text("clean\n", encoding="utf-8")
+    _git(nested, "add", "boundary-probe.txt")
+    _git(nested, "commit", "--quiet", "-m", "tracked probe")
+    commit = _git(nested, "rev-parse", "--verify", "HEAD").stdout.strip()
+    _stage_gitlink(root, commit)
+    _set_gitlink_lock(root, commit)
+    return commit
 
 
 class ArchitectureGovernanceContractTests(unittest.TestCase):
@@ -214,6 +279,8 @@ class ArchitectureGovernanceContractTests(unittest.TestCase):
         _write(self.root, "deep_research_harness/docs/runtime-architecture.md", "# Runtime architecture\n")
         _write(self.root, "deep_research_harness/docs/local-operations.md", "# Local operations\n")
         _write(self.root, "deep_research_harness/docs/testing-and-evaluation.md", "# Testing and evaluation\n")
+        self.gitlink_commit = _initialize_gitlink_fixture(self.root)
+        _set_gitlink_lock(self.root, self.gitlink_commit)
 
     def tearDown(self) -> None:
         self._temporary.cleanup()
@@ -235,6 +302,217 @@ class ArchitectureGovernanceContractTests(unittest.TestCase):
         result = self.run_checker()
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("architecture governance passed", result.stdout.lower())
+
+    def test_missing_gitlink_lock_fails(self) -> None:
+        manifest_path = self.root / MANIFEST_PATH
+        manifest = manifest_path.read_text(encoding="utf-8")
+        start = manifest.index("[upstream_gitlink]")
+        end = manifest.index("\n\n", start)
+        manifest_path.write_text(manifest[:start] + manifest[end + 2 :], encoding="utf-8")
+
+        self.assert_checker_error("gitlink.schema")
+
+    def test_gitlink_lock_rejects_extra_field(self) -> None:
+        _replace(
+            self.root,
+            MANIFEST_PATH,
+            f'commit = "{self.gitlink_commit}"',
+            f'commit = "{self.gitlink_commit}"\nbranch = "main"',
+        )
+
+        self.assert_checker_error("gitlink.schema")
+
+    def test_gitlink_lock_rejects_malformed_commit(self) -> None:
+        _set_gitlink_lock(self.root, "not-a-git-commit")
+
+        self.assert_checker_error("gitlink.commit")
+
+    def test_gitlink_lock_rejects_noncanonical_path(self) -> None:
+        _replace(self.root, MANIFEST_PATH, 'path = "deerflow"', 'path = "./deerflow"')
+
+        self.assert_checker_error("path.normalization")
+
+    def test_gitlink_boundary_rejects_symlink(self) -> None:
+        nested = self.root / "deerflow"
+        shutil.rmtree(nested)
+        target = self.root / "ordinary-boundary"
+        target.mkdir()
+        nested.symlink_to(target, target_is_directory=True)
+
+        self.assert_checker_error("gitlink.path_symlink")
+
+    def test_gitlink_boundary_rejects_missing_index_entry(self) -> None:
+        _git(self.root, "update-index", "--force-remove", "deerflow")
+
+        self.assert_checker_error("gitlink.index_shape")
+
+    def test_gitlink_boundary_rejects_non_gitlink_index_entry(self) -> None:
+        _stage_gitlink(self.root, self.gitlink_commit, mode="100644")
+
+        self.assert_checker_error("gitlink.index_entry")
+
+    def test_gitlink_boundary_rejects_alternate_stage_entries(self) -> None:
+        _git(
+            self.root,
+            "update-index",
+            "--index-info",
+            input_text=(
+                f"0 {'0' * 40}\tdeerflow\n"
+                f"160000 {self.gitlink_commit} 1\tdeerflow\n"
+                f"160000 {self.gitlink_commit} 2\tdeerflow\n"
+            ),
+        )
+
+        self.assert_checker_error("gitlink.index_shape")
+
+    def test_gitlink_boundary_rejects_index_commit_mismatch(self) -> None:
+        _stage_gitlink(self.root, "f" * 40)
+
+        self.assert_checker_error("gitlink.index_commit")
+
+    def test_gitlink_boundary_rejects_nested_head_mismatch(self) -> None:
+        _git(self.root / "deerflow", "commit", "--allow-empty", "--quiet", "-m", "head drift")
+
+        self.assert_checker_error("gitlink.head_commit")
+
+    def test_gitlink_boundary_rejects_metadata_query_failure(self) -> None:
+        shutil.rmtree(self.root / "deerflow" / ".git")
+        (self.root / "deerflow" / ".git").write_text("gitdir: missing-metadata\n", encoding="utf-8")
+
+        self.assert_checker_error("gitlink.head_query")
+
+    def test_gitlink_boundary_rejects_ordinary_directory_without_git_metadata(self) -> None:
+        nested = self.root / "deerflow"
+        shutil.rmtree(nested / ".git")
+
+        self.assert_checker_error("gitlink.nested_metadata")
+
+    def test_gitlink_boundary_rejects_staged_nested_change(self) -> None:
+        _commit_nested_probe(self.root)
+        nested = self.root / "deerflow"
+        (nested / "boundary-probe.txt").write_text("staged\n", encoding="utf-8")
+        _git(nested, "add", "boundary-probe.txt")
+
+        self.assert_checker_error("gitlink.status_dirty")
+
+    def test_gitlink_boundary_rejects_unstaged_nested_change(self) -> None:
+        _commit_nested_probe(self.root)
+        (self.root / "deerflow" / "boundary-probe.txt").write_text("unstaged\n", encoding="utf-8")
+
+        self.assert_checker_error("gitlink.status_dirty")
+
+    def test_gitlink_boundary_rejects_deleted_nested_change(self) -> None:
+        _commit_nested_probe(self.root)
+        (self.root / "deerflow" / "boundary-probe.txt").unlink()
+
+        self.assert_checker_error("gitlink.status_dirty")
+
+    def test_gitlink_boundary_rejects_untracked_nested_change(self) -> None:
+        nested = self.root / "deerflow"
+        (nested / "untracked-probe.txt").write_text("untracked\n", encoding="utf-8")
+
+        self.assert_checker_error("gitlink.status_dirty")
+
+    def test_matching_staged_gitlink_bump_passes_before_parent_commit(self) -> None:
+        nested = self.root / "deerflow"
+        _git(nested, "commit", "--allow-empty", "--quiet", "-m", "intentional bump")
+        bumped_commit = _git(nested, "rev-parse", "--verify", "HEAD").stdout.strip()
+        _stage_gitlink(self.root, bumped_commit)
+        _set_gitlink_lock(self.root, bumped_commit)
+
+        result = self.run_checker()
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_staged_gitlink_bump_rejects_mismatched_lock(self) -> None:
+        nested = self.root / "deerflow"
+        _git(nested, "commit", "--allow-empty", "--quiet", "-m", "unmatched bump")
+        bumped_commit = _git(nested, "rev-parse", "--verify", "HEAD").stdout.strip()
+        _stage_gitlink(self.root, bumped_commit)
+
+        self.assert_checker_error("gitlink.index_commit")
+
+    def test_structure_scan_does_not_descend_into_declared_gitlink(self) -> None:
+        nested = self.root / "deerflow"
+        _write(nested, "deerflow_deep_research/__init__.py")
+        _git(nested, "add", "deerflow_deep_research/__init__.py")
+        _git(nested, "commit", "--quiet", "-m", "upstream-shaped fixture")
+        nested_commit = _git(nested, "rev-parse", "--verify", "HEAD").stdout.strip()
+        _stage_gitlink(self.root, nested_commit)
+        _set_gitlink_lock(self.root, nested_commit)
+
+        result = self.run_checker()
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_gitlink_checker_uses_only_fixed_read_only_metadata_commands(self) -> None:
+        import importlib
+
+        checker = importlib.import_module("openspec.governance.check_project_architecture")
+        manifest = checker.load_manifest(self.root)
+        expected_commands = [
+            ["git", "-C", str(self.root), "ls-files", "--stage", "-z", "--", "deerflow"],
+            ["git", "-C", str(self.root / "deerflow"), "rev-parse", "--verify", "HEAD"],
+            [
+                "git",
+                "-C",
+                str(self.root / "deerflow"),
+                "status",
+                "--porcelain=v1",
+                "--untracked-files=all",
+            ],
+        ]
+        responses = [
+            subprocess.CompletedProcess(
+                expected_commands[0],
+                0,
+                stdout=f"160000 {self.gitlink_commit} 0\tdeerflow\0",
+                stderr="",
+            ),
+            subprocess.CompletedProcess(expected_commands[1], 0, stdout=f"{self.gitlink_commit}\n", stderr=""),
+            subprocess.CompletedProcess(expected_commands[2], 0, stdout="", stderr=""),
+        ]
+
+        with patch.object(checker.subprocess, "run", side_effect=responses) as run:
+            checker._validate_upstream_gitlink(self.root, manifest)
+
+        self.assertEqual([call.args[0] for call in run.call_args_list], expected_commands)
+
+    def test_gitlink_checker_rejects_malformed_metadata_output(self) -> None:
+        import importlib
+
+        checker = importlib.import_module("openspec.governance.check_project_architecture")
+        manifest = checker.load_manifest(self.root)
+
+        with patch.object(
+            checker.subprocess,
+            "run",
+            return_value=subprocess.CompletedProcess([], 0, stdout="not an index record\0", stderr=""),
+        ):
+            with self.assertRaises(checker.ContractViolation) as raised:
+                checker._validate_upstream_gitlink(self.root, manifest)
+        self.assertEqual(raised.exception.code, "gitlink.index_shape")
+
+    def test_gitlink_checker_rejects_unavailable_metadata_command(self) -> None:
+        import importlib
+
+        checker = importlib.import_module("openspec.governance.check_project_architecture")
+        manifest = checker.load_manifest(self.root)
+
+        with patch.object(checker.subprocess, "run", side_effect=OSError("unavailable")):
+            with self.assertRaises(checker.ContractViolation) as raised:
+                checker._validate_upstream_gitlink(self.root, manifest)
+        self.assertEqual(raised.exception.code, "gitlink.command_unavailable")
+
+    def test_imports_only_does_not_issue_gitlink_metadata_queries(self) -> None:
+        import importlib
+
+        checker = importlib.import_module("openspec.governance.check_project_architecture")
+
+        with patch.object(checker, "_run_git_metadata") as run:
+            checker.check_project(self.root, imports_only=True)
+
+        run.assert_not_called()
 
     def test_missing_manifest_fails(self) -> None:
         (self.root / MANIFEST_PATH).unlink()

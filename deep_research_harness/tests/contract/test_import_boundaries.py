@@ -24,7 +24,11 @@ CHECKER = REPO_ROOT / "openspec" / "governance" / "check_project_architecture.py
 MANIFEST = """\
 schema_version = 1
 contract = "project-structure"
-requirement_ids = ["PRS-001", "PRS-002", "PRS-003", "PRS-004", "PRS-006"]
+requirement_ids = ["PRS-001", "PRS-002", "PRS-003", "PRS-004", "PRS-006", "PRS-018"]
+
+[upstream_gitlink]
+path = "deerflow"
+commit = "0000000000000000000000000000000000000000"
 
 [guide]
 path = "deep_research_harness/AGENTS.md"
@@ -82,6 +86,7 @@ PRS-002: project-structure - imports
 PRS-003: project-structure - nodes
 PRS-004: project-structure - governance
 PRS-006: project-structure - ignored local generated paths
+PRS-018: project-structure - metadata-only upstream gitlink boundary
 """
 
 VALID_MODULES = {
