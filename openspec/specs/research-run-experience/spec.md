@@ -76,13 +76,23 @@ The existing source-owned closed failure categories, safe diagnostic references,
 redaction, and legal-next-action guarantees SHALL remain unchanged. A record-bearing
 observation is correlated only from a shared typed Bundle lifecycle result and, where
 valid, its `bundle_id`; it cannot bind a `research_id`, session, path, or checkpoint as
-a replacement Run authority. An external diagnostic may outlive Bundle loss, but it
-cannot turn unavailable into ended, inspectable, resumable, or recoverable. (`RER-003`, `RER-009`)
+a replacement Run authority. A supported retained diagnostic artifact is readable and
+presentable only from an available Bundle. Its safe category, opaque reference, recovery
+facts, and legal action remain fields of the typed terminal lifecycle result, not a read
+of a diagnostic artifact. After Bundle loss, no external diagnostic, Journal, or Support
+Handoff is a supported diagnostic reader or participant presentation source; a later
+inspection or lifecycle result follows its shared unavailable outcome. This requirement
+does not assert that physical storage contains no residual bytes after deletion. Such
+bytes, if any, are outside the supported diagnostic contract and cannot establish a
+supported retained record, reader, or presentation. (`RER-003`, `RER-009`)
 
 #### Scenario: Diagnostic fallback does not create a live Run projection
-- **WHEN** a safe provider diagnostic is retained after its Bundle becomes unavailable
-- **THEN** presentation preserves the safe category/reference while projecting only the
-  shared unavailable outcome and its legal next action
+- **WHEN** a Bundle becomes unavailable after a safe provider diagnostic was associated
+  with its terminal lifecycle result
+- **THEN** presentation returns the shared unavailable outcome and its legal next
+  action without reading or presenting an external diagnostic artifact, Journal, or
+  Support Handoff; it does not infer a retained artifact from a previously typed terminal
+  category or opaque reference
 
 ### Requirement: Shared failure updates expose bounded provider diagnostics and recovery disposition
 
@@ -113,14 +123,14 @@ When `recovery_action=fresh_start`, its human-readable `next_action` SHALL be co
 explanatory text only, and CLI/TUI SHALL not render it as a second action. `retryable`
 means a distinct new start may be attempted and never means the failed graph can resume.
 For every provider-diagnostic terminal, `diagnostic_location` SHALL be exactly one of
-`session_bundle`, `support_journal`, or `unavailable` and its diagnostic reference SHALL
-be present. `diagnostic_location` SHALL be absent for legacy terminals with neither
-recovery projection nor final safe provider observation. `research_record_created` SHALL
-be true only for `session_bundle` publication and false for `support_journal` or
-`unavailable`. The shared `Terminal` update is the only source used by CLI and TUI;
-neither opens a retained bundle or uses an observation as lifecycle authority. A
-matching retained-session inspection command is a read-only diagnostic observation, not
-a `recovery_action`, retry, resume, or competing next action.
+`bundle_journal` or `unavailable` and its diagnostic reference SHALL be present.
+`diagnostic_location` SHALL be absent for legacy terminals with neither recovery
+projection nor final safe provider observation. `research_record_created` SHALL be true
+only for `bundle_journal` publication and false for `unavailable`. The shared `Terminal`
+update is the only source used by CLI and TUI; neither opens a retained bundle or uses
+an observation as lifecycle authority. A matching retained-session inspection command
+is a read-only diagnostic observation, not a `recovery_action`, retry, resume, or
+competing next action.
 
 The frozen provider-recovery projection SHALL permit only these valid combinations:
 
@@ -147,19 +157,19 @@ Recovery facts SHALL be absent when no retry-eligible transient provider result 
 observed. For every provider-diagnostic terminal, `ResearchRunExperience` SHALL put the
 terminal incident reference unchanged into `RecordBearingLifecycleFact` before session
 publication, together with the copied retained recovery summary when present. It SHALL
-validate the terminal incident and construct that fact before calling either publisher;
-it SHALL not enter the generic diagnostic path that creates a new reference for this
-terminal. If the retained publisher reports availability, it SHALL return a terminal
+validate the terminal incident and construct that fact before calling the retained
+publisher; it SHALL not enter a generic diagnostic path that creates a new reference.
+If the retained publisher reports availability, it SHALL return a terminal
 `RunSessionView` whose `terminal_diagnostic_ref` exactly matches the incident reference,
 replace any stale suspended-session projection, and set
-`diagnostic_location=session_bundle`. Otherwise it SHALL ask the support journal to
-persist the exact existing reference and set `support_journal` or `unavailable`
-according to that write. Only after that publication outcome is known shall it construct
-the final shared `RunFailure` with its typed location and `research_record_created`
-truth. It SHALL never derive a replacement reference. Legacy and non-provider incidents
-SHALL remain valid with the new recovery and diagnostic-location fields absent.
-Returned-only `Working` updates SHALL not add or imply an in-flight retry state.
-(`RER-009`)
+`diagnostic_location=bundle_journal`. Otherwise it SHALL set
+`diagnostic_location=unavailable` and SHALL NOT persist, read, or present the reference
+through a support journal, external diagnostic, external Journal, or Support Handoff.
+Only after that publication outcome is known shall it construct the final shared
+`RunFailure` with its typed location and `research_record_created` truth. It SHALL never
+derive a replacement reference. Legacy and non-provider incidents SHALL remain valid
+with the new recovery and diagnostic-location fields absent. Returned-only `Working`
+updates SHALL not add or imply an in-flight retry state. (`RER-009`)
 
 #### Scenario: Exhausted timeout has an actionable bounded projection
 - **WHEN** a blocked HITL1 terminal incident reports `provider.timeout`, two attempts,
@@ -191,10 +201,9 @@ Returned-only `Working` updates SHALL not add or imply an in-flight retry state.
 #### Scenario: Failed session publication keeps the original diagnostic reference
 - **WHEN** a blocked provider-recovery incident has an opaque diagnostic reference but
   retained-session publication is unavailable
-- **THEN** the terminal update carries that same reference, writes it to the support
-  journal when possible, and reports `diagnostic_location=support_journal` or
-  `unavailable` without deriving a second reference or claiming that a retained
-  research record was created
+- **THEN** the terminal update carries that same reference, reports
+  `diagnostic_location=unavailable`, and does not write, read, or present an external
+  diagnostic while preserving the original terminal category and legal next action
 
 #### Scenario: Legacy non-provider failures do not invent provider history
 - **WHEN** a blocked incident is legacy authentication, configuration, tool, structured
@@ -215,7 +224,7 @@ Returned-only `Working` updates SHALL not add or imply an in-flight retry state.
 - **WHEN** a provider-diagnostic terminal has a retained session for the same research
   id but that view lacks or has a different `terminal_diagnostic_ref`
 - **THEN** the shared terminal does not treat it as the terminal record or report
-  `session_bundle` inspection availability for that diagnostic reference
+  `bundle_journal` inspection availability for that diagnostic reference
 
 #### Scenario: Returned-only waiting does not fabricate retry progress
 - **WHEN** a real dispatch has not returned a lifecycle result while HITL1 may be
@@ -405,27 +414,28 @@ compatible for trusted transport callers. (`RER-011`)
 ### Requirement: Provider terminal diagnostic location is verified publication truth
 
 For a provider-diagnostic terminal, `ResearchRunExperience` SHALL report
-`diagnostic_location=session_bundle` and `research_record_created=true` only when the
+`diagnostic_location=bundle_journal` and `research_record_created=true` only when the
 returned retained-session projection verifies that the exact terminal diagnostic
-reference was published in its bundle. When that verification is absent or the bundle
-publisher cannot publish the record, it SHALL use the existing exact-reference support
-journal fallback and report `support_journal`, or report `unavailable` if that fallback
-also fails. The fallback record SHALL retain the same role-bound timeout origins when
-they were supplied. The shared terminal SHALL preserve the original category, phase,
-recovery disposition, trigger/final timeout origins, and lifecycle authority; it SHALL
-not create a replacement reference or turn inspection into retry/resume control.
-(`RER-009`)
+reference was published in its available Bundle. When that verification is absent or
+the Bundle publisher cannot publish the record, it SHALL report
+`diagnostic_location=unavailable` and `research_record_created=false`. It SHALL NOT use
+an exact-reference support journal fallback or any external diagnostic, Journal, or
+Support Handoff as a supported reader or participant presentation. The shared terminal
+SHALL preserve the original category, phase, recovery disposition, trigger/final timeout
+origins, and lifecycle authority; it SHALL not create a replacement reference or turn
+inspection into retry/resume control. This requirement does not assert secure erasure or
+the absence of physical residual bytes after Bundle loss. (`RER-009`)
 
 #### Scenario: Verified bundle record enables session-bundle location
 - **WHEN** a provider terminal's returned session projection verifies the same opaque
   diagnostic reference as the terminal incident
-- **THEN** the shared terminal reports `session_bundle` and record-created truth
+- **THEN** the shared terminal reports `bundle_journal` and record-created truth
 
 #### Scenario: Stale reference cannot qualify a bundle as diagnostic storage
 - **WHEN** a session is available but cannot verify the terminal's exact diagnostic
   record or carries a different reference
-- **THEN** the shared terminal does not report `session_bundle` and follows the existing
-  exact-reference fallback or unavailable outcome
+- **THEN** the shared terminal does not report `bundle_journal`, reports
+  `unavailable`, and performs no external diagnostic fallback
 
 #### Scenario: Safe timeout origins reach all shared participants in their roles
 - **WHEN** a verified provider terminal carries a bridge-budget retry trigger and a
@@ -436,10 +446,10 @@ not create a replacement reference or turn inspection into retry/resume control.
 
 #### Scenario: Support-journal fallback retains observed origins
 - **WHEN** a provider terminal carrying closed trigger/final timeout origins cannot
-  verify bundle diagnostic publication but the exact-reference support journal succeeds
-- **THEN** the support-journal record and the shared terminal retain those same origins
-  in their roles without creating a replacement reference or exposing raw diagnostic
-  material
+  verify Bundle diagnostic publication
+- **THEN** the shared terminal reports `unavailable`, preserves the terminal's existing
+  lifecycle authority and legal action, and neither writes nor reads an external
+  diagnostic, Journal, or Support Handoff
 
 ### Requirement: Shared confirmation prompts display all material proposal constraints
 

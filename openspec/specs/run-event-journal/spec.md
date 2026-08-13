@@ -15,14 +15,16 @@ without using logs or diagnostics as a second lifecycle authority.
 After the Bundle lifecycle has admitted a valid Run and before any graph producer can
 execute, the system SHALL establish that Run's Event Journal in the selected Bundle's
 protected diagnostics subtree. The Journal shares the Bundle's lifetime: it SHALL NOT
-be persisted as an external Run observation or survive Bundle deletion. Its identity is
-the admitted opaque `bundle_id`; it does not prove the Bundle exists, select a Bundle,
-or authorize execution. Every retained event SHALL have a schema version, a stable
-monotonically increasing Bundle-local journal sequence, timestamp, refinement
-generation, phase, and bounded event kind. Where a work item or attempt exists, the
-event SHALL retain its bounded `work_id` and `attempt_id`. The Event Journal SHALL
-distinguish a process fact from a terminal diagnostic conclusion and from ephemeral
-progress rendering. (`REJ-001`)
+be persisted as an external Run observation, read after Bundle deletion, or presented to
+a participant after Bundle loss. Its identity is the admitted opaque `bundle_id`; it does
+not prove the Bundle exists, select a Bundle, or authorize execution. Every retained
+event SHALL have a schema version, a stable monotonically increasing Bundle-local journal
+sequence, timestamp, refinement generation, phase, and bounded event kind. Where a work
+item or attempt exists, the event SHALL retain its bounded `work_id` and `attempt_id`.
+The Event Journal SHALL distinguish a process fact from a terminal diagnostic conclusion
+and from ephemeral progress rendering. This requirement does not assert physical secure
+erasure or that storage has no residual bytes; residual bytes, if any, are not a
+supported Journal reader or participant presentation. (`REJ-001`)
 
 #### Scenario: First graph event is retained for a newly admitted Run
 - **WHEN** a newly admitted Run starts graph execution before its first returned
@@ -134,8 +136,11 @@ failure category, and opaque diagnostic reference when independently available. 
 SHALL derive no lifecycle state from event ordering and SHALL not use a journal,
 diagnostic, or progress event to start, resume, cancel, refine, route, recover, or
 recreate a Run. A missing, malformed, foreign, or post-loss Journal produces an
-unavailable bounded observation result; inspection SHALL NOT seek an external
-historical Journal or Support Handoff. (`REJ-004`)
+unavailable bounded observation result; inspection SHALL NOT seek, read, or present an
+external historical Journal, diagnostic, or Support Handoff. Support Handoff remains a
+planned capability and, if implemented, SHALL not create a post-loss Journal reader.
+The absence of a supported reader or participant presentation does not assert that
+physical storage contains no residual bytes. (`REJ-004`)
 
 #### Scenario: Operator inspection explains a failed attempt without granting control
 - **WHEN** an operator inspects a retained Run with a failed validated work attempt
@@ -145,8 +150,9 @@ historical Journal or Support Handoff. (`REJ-004`)
 
 #### Scenario: Bundle loss removes retained diagnostic evidence
 - **WHEN** an admitted Bundle is deleted or becomes unavailable
-- **THEN** inspection reports the Bundle and its Event Journal unavailable, does not read
-  an external Journal or Support Handoff, and offers no journal-derived recovery
+- **THEN** inspection reports the Bundle and its Event Journal unavailable, does not
+  read or present an external Journal, diagnostic, or Support Handoff, and offers no
+  journal-derived recovery
 
 ### Requirement: DeerFlow live progress is a best-effort projection
 

@@ -5,8 +5,8 @@
 > 原始审计证据快照: `65df2571108cc6b4b81f55d3ba8542786a810b39`
 > 计划重排时 HEAD: `ac6989abb46b22a9b0cf50e8a53b47341d762750`
 > 执行基线: 尚未锁定；开始每个 Stage 时重新记录 HEAD
-> 当前状态: **STAGE 4 ARCHIVED - STAGE 5 PLANNING NOT AUTHORIZED**
-> 最近归档的 OpenSpec change: `2026-08-13-reconcile-evaluation-rubric-authority`
+> 当前状态: **STAGE 5 ARCHIVED - STAGE 6 PLANNING NOT AUTHORIZED**
+> 最近归档的 OpenSpec change: `2026-08-13-reconcile-post-loss-diagnostic-authority`
 > 当前 active OpenSpec change: 无
 
 本计划执行时必须同时阅读
@@ -127,8 +127,8 @@ adjustment 不得 apply，也不得勾选对应完成 checkbox。
 | 2 | `retire-stale-context-concepts` | A-005..A-008 的安全子集 | 否 | `[x] Completed and archived; Stage 3 authorized` |
 | 3 | 无，只读 re-audit | 降噪后重建 A-001..A-009 ledger | 否 | `[x] Complete; Stage 4 planning authorized` |
 | 4 | `reconcile-evaluation-rubric-authority` | A-003 | 否；实现差异 defer | `[x] Archived; bounded local conformance, no observed deferred gap` |
-| 5 | `reconcile-post-loss-diagnostic-authority` | A-004 | 否；实现差异 defer | `[ ] Ready for separate planning authorization` |
-| 6 | `normalize-post-decision-terminology-status` | A-003/A-004 的 CONTEXT/ADR 收口 | 否 | `[ ] Blocked by Stages 4-5` |
+| 5 | `reconcile-post-loss-diagnostic-authority` | A-004 | 否；实现差异 defer | `[x] Archived; bounded local conformance, A-004-T01 tooling residue remains` |
+| 6 | `normalize-post-decision-terminology-status` | A-003/A-004 的 CONTEXT/ADR 收口 | 否 | `[ ] Ready for separate planning authorization` |
 | 7 | 无，最终 re-audit | A-001..A-009 | 否 | `[ ] Blocked by Stage 6` |
 
 ## Stage 0 - Decision And Scope Lock
@@ -415,7 +415,7 @@ formatter-only maintenance。A-002 保持 open。
 - [x] No-code diff；无 active change；已停止。Stage 4 已归档；post-archive baseline、gitlink
   metadata 与实际 A-003 disposition 见
   [Stage 4 post-archive record](alignment-audit-60-adjustments/stage-4-apply/09-a003-post-archive-baseline.md)。
-  Stage 5 planning authorization 尚未获得。
+  随后已获得独立 Stage 5 planning authorization；A-004 planning 仍不等同于 apply/sync/archive。
 
 ## Stage 5 - Reconcile Post-Loss Diagnostic Authority
 
@@ -439,23 +439,41 @@ formatter-only maintenance。A-002 保持 open。
 - [x] 5.4 external-diagnostic 的 typed owner、
   retention/redaction、authorization、reader 和 deletion semantics，但不在本 Stage 实施。
   不适用：Option B 已排除；其未来实现义务保留在被拒绝替代方案记录中。
-- [ ] 5.5 为选定方案填写完整 Adjustment Record；apply/archive 后回填实际观察到的
-  副作用、未验证范围和 remaining code gap。
+- [x] 5.5 已填写完整 planning Adjustment Record；apply/archive 后仍必须回填实际观察到的
+  副作用、未验证范围和 remaining code gap，见
+  [Stage 5 planning record](alignment-audit-60-adjustments/stage-5-planning/00-stage-5-planning-baseline-and-decision.md)。
 
-### OpenSpec checklist（未授权）
+### OpenSpec checklist（planning、apply/sync 与 archive 已完成）
 
-- [ ] 5.6 CLI scaffold，完成 proposal/design/RER-RUS-REJ deltas/tasks。
-- [ ] 5.7 Deltas 对三个问题给出唯一答案，并保留 no-recovery/no-authority invariants。
-- [ ] 5.8 若所选合同与实现不同，登记 `DEFERRED-CODE-CHANGE`；不新增 store/schema/tests。
-- [ ] 5.9 External Observation/Support Handoff 的 CONTEXT 最终措辞留到 Stage 6。
-- [ ] 5.10 Strict validate、人工 plan review、单独 apply authorization。
-- [ ] 5.11 Apply/sync/archive 后只读验证并记录真实 conformance gap。
+- [x] 5.6 CLI scaffold，完成 proposal/design/RER-RUS-REJ deltas/tasks。
+- [x] 5.7 Deltas 对 bytes retention、supported reader、participant presentation 给出唯一答案，
+  并保留 no-recovery/no-authority invariants。
+- [x] 5.8 已在 tasks/design 中规定：若所选合同与实现不同，登记 `DEFERRED-CODE-CHANGE` 并停止；
+  不新增 store/schema/tests。实际 current/required inspection 尚未获 apply 授权。
+- [x] 5.9 External Observation/Support Handoff 的 CONTEXT 最终措辞留到 Stage 6；本 Stage 未编辑
+  `CONTEXT.md` 或 ADR。
+- [x] 5.10 Strict validate 与人工 plan review 已完成；其后已获得单独 apply authorization 并完成
+  RER/RUS/REJ sync。OpenSpec full-replacement correction、A-004-T01 工具链遗留及证明边界见
+  [Stage 5 planning validation](alignment-audit-60-adjustments/stage-5-planning/01-stage-5-planning-validation.md)
+  和 [Stage 5 apply evidence](alignment-audit-60-adjustments/stage-5-apply/)。
+- [x] 5.11 已在 apply/sync 后完成只读验证并记录真实 conformance disposition：已检查本地路径没有
+  `DEFERRED-CODE-CHANGE`，但结论仅为 bounded local conformance；4 个 Gateway skip、Pydantic
+  warnings、live/physical/uninspected-path 限制与 A-004-T01 均已记录。随后在单独 archive
+  authorization 下完成 closeout、preflight 与正常归档。
 
 ### Gate 5
 
-- [ ] A-004 已有唯一 product decision 和一致 main specs，或因缺少决定明确停止。
-- [ ] Support Handoff 的 planned 状态没有被解释成 external retention 已获批准。
-- [ ] No-code diff；无 active change；已停止并取得 Stage 6 新授权。
+- [x] A-004 已有唯一 product decision；RER/RUS/REJ main specs 已通过已授权 apply 正常 sync，三者
+  对 physical-residue scope、supported reader、participant presentation、terminal location 和
+  planned Support Handoff 给出同一 required answer。当前实现结论仅为 bounded local conformance；
+  完整 evidence 见 [Stage 5 apply evidence](alignment-audit-60-adjustments/stage-5-apply/)。
+- [x] Support Handoff 的 planned 状态没有被解释成 external retention 已获批准；deltas 仅允许它在
+  Bundle 可用期间作为未来独立 capability 工作。
+- [x] 没有应用代码或 DeerFlow gitlink diff；已无 active change，且已停止。A-004 archive、post-archive
+  baseline 和实际 disposition 见
+  [Stage 5 post-archive record](alignment-audit-60-adjustments/stage-5-apply/09-a004-post-archive-baseline.md)。
+  Stage 6 新授权尚未发生；`DEFERRED-TOOLING-CHANGE A-004-T01` 仍须由独立 OpenSpec tooling
+  change 拥有。
 
 ## Stage 6 - Normalize Post-Decision Terminology And Status
 
@@ -546,6 +564,11 @@ main specs；三者对 A-003 给出同一 required contract。在已检查本地
 `DEFERRED-CODE-CHANGE`，但这不代表所有 future/live 路径均已证明；详细 evidence、风险、
 observed side effects 和边界见 `alignment-audit-60-adjustments/stage-4-apply/`。
 
-下一件工作是 Stage 5 的 A-004（Bundle loss 后 diagnostic authority）planning。它需要新的
-planning authorization；在授权前不得创建 `reconcile-post-loss-diagnostic-authority`、修改
-main specs、`CONTEXT.md`、ADR、代码、tests、`openspec/config.yaml` 或 `deerflow/`。
+Stage 5 已归档：`2026-08-13-reconcile-post-loss-diagnostic-authority` 已同步 RER、RUS、REJ
+main specs；三者对 Bundle loss 后诊断 authority 给出同一 required contract。在已检查本地路径，
+没有 `DEFERRED-CODE-CHANGE`，但此结论不延伸到 physical bytes、live/credentialed 或未检查/未来
+路径。`A-004-T01` 保持为 scenario-title rename 的 `DEFERRED-TOOLING-CHANGE`。完整风险、副作用、
+验证与 archive 后基线见 [Stage 5 apply evidence](alignment-audit-60-adjustments/stage-5-apply/)。
+
+下一件工作需要新的 planning authorization：Stage 6 的
+`normalize-post-decision-terminology-status`。它不能从 A-004 archive 自动开始。
