@@ -24,7 +24,7 @@
 - [openspec/config.yaml](/Users/bowhead/ai_deerflow_deep_research_v2/openspec/config.yaml:6) identifies `deep_research_harness/` as the downstream product and `deerflow/` as its upstream gitlink, and prohibits ordinary modification or source browsing at [lines 7-10](/Users/bowhead/ai_deerflow_deep_research_v2/openspec/config.yaml:7).
 - The local contributor guide repeats the same boundary at [deep_research_harness/AGENTS.md:3](/Users/bowhead/ai_deerflow_deep_research_v2/deep_research_harness/AGENTS.md:3), while the active structural main spec defines `deep_research_harness/` as the canonical downstream root at [project-structure/spec.md:66](/Users/bowhead/ai_deerflow_deep_research_v2/openspec/specs/project-structure/spec.md:66).
 - The editable dependency path is current and concrete: [deep_research_harness/README.md:55](/Users/bowhead/ai_deerflow_deep_research_v2/deep_research_harness/README.md:55) points to `../deerflow/backend/packages/harness`.
-- Remaining `backend`/`frontend` language in [deployment-configuration/spec.md:427](/Users/bowhead/ai_deerflow_deep_research_v2/openspec/specs/deployment-configuration/spec.md:427) is a negative guard against changes under upstream directories, not a claim that root `backend/` or `frontend/` is the upstream checkout. The prior re-audit recorded this distinction as N-001 at [Stage 3 ledger](/Users/bowhead/ai_deerflow_deep_research_v2/_backlog/plans/alignment-audit-2026-08-12/alignment-audit-60-adjustments/stage-3-reaudit/03-reduced-mismatch-ledger-and-next-gate.md:25).
+- Remaining `backend`/`frontend` language in [deployment-configuration/spec.md:427](/Users/bowhead/ai_deerflow_deep_research_v2/openspec/specs/deployment-configuration/spec.md:427) is a negative guard against changes under upstream directories, not a claim that root `backend/` or `frontend/` is the upstream checkout. The prior re-audit recorded this distinction as N-001 at [Stage 3 ledger](/Users/bowhead/ai_deerflow_deep_research_v2/_backlog/_done/_closed_plans/alignment-audit-2026-08-12/alignment-audit-60-adjustments/stage-3-reaudit/03-reduced-mismatch-ledger-and-next-gate.md:25).
 
 ### Conclusion
 
@@ -53,7 +53,7 @@ guard, rather than an improvement in topology truth.
 **Open: `DEFERRED-CODE-CHANGE`.** The baseline Git metadata is clean, and the authoring
 route now describes the real boundary honestly. Neither fact creates an automatic
 detector or protection mechanism. This confirms the Stage 7 condition at [progressive
-plan:556](/Users/bowhead/ai_deerflow_deep_research_v2/_backlog/plans/alignment-audit-2026-08-12/alignment-audit-60-progressive-execution-plan.md:556).
+plan:556](/Users/bowhead/ai_deerflow_deep_research_v2/_backlog/_done/_closed_plans/alignment-audit-2026-08-12/alignment-audit-60-progressive-execution-plan.md:556).
 
 ### Follow-up Risk And Side Effect
 
@@ -80,8 +80,8 @@ evidence must remain explicitly bounded until such a change is implemented and t
 can mechanically declare multiple triggered policies today, but two current guidance/
 normative surfaces tell that contributor to choose one. The Stage 3 ledger already
 classified the authoring risk and required a separate bounded change at [lines
-18-19](/Users/bowhead/ai_deerflow_deep_research_v2/_backlog/plans/alignment-audit-2026-08-12/alignment-audit-60-adjustments/stage-3-reaudit/03-reduced-mismatch-ledger-and-next-gate.md:18)
-and [line 26](/Users/bowhead/ai_deerflow_deep_research_v2/_backlog/plans/alignment-audit-2026-08-12/alignment-audit-60-adjustments/stage-3-reaudit/03-reduced-mismatch-ledger-and-next-gate.md:26).
+18-19](/Users/bowhead/ai_deerflow_deep_research_v2/_backlog/_done/_closed_plans/alignment-audit-2026-08-12/alignment-audit-60-adjustments/stage-3-reaudit/03-reduced-mismatch-ledger-and-next-gate.md:18)
+and [line 26](/Users/bowhead/ai_deerflow_deep_research_v2/_backlog/_done/_closed_plans/alignment-audit-2026-08-12/alignment-audit-60-adjustments/stage-3-reaudit/03-reduced-mismatch-ledger-and-next-gate.md:26).
 
 ### Follow-up Risk And Side Effect
 
@@ -110,7 +110,7 @@ and selected risk areas have richer typed evidence. It does **not** prove that e
 requirement's semantic assertions, scenario outcomes, and implementation behavior are
 equivalent. This is a proof-strength limit, not evidence that requirements are missing
 or unimplemented. It matches the Stage 7 constraint at [progressive
-plan:558](/Users/bowhead/ai_deerflow_deep_research_v2/_backlog/plans/alignment-audit-2026-08-12/alignment-audit-60-progressive-execution-plan.md:558).
+plan:558](/Users/bowhead/ai_deerflow_deep_research_v2/_backlog/_done/_closed_plans/alignment-audit-2026-08-12/alignment-audit-60-progressive-execution-plan.md:558).
 
 ### Follow-up Risk And Side Effect
 

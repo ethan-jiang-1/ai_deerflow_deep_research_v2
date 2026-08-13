@@ -20,7 +20,7 @@ Charter route:
 
 The change did not modify policy triggers, Focus Card parsing, the Charter checker,
 application code, runtime behavior, or `deerflow/`. It was archived at
-[`2026-08-13-reconcile-policy-routing-cardinality`](../../../../../openspec/changes/archive/2026-08-13-reconcile-policy-routing-cardinality/).
+[`2026-08-13-reconcile-policy-routing-cardinality`](../../../../../../openspec/changes/archive/2026-08-13-reconcile-policy-routing-cardinality/).
 
 ## Post-Archive Evidence
 

@@ -20,7 +20,7 @@ or alter DeerFlow source.
 ## Delivered
 
 The independently reviewed change is archived at
-[`2026-08-13-establish-gitlink-boundary-detector`](../../openspec/changes/archive/2026-08-13-establish-gitlink-boundary-detector/).
+[`2026-08-13-establish-gitlink-boundary-detector`](../../../openspec/changes/archive/2026-08-13-establish-gitlink-boundary-detector/).
 It adds `PRS-018`: full architecture governance fails closed unless the declared
 `deerflow` path/full-SHA lock matches the sole root mode-`160000` index entry, nested
 `HEAD`, and empty nested porcelain status including untracked paths. The exact
@@ -35,7 +35,7 @@ separate reviewed change that updates the declared lock and pointer together.
 ## Archive Evidence
 
 The archive closeout, preflight, and observed-side-effect record is
-[A-002 archive closeout](../plans/alignment-audit-2026-08-12/alignment-audit-60-adjustments/a002-gitlink-detector-apply/02-a002-archive-closeout-review.md).
+[A-002 archive closeout](../_closed_plans/alignment-audit-2026-08-12/alignment-audit-60-adjustments/a002-gitlink-detector-apply/02-a002-archive-closeout-review.md).
 The change had no observed adverse side effects within its deterministic verification
 boundary. At post-archive baseline there are no active OpenSpec changes; the root index
 and nested `HEAD` remain `66b9e7f21212490cf92fafac137542b9deb06615`, nested porcelain

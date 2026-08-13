@@ -24,16 +24,7 @@
 
 新的分析或设计应在此创建，完成后再移入归档。
 
-**Next available plan ID: CLS-037**（移入 `_closed_plans/` 时分配）
-
-## 已完成、原地保留的审计档案
-
-下列目录是用户指定保留在原路径的多文件审计 dossier；它不再是活跃工作，也不分配 `CLS` 编号。
-原地保留避免打断其中的逐项风险记录、验证证据和 OpenSpec archive 相对链接。
-
-| Dossier | 状态 | 关闭日期 | 说明 |
-|---------|------|----------|------|
-| [alignment-audit-2026-08-12/](alignment-audit-2026-08-12/alignment-audit-00-current-state.md) | Closed | 2026-08-13 | 七阶段对齐审计及其 A-002 gitlink detector 后续均已完成；A-004-T01 等待外部 OpenSpec 能力，A-009 是尚未触发的可选 hardening，见其 [active todo index](../todos/README.md)。 |
+**Next available plan ID: CLS-038**（移入 `_closed_plans/` 时分配）
 
 ## 已归档（移至 `_done/_closed_plans/`）
 

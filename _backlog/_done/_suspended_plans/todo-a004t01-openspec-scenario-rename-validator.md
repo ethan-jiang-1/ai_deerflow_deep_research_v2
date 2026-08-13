@@ -38,7 +38,7 @@ change rename the headings.
 - **Local boundary:** `openspec/governance/check_project_specs.py` explicitly delegates
   active-delta validation to OpenSpec validate/archive, so a local checker adjustment
   would not make archive safe and would split the two authorities.
-- **Evidence:** [owner research](../plans/alignment-audit-2026-08-12/alignment-audit-60-adjustments/a004t01-scenario-rename-owner-research/a004t01-scenario-rename-owner-research.md).
+- **Evidence:** [owner research](../_closed_plans/alignment-audit-2026-08-12/alignment-audit-60-adjustments/a004t01-scenario-rename-owner-research/a004t01-scenario-rename-owner-research.md).
 
 ## Non-Goals
 

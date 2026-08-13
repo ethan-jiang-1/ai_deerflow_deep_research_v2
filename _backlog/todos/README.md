@@ -31,7 +31,7 @@
 
 完整卡片和研究证据在
 [`../_done/_suspended_plans/todo-a004t01-openspec-scenario-rename-validator.md`](../_done/_suspended_plans/todo-a004t01-openspec-scenario-rename-validator.md)
-及其 [owner research](../plans/alignment-audit-2026-08-12/alignment-audit-60-adjustments/a004t01-scenario-rename-owner-research/a004t01-scenario-rename-owner-research.md)。
+及其 [owner research](../_done/_closed_plans/alignment-audit-2026-08-12/alignment-audit-60-adjustments/a004t01-scenario-rename-owner-research/a004t01-scenario-rename-owner-research.md)。
 
 ---
 

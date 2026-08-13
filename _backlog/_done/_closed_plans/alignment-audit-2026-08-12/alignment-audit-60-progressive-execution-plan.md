@@ -560,9 +560,9 @@ formatter-only maintenance。A-002 保持 open。
   [Stage 7 final matrix](alignment-audit-60-adjustments/stage-7-reaudit/02-current-authority-final-matrix.md)。
 - [x] 7.4 Stage 7 closeout 当时 A-002 仍是 `DEFERRED-CODE-CHANGE`，没有自动 gitlink detector；
   因而登记了独立 owner。该后续工作随后已完成，见“关闭后交接状态”的 A-002 closeout 与
-  [DONE-002](../../_done/_done_todos/todo-a002-gitlink-boundary-detector.md)。
+  [DONE-002](../../../_done/_done_todos/todo-a002-gitlink-boundary-detector.md)。
 - [x] 7.5 A-009 仍只声称 ID-level traceability；semantic mapping 仍为 `OPTIONAL-HARDENING`，
-  并已登记 [A-009 backlog candidate](../../todos/todo-a009-risk-based-semantic-traceability.md)。
+  并已登记 [A-009 backlog candidate](../../../todos/todo-a009-risk-based-semantic-traceability.md)。
 - [x] 7.6 A-003/A-004 的 required behavior、bounded current inspection 与 deferred work 均有明确
   owner；A-004-T01 被独立登记，未被当作 runtime gap。
 - [x] 7.7 已更新 `alignment-audit-00-current-state.md` 的 Stage 7 final matrix，同时保留
@@ -606,7 +606,7 @@ formatter-only maintenance。A-002 保持 open。
 
 本 alignment audit plan 已完成并关闭。A-001、A-003、A-004、A-005、A-006、A-007 和 A-008/N-002
 均已在其明确证据边界内关闭；N-002 的 archived change 是
-[`2026-08-13-reconcile-policy-routing-cardinality`](../../../openspec/changes/archive/2026-08-13-reconcile-policy-routing-cardinality/)。
+[`2026-08-13-reconcile-policy-routing-cardinality`](../../../../openspec/changes/archive/2026-08-13-reconcile-policy-routing-cardinality/)。
 完整的归档后结论、验证范围和不应过度声称的边界见
 [Stage 7 N-002 closeout](alignment-audit-60-adjustments/stage-7-reaudit/03-n002-post-archive-closeout.md)。
 
@@ -614,7 +614,7 @@ formatter-only maintenance。A-002 保持 open。
 scenario-identity/rename 能力缺口，而不是本仓或 DeerFlow 的实施项。除非获得对
 `Fission-AI/OpenSpec` 外部协作或已支持版本升级的单独授权，它没有本仓可安全执行的下一步；A-009
 仅在高风险 requirement change 需要更强保证时才启动。它们的顺序、风险和重启条件见
-[active todo index](../../todos/README.md)。
+[active todo index](../../../todos/README.md)。
 
 ## 关闭后交接状态
 
@@ -624,10 +624,10 @@ alignment audit 的 scope。
 - [x] 2026-08-13：已从三个独立 backlog 中选定 A-002 为下一项工作；原因是它是唯一高优先级的
   repository-governance 保护缺口，而非 current-authority 文案矛盾。
 - [x] 2026-08-13：已完成 `establish-gitlink-boundary-detector` 的 OpenSpec **planning only**；
-  [proposal](../../../openspec/changes/archive/2026-08-13-establish-gitlink-boundary-detector/proposal.md)、
-  [delta spec](../../../openspec/changes/archive/2026-08-13-establish-gitlink-boundary-detector/specs/project-structure/spec.md)、
-  [design](../../../openspec/changes/archive/2026-08-13-establish-gitlink-boundary-detector/design.md) 和
-  [tasks](../../../openspec/changes/archive/2026-08-13-establish-gitlink-boundary-detector/tasks.md) 已齐全。方案指定
+  [proposal](../../../../openspec/changes/archive/2026-08-13-establish-gitlink-boundary-detector/proposal.md)、
+  [delta spec](../../../../openspec/changes/archive/2026-08-13-establish-gitlink-boundary-detector/specs/project-structure/spec.md)、
+  [design](../../../../openspec/changes/archive/2026-08-13-establish-gitlink-boundary-detector/design.md) 和
+  [tasks](../../../../openspec/changes/archive/2026-08-13-establish-gitlink-boundary-detector/tasks.md) 已齐全。方案指定
   `project-structure` registry/architecture checker 为唯一 metadata-only owner：锁定 `deerflow`
   路径与 full SHA，要求 root index gitlink、nested `HEAD` 和 nested porcelain 同时一致；intentional
   bump 只在同一受审 change 同步指针与 lock 时通过。规划没有读取/修改 `deerflow/` 源码，也没有实施
@@ -638,7 +638,7 @@ alignment audit 的 scope。
   [A-002 apply admission](alignment-audit-60-adjustments/a002-gitlink-detector-apply/00-a002-apply-admission-baseline-and-control-review.md)；
   本授权不包含 archive 或 commit，也不允许读取或修改 `deerflow/` 源码。
 - [x] 2026-08-13：A-002 已完成 archive closeout 并归档为
-  [`2026-08-13-establish-gitlink-boundary-detector`](../../../openspec/changes/archive/2026-08-13-establish-gitlink-boundary-detector/)。
+  [`2026-08-13-establish-gitlink-boundary-detector`](../../../../openspec/changes/archive/2026-08-13-establish-gitlink-boundary-detector/)。
   `PRS-018` 现在使完整 architecture governance 对 `deerflow` 的 declared lock、root index、nested
   `HEAD` 与 porcelain 清洁度 fail closed；它只使用三条固定的只读 Git metadata 查询和 `lstat`，不读取
   或修改上游源码，不批准 future bump，也不证明 compatibility。归档前 strict/doctor、全部 project
@@ -646,7 +646,7 @@ alignment audit 的 scope。
   change，真实 gitlink pointer/nested `HEAD` 仍为 `66b9e7f21212490cf92fafac137542b9deb06615`，nested
   porcelain 与 gitlink diff 均为空。完整的风险、副作用和证明边界见
   [A-002 archive closeout](alignment-audit-60-adjustments/a002-gitlink-detector-apply/02-a002-archive-closeout-review.md)。
-  A-002 todo 已移至 [DONE-002](../../_done/_done_todos/todo-a002-gitlink-boundary-detector.md)；没有
+  A-002 todo 已移至 [DONE-002](../../../_done/_done_todos/todo-a002-gitlink-boundary-detector.md)；没有
   自动启动 A-004-T01 或 A-009。
 - [x] 2026-08-13：已完成 A-004-T01 的只读 owner 调查。安装的
   `@fission-ai/openspec@1.8.0` 用 scenario 标题字符串判断 `MODIFIED` requirement 是否会丢失既有
