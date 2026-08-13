@@ -1,4 +1,4 @@
-# 60 - Progressive Execution
+# 99 - Progressive Execution
 
 > 角色: 阶段关卡与 OpenSpec change 编排
 > 规则: 一次一个 active change；checkbox 表示本 plan 阶段，不替代 change `tasks.md`
@@ -133,4 +133,3 @@ behavior、semantic policy applicability、外部消费者迁移或 upstream com
 - 若某候选确认仍必要，标记 `rejected` 并写 owner/evidence，而不是让它永远停在 pending；
 - 全部关闭后，将整个子目录 `git mv` 到 `_backlog/_done/_closed_plans/`，按 backlog 规则分配
   `CLS-038`（或当时 next available ID）并更新三个索引。
-

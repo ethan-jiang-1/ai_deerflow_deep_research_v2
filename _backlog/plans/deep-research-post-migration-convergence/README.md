@@ -66,7 +66,7 @@ archive/_done ------------------------- historical evidence, never current autho
 | [40 - Tests And Evidence](40-tests-and-evidence.md) | 怎样删除过期测试而不丢失行为与防回退证据？ |
 | [50 - OpenSpec And Records](50-openspec-and-records.md) | main specs、registry、CONTEXT、ADR 和历史材料如何同步？ |
 | [Candidate Register](candidate-register.md) | 当前已发现候选、证据、风险级别和待证明条件是什么？ |
-| [60 - Progressive Execution](60-progressive-execution.md) | 如何一次一个 OpenSpec change 推进并关闭计划？ |
+| [99 - Progressive Execution](99-progressive-execution.md) | 如何一次一个 OpenSpec change 步步推进并最终关闭计划？ |
 
 ## 工作原则
 
@@ -127,4 +127,3 @@ P0 reproducible inventory and candidate classification
 本目录是分析和执行路线，不是 active change。每个被准入的批次先用 OpenSpec 建立自己的
 Focus Card、owning capability delta、迁移/删除条件和测试任务。实施状态只记录在该 change 的
 `tasks.md`；本计划只更新候选 disposition 与阶段关卡，不建立第二个逐文件任务账本。
-
