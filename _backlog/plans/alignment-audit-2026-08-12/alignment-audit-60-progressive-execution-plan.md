@@ -6,7 +6,7 @@
 > 计划重排时 HEAD: `ac6989abb46b22a9b0cf50e8a53b47341d762750`
 > 执行基线: 尚未锁定；开始每个 Stage 时重新记录 HEAD
 > 当前状态: **STAGE 7 CLOSED - ALIGNMENT AUDIT PLAN COMPLETE**
-> 最近归档的 OpenSpec change: `2026-08-13-reconcile-policy-routing-cardinality`
+> 最近归档的 OpenSpec change: `2026-08-13-establish-gitlink-boundary-detector`
 > 当前 active OpenSpec change: 无
 
 本计划执行时必须同时阅读
@@ -558,8 +558,9 @@ formatter-only maintenance。A-002 保持 open。
 - [x] 7.3 已对 A-001..A-009 按 current non-archive authority 逐项重新取证；没有因 archive
   自动关闭任何 finding，见
   [Stage 7 final matrix](alignment-audit-60-adjustments/stage-7-reaudit/02-current-authority-final-matrix.md)。
-- [x] 7.4 A-002 仍是 `DEFERRED-CODE-CHANGE`；没有自动 gitlink detector。独立 owner 已登记为
-  [A-002 backlog candidate](../../todos/todo-a002-gitlink-boundary-detector.md)。
+- [x] 7.4 Stage 7 closeout 当时 A-002 仍是 `DEFERRED-CODE-CHANGE`，没有自动 gitlink detector；
+  因而登记了独立 owner。该后续工作随后已完成，见“关闭后交接状态”的 A-002 closeout 与
+  [DONE-002](../../_done/_done_todos/todo-a002-gitlink-boundary-detector.md)。
 - [x] 7.5 A-009 仍只声称 ID-level traceability；semantic mapping 仍为 `OPTIONAL-HARDENING`，
   并已登记 [A-009 backlog candidate](../../todos/todo-a009-risk-based-semantic-traceability.md)。
 - [x] 7.6 A-003/A-004 的 required behavior、bounded current inspection 与 deferred work 均有明确
@@ -581,7 +582,7 @@ formatter-only maintenance。A-002 保持 open。
 - [x] Main spec 的每次语义变化都有产品决定和 OpenSpec change，不是静默追随实现。
 - [x] 每个 adjustment 的内容、风险、可能副作用、控制与实际观察均可逐项追溯。
 - [x] 未实现能力全部标 `planned`、`dormant` 或 `deferred`，不冒充 current。
-- [x] A-002 与 A-009 保持开放，但没有假绿或过度证明声明。
+- [x] A-002 已由独立 metadata-only detector change 关闭；A-009 保持开放，但没有假绿或过度证明声明。
 - [x] alignment 主线未修改 Python、tests、runtime contracts、governance executables 或
   `deerflow/`。
 - [x] 全量验证结果及其不能证明的部分均已记录。
@@ -609,8 +610,10 @@ formatter-only maintenance。A-002 保持 open。
 完整的归档后结论、验证范围和不应过度声称的边界见
 [Stage 7 N-002 closeout](alignment-audit-60-adjustments/stage-7-reaudit/03-n002-post-archive-closeout.md)。
 
-后续不再属于本计划：A-004-T01 是独立的 scenario-title rename tooling 调查；A-009 仅在高风险
-requirement change 需要更强保证时才启动。它们的顺序、风险和重启条件见
+后续不再属于本计划：A-004-T01 的 owner 调查已完成，确认它是外部 OpenSpec CLI 的
+scenario-identity/rename 能力缺口，而不是本仓或 DeerFlow 的实施项。除非获得对
+`Fission-AI/OpenSpec` 外部协作或已支持版本升级的单独授权，它没有本仓可安全执行的下一步；A-009
+仅在高风险 requirement change 需要更强保证时才启动。它们的顺序、风险和重启条件见
 [active todo index](../../todos/README.md)。
 
 ## 关闭后交接状态
@@ -645,3 +648,13 @@ alignment audit 的 scope。
   [A-002 archive closeout](alignment-audit-60-adjustments/a002-gitlink-detector-apply/02-a002-archive-closeout-review.md)。
   A-002 todo 已移至 [DONE-002](../../_done/_done_todos/todo-a002-gitlink-boundary-detector.md)；没有
   自动启动 A-004-T01 或 A-009。
+- [x] 2026-08-13：已完成 A-004-T01 的只读 owner 调查。安装的
+  `@fission-ai/openspec@1.8.0` 用 scenario 标题字符串判断 `MODIFIED` requirement 是否会丢失既有
+  scenario；同一函数同时供 strict validate 与 archive 使用，且只实现 requirement 级 rename，未实现
+  scenario-level mapping 或 stable ID。因此两处 legacy RER 标题不能由本仓 governance checker、Harness
+  或 DeerFlow 安全地修复。最小 no-write 复现仅替换两条标题时仍报告旧标题缺失；正文的 Bundle-local
+  contract 未改变。完整的 owner、风险、证据与重启条件见
+  [A-004-T01 owner research](alignment-audit-60-adjustments/a004t01-scenario-rename-owner-research/a004t01-scenario-rename-owner-research.md)。
+  当前 disposition 是 `DEFERRED-EXTERNAL-TOOLING`: 保留标题作为 validation-compatible identifiers，
+  等待用户单独授权上游 Fission-AI/OpenSpec issue/proposal/PR 或明确支持该能力的版本升级调查；没有
+  自动启动 A-009，也没有外部写入、CLI patch、RER spec 或 `deerflow/` 改动。

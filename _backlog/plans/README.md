@@ -33,7 +33,7 @@
 
 | Dossier | 状态 | 关闭日期 | 说明 |
 |---------|------|----------|------|
-| [alignment-audit-2026-08-12/](alignment-audit-2026-08-12/alignment-audit-00-current-state.md) | Closed | 2026-08-13 | 七阶段对齐审计已完成；后续独立事项仅为 A-002、A-004-T01 与 A-009，见其 [active todo index](../todos/README.md)。 |
+| [alignment-audit-2026-08-12/](alignment-audit-2026-08-12/alignment-audit-00-current-state.md) | Closed | 2026-08-13 | 七阶段对齐审计及其 A-002 gitlink detector 后续均已完成；A-004-T01 等待外部 OpenSpec 能力，A-009 是尚未触发的可选 hardening，见其 [active todo index](../todos/README.md)。 |
 
 ## 已归档（移至 `_done/_closed_plans/`）
 
