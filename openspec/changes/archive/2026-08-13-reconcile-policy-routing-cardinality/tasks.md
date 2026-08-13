@@ -67,7 +67,7 @@
     `git -C deerflow status --porcelain=v1 --untracked-files=all` is empty; and
     `git diff --submodule=short` has no gitlink diff. These are manual observations,
     not automatic future protection.
-- [ ] 3.2 After separate archive authorization, archive the completed change through
+- [x] 3.2 After separate archive authorization, archive the completed change through
   the normal OpenSpec workflow, re-run the post-archive strict/doctor/Charter checks,
   update N-002 as completed, and re-audit the Stage 7 ledger before closing the
   alignment plan.

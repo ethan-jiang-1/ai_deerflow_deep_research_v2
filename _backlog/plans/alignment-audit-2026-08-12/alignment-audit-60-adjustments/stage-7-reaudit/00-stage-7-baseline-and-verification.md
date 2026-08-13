@@ -3,7 +3,9 @@
 > Stage: 7 - Final Honest Re-Audit
 > Date: 2026-08-13
 > Authorization: user instruction `继续` after the Stage 6 archive and commit
-> Status: **AUDIT COMPLETE - PLAN CLOSEOUT BLOCKED BY N-002**
+> Initial status: **AUDIT COMPLETE - PLAN CLOSEOUT BLOCKED BY N-002**
+> Final status: **N-002 REMEDIATED POST-AUDIT - PLAN CLOSED**; see
+> [post-archive closeout](03-n002-post-archive-closeout.md).
 
 ## Scope And Boundary
 

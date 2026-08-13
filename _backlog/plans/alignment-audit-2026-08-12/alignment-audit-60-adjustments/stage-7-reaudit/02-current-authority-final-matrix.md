@@ -3,7 +3,10 @@
 > Date: 2026-08-13
 > Baseline: `198cf290146b4308e7a8da432d28abd46aca51d1`
 > Scope: current non-archive authority, implementation evidence, and deterministic gates
-> Status: **NO NEW UNREGISTERED FINDING**
+> Initial status: **NO NEW UNREGISTERED FINDING**
+> Final closeout: N-002 was resolved by the archived
+> `2026-08-13-reconcile-policy-routing-cardinality` change; see
+> [post-archive closeout](03-n002-post-archive-closeout.md).
 
 ## Classification Rule
 
@@ -24,7 +27,7 @@ history and are never used as a reason to reopen or rewrite current authority.
 | A-005 | **Resolved within audited scope** | The factual Workspace/Bundle relation, completed-work tense, and stale archived-plan dependency were corrected. C-006 was withdrawn because it was not a verified mismatch. | No current remediation action. |
 | A-006 | **Resolved within audited scope** | Over-broad all-node smoke and standalone readable-report claims were removed; only the A-003 boundary remains where it belongs. | No current remediation action. |
 | A-007 | **Resolved within audited scope** | Final report remains a Bundle artifact, Support Handoff is `planned`, and the dedicated Primary User TUI route is `dormant`. Stage 6 adds no post-loss fallback. | A future Support Handoff needs independent retention/availability design. |
-| A-008 | **Open - N-002 no-code authority residue** | `openspec/agent-charter/README.md` and `openspec/config.yaml` require every actually triggered policy / comma-separated canonical policies, while `openspec/policies/README.md:7` and DRC-001 say `one relevant policy`. | [N-002 candidate](../../../../todos/todo-n002-policy-routing-cardinality.md) requires a small owned main-spec/policy-index correction before this plan can close. |
+| A-008 | **Resolved post-audit** | The archived N-002 change aligned the policy-library index, authoring context, Harness Focus Gate, and DRC-001: every route-table trigger selects its canonical policy, while one primary causal owner remains and policy is guidance-only. | [N-002 closeout](03-n002-post-archive-closeout.md). |
 | A-009 | **Open - `OPTIONAL-HARDENING`** | Requirement coverage validates alive IDs against `@impl` references. Current evidence policy deliberately centralizes richer proof only for selected policy/inventory requirements. | [A-009 candidate](../../../../todos/todo-a009-risk-based-semantic-traceability.md) is optional; it must not create a duplicate exhaustive test catalog. |
 
 ## Registered Deferred Work
@@ -33,10 +36,9 @@ history and are never used as a reason to reopen or rewrite current authority.
 | --- | --- | --- | --- |
 | A-002 | `DEFERRED-CODE-CHANGE` | Manual gitlink checks cannot mechanically protect a future pointer or nested-worktree change. | [gitlink-boundary detector](../../../../todos/todo-a002-gitlink-boundary-detector.md) |
 | A-004-T01 | `DEFERRED-TOOLING-CHANGE` | Current RER scenario bodies are correct, but two legacy titles cannot be renamed under current strict OpenSpec delta validation. | [scenario-rename validator](../../../../todos/todo-a004t01-openspec-scenario-rename-validator.md) |
-| N-002 | current no-code inconsistency | Singular policy wording conflicts with the canonical multi-policy route and proposal grammar. | [policy-routing cardinality](../../../../todos/todo-n002-policy-routing-cardinality.md) |
 | A-009 | `OPTIONAL-HARDENING` | ID-level coverage is intentionally not assertion-semantic traceability. | [risk-based semantic traceability](../../../../todos/todo-a009-risk-based-semantic-traceability.md) |
 
-No new product-behavior or runtime conformance finding was discovered. `N-002` is the
-only remaining no-code current-authority mismatch, so it prevents a truthful close of
-the alignment plan. The other three items are accurately disclosed independent backlog
-work and must not be silently implemented as part of a documentation cleanup.
+No new product-behavior or runtime conformance finding was discovered. The initial
+N-002 authority mismatch has since been resolved and archived; the other three items
+remain accurately disclosed independent backlog work and must not be silently
+implemented as part of a documentation cleanup.

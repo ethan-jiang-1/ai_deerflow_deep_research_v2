@@ -5,8 +5,8 @@
 > 原始审计证据快照: `65df2571108cc6b4b81f55d3ba8542786a810b39`
 > 计划重排时 HEAD: `ac6989abb46b22a9b0cf50e8a53b47341d762750`
 > 执行基线: 尚未锁定；开始每个 Stage 时重新记录 HEAD
-> 当前状态: **STAGE 7 RE-AUDIT COMPLETE - PLAN BLOCKED BY N-002**
-> 最近归档的 OpenSpec change: `2026-08-13-normalize-post-decision-terminology-status`
+> 当前状态: **STAGE 7 CLOSED - ALIGNMENT AUDIT PLAN COMPLETE**
+> 最近归档的 OpenSpec change: `2026-08-13-reconcile-policy-routing-cardinality`
 > 当前 active OpenSpec change: 无
 
 本计划执行时必须同时阅读
@@ -129,7 +129,7 @@ adjustment 不得 apply，也不得勾选对应完成 checkbox。
 | 4 | `reconcile-evaluation-rubric-authority` | A-003 | 否；实现差异 defer | `[x] Archived; bounded local conformance, no observed deferred gap` |
 | 5 | `reconcile-post-loss-diagnostic-authority` | A-004 | 否；实现差异 defer | `[x] Archived; bounded local conformance, A-004-T01 tooling residue remains` |
 | 6 | `normalize-post-decision-terminology-status` | A-003/A-004 的 CONTEXT/ADR 收口 | 否 | `[x] Archived; no active change; D-001/D-002 no observed side effects within bounded checks` |
-| 7 | 无，最终 re-audit | A-001..A-009 | 否 | `[ ] Requires separate authorization` |
+| 7 | 无，最终 re-audit | A-001..A-009 | 否 | `[x] Completed; alignment audit plan closed` |
 
 ## Stage 0 - Decision And Scope Lock
 
@@ -517,7 +517,7 @@ formatter-only maintenance。A-002 保持 open。
 - [x] CONTEXT 只定义语言，不复制 requirement、ADR 论证或 change task。
 - [x] Specs、ADR applicability 和 glossary 不再对 A-003/A-004 给出互斥答案。
 - [x] 所有已知实现/证明差异均以 bounded evidence 或 deferred gap 明示。
-- [ ] No-code diff；无 active change；已停止并取得 Stage 7 授权。
+- [x] No-code diff；无 active change；已停止、完成 Stage 7 并关闭 audit plan。
 
 ### Stage 6 Planning Evidence
 
@@ -542,7 +542,7 @@ formatter-only maintenance。A-002 保持 open。
   [Stage 6 apply evidence](alignment-audit-60-adjustments/stage-6-apply/)。
 - [x] 2026-08-13：已取得独立 archive/commit authorization；正常 OpenSpec workflow 以
   `--skip-specs` 归档至 `2026-08-13-normalize-post-decision-terminology-status`，无 delta/main
-  spec sync。归档后检查、最终 disposition 和仍然未获授权的 Stage 7 见
+  spec sync。归档后检查、最终 disposition 和当时仍未获授权的 Stage 7 见
   [Stage 6 post-archive baseline](alignment-audit-60-adjustments/stage-6-apply/06-stage-6-post-archive-baseline.md)。
 
 ## Stage 7 - Final Honest Re-Audit
@@ -567,13 +567,17 @@ formatter-only maintenance。A-002 保持 open。
 - [x] 7.7 已更新 `alignment-audit-00-current-state.md` 的 Stage 7 final matrix，同时保留
   2026-08-12 原始审计快照。
 - [x] 7.8 已为仍需代码/工具或可选 hardening 的事项建立独立 backlog candidates；本 Stage 未实施它们。
-- [ ] 7.9 **Blocked by N-002:** no-code alignment 尚未全部完成。必须先以独立小 change 消除
-  policy-cardinality 的 current main-spec/policy-index 矛盾；开放缺口已经准确披露。
+- [x] 7.9 N-002 已通过独立 change `2026-08-13-reconcile-policy-routing-cardinality` 修正并归档；
+  policy-library index、authoring route、Harness Focus Gate 与 DRC-001 现在均要求选择所有
+  route-table trigger 实际适用的 canonical policy，同时保持一个 primary causal owner 与
+  guidance-only boundary。归档后 strict/doctor/Charter/coverage/whitespace 均通过，详见
+  [Stage 7 N-002 closeout](alignment-audit-60-adjustments/stage-7-reaudit/03-n002-post-archive-closeout.md)。
 
 ### Definition Of Done
 
 - [x] 已被事实证伪的历史概念不再污染 current authority。
-- [ ] 文档之间不再互相矛盾；N-002 的 policy-cardinality current-authority 矛盾仍待独立 change。
+- [x] 文档之间不再互相矛盾；N-002 的 policy-cardinality current-authority 矛盾已由独立 change
+  修正并归档。
 - [x] Main spec 的每次语义变化都有产品决定和 OpenSpec change，不是静默追随实现。
 - [x] 每个 adjustment 的内容、风险、可能副作用、控制与实际观察均可逐项追溯。
 - [x] 未实现能力全部标 `planned`、`dormant` 或 `deferred`，不冒充 current。
@@ -599,12 +603,13 @@ formatter-only maintenance。A-002 保持 open。
 
 ## 当前下一动作
 
-Stage 7 已完成最终诚实复审。A-001、A-003、A-004、A-005、A-006 和 A-007 已在其明确边界内
-关闭；A-002 仍为 `DEFERRED-CODE-CHANGE`，A-004-T01 仍为 `DEFERRED-TOOLING-CHANGE`，A-009
-仍为 `OPTIONAL-HARDENING`。它们均已有独立 backlog candidate，不能由本计划静默实施。
+本 alignment audit plan 已完成并关闭。A-001、A-003、A-004、A-005、A-006、A-007 和 A-008/N-002
+均已在其明确证据边界内关闭；N-002 的 archived change 是
+[`2026-08-13-reconcile-policy-routing-cardinality`](../../../openspec/changes/archive/2026-08-13-reconcile-policy-routing-cardinality/)。
+完整的归档后结论、验证范围和不应过度声称的边界见
+[Stage 7 N-002 closeout](alignment-audit-60-adjustments/stage-7-reaudit/03-n002-post-archive-closeout.md)。
 
-本计划尚不能关闭：N-002 是唯一当前 no-code authority 残差，`openspec/policies/README.md` 与
-DRC-001 的 singular policy wording 必须与已生效的 multiple-trigger route 对齐。独立 planning 已完成：
-[reconcile-policy-routing-cardinality](../../../openspec/changes/reconcile-policy-routing-cardinality/)
-现有 validated proposal、DRC-001 delta、design 和 task checklist。下一件工作是取得独立 apply
-authorization；完成、归档并重新核验后，才可回来勾选 7.9 并关闭本 audit plan。
+后续不再属于本计划：A-002 是下一条独立的高优先级治理路线，需先设计 gitlink/nested-worktree
+detector 的允许基线、intentional bump admission 和最低测试 seam；A-004-T01 是独立的
+scenario-title rename tooling 调查；A-009 仅在高风险 requirement change 需要更强保证时才启动。
+它们的顺序、风险和重启条件见 [active todo index](../../todos/README.md)。

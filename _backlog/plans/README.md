@@ -1,6 +1,6 @@
-# Active Plans — 活跃 plan/分析文档列表
+# Plans — plan/分析文档索引
 
-> 最后更新: 2026-08-12 | `_backlog/plans/` — 活跃 plan 在此，完成移入 [`../_done/_closed_plans/`](../_done/_closed_plans/)。
+> 最后更新: 2026-08-13 | `_backlog/plans/` — 活跃 plan 在此，完成的普通 plan 移入 [`../_done/_closed_plans/`](../_done/_closed_plans/)。
 >
 > **plan 没有编号，文件名即标识。完成后文件名不变，位置即状态。**
 
@@ -19,11 +19,21 @@
 
 | Plan | 说明 |
 |------|------|
-| [alignment-audit-2026-08-12/](alignment-audit-2026-08-12/alignment-audit-00-current-state.md) | `alignment-audit-*` 七文档审计/计划集；对齐 Harness、main specs、全部仓库自有 CONTEXT 与 OpenSpec 治理，并以 progressive checkbox 账本编排逐个 OpenSpec change |
+
+目前无活跃 plan。
 
 新的分析或设计应在此创建，完成后再移入归档。
 
 **Next available plan ID: CLS-037**（移入 `_closed_plans/` 时分配）
+
+## 已完成、原地保留的审计档案
+
+下列目录是用户指定保留在原路径的多文件审计 dossier；它不再是活跃工作，也不分配 `CLS` 编号。
+原地保留避免打断其中的逐项风险记录、验证证据和 OpenSpec archive 相对链接。
+
+| Dossier | 状态 | 关闭日期 | 说明 |
+|---------|------|----------|------|
+| [alignment-audit-2026-08-12/](alignment-audit-2026-08-12/alignment-audit-00-current-state.md) | Closed | 2026-08-13 | 七阶段对齐审计已完成；后续独立事项仅为 A-002、A-004-T01 与 A-009，见其 [active todo index](../todos/README.md)。 |
 
 ## 已归档（移至 `_done/_closed_plans/`）
 
