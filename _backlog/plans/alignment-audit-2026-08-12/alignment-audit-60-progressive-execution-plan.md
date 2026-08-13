@@ -5,9 +5,9 @@
 > 原始审计证据快照: `65df2571108cc6b4b81f55d3ba8542786a810b39`
 > 计划重排时 HEAD: `ac6989abb46b22a9b0cf50e8a53b47341d762750`
 > 执行基线: 尚未锁定；开始每个 Stage 时重新记录 HEAD
-> 当前状态: **STAGE 5 ARCHIVED - STAGE 6 PLANNING NOT AUTHORIZED**
+> 当前状态: **STAGE 6 PLANNING COMPLETE - APPLY NOT AUTHORIZED**
 > 最近归档的 OpenSpec change: `2026-08-13-reconcile-post-loss-diagnostic-authority`
-> 当前 active OpenSpec change: 无
+> 当前 active OpenSpec change: `normalize-post-decision-terminology-status`（planning complete；`skip_specs: true`）
 
 本计划执行时必须同时阅读
 [55 - Cleanup Decision Record](alignment-audit-55-cleanup-decision-record.md) 和
@@ -128,7 +128,7 @@ adjustment 不得 apply，也不得勾选对应完成 checkbox。
 | 3 | 无，只读 re-audit | 降噪后重建 A-001..A-009 ledger | 否 | `[x] Complete; Stage 4 planning authorized` |
 | 4 | `reconcile-evaluation-rubric-authority` | A-003 | 否；实现差异 defer | `[x] Archived; bounded local conformance, no observed deferred gap` |
 | 5 | `reconcile-post-loss-diagnostic-authority` | A-004 | 否；实现差异 defer | `[x] Archived; bounded local conformance, A-004-T01 tooling residue remains` |
-| 6 | `normalize-post-decision-terminology-status` | A-003/A-004 的 CONTEXT/ADR 收口 | 否 | `[ ] Ready for separate planning authorization` |
+| 6 | `normalize-post-decision-terminology-status` | A-003/A-004 的 CONTEXT/ADR 收口 | 否 | `[x] Planning complete; docs-only APPLY awaits separate authorization` |
 | 7 | 无，最终 re-audit | A-001..A-009 | 否 | `[ ] Blocked by Stage 6` |
 
 ## Stage 0 - Decision And Scope Lock
@@ -485,20 +485,25 @@ formatter-only maintenance。A-002 保持 open。
 
 这两项不是独立产品决定，只能在相应前置决定已完成后进入 planning：
 
-- [ ] 6.R1 [D-001 Rubric / Runner terminology](alignment-audit-60-adjustments/alignment-audit-60-19-d001-rubric-runner-terminology.md)
-- [ ] 6.R2 [D-002 post-loss diagnostic terminology](alignment-audit-60-adjustments/alignment-audit-60-20-d002-post-loss-diagnostic-terminology.md)
+- [x] 6.R1 [D-001 Rubric / Runner terminology](alignment-audit-60-adjustments/alignment-audit-60-19-d001-rubric-runner-terminology.md)
+- [x] 6.R2 [D-002 post-loss diagnostic terminology](alignment-audit-60-adjustments/alignment-audit-60-20-d002-post-loss-diagnostic-terminology.md)
 
 - [ ] 6.0 为 D-001、D-002 分别填写 Adjustment Record，并在 apply 后回填实际副作用。
-- [ ] 6.1 以 Stages 4-5 的 accepted specs 为唯一 required-behavior 来源，重新列出受影响
-  CONTEXT/ADR 语句。
-- [ ] 6.2 CLI scaffold docs-only change；Focus Card 不拥有 runtime behavior。
+- [x] 6.1 以 Stages 4-5 的 accepted specs 为唯一 required-behavior 来源，重新列出受影响
+  CONTEXT/ADR 语句；完整 before/after、allowlist 与 evidence boundary 见
+  [Stage 6 planning record](alignment-audit-60-adjustments/stage-6-planning/00-stage-6-planning-baseline-and-adjustment-records.md)。
+- [x] 6.2 CLI scaffold docs-only change；Focus Card 不拥有 runtime behavior；proposal、design、
+  tasks 已完成，`skip_specs: true` 已由 strict validation 接受。
 - [ ] 6.3 同步 Rubric/Runner 的 glossary 和 ADR applicability，不扩大已决定合同。
 - [ ] 6.4 同步 External Run Observation、Support Handoff 与 Bundle-loss 术语；分别说明
   retention、supported readability 和 participant presentation。
 - [ ] 6.5 若存在 deferred code gap，current behavior 与 required behavior 分开陈述，不能
   用统一术语掩盖不一致。
 - [ ] 6.6 复核 Stage 2 的 current/planned/dormant 状态仍成立；不重新激活 dormant 路线。
-- [ ] 6.7 Strict validate、人工 review、单独 apply authorization。
+- [x] 6.7a Strict validate、doctor、Charter checker、whitespace 和人工 planning review 已通过；
+  这些只证明 planning/doc governance，不证明 apply 或 current behavior。
+- [ ] 6.7b 获得单独 docs-only apply authorization；planning completion、validation 或此前
+  Stage 的授权均不构成 apply authorization。
 - [ ] 6.8 Apply/archive 后运行 docs/governance/full read-only verification。
 
 ### Gate 6
@@ -507,6 +512,20 @@ formatter-only maintenance。A-002 保持 open。
 - [ ] Specs、ADR applicability 和 glossary 不再对 A-003/A-004 给出互斥答案。
 - [ ] 所有实现差异均以 deferred gap 明示。
 - [ ] No-code diff；无 active change；已停止并取得 Stage 7 授权。
+
+### Stage 6 Planning Evidence
+
+- [x] 2026-08-13：OpenSpec planning artifacts 完成且
+  `openspec validate normalize-post-decision-terminology-status --strict`、
+  `openspec doctor --json`、`python3 openspec/governance/check_agent_charter.py` 和
+  `git diff HEAD --check` 通过。唯一 future-apply allowlist 是 `CONTEXT.md` 的精确
+  glossary occurrences、ADR 0006 的既有 postscript 与 ADR 0025 的新增 postscript；用户的
+  concept-map worktree hunk 受保护。详见
+  [Stage 6 planning record](alignment-audit-60-adjustments/stage-6-planning/00-stage-6-planning-baseline-and-adjustment-records.md)
+  与 [Stage 6 planning validation](alignment-audit-60-adjustments/stage-6-planning/01-stage-6-planning-validation.md)。
+- [ ] 任何 target 文档 edit 前，必须重新 capture protected worktree baseline，获得明确
+  `APPLY` 授权，并为 D-001/D-002 建立 apply-time Adjustment Record。archive/commit 仍是
+  后续单独 gate。
 
 ## Stage 7 - Final Honest Re-Audit
 

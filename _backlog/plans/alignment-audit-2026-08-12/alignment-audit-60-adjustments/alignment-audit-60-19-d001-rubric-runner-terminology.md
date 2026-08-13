@@ -2,7 +2,7 @@
 
 > Stage: 6 - `normalize-post-decision-terminology-status`
 > 类型: conditional terminology sync
-> 状态: **WAITING FOR A-003 DECISION**
+> 状态: **STAGE 6 PLANNING COMPLETE - APPLY NOT AUTHORIZED**
 
 ## 调整内容到底是什么
 
@@ -22,11 +22,17 @@ historical wording 与 current contract。
 
 - 每个句子追溯到 accepted requirement；无法映射的句子不改并登记。
 - 若 required/current 仍不一致，必须显式显示 gap。
-- A-003 未选择前，本文件不得进入 planning 或 apply。
+- A-003 已在 Stage 4 选定并同步；本文件只允许其既有决定进入 Stage 6 planning，仍不得
+  以此授权 apply。
 
 ## 审阅结论
 
-- [ ] 调整内容准确
-- [ ] 风险与副作用已充分披露
-- [ ] 条件同步方式获准；等待 A-003
+- [x] 调整内容准确：只投影 Stage 4 已接受的 metadata/content/verdict 边界。
+- [x] 风险与副作用已充分披露：见 Stage 6 D-001 Adjustment Record。
+- [x] 条件同步方式获准；A-003 已完成，Stage 6 planning 已获授权。
 - [ ] 需要修改或补充，原因：
+
+Stage 6 planning 的 closed occurrence allowlist、Before/After、风险、副作用、控制和
+verification 记录于
+`stage-6-planning/00-stage-6-planning-baseline-and-adjustment-records.md`。任何实际 glossary
+或 ADR 修改仍等待单独 `APPLY` 授权。
