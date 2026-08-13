@@ -28,7 +28,9 @@ prompt builder, and feedback are the first modification seam; a parser, gate, ro
 bridge edit is a guardrail, not a substitute. Declare `Seam classification` on the Focus
 Card and follow the
 [local-context policy](../openspec/policies/local-context.md)
-seam rule before a deterministic edit for a node symptom.
+seam rule before a deterministic edit for a node symptom. For the one-page terminology
+map that routes each term to its first edit, see the
+[concept map](../openspec/agent-charter/concepts.md).
 
 | Central question | Primary owner to inspect first |
 | --- | --- |

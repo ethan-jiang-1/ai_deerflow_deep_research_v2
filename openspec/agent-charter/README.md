@@ -38,6 +38,7 @@ has one primary module or causal owner.
 
 | Kind of statement | Canonical home | Does not own |
 |---|---|---|
+| Durable concept vocabulary / terminology map | [concepts.md](concepts.md) | Behavior, routes, or a per-change rule |
 | Durable, cross-capability Deep Research principle | [charter.md](charter.md) | Runtime behavior or a one-off feature contract |
 | Repeated design/review rule with a concrete trigger | `../policies/<topic>.md` | State fields, routes, commands, or permissions |
 | Observable behavior, schema, action, or security boundary | Owning capability main spec and active delta | A different capability's behavior |
