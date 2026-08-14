@@ -3,7 +3,7 @@
 > 导航: [执行层索引](README.md) | [Candidate Register](candidate-register.md) | [根总导航](../README.md)
 > 角色: 最终逐步执行总计划
 > 输入: [70-78 findings](../02-audit-findings/) 的54个最终Candidate；change映射以 [80 - Remediation Change Map](80-remediation-change-map.md) 为准
-> 状态: 00 已于 2026-08-14 archive 并同步 main spec（commit `8661693`）；01 已于同日 archive 并同步 main spec（commit `47a3bb5`）；02 已于同日 archive 并同步 main spec（commit `9b68e4d`，全量验证的范围外 node-agent 基线失败已如实记录为 evidence-limited）；03 已于同日 archive 并同步 main spec（commit `84d533a`）；04 已于同日 archive 并同步 main spec（commits `4ef1d69`、`8a18dbd`）；05 为唯一 active program change：proposal 已完成、强制 polish 已通过并 `ready for apply`；06、07 分别仍等待其列出的 input/support 或 retained-data inventory。全局预算8个change（00-07）；checkbox只记录change closure，不替代active change的 `tasks.md`
+> 状态: 00 已于 2026-08-14 archive 并同步 main spec（commit `8661693`）；01 已于同日 archive 并同步 main spec（commit `47a3bb5`）；02 已于同日 archive 并同步 main spec（commit `9b68e4d`，全量验证的范围外 node-agent 基线失败已如实记录为 evidence-limited）；03 已于同日 archive 并同步 main spec（commit `84d533a`）；04 已于同日 archive 并同步 main spec（commits `4ef1d69`、`8a18dbd`）；05 已于 2026-08-15 archive 并同步 main spec（commit `4d91571`）；06 已于同日 archive 并同步 main spec（commit `69a2dcd`）；07 仍等待其列出的 retained-data inventory。全局预算8个change（00-07）；checkbox只记录change closure，不替代active change的 `tasks.md`
 
 ## Propose 后强制 Polish
 
@@ -275,14 +275,19 @@ Demo/TUI/Gateway、`requires_llm`、`release_e2e`、Postgres、external Python-c
 
 创建06前一次关闭host trusted-context producer、supported deployment config/provider和AppConfig version inventories。
 
-- [ ] **06 `converge-runtime-input-compatibility`**: EC-C05/C07、PC-C07、RC-C04。
+- [x] **06 `converge-runtime-input-compatibility`**: EC-C05/C07、PC-C07、RC-C04。已 archive 并同步 main spec（`69a2dcd`）。
 
 `trusted-context` workstream决定`disable_clarification`到`non_interactive`的support window、notice、stale denial与
 rollback。`deployment-config` workstream分别决定checkpointer precedence与endpoint field aliases；共享inventory，
 不共享语义决定。owner决定继续支持时，在原workstream落实bounded support、guard和review/removal trigger。
 
-**Gate G:** marker/config输入要么迁移删除，要么有批准的bounded support owner；unsupported、conflicting、stale
-input继续fail closed；old-root、mount/config drift guards仍可证伪。
+**Gate G:** 已关闭。唯一支持的 trusted marker 是带闭合 policy 的 `non_interactive=true`；任何
+`disable_clarification=true` 在 Bundle、sandbox、graph 或 policy write 前返回 `interactive_required`。
+`database` 是唯一 provider-classification input，任何非空 legacy `checkpointer` 在 factory/open 前以
+`legacy_checkpointer_unsupported` 被拒绝，且 GraphHost/diagnostics 保持同一不泄漏投影。endpoint observation
+仅来自 exact selected `base_url`；`openai_api_base` 或 `api_base`（单独或同时出现）都只导致无 observation，
+不能影响 model/provider/retry/route/lifecycle。旧 root、mount/config drift guards 仍为可证伪 guard；应急恢复只允许
+经批准的完整本地 reader hotfix/revert，不能重新引入局部 compatibility switch。
 
 **06 post-04 recheck（2026-08-14，`30edb6e`）:** `disable_clarification` alias与 legacy `checkpointer`
 precedence仍是当前受测行为，endpoint alias reader仍接收 external AppConfig shape。仓内 tests只能证明当前 canonical
@@ -290,11 +295,22 @@ writer、conflict与fail-closed behavior，不能枚举 trusted-context producer
 versions。Runtime/Deployment Owner仍须分别决定 marker support window、checkpointer precedence和 endpoint alias
 support，再提供 notice、denial与 rollback route；focused baseline tests已通过（149 passed），不构成这些决定。
 
-**06 post-05 recheck（2026-08-15）:** 05已 archive，但没有改变`disable_clarification`、legacy `checkpointer`
-precedence或 AppConfig endpoint alias的support contract，也没有提供 trusted-context producer、deployment provider或
-supported AppConfig version inventory。因此 Gate G仍为`not ready`：Runtime/Deployment Owner必须为 EC-C05/C07、PC-C07
-与RC-C04分别授权迁移/明确拒绝/有期限 support，并给出notice、denial、rollback、review/removal trigger与完成计数；
-不得把05对外部 profile/proposal/Bundle inputs的reject decision外推到deployment configuration。
+**06 post-05 recheck（2026-08-15）:** 05已 archive，但当时尚未改变`disable_clarification`、legacy
+`checkpointer` precedence或 AppConfig endpoint alias的support contract，也没有提供 trusted-context producer、deployment
+provider或 supported AppConfig version inventory。因此当时 Gate G为`not ready`：Runtime/Deployment Owner必须为
+EC-C05/C07、PC-C07与RC-C04分别授权迁移/明确拒绝/有期限 support，并给出notice、denial、rollback、review/removal
+trigger与完成计数；不得把05对外部 profile/proposal/Bundle inputs的reject decision外推到deployment configuration。
+
+**06 authorization + closeout（2026-08-15）:** Runtime/Deployment clean-cutover decision已授权：不登记任何
+host producer、deployment provider 或 AppConfig version 的 support window；source-controlled canonical writer/local
+reader 是唯一 support inventory，其他 external/private producer/config 不被推断为空而是无 support promise。active
+program change `converge-runtime-input-compatibility` 通过强制 polish 后实现并 archive 于
+`openspec/changes/archive/2026-08-15-converge-runtime-input-compatibility/`。其 clean-cutover matrix 与
+archive-closeout 记录 EC-C05、EC-C07、PC-C07、RC-C04 及 EC-C03/RC-C05 guard 的各自 disposition；三份 main
+spec 已同步。trusted-context、provider/diagnostics、node bridge focused suites（35、95、110 passed）、
+`UV_OFFLINE=1 make verify`、requirements/specs/architecture/charter governance、strict OpenSpec 和 whitespace
+检查均通过。credentialed/external-runtime lanes 未运行，因为它们不能建立未登记的 support promise；gitlink
+`66b9e7f…` 和 `deerflow` worktree 保持不变且干净。提交为 `69a2dcd`。
 
 ## Phase H - Retained run data compatibility
 

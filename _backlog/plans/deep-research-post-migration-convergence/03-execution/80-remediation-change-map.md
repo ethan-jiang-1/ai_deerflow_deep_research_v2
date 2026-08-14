@@ -2,7 +2,7 @@
 
 > 导航: [执行层索引](README.md) | [默认执行入口](99-progressive-execution.md) | [Candidate Register](candidate-register.md)
 > 角色: 把 `70-78` 的 54 个最终 Candidate 映射成有界 OpenSpec changes、decision gates 与 non-regression obligations
-> 状态: 编排完成；00 governance bootstrap 已 archive（`8661693`）；01 已 archive 并同步 main spec（`47a3bb5`），其 16-ID budget 已关闭；03 已 archive 并同步 main spec（`84d533a`），其 9-ID budget 已关闭；04 已 archive 并同步 main spec（`4ef1d69`、`8a18dbd`），其 6 个 primary Candidate 与 attached evidence migration 已关闭；02 已获 User/Evaluation Owner 授权的 facade-only 与 retained-record rejection cutover，可创建 proposal；05、06、07仍分别等待 input/support 或 retained-data inventory。change names 是建议的稳定 slug，创建前仍须以当时 HEAD 复核
+> 状态: 编排完成；00 governance bootstrap 已 archive（`8661693`）；01 已 archive 并同步 main spec（`47a3bb5`），其 16-ID budget 已关闭；02 已 archive 并同步 main spec（`9b68e4d`）；03 已 archive 并同步 main spec（`84d533a`），其 9-ID budget 已关闭；04 已 archive 并同步 main spec（`4ef1d69`、`8a18dbd`），其 6 个 primary Candidate 与 attached evidence migration 已关闭；05 已 archive 并同步 main spec（`4d91571`）；06 已 archive 并同步 main spec（`69a2dcd`）；07仍等待 retained-data inventory。change names 是建议的稳定 slug，创建前仍须以当时 HEAD 复核
 > 硬约束: 全局预算 8 个 change（00-07）；一次一个 active change；上一 change archive 后才创建下一项
 
 ## Admission semantics
@@ -60,8 +60,8 @@ partial archive。
 | 02 | ordinary | `converge-evaluation-boundary-compatibility` | EV-C02, EV-C03, EV-C04 | EV-C05, TA-C04 | 已 archive（`9b68e4d`）：唯一 supported route 是`runtime.evaluation` facade；domain保留 fact authority，`.contracts`已删除。missing/unknown-layer Bundle/Review Record在 Review/quality claim 前明确拒绝，不写入、不回填或升级 provenance；紧急 rollback 仅恢复旧 reader。focused/gov/spec checks通过；范围外 node-agent fault-injection baseline 令全量验证保持 evidence-limited，未作 live/external/retained-data claim |
 | 03 | program | `converge-node-language-and-product-records` | NC-C01, NC-C02, NC-C03; EC-C02; OR-C03, OR-C05 | EV-C01, OR-C07, OR-C08 | 已 archive（`84d533a`）：两个 owner-scoped workstream关闭；九项 Candidate/obligation 已进入 archive 或 retained guard/history disposition；未运行 live/external evidence 已记录 |
 | 04 | ordinary | `converge-run-bundle-observation-authority` | RS-C01..C04, RC-C01, OR-C03 | RS-C05, EC-C01, PC-C05, TA-C04 | 已 archive（`4ef1d69`、`8a18dbd`）：`admit_refinement()`成为唯一admission route，workbench保留state-derived projection，`BundleLifecycle.refine()`、RUS/RES current capabilities已退役；RDO/RSV与evidence owner已迁移。07只重验RS-C05，未继承04之外的retained-data closure |
-| 05 | program | `converge-run-input-and-composition-contracts` | FM-C01, FM-C02, FM-C04; EC-C06; PC-C01, PC-C02; RC-C03; EV-C06 | FM-C03, PC-C05, RC-C05, TA-C04 | 01；composition与profile/proposal两个workstream共享一个终态：admitted run input只产生显式、诚实、版本明确的composition truth |
-| 06 | program | `converge-runtime-input-compatibility` | EC-C05, EC-C07, PC-C07, RC-C04 | EC-C03, RC-C05 | 01；trusted-context与deployment-config两个workstream分别关闭producer/support matrix，使host输入的shape、precedence和failure明确 |
+| 05 | program | `converge-run-input-and-composition-contracts` | FM-C01, FM-C02, FM-C04; EC-C06; PC-C01, PC-C02; RC-C03; EV-C06 | FM-C03, PC-C05, RC-C05, TA-C04 | 已 archive（`4d91571`）：fixture-graph proof成为唯一零凭据 route；旧 composition/profile/proposal/checkpoint input按批准 matrix拒绝，Python clean cutover和current guards均闭合 |
+| 06 | program | `converge-runtime-input-compatibility` | EC-C05, EC-C07, PC-C07, RC-C04 | EC-C03, RC-C05 | 已 archive（`69a2dcd`）：两个 owner-scoped workstream完成 clean cutover；canonical trusted marker与 `database` 是唯一 reader inputs，legacy marker/checkpointer 被拒绝，endpoint aliases 无 observation，whole-reader hotfix/revert 是唯一恢复 |
 | 07 | program | `converge-retained-run-data-compatibility` | PC-C03, PC-C04, PC-C06, RC-C06 | EV-C05, RS-C05 | 04；repair lifecycle与Run observation/result两个workstream完成dry-run、迁移/拒绝、rollback及old-reader closure；不伪造lifecycle或publication truth |
 
 Governance Owner 选择的推荐 repository-tracked route已随 01 关闭：tracked workflows 与 project-owned
