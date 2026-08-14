@@ -5,7 +5,7 @@
 > 应用/spec 取证基线: `5bb41c16a45ff3caae6e5b1e900610c91bf68336`
 > 审计综合 revision: `811203726cfa6478ceebdabc378daabce1b6758b`
 > 执行编排 revision: `91709e740fdafcb8275c2a182a61554342e2bd08`；8-change program budget
-> 状态: 本基线审计完成；54 个最终 Candidate；00 governance bootstrap 已 archive（`8661693`）；01 已 archive 并同步 main spec（`47a3bb5`）；其 16 个冻结 Candidate 已记录终态；0 active OpenSpec changes
+> 状态: 本基线审计完成；54 个最终 Candidate；00 governance bootstrap 已 archive（`8661693`）；01 已 archive 并同步 main spec（`47a3bb5`）；02 已 archive 并同步 main spec（`9b68e4d`，验证限制保留为 evidence-limited）；01 的16个冻结 Candidate与 EV-C02/C03/C04 已记录终态；0 active OpenSpec changes
 
 ## 使用规则
 
@@ -112,9 +112,9 @@
 | Candidate | Grounded disposition | Admission | Target / change |
 | --- | --- | --- | --- |
 | [EV-C01](../02-audit-findings/76-evaluation-boundary-findings.md#ev-c01---keep-the-evaluation-workspacebundlereviewrun-distinctions) | rechecked 03: keep distinctions | glossary contract preserves Workspace, Bundle, Review/Record, Run, and product Run Bundle terms | evaluation domain owners |
-| [EV-C02](../02-audit-findings/76-evaluation-boundary-findings.md#ev-c02---retain-missing-layer-compatibility-until-evaluation-bundle-data-closes) | authorized: reject unsupported missing/unknown-layer records, then retire default reader | explicit-layer records remain current; rejected input must not write or upgrade quality provenance | `runtime.evaluation` cutover / `converge-evaluation-boundary-compatibility` |
-| [EV-C03](../02-audit-findings/76-evaluation-boundary-findings.md#ev-c03---converge-evaluation-contract-imports-onto-one-supported-route) | authorized: facade-only support, then delete re-export module | `runtime.evaluation` is supported; `.contracts` has no third-party support promise | domain authority + facade / `converge-evaluation-boundary-compatibility` |
-| [EV-C04](../02-audit-findings/76-evaluation-boundary-findings.md#ev-c04---delete-the-unused-compute_metrics-shim) | delete | ready | typed metrics / `converge-evaluation-boundary-compatibility` |
+| [EV-C02](../02-audit-findings/76-evaluation-boundary-findings.md#ev-c02---retain-missing-layer-compatibility-until-evaluation-bundle-data-closes) | archived: missing/unknown layers reject before Review or quality claim; default reader retired | explicit-layer records remain current; planted records prove no write, default, backfill, or provenance upgrade | `runtime.evaluation` cutover / archive `9b68e4d` |
+| [EV-C03](../02-audit-findings/76-evaluation-boundary-findings.md#ev-c03---converge-evaluation-contract-imports-onto-one-supported-route) | archived: facade-only support; re-export module deleted | domain remains fact authority; facade identity and retired-module import failure are covered | domain authority + facade / archive `9b68e4d` |
+| [EV-C04](../02-audit-findings/76-evaluation-boundary-findings.md#ev-c04---delete-the-unused-compute_metrics-shim) | archived: zero-caller shim and export deleted | typed metrics and `ValidatedEvaluationOutcome` remain unchanged | typed metrics / archive `9b68e4d` |
 | [EV-C05](../02-audit-findings/76-evaluation-boundary-findings.md#ev-c05---retain-live-report-classification-and-fail-closed-archive-admission) | retain guard | non-regression | live evidence intake |
 | [EV-C06](../02-audit-findings/76-evaluation-boundary-findings.md#ev-c06---remove-evaluations-dependency-on-the-profile-parser-wrapper) | delete dependency | with PC-C02 | canonical profile parser / `converge-run-input-and-composition-contracts` |
 

@@ -3,7 +3,7 @@
 > 导航: [执行层索引](README.md) | [Candidate Register](candidate-register.md) | [根总导航](../README.md)
 > 角色: 最终逐步执行总计划
 > 输入: [70-78 findings](../02-audit-findings/) 的54个最终Candidate；change映射以 [80 - Remediation Change Map](80-remediation-change-map.md) 为准
-> 状态: 00 已于 2026-08-14 archive 并同步 main spec（commit `8661693`）；01 已于同日 archive 并同步 main spec（commit `47a3bb5`）；03 已于同日 archive 并同步 main spec（commit `84d533a`）；04 已于同日 archive 并同步 main spec（commits `4ef1d69`、`8a18dbd`）；02 `converge-evaluation-boundary-compatibility` 是当前唯一 active change，proposal、delta specs、design 与 tasks 已完成，mandatory polish 已通过并为 `ready for apply`；实现必须依照其 `tasks.md` 逐项更新进度。05、06、07 分别仍等待其列出的 input/support 或 retained-data inventory。全局预算8个change（00-07）；checkbox只记录change closure，不替代active change的 `tasks.md`
+> 状态: 00 已于 2026-08-14 archive 并同步 main spec（commit `8661693`）；01 已于同日 archive 并同步 main spec（commit `47a3bb5`）；02 已于同日 archive 并同步 main spec（commit `9b68e4d`，全量验证的范围外 node-agent 基线失败已如实记录为 evidence-limited）；03 已于同日 archive 并同步 main spec（commit `84d533a`）；04 已于同日 archive 并同步 main spec（commits `4ef1d69`、`8a18dbd`）；当前无 active change。05、06、07 分别仍等待其列出的 input/support 或 retained-data inventory。全局预算8个change（00-07）；checkbox只记录change closure，不替代active change的 `tasks.md`
 
 ## Propose 后强制 Polish
 
@@ -118,8 +118,8 @@ live/release claim，也没有把该未运行证据当作已关闭风险。
 先完成evaluation package consumer与retained Evaluation Bundle inventory，再创建02；零caller shim不另付一项
 change成本，而是同一owner的首个stage。
 
-- [ ] **02 `converge-evaluation-boundary-compatibility`**: EV-C02/C03/C04。当前 active change，已完成 proposal artifacts 与 mandatory polish，`ready for apply`。Stage 1删除`compute_metrics()`
-  shim；Stage 2把imports收敛到唯一supported facade；Stage 3删除missing-`evidence_layer`的default reader，使未盘点的 private/external records在 Review/quality claim 前明确拒绝，不迁移、回填或改写其内容。
+- [x] **02 `converge-evaluation-boundary-compatibility`**: EV-C02/C03/C04。已 archive 并同步 main spec（`9b68e4d`）。Stage 1删除`compute_metrics()`
+  shim；Stage 2把imports收敛到唯一 supported facade；Stage 3删除missing-`evidence_layer`的default reader，使未盘点的 private/external records在 Review/quality claim 前明确拒绝，不迁移、回填或改写其内容。
 
 **Gate C:** evaluation domain authority与supported import route唯一；missing layer不升级为live；EV-C05 fail-closed
 archive admission和TA-C04 evidence joins保持不变。
@@ -143,6 +143,15 @@ payload。该决定关闭02的 decision/data gate，允许创建 proposal；它�
 选择现有 facade 为唯一 supported import route，但该建议不是授权决定。`evals/runs/` 继续被忽略且本机目录不存在；
 focused Evaluation Bundle/live-boundary suite通过（105 passed）。这关闭了仓内枚举，不关闭未盘点的 private/external
 Bundle、Review Record 或 retention/cutover。
+
+**02 closeout（2026-08-14）:** `openspec/changes/archive/2026-08-14-converge-evaluation-boundary-compatibility/`
+保存 proposal、polish后 artifacts、12项完成任务与 verification evidence；主规格已同步，提交为`9b68e4d`。显式
+evidence-layer admission、Review 前 no-write、facade identity、retired module absence、结构 inventory与 typed metrics
+retirement均有 focused deterministic proof；requirements/specs/architecture/charter/coverage、strict OpenSpec、Ruff和
+whitespace均通过，gitlink保持不变且干净。`tests/eval` 中两条 node-agent fault-injection 断言在干净基线
+`c304f453` 复现，`UV_OFFLINE=1 make verify`也仅在 `test-fast` 的其中一条失败；User 已明确授权在此
+evidence-limited 状态归档。未运行 credentialed/live、release、Postgres、external-consumer 与 retained-data lanes，
+本 change不对它们作通过、compatibility 或 retention 结论。
 
 ## Phase D - Node language与产品记录归位
 

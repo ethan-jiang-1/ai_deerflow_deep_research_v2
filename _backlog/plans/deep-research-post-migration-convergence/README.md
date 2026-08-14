@@ -1,7 +1,7 @@
 # Deep Research 迁移后收敛：总导航
 
 > 类型: 架构健康审计 / 迁移收口 / 删除计划
-> 审计状态: 当前基线审计完成；54 个最终 Candidate 已取证；00 governance bootstrap 与01 repository-delivery/subtraction program均已 archive；01 的16个冻结 Candidate已关闭；下一步为02 evaluation boundary的consumer/data gate
+> 审计状态: 当前基线审计完成；54 个最终 Candidate 已取证；00 governance bootstrap、01 repository-delivery/subtraction program与02 evaluation boundary均已 archive；01 的16个冻结 Candidate及 EV-C02/C03/C04 已关闭；05、06、07 仍分别等待 input/support 或 retained-data owner packet
 > 产品范围: `deep_research_harness/`
 > 变更治理: `openspec/`
 > 当前 active OpenSpec changes: 0
