@@ -38,9 +38,9 @@
 | `a733d329902e779a108401f1305c937174f6e492` | 原始 plan snapshot | 保存最初审计问题和口径，不是最终发现 |
 | `5bb41c16a45ff3caae6e5b1e900610c91bf68336` | 应用与 current main-spec 取证基线 | `70-78` 的代码/spec/test结论以此为准 |
 | `811203726cfa6478ceebdabc378daabce1b6758b` | 完整审计综合 revision | `70-78`、54个最终Candidate与原26-change映射完成 |
-| `ad1c8bfff1dcd084df47b75ee3b812ba48e34dc1` + 本目录当前worktree | 导航与执行编排 revision | 三层目录完成；按Focus Card owner把26个change收敛为15个；未改应用、tests或main specs |
+| `2d96183abc8f91ccc4b669f02a00348014dd4333` + 本目录当前worktree | change压缩前的执行编排 revision | 三层目录完成；本worktree进一步引入bounded program/workstream编排，把26个change收敛为8个；未改应用、tests或main specs |
 
-`5bb41c1 -> ad1c8bf` 没有产品代码或 current spec变化，因此现有 findings仍对应当前应用事实。实施任何
+`5bb41c1 -> 2d96183` 没有产品代码或 current spec变化，因此现有 findings仍对应当前应用事实。实施任何
 Candidate前仍须在当时 HEAD做 focused revalidation；若产品事实已变，先更新对应 findings，不整库重做
 没有受影响的审计。
 
@@ -80,9 +80,10 @@ commit `5bb41c1` 删除了 tracked CI workflows与项目 OpenSpec skills，随�
 本机 ignored copies掩盖了问题，但 clean clone中两类文件的 tracked count都是零，而 README、AGENTS、docs与
 tests仍正向依赖它们。因此：
 
-1. 首个实施 change必须关闭 OR-C01/OR-C02/OR-C04 的 repository-delivery问题；
-2. 在 clean clone可复现 CI/OpenSpec workflow前，不开始产品 cleanup；
-3. 推荐恢复 repository-tracked owner；若 Governance Owner批准 external/versioned install，必须同批修正
+1. `00` 先按现行单owner规则引入bounded program/workstream治理，不实施cleanup Candidate；
+2. 首个Candidate-bearing change `01` 必须先关闭 OR-C01/OR-C02/OR-C04 的repository-delivery workstream；
+3. 在 clean clone可复现 CI/OpenSpec workflow前，不开始 `01` 后续subtraction workstream；
+4. 推荐恢复 repository-tracked owner；若 Governance Owner批准 external/versioned install，必须同批修正
    所有正向承诺并证明 clean setup可复现。
 
 ## Retained-data evidence
@@ -120,12 +121,13 @@ data/export/support gate；“本机零命中”不授权breaking deletion。
 | 文档 | 角色 |
 | --- | --- |
 | [Candidate Register](03-execution/candidate-register.md) | 54个最终 Candidate的disposition/admission导航 |
-| [80 - Remediation Change Map](03-execution/80-remediation-change-map.md) | 54个Candidate到00-14共15个change、decision/data gate和依赖的唯一映射 |
+| [80 - Remediation Change Map](03-execution/80-remediation-change-map.md) | 54个Candidate到00-07共8个change、workstream、decision/data gate和依赖的唯一映射 |
 | [99 - Progressive Execution](03-execution/99-progressive-execution.md) | 默认执行入口；从P0到final re-audit的逐步运行与验收顺序 |
 
 本目录不是 active change，也不建立第二个逐文件任务账本。每个 admitted batch用OpenSpec CLI创建自己的
 proposal/design/specs/tasks；一次只允许一个 active change，archive并更新Candidate disposition后再进入下一步。
-全局change预算固定为15个；内部stage不另建change，第16个必须先经计划层明确批准并默认一进一出。
+全局change预算固定为8个；00先建立可机械校验的program route，01-07才可按map使用ordinary或program形态。
+内部workstream/stage不另建change，第9个必须先经计划层明确批准并默认一进一出。
 
 ## 计划完成定义
 

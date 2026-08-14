@@ -111,7 +111,7 @@ GraphHost在 migration前后选择同一 provider。否则 cleanup可能静默�
 - **迁移条件**: support owner声明 profile retention范围；tests直接覆盖 canonical reader的 v1 no-invention语义。
 - **删除条件**: helper consumers/export归零；停止 v1 reading 还需迁移/过期所有 supported v1 data。
 - **保留负向护栏**: unsupported schema fail closed；v1不得制造 comparison/language事实；hash/ref一致性不变。
-- **OpenSpec change slice**: `converge-profile-proposal-compatibility`。
+- **OpenSpec change slice**: `converge-run-input-and-composition-contracts` 的 `profile-proposal` workstream。
 
 ### PC-C02 - Delete `parse_profile_response()` after test migration
 
@@ -122,7 +122,7 @@ GraphHost在 migration前后选择同一 provider。否则 cleanup可能静默�
 - **迁移条件**: domain/live-evaluation tests改用 canonical result，保留 deterministic recognition cases。
 - **删除条件**: tracked/export/docs consumer为零；focused profile和 live-evaluation tests通过。
 - **保留负向护栏**: empty/invalid JSON、unknown enum、recognized-fields与 comparison-pair行为继续验证。
-- **OpenSpec change slice**: 纳入 `converge-profile-proposal-compatibility`。
+- **OpenSpec change slice**: 纳入 `converge-run-input-and-composition-contracts` 的 `profile-proposal` workstream。
 
 ### PC-C03 - Migrate graph checkpoints before deleting `repair_counts`
 
@@ -135,7 +135,8 @@ GraphHost在 migration前后选择同一 provider。否则 cleanup可能静默�
 - **删除条件**: old checkpoints已迁移/过期/明确拒绝；所有 writers、ownership rows、fixtures和 specs同批删除。
 - **保留负向护栏**: gate remains sole repair authority；unsupported checkpoint fails before graph mutation；replay不重置
   或伪造 repair budget。
-- **OpenSpec change slice**: `retire-repair-lifecycle-compatibility`，不得与无状态 cleanup混批。
+- **OpenSpec change slice**: `converge-retained-run-data-compatibility` 的 `repair-lifecycle-data` workstream；
+  不得与无状态cleanup共享cutover或rollback。
 
 ### PC-C04 - Retire `REPAIR_EXHAUSTED` only after Bundle-data support closure
 
@@ -146,7 +147,7 @@ GraphHost在 migration前后选择同一 provider。否则 cleanup可能静默�
 - **迁移条件**: retained data inventory、target reason decision、old-state read/projection行为和 rollback。
 - **删除条件**: supported records无旧值或已迁移；enum/test/spec/residual fixtures同批关闭。
 - **保留负向护栏**: 未知 terminal value fail closed；旧 failure不得投影成 success；state identity/revision不变。
-- **OpenSpec change slice**: `retire-repair-lifecycle-compatibility`。
+- **OpenSpec change slice**: `converge-retained-run-data-compatibility` 的 `repair-lifecycle-data` workstream。
 
 ### PC-C05 - Keep current refinement facts and their old-state optional reader
 
@@ -169,7 +170,8 @@ GraphHost在 migration前后选择同一 provider。否则 cleanup可能静默�
 - **迁移条件**: enumerate retained local/external Journals；migrate或制定 retention expiry；验证 stale/partial records。
 - **删除条件**: supported old records为零；reader branches/tests/specs关闭；current summary不被误改。
 - **保留负向护栏**: old records始终 marked incomplete；不得制造 watermark/generation/validation provenance。
-- **OpenSpec change slice**: `converge-run-observation-result-compatibility`，在 RS capability收敛后。
+- **OpenSpec change slice**: `converge-retained-run-data-compatibility` 的 `observation-result-data` workstream，
+  在 RS capability收敛后。
 
 ### PC-C07 - Decide legacy checkpointer precedence before any deletion
 
@@ -181,4 +183,4 @@ GraphHost在 migration前后选择同一 provider。否则 cleanup可能静默�
 - **迁移条件**: supported config inventory、conflict behavior、notice、backup/rollback与 provider parity tests。
 - **删除条件**: legacy producers迁移；resolver/spec/tests/docs不再正向承诺；stale config明确拒绝。
 - **保留负向护栏**: doctor/GraphHost同选 provider；不泄露 DSN；不静默降低 durability。
-- **OpenSpec change slice**: `converge-runtime-configuration-compatibility`。
+- **OpenSpec change slice**: `converge-runtime-input-compatibility` 的 `deployment-config` workstream。

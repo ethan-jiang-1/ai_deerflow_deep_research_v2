@@ -83,7 +83,8 @@ test成为旧 parser API consumer，却没有 evaluation-specific语义。迁到
 - **迁移条件**: NC-C03处理 glossary-only ownership时不得合并这些概念。
 - **删除条件**: 不适用；任何合并需先替代 isolation、immutability、review separation与 run granularity。
 - **保留负向护栏**: Evaluation Bundle不是 product Run Bundle；Runner不产质量 verdict；Review不改 execution。
-- **OpenSpec change slice**: 无 keep-only change；作为 `restore-product-glossary-ownership` 的 non-regression。
+- **OpenSpec change slice**: 无 keep-only change；作为 `converge-node-language-and-product-records` 的
+  non-regression。
 
 ### EV-C02 - Retain missing-layer compatibility until Evaluation Bundle data closes
 
@@ -139,4 +140,5 @@ test成为旧 parser API consumer，却没有 evaluation-specific语义。迁到
 - **迁移条件**: test asserts through `ProfileParseResult.partial` without changing fixed-profile semantics。
 - **删除条件**: evaluation tests no longer import wrapper；PC-C02 can close export。
 - **保留负向护栏**: fixed live profile still parses deterministic time budget and no credential/provider behavior changes。
-- **OpenSpec change slice**: part of `converge-profile-proposal-compatibility`，not an evaluation mega-change。
+- **OpenSpec change slice**: `converge-run-input-and-composition-contracts` 的 `profile-proposal` workstream，
+  not an evaluation mega-change。

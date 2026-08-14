@@ -3,121 +3,140 @@
 > 导航: [执行层索引](README.md) | [Candidate Register](candidate-register.md) | [根总导航](../README.md)
 > 角色: 最终逐步执行总计划
 > 输入: [70-78 findings](../02-audit-findings/) 的54个最终Candidate；change映射以 [80 - Remediation Change Map](80-remediation-change-map.md) 为准
-> 状态: 尚未开始；全局预算15个change（00-14）；checkbox只记录change closure，不替代active change的 `tasks.md`
+> 状态: 尚未开始；全局预算8个change（00-07）；checkbox只记录change closure，不替代active change的 `tasks.md`
 
 ## 不可跳过的执行协议
 
 每一步都按同一个transaction完成，不批量预创建changes：
 
 1. 在当前HEAD重验该步Candidate、consumer/data/export scope与前置gate；事实变化先修findings/register/map；
-2. 只有该change所含全部decision/data/export gate关闭后才创建；一个smallest primary causal owner、一个bounded
-   program outcome，一次一个active change；
-3. proposal/design/delta冻结Candidate集合，并为每个内部stage明确target、owner、retirement、surface grade、
-   decision authority、negative path、recovery与guard；
-4. `tasks.md` 按stage承担逐文件工作；每个stage先做red/known violation，再迁移owner/behavior/evidence，
-   最后删除old surface；
+2. 00必须先按现行单owner Focus Card完成并archive；之后ordinary change继续使用一个smallest primary causal
+   owner，program change使用一个bounded program outcome和多个owner-scoped workstream；
+3. 只有change内全部decision/data/export gate关闭后才创建。program proposal一次冻结完整Candidate budget，
+   每个workstream明确owner、target、retirement、surface grade、decision authority、negative path、recovery、
+   evidence与not-in-scope；
+4. `tasks.md` 按workstream/stage承担逐文件工作；每个stage先做red/known violation，再迁移owner/behavior/evidence，
+   最后删除old surface；一个workstream不得修改另一个workstream未声明的contract；
 5. focused tests、相关lanes、full deterministic verify、governance与strict OpenSpec通过；
-6. archive change，记录未运行的live/external evidence，更新所有linked Candidate最终disposition；
-7. 确认无active change和意外worktree变化，再进入下一步。
+6. ordinary change或program全部workstream完成后一次archive，记录未运行的live/external evidence，更新所有
+   linked Candidate最终disposition；program workstream不能单独archive或把尾项静默defer；
+7. apply/archive review逐workstream把实际diff、tasks与evidence对回冻结scope；checker只证明结构和Candidate
+   budget闭合，不代替语义scope review；
+8. 确认无active change和意外worktree变化，再进入下一步。
 
 若某项change仍缺任一产品决定、外部consumer或retained data，禁止先创建再等待。记录decision owner和缺失
-证据后，只能继续准备依赖独立的前置项；最终closeout前所有blocked Candidate必须有授权结论。
+证据后，只能继续准备依赖独立的后续项；改变执行顺序或分组必须先同步`80`，不能在active change内临时处理。
 
-**数量控制:** 本计划只允许 `00-14` 十五个槽位。内部stage不得升级成独立change；确需第16个时，必须先
-修改`80`并获得明确批准，默认通过合并或取消另一个槽位保持总数仍为15。change不得夹带新功能或未审计重构。
+**数量控制:** 本计划只允许 `00-07` 八个槽位。workstream/stage不得升级成独立change；确需第9个时，必须先
+修改`80`并获得明确批准，默认通过合并或取消另一个槽位保持总数仍为8。change不得夹带新功能或未审计重构。
 
-## Phase A - 先恢复可复现交付
+## Phase A - 合法引入program change
 
-- [ ] **00 `restore-repository-automation-delivery`**: OR-C01, OR-C02, OR-C04。
+- [ ] **00 `admit-bounded-program-change-workstreams`**: governance bootstrap，不实施54个Candidate。
 
-验收：clean clone获得current CI workflows和可复现OpenSpec skills/install route；required artifacts由Git tracked；
-`.gitignore`不再允许ignored copy冒充delivery；deterministic/manual-live/suspended lane语义不变。
+以OpenSpec change-admission governance为唯一primary owner，更新`openspec/config.yaml`、local-context policy、
+应用Focus Gate、`check_agent_charter.py`及其contract tests。普通proposal仍须恰有一个`## Change Focus`；program
+proposal必须有一个`## Program Focus`和逐项`### Workstream Focus: <stable-id>`，每个workstream保留现有Focus
+Card全部字段、Candidate/obligation IDs与独立policy routing。checker至少对budget/union不等、重复ID、缺owner、
+缺field和未登记workstream的known-invalid fixtures fail closed；actual diff scope由apply/archive review负责。
+`program`只拥有planning/closure，不成为runtime authority或workstream之间的共享writer。
 
-**Gate A:** 00已archive；clean-clone trackedness negative control有效。Gate A前禁止所有产品cleanup。
+**Gate A:** 00已archive；ordinary route没有变宽；program route的positive/negative fixtures和strict validation
+通过。Gate A前不得创建任何多owner change，也不得直接用01的program形态修改repository。
 
-## Phase B - 低风险证据与private减法
+## Phase B - 恢复交付并清除已取证死资产
 
-这四项都小，但primary owner不同，因此逐项创建、验证和archive；不建立虚假的“misc cleanup”owner：
+- [ ] **01 `restore-delivery-and-subtract-dead-assets`**: OR-C01/C02/C04、TA-C01/C02/C05、EC-C04、RC-C02。
 
-- [ ] **01 `subtract-empty-test-scaffolding`**: TA-C01/C02、OR-C04 scaffold half；删除marker、空
-  `tests/e2e`和registry row，保留TA-C03 suspension。
-- [ ] **02 `retire-superseded-dpt-report`**: TA-C05、OR-C06；先对照TA-C06/C07 provenance，再删除
-  report与shape-only test。
-- [ ] **03 `subtract-demo-compatibility-helpers`**: EC-C04；把独有cases迁到canonical profile/preflight。
-- [ ] **04 `subtract-topic-planner-legacy-helper`**: RC-C02；由canonical Bundle-profile tests承接行为。
+创建前先取得OR-C02的repository-vs-versioned-external owner决定。proposal一次冻结五个workstream：
 
-**Gate B:** 01-04均archive；无orphan selector/registry/export；TA-C03/C04/C06/C07、EC-C01/C03与RC-C07
-guards仍可证伪。任何public/persisted consumer命中都必须回到对应边界Candidate，不能在这些change中顺手处理。
+1. `delivery`: 恢复current CI workflows和可复现OpenSpec skill/install route，建立clean-clone trackedness guard；
+2. `test-structure`: 在delivery关闭后删除8个marker、空`tests/e2e`与精确registry row；
+3. `evidence-report`: 对照baseline/attestation/regression provenance后删除DPT report与shape-only test；
+4. `demo-adapter`: 把独有cases迁到canonical profile/preflight后删除private helpers；
+5. `topic-planner`: 由canonical Bundle-profile tests承接short-state behavior后删除legacy helper/export。
+
+workstream按上列顺序分别留evidence；后四项失败不得无理由回滚已验证的delivery，但整个program在全部完成前
+不archive。冻结scope内无法forward repair时，按Program Focus回滚失败workstream及其dependents；仍不能关闭
+则保持active并回到计划层批准整体rollback或一进一出重排，禁止partial archive。
+
+**Gate B:** clean clone获得可复现CI/OpenSpec workflow；无orphan marker/scaffold/selector/registry/export；
+TA-C03/C04/C06/C07、EC-C01/C03、RC-C07 guards和deterministic/manual-live/suspended lane语义仍可证伪。
 
 ## Phase C - Evaluation boundary收敛
 
-先完成evaluation package consumer与retained Evaluation Bundle inventory，再创建05；零caller shim不另付一项
-change成本，而是作为同一owner的首个stage。
+先完成evaluation package consumer与retained Evaluation Bundle inventory，再创建02；零caller shim不另付一项
+change成本，而是同一owner的首个stage。
 
-- [ ] **05 `converge-evaluation-boundary-compatibility`**: EV-C02/C03/C04。Stage 1删除`compute_metrics()`
+- [ ] **02 `converge-evaluation-boundary-compatibility`**: EV-C02/C03/C04。Stage 1删除`compute_metrics()`
   shim；Stage 2把imports迁到唯一supported facade；Stage 3迁移/过期missing-`evidence_layer` records后删除default reader。
 
 **Gate C:** evaluation domain authority与supported import route唯一；missing layer不升级为live；EV-C05 fail-closed
 archive admission和TA-C04 evidence joins保持不变。
 
-## Phase D - Node cognition与产品词典
+## Phase D - Node language与产品记录归位
 
-- [ ] **06 `converge-node-cognition-contract-and-language`**: NC-C01/C02、OR-C03。Stage 1关闭legacy
-  capability cohort/default并令missing/invalid ref fail closed；Stage 2用一张bounded term table纵向同步AI-facing
-  policy、code、spec、test与registry。
-- [ ] **07 `restore-product-glossary-ownership`**: NC-C03、EC-C02、OR-C05；逐段迁移独有规则后删除
-  design/status residue，保留EV-C01 distinctions、`_Avoid_`和ADR history。
+- [ ] **03 `converge-node-language-and-product-records`**: NC-C01/C02/C03、EC-C02、OR-C03/C05。
+
+`node-contract-language` workstream先关闭legacy capability cohort/default，令missing/invalid required ref fail closed，
+再用一张bounded term table纵向同步AI-facing policy、code、spec、test与registry。其后`glossary-records`
+workstream逐段迁移独有规则，删除CONTEXT中的design/status residue和dormant local-first language；保留EV-C01
+distinctions、`_Avoid_`、generated projection freshness guard与ADR history。
 
 **Gate D:** required capability ref唯一；current identity不再使用`Phase Agent`；CONTEXT只承载current terms与
-必要`_Avoid_`，没有丢失Evaluation Workspace/Bundle/Review/Run等真实不同概念。
+必要`_Avoid_`，没有丢失Evaluation Workspace/Bundle/Review/Run等真实不同概念；ADR历史事实未被改写。
 
 ## Phase E - Run/Bundle/Observation authority
 
-先完成refinement method的supported consumer matrix；若export support仍未知，不创建08。
+先完成refinement method的supported consumer matrix；若Python export support仍未知，不创建04。
 
-- [ ] **08 `converge-run-bundle-observation-authority`**: RS-C01..C04、RC-C01、OR-C03。Stage 1迁移
+- [ ] **04 `converge-run-bundle-observation-authority`**: RS-C01..C04、RC-C01、OR-C03。Stage 1迁移
   negative invariants后退役RES；Stage 2迁移RUS、rename Bundle capabilities并修RWB registry；Stage 3迁移
   workbench/refinement consumers后删除state-only wrapper。
 
 **Gate E:** Bundle/Journal/operator boundaries各有唯一owner；Local Session Workbench仍可用但不宣传broker；
-binding/session store不能复活或在Bundle loss后recovery；PC-C05 refinement recovery语义不变。
+binding/session store不能复活或在Bundle loss后recovery；PC-C05 refinement recovery语义与RS-C05 guards不变。
 
-## Phase F - Implementation mode与recipe surface
+## Phase F - Run input与composition truth
 
-先批准zero-credential UX target，并一次性关闭recipe constructor export与supported Bundle mode inventories。
-这些共同决定composition/provenance truth，因此只创建09。
+创建05前一次性批准zero-credential UX，关闭recipe/profile parser Python export、supported Bundle mode、profile、
+proposal与checkpoint producer inventories。
 
-- [ ] **09 `converge-implementation-mode-and-recipe-surface`**: FM-C01/C02/C04、EC-C06。Stage 1迁移
-  `ResearchGraphRecipe.create()` consumers；Stage 2替换/退役no-graph full-fake path；Stage 3迁移/拒绝explicit
-  `full_fake` records并退役enum；Stage 4迁移/过期missing-mode states后删除default reader。
+- [ ] **05 `converge-run-input-and-composition-contracts`**: FM-C01/C02/C04、EC-C06、PC-C01/C02、
+  RC-C03、EV-C06。
+
+`composition-mode` workstream依次迁移`ResearchGraphRecipe.create()` consumers、替换/退役no-graph full-fake
+path、迁移/拒绝explicit `full_fake` records，并在missing-mode states关闭后删除default reader。`profile-proposal`
+workstream用一张schema matrix收敛profile/proposal readers、evaluation consumer和Python export。两个workstream
+共享的program终态是：每个admitted run input只产生显式、诚实、版本明确的composition truth。
 
 **Gate F:** no-graph execution不再写成`all_real`/research-completed truth；supported State显式携带诚实mode；
-FM-C03 fixture graph与explicit mixed composition保持current。
+profile/proposal旧输入要么已迁移/拒绝，要么有批准的bounded support；FM-C03、PC-C05与RC-C05保持current。
 
-## Phase G - External support boundaries
+## Phase G - Runtime host input compatibility
 
-每项只在自己的support matrix全部关闭后创建；owner决定继续支持时，在同一change内落实bounded support、guard和
-review trigger，不为追求删除而破坏外部contract。
+创建06前一次关闭host trusted-context producer、supported deployment config/provider和AppConfig version inventories。
 
-- [ ] **10 `converge-profile-proposal-compatibility`**: PC-C01/C02、RC-C03、EV-C06；同一schema matrix
-  驱动profile/proposal readers、evaluation consumer和Python export收敛。
-- [ ] **11 `resolve-non-interactive-marker-compatibility`**: EC-C07；按host producer inventory处理
-  `disable_clarification` marker、notice、stale denial和rollback。
-- [ ] **12 `converge-runtime-configuration-compatibility`**: EC-C05、PC-C07、RC-C04；共享一次
-  deployment/AppConfig inventory，分stage决定checkpointer precedence与endpoint field aliases。
+- [ ] **06 `converge-runtime-input-compatibility`**: EC-C05/C07、PC-C07、RC-C04。
 
-**Gate G:** profile/proposal/marker/config输入要么迁移删除，要么有批准的bounded support owner；unsupported、
-conflicting、stale input继续fail closed；old-root和mount/config drift guards仍可证伪。
+`trusted-context` workstream决定`disable_clarification`到`non_interactive`的support window、notice、stale denial与
+rollback。`deployment-config` workstream分别决定checkpointer precedence与endpoint field aliases；共享inventory，
+不共享语义决定。owner决定继续支持时，在原workstream落实bounded support、guard和review/removal trigger。
 
-## Phase H - Remaining persisted compatibility
+**Gate G:** marker/config输入要么迁移删除，要么有批准的bounded support owner；unsupported、conflicting、stale
+input继续fail closed；old-root、mount/config drift guards仍可证伪。
 
-每项创建前分别关闭所需inventories；本机样本只提供风险下界。change内部每个stage都要有dry-run、old/new
-reader-writer matrix、restart/replay、rollback、negative evidence和post-cutover count。
+## Phase H - Retained run data compatibility
 
-- [ ] **13 `retire-repair-lifecycle-compatibility`**: PC-C03/C04。Stage 1迁移graph checkpoints后删除
-  `repair_counts`；Stage 2迁移/拒绝old Bundle terminal后退役`REPAIR_EXHAUSTED`。
-- [ ] **14 `converge-run-observation-result-compatibility`**: PC-C06、RC-C06。Stage 1收敛Journal
-  manifest/event readers；Stage 2迁移/过期old diagnostic-location results，且不得伪造Journal publication。
+07只在04 archive后创建，并分别关闭checkpoint、Bundle、Journal与public/persisted Run result inventories；本机
+样本只提供风险下界。每个workstream都要有dry-run、old/new reader-writer matrix、restart/replay、rollback、
+negative evidence和post-cutover count。
+
+- [ ] **07 `converge-retained-run-data-compatibility`**: PC-C03/C04/C06、RC-C06。
+
+`repair-lifecycle-data` workstream迁移graph checkpoints后删除`repair_counts`，再迁移/拒绝old Bundle terminal并
+退役`REPAIR_EXHAUSTED`。`observation-result-data` workstream收敛Journal manifest/event readers，再迁移/过期old
+diagnostic-location results；不得把absence伪造成Journal publication或把failure映射成success。
 
 **Gate H:** supported persisted records处于批准schema、明确rejection或有时限retained support；无silent
 authenticity upgrade、failure-to-success mapping或无期限reader；summary v2、RS-C05和EV-C05 guards保持不变。
@@ -125,7 +144,7 @@ authenticity upgrade、failure-to-success mapping或无期限reader；summary v2
 ## Phase I - 最终全量复审与关闭
 
 - [ ] 逐条检查Candidate Register全部54项，写最终disposition、change/archive evidence或approved retain decision。
-- [ ] 重跑00中的tracked/current-term/legacy/compat/entry/config/serializer/export/spec/requirement/test-registry扫描。
+- [ ] 重跑01中的tracked/current-term/legacy/compat/entry/config/serializer/export/spec/requirement/test-registry扫描。
 - [ ] residual current matches逐条落入current behavior、approved old-input、negative guard或historical；建立小且有owner的allowlist。
 - [ ] 第二次核对entry/public/persisted/AI-facing surfaces，不允许双writer、双entry、双authority或无期限compat reader。
 - [ ] 检查每个retained guard的known/planted violation与scope escape；quiet不等于dead。
@@ -134,8 +153,9 @@ authenticity upgrade、failure-to-success mapping或无期限reader；summary v2
 - [ ] 记录未运行live/release/Postgres/real-Gateway、外部deployment/data/Python consumer evidence及接受风险。
 - [ ] 更新[根 README](../README.md)的revision/status与审计结论，形成closeout，然后按backlog lifecycle归档整个plan目录。
 
-**Final Gate:** [根 README](../README.md)完成定义全部满足；Candidate Register无`ready/blocked/unknown`；任何保留compatibility都有
-decision authority、owner、review/removal trigger和failure behavior。
+**Final Gate:** [根 README](../README.md)完成定义全部满足；Candidate Register无`ready/blocked/unknown`；任何保留
+compatibility都有decision authority、owner、review/removal trigger和failure behavior；00引入的program route
+仍能机械拒绝缺owner、Candidate budget不闭合与未登记workstream，apply/archive review没有未解释scope drift。
 
 ## 每个change的最低验证
 

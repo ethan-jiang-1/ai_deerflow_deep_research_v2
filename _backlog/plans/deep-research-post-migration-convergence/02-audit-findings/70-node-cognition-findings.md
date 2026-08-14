@@ -153,8 +153,8 @@ composition、tool posture admission、20-row evidence、deterministic owner 和
   临时 legacy set 或 cohort 时态；focused tests、20-row joins、strict OpenSpec 和 governance 通过。
 - **保留负向护栏**: invalid/missing/package-mismatched capability 在 model/tool work 前失败；禁止
   capability inference、generic fallback、arbitrary system prompt override 和 capability-owned route/state。
-- **OpenSpec change slice**: `converge-node-cognition-contract-and-language`；须在 OR-C01/C02 的 repository-delivery
-  blocker关闭后，作为第一个产品 cleanup change。
+- **OpenSpec change slice**: `converge-node-language-and-product-records` 的 `node-contract-language` workstream；
+  须在01的repository-delivery gate关闭后实施。
 
 ### NC-C02 - Converge node cognition language vertically
 
@@ -171,8 +171,8 @@ composition、tool posture admission、20-row evidence、deterministic owner 和
   identity；residual 只允许 archive、明确的 retired-term guard 或逻辑 phase 的非 identity 用法。
 - **保留负向护栏**: full-takeover、no checkpointer、bounded budgets、closed tools、redaction、
   cancellation、no clarification、deterministic admission 与 graph-owned lifecycle 均保持原测试强度。
-- **OpenSpec change slice**: `converge-node-cognition-contract-and-language` 的第二个stage；须在NC-C01 stage
-  关闭后实施，并保留独立red/green证据，不能把contract subtraction与AI-facing rename混成一次无边界改写。
+- **OpenSpec change slice**: `converge-node-language-and-product-records` 的 `node-contract-language` 第二个stage；
+  须在NC-C01 stage关闭后实施，并保留独立red/green证据。
 
 ### NC-C03 - Restore CONTEXT to glossary-only ownership
 
@@ -187,5 +187,5 @@ composition、tool posture admission、20-row evidence、deterministic owner 和
 - **删除条件**: 非词典段落没有独有 current requirement，删除后 glossary definitions 完整且引用不坏。
 - **保留负向护栏**: 不删除任何 canonical term、状态标签或 `_Avoid_`；不把 glossary 迁移成另一份
   永久术语 registry；ADR 历史保持不改写。
-- **OpenSpec change slice**: `restore-product-glossary-ownership`；在 NC-C02 term table批准后独立关闭
-  glossary/record ownership，避免把 AI-facing rename 与跨领域 glossary 减法混在一起。
+- **OpenSpec change slice**: `converge-node-language-and-product-records` 的 `glossary-records` workstream；在
+  NC-C02 term table批准后关闭，和Node rename共享program outcome但不共享owner或writer。

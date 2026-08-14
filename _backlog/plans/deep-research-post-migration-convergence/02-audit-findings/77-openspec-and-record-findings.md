@@ -111,7 +111,8 @@ spec替代 main spec。tests还直接引用少数 `_done` / suspended diagnosis�
 - **迁移条件**: 从最后 tracked revision与 current Make/docs/spec核对 workflow内容；决定 exact supported lanes。
 - **删除条件**: 不适用；恢复项只有在 docs/spec/tests/hosting automation共同明确退役后才能另审计。
 - **保留负向护栏**: clean clone trackedness check；deterministic PR/push lane；live manual-only；release E2E仍 suspended。
-- **OpenSpec change slice**: `restore-repository-automation-delivery`，必须是首个 implementation change。
+- **OpenSpec change slice**: `restore-delivery-and-subtract-dead-assets` 的 `delivery` workstream；它是00治理
+  bootstrap之后首个Candidate-bearing implementation workstream，且必须在同program其他减法之前关闭。
 
 ### OR-C02 - Resolve and restore reproducible project OpenSpec skill delivery
 
@@ -123,8 +124,9 @@ spec替代 main spec。tests还直接引用少数 `_done` / suspended diagnosis�
 - **迁移条件**: 确认 skills是否项目特有、期望 agent clients和更新路线；消除 `.openspec-target` 路径歧义。
 - **删除条件**: 若选择外部 owner，repo docs不再声称项目自有且 clean setup可复现；若选择 repo owner则不删除。
 - **保留负向护栏**: clean clone discovery；planning-only/propose boundary；apply/archive分离；nearest OpenSpec root。
-- **OpenSpec change slice**: `restore-repository-automation-delivery`；repository-vs-external owner是该 change 的
-  admission decision，不另造未编排的实施 change，且不得在开始其他 cleanup前长期搁置。
+- **OpenSpec change slice**: `restore-delivery-and-subtract-dead-assets` 的 `delivery` workstream；
+  repository-vs-external owner是该program的admission decision，不另造未编排的实施change，且不得在开始其他
+  subtraction workstream前长期搁置。
 
 ### OR-C03 - Converge owner-drifted capabilities through owner-local changes
 
@@ -135,7 +137,8 @@ spec替代 main spec。tests还直接引用少数 `_done` / suspended diagnosis�
 - **迁移条件**: each change maps old requirements/IDs/consumers/evidence to one target owner。
 - **删除条件**: old capability directory无 current behavior/consumer；retired IDs保留占位且 never reused。
 - **保留负向护栏**: checker/coverage不缩 scope；anti-resurrection requirements归 target owner。
-- **OpenSpec change slice**: 不建 spec-cleanup mega-change；follow [80 - Remediation Change Map](../03-execution/80-remediation-change-map.md) owner slices。
+- **OpenSpec change slice**: 不建共享spec-cleanup owner；follow [80 - Remediation Change Map](../03-execution/80-remediation-change-map.md)
+  的03-05 owner-scoped workstreams。
 
 ### OR-C04 - Correct the structural registry in both directions
 
@@ -146,7 +149,8 @@ spec替代 main spec。tests还直接引用少数 `_done` / suspended diagnosis�
 - **迁移条件**: OR-C01/C02 delivery decision；TA-C02 empty scaffold approval；add trackedness sensitivity test。
 - **删除条件**: `tests/e2e` entry removed with directory；no promised delivery artifact can be replaced by ignored copy。
 - **保留负向护栏**: gitlink/import/node package/generated locator rules unchanged；exception baseline shrink-only。
-- **OpenSpec change slice**: OR-C01 structure delta first；TA-C02 later `subtract-empty-test-scaffolding`。
+- **OpenSpec change slice**: `restore-delivery-and-subtract-dead-assets` 内先关闭 `delivery` structure delta，
+  再由 `test-structure` workstream处理TA-C02；两者不共享writer。
 
 ### OR-C05 - Restore product CONTEXT to glossary-only scope without rewriting ADR history
 
@@ -157,7 +161,8 @@ spec替代 main spec。tests还直接引用少数 `_done` / suspended diagnosis�
 - **迁移条件**: per-paragraph owner/link check；canonical term table；current docs retain necessary navigation。
 - **删除条件**: no unique domain definition lost；glossary contains no design/status ledger；ADRs unchanged except routing if needed。
 - **保留负向护栏**: canonical evaluation distinctions remain；superseded/dormant status discoverable；no fourth term registry。
-- **OpenSpec change slice**: `restore-product-glossary-ownership`，结合 NC-C03/EC-C02/EV-C01。
+- **OpenSpec change slice**: `converge-node-language-and-product-records` 的 `glossary-records` workstream，
+  结合 NC-C03/EC-C02/EV-C01。
 
 ### OR-C06 - Keep current indexes and historical evidence; delete only the grounded DPT duplicate
 
@@ -168,7 +173,7 @@ spec替代 main spec。tests还直接引用少数 `_done` / suspended diagnosis�
 - **迁移条件**: compare unique DPT provenance before deletion；do not copy verdict prose。
 - **删除条件**: TA-C05 exact closure; no broken current links/tests。
 - **保留负向护栏**: dated evidence never proves freshness；attestation immutable；regression descent remains current。
-- **OpenSpec change slice**: `retire-superseded-dpt-report`。
+- **OpenSpec change slice**: `restore-delivery-and-subtract-dead-assets` 的 `evidence-report` workstream。
 
 ### OR-C07 - Retain generated projections and their freshness guards
 

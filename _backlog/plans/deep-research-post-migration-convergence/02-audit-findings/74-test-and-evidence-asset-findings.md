@@ -121,7 +121,7 @@ rationale。这是 current evidence governance；它与某一份 2026-07-17 repo
 - **删除条件**: 删除八个 marker 后目录仍非空；structure checker、pytest collection 和 lint 通过。
 - **保留负向护栏**: 不删除目录、真实文件或对应 required-path entries；不触碰 `tests/e2e` marker，后者由
   TA-C02 处理。
-- **OpenSpec change slice**: `subtract-empty-test-scaffolding` 的 private repository-cleanup task。
+- **OpenSpec change slice**: `restore-delivery-and-subtract-dead-assets` 的 `test-structure` workstream。
 
 ### TA-C02 - Retire the empty `tests/e2e` scaffold and registry entry
 
@@ -135,7 +135,8 @@ rationale。这是 current evidence governance；它与某一份 2026-07-17 repo
 - **删除条件**: `.gitkeep`、空目录和 registry entry 同批消失；structure、asset、lane-selection checks 通过。
 - **保留负向护栏**: EVH-024 仍保持 suspended；不得借删除空 e2e scaffold 激活 release selector或缩小
   tests root 扫描。
-- **OpenSpec change slice**: `subtract-empty-test-scaffolding`，与 TA-C01 同批。
+- **OpenSpec change slice**: `restore-delivery-and-subtract-dead-assets` 的 `test-structure` workstream，与
+  TA-C01 同批。
 
 ### TA-C03 - Retain the EVH-024 suspension boundary
 
@@ -180,7 +181,7 @@ rationale。这是 current evidence governance；它与某一份 2026-07-17 repo
   和 shape-only test后 EVH evidence/coverage checks通过。
 - **保留负向护栏**: 不改写 frozen attestation；不把 historical success当 current release result；不删除
   deterministic lower-seam evidence。
-- **OpenSpec change slice**: `retire-superseded-dpt-report`。
+- **OpenSpec change slice**: `restore-delivery-and-subtract-dead-assets` 的 `evidence-report` workstream。
 
 ### TA-C06 - Preserve dated baseline and attestation as explicitly historical evidence
 

@@ -185,7 +185,8 @@ canonical policy validation。不能把 alias 静默解释成 interactive reques
   Demo TUI/Local Session Workbench distinction仍清晰。
 - **保留负向护栏**: tests/docs 继续声明 Demo TUI/workbench 不是 Primary User product route；未来复活
   必须新 OpenSpec change 和 product decision。
-- **OpenSpec change slice**: `restore-product-glossary-ownership`，与 NC-C03/OR-C05 同批。
+- **OpenSpec change slice**: `converge-node-language-and-product-records` 的 `glossary-records` workstream，
+  与 NC-C03/OR-C05 同批。
 
 ### EC-C03 - Retain old-entry rejection guards
 
@@ -213,8 +214,8 @@ canonical policy validation。不能把 alias 静默解释成 interactive reques
   与 lint 通过。
 - **保留负向护栏**: explicit model selection、one matching credential、safe revision、no secret projection、
   preflight failure before adapter/Bundle。
-- **OpenSpec change slice**: `subtract-demo-compatibility-helpers`；不与 exported constructor、glossary 或
-  persisted/config decision 混批。
+- **OpenSpec change slice**: `restore-delivery-and-subtract-dead-assets` 的 `demo-adapter` workstream；与同program
+  其他减法共享archive事务，但保留独立owner、rollback与evidence，不触碰exported constructor或config support。
 
 ### EC-C05 - Decide legacy checkpointer support explicitly
 
@@ -228,7 +229,8 @@ canonical policy validation。不能把 alias 静默解释成 interactive reques
 - **删除条件**: 见 `75-persisted-compatibility-findings.md::PC-C07`。
 - **保留负向护栏**: doctor/GraphHost 必须同选一个 provider；不得静默选择错误 durability；DSN/secret
   不得进入 output；local profile isolation继续拒绝 legacy section。
-- **OpenSpec change slice**: `converge-runtime-configuration-compatibility`，在产品/support decision 后准入。
+- **OpenSpec change slice**: `converge-runtime-input-compatibility` 的 `deployment-config` workstream，在
+  产品/support decision 后准入。
 
 ### EC-C06 - Delete the `ResearchGraphRecipe.create()` constructor after export-scope closure
 
@@ -243,8 +245,8 @@ canonical policy validation。不能把 alias 静默解释成 interactive reques
 - **删除条件**: tracked consumers 为零；export/docs/spec 无 `create()` route；focused graph/runtime tests通过。
 - **保留负向护栏**: public runtime仍只能构造 all-real；caller不得通过 adapters、implementations或
   implementation_modes 改写 production composition。
-- **OpenSpec change slice**: `converge-implementation-mode-and-recipe-surface`；因 surface grade不同，不与 private demo
-  helpers或 `disable_clarification` 决策捆绑。
+- **OpenSpec change slice**: `converge-run-input-and-composition-contracts` 的 `composition-mode` workstream；
+  仍不与private demo helper共享owner、support gate或rollback。
 
 ### EC-C07 - Decide the `disable_clarification` trusted-context compatibility window
 
@@ -260,4 +262,5 @@ canonical policy validation。不能把 alias 静默解释成 interactive reques
   或被完全关闭，且不会静默退回 interactive behavior。
 - **保留负向护栏**: 两种 marker在兼容期均要求 exact closed policy；resume/refine不得重新注入 checkpoint
   policy；caller/presentation input不得伪造 trusted context。
-- **OpenSpec change slice**: `resolve-non-interactive-marker-compatibility`，取得 product/support decision后准入。
+- **OpenSpec change slice**: `converge-runtime-input-compatibility` 的 `trusted-context` workstream，取得
+  product/support decision后准入。
