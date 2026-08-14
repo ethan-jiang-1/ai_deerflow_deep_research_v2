@@ -2,6 +2,7 @@
 
 > 角色: 当前领域语言收敛路线
 > 方法: `domain-modeling`；架构切换边界由 `keel` 补充
+> 结果落点: NC/RS/FM/EC/EV/RC Candidates；真实不同概念的保留结论也在对应 findings 尾部
 
 ## 目标
 
@@ -109,4 +110,3 @@ resolve concept and owner
 - 不同 bounded context 没有复制对方定义；
 - residual old-term matches 全部落入 compatibility input、negative guard 或 historical evidence；
 - 后续新增 concept 必须说明它退休了什么，或记录净增长、owner 和 review trigger。
-

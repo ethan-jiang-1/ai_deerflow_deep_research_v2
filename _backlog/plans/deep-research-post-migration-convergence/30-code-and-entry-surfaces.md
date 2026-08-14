@@ -1,6 +1,7 @@
 # 30 - Code And Entry Surfaces
 
 > 角色: 生产实现、配置、脚本与入口的收敛顺序
+> 结果落点: `70-73`、`76`、`78`；helper、export、entry 与 current guard 已分别定性
 
 ## 原则
 
@@ -131,4 +132,3 @@ fixture composition 是确定性证据能力，不因“非生产”自动删除
 - production wheel 不包含 fixture/retired implementation；
 - import direction、async blocking-I/O 和 DeerFlow gitlink boundaries 仍通过治理；
 - change 记录净增加/删除及尚未退役的 compatibility surface。
-

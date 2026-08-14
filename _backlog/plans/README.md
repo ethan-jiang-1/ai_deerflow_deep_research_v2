@@ -19,7 +19,7 @@
 
 | Plan | 说明 |
 |------|------|
-| [deep-research-post-migration-convergence/](deep-research-post-migration-convergence/) | 以 `deep_research_harness/` 为目标产品拓扑，系统收敛迁移残留、重复术语、旧代码与过期测试证据；实际修改拆成一次一个 OpenSpec change。 |
+| [deep-research-post-migration-convergence/](deep-research-post-migration-convergence/) | 当前基线审计已形成 9 份 findings / 54 个最终 Candidate；先恢复 clean-clone delivery，再按 `99` 一次一个 OpenSpec change 收敛迁移残留、重复术语、旧代码与过期测试证据。 |
 
 新的分析或设计应在此创建，完成后再移入归档。
 

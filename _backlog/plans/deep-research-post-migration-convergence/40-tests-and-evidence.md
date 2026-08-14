@@ -1,6 +1,7 @@
 # 40 - Tests And Evidence
 
 > 角色: 测试、fixture、scenario、evaluation 与治理资产的减法规则
+> 结果落点: `74` 及所有 findings 尾部的“保留负向护栏”；测试减法随 owning Candidate 实施
 
 ## 目标
 
@@ -127,4 +128,3 @@ old implementation test
 - fixture source 与 production wheel 隔离；
 - current entry surface 至少有一条真实 handoff evidence；
 - historical release artifacts 不被当前 suite 当作 freshness proof。
-

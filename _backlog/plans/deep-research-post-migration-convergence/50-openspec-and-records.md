@@ -1,6 +1,7 @@
 # 50 - OpenSpec And Records
 
 > 角色: 规格、治理 metadata、词典、ADR、当前文档与历史材料的同步边界
+> 结果落点: `71`、`74`、`77` 与 owner-local Candidate slices；不创建横向 spec-cleanup mega-change
 
 ## OpenSpec 的位置
 
@@ -110,4 +111,3 @@ ADR 是历史决策记录，不因目标变化而删除或重写成今天的观�
 - glossary 只承载 current language，ADR status 与 current docs 路由清楚；
 - archive/_done residual 不被误报为 current drift；
 - OpenSpec strict validation和五个项目 checker通过，且 checker scope 未被悄悄缩小。
-

@@ -119,6 +119,44 @@ compatibility report 中。
 - `openspec/specs/deployment-configuration/spec.md`
 - `openspec/specs/local-configuration-profiles/spec.md`
 
+## Finding EC-06: `ResearchGraphRecipe.create()` 是无人使用的 compatibility constructor
+
+`ResearchGraphRecipe.create()` 只把参数原样转给 `ResearchGraphRecipe.all_real()`，正文也明确称它为
+compatibility constructor。current production、scripts、runtime assembly 与 fixtures 都不调用它；唯一
+consumer 是 `test_topology_and_implementation.py` 把它与 `all_real` 并列，验证两者都不接受 caller-selected
+implementation modes。换言之，当前测试在保护 alias 的 signature，而不是独有行为。
+
+这是 exported Python surface，不能只凭 private dead-code 规则删除；但仓库内 consumer 已经封闭，目标
+constructor 也明确。实施时需先确认项目对第三方 Python import 的 support boundary；若没有承诺外部
+consumer，可 clean break 删除，并把 fixed-all-real invariant 只留在 canonical `all_real()` 上。
+
+证据：
+
+- `deep_research_harness/src/deerflow_deep_research/runtime/research.py`
+- `deep_research_harness/src/deerflow_deep_research/runtime/bundle_graph.py`
+- `deep_research_harness/tests/graph/test_topology_and_implementation.py`
+- repository-wide tracked reference scan
+
+## Finding EC-07: `disable_clarification` 是现行受信输入 alias，不是可直接删的旧字符串
+
+`tool.py` 同时接受 canonical `non_interactive=true` 与 `disable_clarification=true`，而
+`runtime-operations`、`runtime-integration` main specs 和 focused tests 明确把后者定义为 existing trusted
+compatibility marker。它不是 public reflected-tool argument，也不进入 checkpoint；但它是 host/runtime
+context 的 cross-boundary trusted-input promise，仓库无法枚举所有 host producer。
+
+current writer `ResearchRunExperience` 只发 canonical marker，说明内部迁移已完成；外部 host producer 与
+support window仍未知。因此它不能跟普通 alias 一起机械删除。Product/Runtime Integration Owner 需要决定
+是否结束 marker compatibility；若结束，应先观测或枚举 producer，给 stale producer 明确 denial，并保留
+canonical policy validation。不能把 alias 静默解释成 interactive request，因为那会改变 admission 语义。
+
+证据：
+
+- `deep_research_harness/src/deerflow_deep_research/tool.py`
+- `deep_research_harness/src/deerflow_deep_research/runtime/run_experience.py`
+- `deep_research_harness/tests/unit/test_non_interactive.py`
+- `openspec/specs/runtime-operations/spec.md`
+- `openspec/specs/runtime-integration/spec.md`
+
 ## 最终审计 Candidate
 
 ### EC-C01 - Keep distinct current entry surfaces
@@ -147,7 +185,7 @@ compatibility report 中。
   Demo TUI/Local Session Workbench distinction仍清晰。
 - **保留负向护栏**: tests/docs 继续声明 Demo TUI/workbench 不是 Primary User product route；未来复活
   必须新 OpenSpec change 和 product decision。
-- **OpenSpec change slice**: `converge-entry-surface-language`，可与 NC-C03 glossary ownership 同批。
+- **OpenSpec change slice**: `restore-product-glossary-ownership`，与 NC-C03/OR-C05 同批。
 
 ### EC-C03 - Retain old-entry rejection guards
 
@@ -175,7 +213,8 @@ compatibility report 中。
   与 lint 通过。
 - **保留负向护栏**: explicit model selection、one matching credential、safe revision、no secret projection、
   preflight failure before adapter/Bundle。
-- **OpenSpec change slice**: 纳入 `converge-entry-surface-language` 的 private subtraction task。
+- **OpenSpec change slice**: `subtract-demo-compatibility-helpers`；不与 exported constructor、glossary 或
+  persisted/config decision 混批。
 
 ### EC-C05 - Decide legacy checkpointer support explicitly
 
@@ -186,7 +225,39 @@ compatibility report 中。
 - **Disposition**: `product decision`。
 - **迁移条件**: 枚举 supported deployment configs；选择 conflict/rejection behavior、notice window、backup/
   rollback；验证 GraphHost 与 diagnostics 同步 cutover。
-- **删除条件**: 见 `75-persisted-compatibility-findings.md::PC-C05`。
+- **删除条件**: 见 `75-persisted-compatibility-findings.md::PC-C07`。
 - **保留负向护栏**: doctor/GraphHost 必须同选一个 provider；不得静默选择错误 durability；DSN/secret
   不得进入 output；local profile isolation继续拒绝 legacy section。
 - **OpenSpec change slice**: `resolve-legacy-checkpointer-precedence`，在产品/support decision 后准入。
+
+### EC-C06 - Delete the `ResearchGraphRecipe.create()` constructor after export-scope closure
+
+- **证据**: `create()` 只转发 `all_real()`；production/entry/fixture 无 consumer；唯一 reference 是
+  fixed-all-real signature test。
+- **当前 owner**: exported compatibility alias 与 implementation-shape test。
+- **目标 owner**: `ResearchGraphRecipe.all_real()` 是唯一 production recipe constructor；
+  `from_adapters()` 与 fixture `mixed_recipe()` 分别拥有 explicit composition seams。
+- **Disposition**: `delete`，但先关闭外部 Python import support scope。
+- **迁移条件**: Runtime Integration Owner确认该包不承诺未登记第三方 constructor consumer，或完成其
+  通知/迁移；将 invariant test 改为只保护 `all_real()` 不接受 mode selection。
+- **删除条件**: tracked consumers 为零；export/docs/spec 无 `create()` route；focused graph/runtime tests通过。
+- **保留负向护栏**: public runtime仍只能构造 all-real；caller不得通过 adapters、implementations或
+  implementation_modes 改写 production composition。
+- **OpenSpec change slice**: `retire-recipe-constructor-alias`；因 surface grade不同，不与 private demo
+  helpers或 `disable_clarification` 决策捆绑。
+
+### EC-C07 - Decide the `disable_clarification` trusted-context compatibility window
+
+- **证据**: tool admission reader、canonical internal writer、main-spec compatibility requirements与双 marker
+  focused tests；无可枚举 external host producer inventory。
+- **当前 owner**: Runtime Integration trusted-context contract。
+- **目标 owner**: canonical `non_interactive=true` + closed `non_interactive_policy`；或由 Product/Runtime
+  Integration Owner批准有期限的 alias reader。
+- **Disposition**: `product decision`。
+- **迁移条件**: 枚举/观测 supported host producers；确定 notice window、stale-marker denial code与 rollback；
+  证明 internal writers只发 canonical marker。
+- **删除条件**: supported producers已迁移；main specs/tests移除 positive alias promise；old marker有明确拒绝
+  或被完全关闭，且不会静默退回 interactive behavior。
+- **保留负向护栏**: 两种 marker在兼容期均要求 exact closed policy；resume/refine不得重新注入 checkpoint
+  policy；caller/presentation input不得伪造 trusted context。
+- **OpenSpec change slice**: `resolve-non-interactive-marker-compatibility`，取得 product/support decision后准入。
