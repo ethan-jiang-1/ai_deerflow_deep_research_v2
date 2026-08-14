@@ -5,7 +5,7 @@
 > 应用/spec 取证基线: `5bb41c16a45ff3caae6e5b1e900610c91bf68336`
 > 审计综合 revision: `811203726cfa6478ceebdabc378daabce1b6758b`
 > 执行编排 revision: `91709e740fdafcb8275c2a182a61554342e2bd08`；8-change program budget
-> 状态: 本基线审计完成；54 个最终 Candidate；00 governance bootstrap 已 archive（`8661693`）；01 已 archive 并同步 main spec（`47a3bb5`）；02 已 archive 并同步 main spec（`9b68e4d`，验证限制保留为 evidence-limited）；01 的16个冻结 Candidate与 EV-C02/C03/C04 已记录终态；0 active OpenSpec changes
+> 状态: 本基线审计完成；54 个最终 Candidate；00 governance bootstrap 已 archive（`8661693`）；01 已 archive 并同步 main spec（`47a3bb5`）；02 已 archive 并同步 main spec（`9b68e4d`，验证限制保留为 evidence-limited）；03、04 与05均已 archive；05 的11项终态已记录；0 active OpenSpec changes
 
 ## 使用规则
 
@@ -66,10 +66,10 @@
 
 | Candidate | Grounded disposition | Admission | Target / change |
 | --- | --- | --- | --- |
-| [FM-C01](../02-audit-findings/72-fixture-mode-findings.md#fm-c01---resolve-and-retire-the-no-graph-full-fake-lifecycle-path) | product decision; recommend migrate then delete | blocked: zero-credential UX decision | explicit fixture graph or honest simulator / `converge-run-input-and-composition-contracts` |
-| [FM-C02](../02-audit-findings/72-fixture-mode-findings.md#fm-c02---retire-persisted-full_fake-mode-only-after-support-closure) | migrate then delete old enum | blocked: FM-C01 + retained data | honest current modes / `converge-run-input-and-composition-contracts` |
-| [FM-C03](../02-audit-findings/72-fixture-mode-findings.md#fm-c03---keep-fixture-source-and-explicit-mixed-composition) | keep | non-regression | fixture/mixed guard / attached to `converge-run-input-and-composition-contracts` |
-| [FM-C04](../02-audit-findings/72-fixture-mode-findings.md#fm-c04---preserve-missing-mode-compatibility-until-retained-states-are-migrated) | migrate then delete default reader | blocked: retained states | explicit mode / `converge-run-input-and-composition-contracts` |
+| [FM-C01](../02-audit-findings/72-fixture-mode-findings.md#fm-c01---resolve-and-retire-the-no-graph-full-fake-lifecycle-path) | archived 05: zero-credential execution is fixed fixture-graph proof; no no-graph full-fake route remains | executor-required start and demo command negatives prove no fallback/completed claim | `2026-08-15-converge-run-input-and-composition-contracts` (`4d91571`) |
+| [FM-C02](../02-audit-findings/72-fixture-mode-findings.md#fm-c02---retire-persisted-full_fake-mode-only-after-support-closure) | archived 05: `full_fake` and missing/unknown modes are rejected; uninventoried retained/external data is explicitly unsupported | State decode/no-write negatives prove no default, backfill, or provenance upgrade | `2026-08-15-converge-run-input-and-composition-contracts` (`4d91571`) |
+| [FM-C03](../02-audit-findings/72-fixture-mode-findings.md#fm-c03---keep-fixture-source-and-explicit-mixed-composition) | retained guard: explicit fixture/mixed composition and fixture source isolation rechecked in 05 | recipe/topology and demo composition guards remain falsifiable | current owners; 05 archive (`4d91571`) |
+| [FM-C04](../02-audit-findings/72-fixture-mode-findings.md#fm-c04---preserve-missing-mode-compatibility-until-retained-states-are-migrated) | archived 05: missing-mode default reader retired; unsupported retained/external states reject before projection | State negative/reload tests prove no write or `all_real` upgrade | `2026-08-15-converge-run-input-and-composition-contracts` (`4d91571`) |
 
 ## Entry And Configuration
 
@@ -80,7 +80,7 @@
 | [EC-C03](../02-audit-findings/73-entry-and-configuration-findings.md#ec-c03---retain-old-entry-rejection-guards) | guard-retained: old-entry rejection | archived 01; entry guard remains falsifiable | deployment/structure admission |
 | [EC-C04](../02-audit-findings/73-entry-and-configuration-findings.md#ec-c04---delete-test-only-demo-compatibility-helpers) | retired after canonical profile/preflight transfer | archived 01; canonical pre-Adapter failure and redaction tests pass | canonical demo profile/preflight APIs |
 | [EC-C05](../02-audit-findings/73-entry-and-configuration-findings.md#ec-c05---decide-legacy-checkpointer-support-explicitly) | deployment decision | linked to PC-C07 | database-only or bounded legacy reader / `converge-runtime-input-compatibility` |
-| [EC-C06](../02-audit-findings/73-entry-and-configuration-findings.md#ec-c06---delete-the-researchgraphrecipecreate-constructor-after-export-scope-closure) | delete alias after support closure | blocked: Python export support | `all_real()` / `converge-run-input-and-composition-contracts` |
+| [EC-C06](../02-audit-findings/73-entry-and-configuration-findings.md#ec-c06---delete-the-researchgraphrecipecreate-constructor-after-export-scope-closure) | archived 05: `ResearchGraphRecipe.create()` removed with no supported facade/alias | tracked consumers use `all_real()` or explicit composition; later support requires a new change | `2026-08-15-converge-run-input-and-composition-contracts` (`4d91571`) |
 | [EC-C07](../02-audit-findings/73-entry-and-configuration-findings.md#ec-c07---decide-the-disable_clarification-trusted-context-compatibility-window) | runtime/product decision | blocked: host producer inventory | `non_interactive` / `converge-runtime-input-compatibility` |
 
 ## Tests And Evidence Assets
@@ -99,11 +99,11 @@
 
 | Candidate | Grounded disposition | Admission | Target / change |
 | --- | --- | --- | --- |
-| [PC-C01](../02-audit-findings/75-persisted-compatibility-findings.md#pc-c01---delete-redundant-profile-compatibility-apis-while-preserving-the-canonical-v1-reader-policy) | delete duplicate helper; decide v1 window | helper ready, reader blocked | canonical runtime reader / `converge-run-input-and-composition-contracts` |
-| [PC-C02](../02-audit-findings/75-persisted-compatibility-findings.md#pc-c02---delete-parse_profile_response-after-test-migration) | delete wrapper after test/export migration | blocked: Python export support | `parse_profile_input()` / `converge-run-input-and-composition-contracts` |
+| [PC-C01](../02-audit-findings/75-persisted-compatibility-findings.md#pc-c01---delete-redundant-profile-compatibility-apis-while-preserving-the-canonical-v1-reader-policy) | archived 05: only the source-controlled current v2 profile content is admitted; old/absent schema is rejected | current writer round-trips and invalid persisted input proves no write | `2026-08-15-converge-run-input-and-composition-contracts` (`4d91571`) |
+| [PC-C02](../02-audit-findings/75-persisted-compatibility-findings.md#pc-c02---delete-parse_profile_response-after-test-migration) | archived 05: wrapper deleted; consumers project the canonical parse result | focused domain/evaluation-consumer tests pass with no external support promise | `2026-08-15-converge-run-input-and-composition-contracts` (`4d91571`) |
 | [PC-C03](../02-audit-findings/75-persisted-compatibility-findings.md#pc-c03---migrate-graph-checkpoints-before-deleting-repair_counts) | migrate then delete schema field | blocked: checkpoint inventory/cutover | gate kernel / `converge-retained-run-data-compatibility` |
 | [PC-C04](../02-audit-findings/75-persisted-compatibility-findings.md#pc-c04---retire-repair_exhausted-only-after-bundle-data-support-closure) | migrate then delete enum | blocked: Bundle data + target reason | current terminal outcomes / `converge-retained-run-data-compatibility` |
-| [PC-C05](../02-audit-findings/75-persisted-compatibility-findings.md#pc-c05---keep-current-refinement-facts-and-their-old-state-optional-reader) | keep | non-regression | Bundle refinement recovery |
+| [PC-C05](../02-audit-findings/75-persisted-compatibility-findings.md#pc-c05---keep-current-refinement-facts-and-their-old-state-optional-reader) | retained guard: current refinement facts and optional-reader recovery remain unchanged | lifecycle/refinement guards rechecked in 05 | Bundle refinement recovery; 05 archive (`4d91571`) |
 | [PC-C06](../02-audit-findings/75-persisted-compatibility-findings.md#pc-c06---preserve-old-run-observation-readers-until-retained-records-close) | migrate/expire old readers; keep summary v2 | blocked: Journal retention | v3 manifest/event / `converge-retained-run-data-compatibility` |
 | [PC-C07](../02-audit-findings/75-persisted-compatibility-findings.md#pc-c07---decide-legacy-checkpointer-precedence-before-any-deletion) | deployment decision | blocked: supported config inventory | database-only or bounded reader / `converge-runtime-input-compatibility` |
 
@@ -116,7 +116,7 @@
 | [EV-C03](../02-audit-findings/76-evaluation-boundary-findings.md#ev-c03---converge-evaluation-contract-imports-onto-one-supported-route) | archived: facade-only support; re-export module deleted | domain remains fact authority; facade identity and retired-module import failure are covered | domain authority + facade / archive `9b68e4d` |
 | [EV-C04](../02-audit-findings/76-evaluation-boundary-findings.md#ev-c04---delete-the-unused-compute_metrics-shim) | archived: zero-caller shim and export deleted | typed metrics and `ValidatedEvaluationOutcome` remain unchanged | typed metrics / archive `9b68e4d` |
 | [EV-C05](../02-audit-findings/76-evaluation-boundary-findings.md#ev-c05---retain-live-report-classification-and-fail-closed-archive-admission) | retain guard | non-regression | live evidence intake |
-| [EV-C06](../02-audit-findings/76-evaluation-boundary-findings.md#ev-c06---remove-evaluations-dependency-on-the-profile-parser-wrapper) | delete dependency | with PC-C02 | canonical profile parser / `converge-run-input-and-composition-contracts` |
+| [EV-C06](../02-audit-findings/76-evaluation-boundary-findings.md#ev-c06---remove-evaluations-dependency-on-the-profile-parser-wrapper) | archived 05: evaluation test consumer uses the canonical parse-result projection; evaluation runtime/review semantics unchanged | focused live-evaluation consumer proof and workflow controls pass | `2026-08-15-converge-run-input-and-composition-contracts` (`4d91571`) |
 
 ## OpenSpec And Records
 
@@ -137,9 +137,9 @@
 | --- | --- | --- | --- |
 | [RC-C01](../02-audit-findings/78-residual-compatibility-sweep-findings.md#rc-c01---migrate-consumers-and-delete-the-state-only-refinement-wrapper) | archived 04: workbench and integration consumers migrated; state-only wrapper deleted | removed-surface, lifecycle admission, workbench, replay/recovery, and no-resurrection tests pass | `RefinementAdmission` / `2026-08-14-converge-run-bundle-observation-authority` |
 | [RC-C02](../02-audit-findings/78-residual-compatibility-sweep-findings.md#rc-c02---delete-the-legacy-short-state-planner-helper) | retired after canonical Bundle-profile transfer | archived 01; profile and negative projection tests pass | canonical profile reader |
-| [RC-C03](../02-audit-findings/78-residual-compatibility-sweep-findings.md#rc-c03---resolve-the-joint-profile-and-proposal-input-compatibility-window) | product/data decision; then migrate/retain | blocked: profile/checkpoint/producer matrix | versioned profile/proposal inputs / `converge-run-input-and-composition-contracts` |
+| [RC-C03](../02-audit-findings/78-residual-compatibility-sweep-findings.md#rc-c03---resolve-the-joint-profile-and-proposal-input-compatibility-window) | archived 05: approved current profile/proposal/checkpoint matrix is the only reader/writer scope; legacy/external shapes reject | HITL1 no-write, raw semantic input, and reload negatives pass | `2026-08-15-converge-run-input-and-composition-contracts` (`4d91571`) |
 | [RC-C04](../02-audit-findings/78-residual-compatibility-sweep-findings.md#rc-c04---decide-supported-appconfig-endpoint-aliases-before-reader-subtraction) | product/support decision | blocked: supported AppConfig versions | approved endpoint field set / `converge-runtime-input-compatibility` |
-| [RC-C05](../02-audit-findings/78-residual-compatibility-sweep-findings.md#rc-c05---retain-composition-and-workspace-alias-drift-guards) | retain guards | non-regression | recipe identity + storage readiness |
+| [RC-C05](../02-audit-findings/78-residual-compatibility-sweep-findings.md#rc-c05---retain-composition-and-workspace-alias-drift-guards) | retained guard: composition and workspace drift checks remain current | recipe identity/storage readiness guards rechecked in 05 | current owners; 05 archive (`4d91571`) |
 | [RC-C06](../02-audit-findings/78-residual-compatibility-sweep-findings.md#rc-c06---keep-legacy-diagnostic-location-compatibility-until-retained-results-close) | migrate/expire reader or bounded retain | blocked: retained Run results | exact diagnostic publication / `converge-retained-run-data-compatibility` |
 | [RC-C07](../02-audit-findings/78-residual-compatibility-sweep-findings.md#rc-c07---keep-current-normalization-and-bounded-fallback-behavior) | guard-retained: normalization and bounded fallback | archived 01; projection and refinement negatives remain fail closed | existing behavior owners |
 

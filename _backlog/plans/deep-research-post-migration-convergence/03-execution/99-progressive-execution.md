@@ -214,8 +214,8 @@ external Python consumer与retained-data inventory lanes；本 change没有作�
 创建05前一次性批准zero-credential UX，关闭recipe/profile parser Python export、supported Bundle mode、profile、
 proposal与checkpoint producer inventories。
 
-- [ ] **05 `converge-run-input-and-composition-contracts`**: FM-C01/C02/C04、EC-C06、PC-C01/C02、
-  RC-C03、EV-C06。
+- [x] **05 `converge-run-input-and-composition-contracts`**: FM-C01/C02/C04、EC-C06、PC-C01/C02、
+  RC-C03、EV-C06。已 archive 并同步主规格（`2026-08-15-converge-run-input-and-composition-contracts`，`4d91571`）。
 
 `composition-mode` workstream依次迁移`ResearchGraphRecipe.create()` consumers、替换/退役no-graph full-fake
 path、迁移/拒绝explicit `full_fake` records，并在missing-mode states关闭后删除default reader。`profile-proposal`
@@ -260,6 +260,17 @@ evidence并入 input matrix。最终 strict OpenSpec、Agent Charter、project s
 `git diff --check`通过；05为 `ready for apply`。这只是 planning readiness，不代表 Gate F已实现，也不授权
 implementation/archive。
 
+**05 closeout（2026-08-15）:** `openspec/changes/archive/2026-08-15-converge-run-input-and-composition-contracts/`
+保存完成的 change artifacts、三个 closeout corrections与验证证据；apply implementation为`66e1e73`，archive
+commit为`4d91571`。FM-C01以固定 fixture graph 退休 no-graph full-fake route；FM-C02/C04关闭`FULL_FAKE`与
+missing-mode default并拒绝未盘点 retained/external state；EC-C06删除`ResearchGraphRecipe.create()`；PC-C01/C02、
+RC-C03关闭旧 profile/proposal/checkpoint reader与 parser wrapper；EV-C06仅迁移 evaluation test consumer；FM-C03、
+PC-C05与RC-C05重验后保留为可证伪 guard。`UV_OFFLINE=1 make verify`的最终 lane evidence为 fast `2594/0`、
+integration `243/0/4 skipped`、workflow `35/0`；requirements/specs/architecture/charter/coverage、strict OpenSpec、
+doctor与git whitespace均通过，`deerflow` gitlink仍为`66b9e7f…`且干净。未运行`test-live`、credentialed real
+Demo/TUI/Gateway、`requires_llm`、`release_e2e`、Postgres、external Python-consumer和retained-data inventory lanes；
+它们没有被当作 live/external compatibility closure，也没有留下05的兼容性义务。
+
 ## Phase G - Runtime host input compatibility
 
 创建06前一次关闭host trusted-context producer、supported deployment config/provider和AppConfig version inventories。
@@ -278,6 +289,12 @@ precedence仍是当前受测行为，endpoint alias reader仍接收 external App
 writer、conflict与fail-closed behavior，不能枚举 trusted-context producer、supported deployment provider或 AppConfig
 versions。Runtime/Deployment Owner仍须分别决定 marker support window、checkpointer precedence和 endpoint alias
 support，再提供 notice、denial与 rollback route；focused baseline tests已通过（149 passed），不构成这些决定。
+
+**06 post-05 recheck（2026-08-15）:** 05已 archive，但没有改变`disable_clarification`、legacy `checkpointer`
+precedence或 AppConfig endpoint alias的support contract，也没有提供 trusted-context producer、deployment provider或
+supported AppConfig version inventory。因此 Gate G仍为`not ready`：Runtime/Deployment Owner必须为 EC-C05/C07、PC-C07
+与RC-C04分别授权迁移/明确拒绝/有期限 support，并给出notice、denial、rollback、review/removal trigger与完成计数；
+不得把05对外部 profile/proposal/Bundle inputs的reject decision外推到deployment configuration。
 
 ## Phase H - Retained run data compatibility
 
