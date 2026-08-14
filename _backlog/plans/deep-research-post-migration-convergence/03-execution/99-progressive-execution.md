@@ -51,6 +51,28 @@
 **数量控制:** 本计划只允许 `00-07` 八个槽位。workstream/stage不得升级成独立change；确需第9个时，必须先
 修改`80`并获得明确批准，默认通过合并或取消另一个槽位保持总数仍为8。change不得夹带新功能或未审计重构。
 
+## Owner Decision Packets
+
+下列 packet 是下一步准入的最小授权输入，不是 agent 可以替代的产品、support 或 retained-data 决定。每个
+Owner 的回复必须选定 target 或 bounded retained-support，并给出受支持 consumer/data 的 inventory、notice/denial、
+recovery/rollback 与 removal/review trigger；没有这些输入不得创建 change。
+
+- **02 Evaluation Owner:** 建议只支持已文档化的
+  `deerflow_deep_research.runtime.evaluation` facade，保持 domain 为 fact authority，`runtime.evaluation.contracts`
+  只是待删除的 module-private re-export。还须提交所有 supported/private/external Evaluation Bundle 与 Review Record
+  的 missing-`evidence_layer` inventory，并选择 preserving-hash backfill、明确 rejection，或有期限 retention；缺失或
+  unknown layer必须继续保守为`deterministic_handoff`，不得升级为 live quality。
+- **05 Product + Python Support Owner:** 建议零凭据 proof统一迁到 fixture graph，退休 no-graph
+  `bind_full_fake()`，不保留另一个伪研究完成的 simulator。还须决定 `ResearchGraphRecipe.create()` 与
+  `parse_profile_response()` 的 third-party import support boundary，并交付 supported Bundle mode、profile、proposal
+  与 checkpoint producer inventory；每个旧 input必须选择迁移、明确拒绝或有期限 reader，不能以本机零命中替代。
+- **06 Runtime + Deployment Owner:** 必须分别决定 `disable_clarification` 的 trusted-producer support window、legacy
+  `checkpointer` 相对 `database` 的 precedence，以及 AppConfig endpoint aliases。每项都要列出 supported producer/
+  config version，定义 conflicting/stale input 的 notice 或 fail-closed denial，以及回滚期间 writer/reader 的一致选择。
+- **07 Data Owners:** 必须按 checkpoint、Bundle terminal、Journal manifest/event 与 persisted Run diagnostic result
+  分别给出 supported-data inventory。每个 family 要有 dry-run count、old/new reader-writer matrix、restart/replay
+  proof、rollback action 与 post-cutover count；未知数据只能保留 reader或拒绝，不能被静默改写为 current provenance。
+
 ## Phase A - 合法引入program change
 
 - [x] **00 `admit-bounded-program-change-workstreams`**: governance bootstrap，不实施54个Candidate。
