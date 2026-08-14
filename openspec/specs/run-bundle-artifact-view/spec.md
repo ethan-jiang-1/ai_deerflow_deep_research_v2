@@ -1,11 +1,12 @@
-# research-session-artifact-view Specification
+# run-bundle-artifact-view Specification
 
 > req: RSV-001, RSV-002, RSV-003, RSV-004
 
 ## Purpose
 
-Provide a fixed, metadata-only view of broker-authorized retained session artifacts
-without recursive discovery, artifact bodies, or artifact-derived control.
+Provide a fixed, metadata-only view of lifecycle-authorized contained Run Bundle
+artifacts without recursive discovery, artifact bodies, or artifact-derived control.
+
 ## Requirements
 
 ### Requirement: Run Bundle artifact catalog is fixed and observation-only
@@ -56,10 +57,10 @@ exists. (`RSV-003`)
 
 An artifact view SHALL expose only fixed, contained, bounded metadata or content that
 the selected available Run Bundle authorizes. It SHALL take a validated `bundle_id`
-through the shared lifecycle result/operation contract and SHALL not accept a session
-reference, raw path, or artifact-derived lifecycle identity. An unavailable Bundle
-shall remain unavailable even if a historical artifact reference or retained manifest
-still exists. (`RSV-004`)
+through the shared lifecycle result/operation contract and SHALL not accept a retired
+session reference, raw path, or artifact-derived lifecycle identity. An unavailable
+Bundle shall remain unavailable even if a historical artifact reference or retained
+manifest still exists. (`RSV-004`)
 
 #### Scenario: Artifact record cannot reopen a deleted Bundle
 - **WHEN** a historical artifact view references a Bundle that has been deleted

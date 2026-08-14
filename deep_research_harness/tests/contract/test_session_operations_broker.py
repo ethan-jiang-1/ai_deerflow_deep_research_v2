@@ -1,9 +1,9 @@
 """Regression coverage that retired brokers cannot become Bundle authority.
 
-@impl RES-001
-@impl RES-002
-@impl RES-003
-@impl RES-006
+@impl DRH-002
+@impl RDO-001
+@impl RDO-004
+@impl DRH-006
 """
 
 from __future__ import annotations

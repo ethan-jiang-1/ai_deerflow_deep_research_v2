@@ -1,7 +1,8 @@
 """Regression proof that the retired session store cannot be imported.
 
-@impl RUS-001
-@impl RUS-007
+@impl DRH-006
+@impl PRS-006
+@impl RUI-003
 """
 
 from __future__ import annotations

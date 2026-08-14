@@ -1,11 +1,13 @@
-# research-session-discovery-and-operations Specification
+# run-bundle-discovery-and-operations Specification
 
 > req: RDO-001, RDO-002, RDO-003, RDO-004, RDO-005, RDO-006, RDO-007
 
 ## Purpose
 
-Provide authorized, bounded discovery and lifecycle operations for retained local
-Deep Research sessions without treating manifests or artifacts as control authority.
+Provide authorized, bounded Run Bundle discovery and lifecycle operations for local
+Deep Research surfaces without treating manifests, artifacts, or observations as
+control authority.
+
 ## Requirements
 
 ### Requirement: Authorized local discovery projects bounded Bundle facts
@@ -27,9 +29,9 @@ repairing, or pruning a Bundle. (`RDO-001`)
 The operation boundary SHALL receive trusted runtime scope from a runtime adapter or
 fixed local-profile adapter, never from CLI/TUI arguments. It SHALL resolve only a
 selected Bundle within that scope and SHALL not synthesize a historical `ToolRuntime`,
-rebuild context from a session manifest, or take AppConfig, host paths, provider
-connection, sandbox id, user, thread, recipe, or implementation map from caller input
-or retained data. Read-only status/inspection SHALL not initialize a sandbox or graph
+rebuild context from a retired session manifest, or take AppConfig, host paths, provider
+connection, sandbox id, user, thread, recipe, or implementation map from caller input or
+retained data. Read-only status/inspection SHALL not initialize a sandbox or graph
 capabilities. (`RDO-002`)
 
 #### Scenario: Read-only open does not initialize a sandbox
@@ -44,8 +46,8 @@ control path. `resume` SHALL derive the current pending request from Bundle-loca
 compare the correlated expected request id, validate the submitted typed response against
 that request, and repeat correlation/response-kind checks under the Bundle State writer.
 `refine` SHALL submit its separate bounded refinement through the same boundary and
-shall not replace a pending response. A manifest, binding, caller phase, retained cursor,
-or external checkpoint SHALL NOT be lifecycle authority. (`RDO-003`)
+shall not replace a pending response. A manifest, retired binding, caller phase,
+retained cursor, or external checkpoint SHALL NOT be lifecycle authority. (`RDO-003`)
 
 #### Scenario: Stale response remains rejected after local open
 - **WHEN** an available Bundle receives a response not correlated with its latest Bundle-local pending interaction
@@ -58,8 +60,8 @@ or external checkpoint SHALL NOT be lifecycle authority. (`RDO-003`)
 ### Requirement: Discovery and operation outputs fail closed and remain redacted
 
 All discovery and operation outputs SHALL fail closed for unavailable, stale, malformed,
-or unauthorized Bundles. They SHALL expose only opaque Bundle identity when disclosure
-is valid, bounded lifecycle/availability facts, legal next actions, and whitelisted
+or unauthorized Bundles. They SHALL expose only opaque Bundle identity when disclosure is
+valid, bounded lifecycle/availability facts, legal next actions, and whitelisted
 contained artifact references. For an authorized suspended Bundle, they MAY expose the
 validated bounded `HumanInputRequest` display fields derived from Bundle-local pending
 State so the owner can answer it. They SHALL never expose raw scope, provider, host path,
@@ -103,9 +105,10 @@ Supported local discovery, open, status, control, and refinement operations SHAL
 the same trusted conversation scope and Bundle lifecycle contract as the public tool.
 They SHALL validate a supplied `bundle_id` or perform bounded scoped discovery of
 Bundle directories and Bundle-local State. They SHALL not enumerate raw foreign paths,
-use a private session index, recreate historical runtime context, inspect an external
-checkpoint, or resolve a session reference. A missing, foreign, corrupt, or ambiguous
-candidate SHALL return a redacted typed outcome with its legal next action. (`RDO-007`)
+use a retired private session index, recreate historical runtime context, inspect an
+external checkpoint, or resolve a session reference. A missing, foreign, corrupt, or
+ambiguous candidate SHALL return a redacted typed outcome with its legal next action.
+(`RDO-007`)
 
 #### Scenario: Local operation finds an active Bundle without an index
 - **WHEN** a supported local operation has trusted scope but no Current Bundle Handle

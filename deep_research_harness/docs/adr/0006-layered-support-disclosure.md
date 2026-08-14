@@ -23,5 +23,5 @@ historical title, decision text, or runtime authority.
 - **Current owner or route:** [Support Handoff](../../CONTEXT.md) is a current
   terminology/status entry only, not a behavior contract. The owning current requirements
   are [research-run-experience](../../../openspec/specs/research-run-experience/spec.md),
-  [research-run-session](../../../openspec/specs/research-run-session/spec.md), and
+  [deep-research-harness-run-bundles](../../../openspec/specs/deep-research-harness-run-bundles/spec.md), and
   [run-event-journal](../../../openspec/specs/run-event-journal/spec.md).

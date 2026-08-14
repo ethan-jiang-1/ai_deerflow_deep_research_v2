@@ -5,12 +5,11 @@ Bundle. It can persist and read that Bundle's protected diagnostics subtree, but
 cannot discover, authorize, reopen, mutate, or recreate a Bundle. The journal is
 therefore evidence about an already-authorized Run, never a second Run locator.
 
-@impl RUS-001
-@impl RUS-002
-@impl RUS-004
-@impl RUS-007
-@impl RES-001
-@impl RES-004
+@impl DRH-001
+@impl REJ-001
+@impl REJ-002
+@impl DRH-006
+@impl REJ-004
 """
 
 from __future__ import annotations

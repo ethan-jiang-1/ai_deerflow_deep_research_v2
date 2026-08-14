@@ -59,8 +59,8 @@ prefixes:
   RER: research-run-experience
   RUS: research-run-session
   RES: research-session-lifecycle-binding
-  RDO: research-session-discovery-and-operations
-  RSV: research-session-artifact-view
+  RDO: run-bundle-discovery-and-operations
+  RSV: run-bundle-artifact-view
   RWB: research-local-session-workbench
   SCC: selected-change-closeout-evidence
   TOP: topic-planning-node
@@ -306,41 +306,41 @@ RER-011: research-run-experience — The runtime binds generic visible-control s
 RER-012: research-run-experience — Shared confirmation prompts render every bounded typed proposal constraint before acceptance without exposing raw model/user text or lifecycle authority
 RER-013: research-run-experience — Shared run experience projects Bundle-owned outcomes and legal actions without authorizing recovery
 
-# research-run-session
-RUS-001: research-run-session — A canonical durable local run bundle manifests research identity, safe artifact references, retention state, and authoritative checkpoint binding without becoming a lifecycle controller
-RUS-002: research-run-session — A bounded redacted lifecycle trace records verified actions, trace progress, pending-input summaries, terminal outcomes, and diagnostic references without raw sensitive runtime content
-RUS-003: research-run-session — Local developer session discovery and inspection resolve trusted run references to manifests, artifacts, trace, and diagnostics while distinguishing inspection from execution resume
-RUS-004: research-run-session — Retained sessions expose bounded redacted diagnosis summaries and correlated attempt events without becoming lifecycle authority or raw logs
-RUS-005: research-run-session — Retained Wave0 diagnosis preserves closed redacted worker failure classes without becoming lifecycle authority or raw logs
-RUS-006: research-run-session — Retained diagnostics record bounded provider attempt, retry, backoff, and exhaustion observations correlated to the terminal incident without raw provider data
-RUS-007: research-run-session — Retained session material is observation-only after Bundle authority migration and cannot recover a deleted Run
-RUS-008: research-run-session — Available Bundle inspection exposes only bounded redacted Event Journal facts and reports post-loss diagnostics unavailable without an external fallback
+# retired: research-run-session
+RUS-001: research-run-session — A canonical durable local run bundle manifests research identity, safe artifact references, retention state, and authoritative checkpoint binding without becoming a lifecycle controller [DEPRECATED]
+RUS-002: research-run-session — A bounded redacted lifecycle trace records verified actions, trace progress, pending-input summaries, terminal outcomes, and diagnostic references without raw sensitive runtime content [DEPRECATED]
+RUS-003: research-run-session — Local developer session discovery and inspection resolve trusted run references to manifests, artifacts, trace, and diagnostics while distinguishing inspection from execution resume [DEPRECATED]
+RUS-004: research-run-session — Retained sessions expose bounded redacted diagnosis summaries and correlated attempt events without becoming lifecycle authority or raw logs [DEPRECATED]
+RUS-005: research-run-session — Retained Wave0 diagnosis preserves closed redacted worker failure classes without becoming lifecycle authority or raw logs [DEPRECATED]
+RUS-006: research-run-session — Retained diagnostics record bounded provider attempt, retry, backoff, and exhaustion observations correlated to the terminal incident without raw provider data [DEPRECATED]
+RUS-007: research-run-session — Retained session material is observation-only after Bundle authority migration and cannot recover a deleted Run [DEPRECATED]
+RUS-008: research-run-session — Available Bundle inspection exposes only bounded redacted Event Journal facts and reports post-loss diagnostics unavailable without an external fallback [DEPRECATED]
 
 # deep-research-wave0-worker-failure-classification
 WFC-001: deep-research-wave0-worker-failure-classification — Real Wave0 maps trusted worker boundaries to closed redacted per-attempt failure classes and honest exhausted-work aggregates
 
-# research-session-lifecycle-binding
-RES-001: research-session-lifecycle-binding — A runtime-owned durable session binding ties an opaque research id to one authenticated user scope and restart-stable checkpoint namespace without exposing provider credentials or becoming graph control state
-RES-002: research-session-lifecycle-binding — A runtime-owned read-only checkpoint reopen verifier resolves only through the bound provider and validates research identity, schema, and pending interrupt truth after a process restart
-RES-003: research-session-lifecycle-binding — Bound session metadata is only a prerequisite for later user-facing operations; it cannot execute resume, cancel, or answer or infer control state from a manifest or trace
-RES-004: research-session-lifecycle-binding — Binding creation, refresh, invalidation, and recovery are atomic, contained, redacted, and auditable without cross-user enumeration or host-path/provider-detail disclosure
-RES-005: research-session-lifecycle-binding — Retired public full-fixture bindings remain bounded inspection records and cannot select, import, resume, cancel, migrate, or reinterpret a fixture recipe before provider or graph access
-RES-006: research-session-lifecycle-binding — Legacy lifecycle bindings cannot resolve, authorize, or recover a Deep Research Run Bundle
+# retired: research-session-lifecycle-binding
+RES-001: research-session-lifecycle-binding — A runtime-owned durable session binding ties an opaque research id to one authenticated user scope and restart-stable checkpoint namespace without exposing provider credentials or becoming graph control state [DEPRECATED]
+RES-002: research-session-lifecycle-binding — A runtime-owned read-only checkpoint reopen verifier resolves only through the bound provider and validates research identity, schema, and pending interrupt truth after a process restart [DEPRECATED]
+RES-003: research-session-lifecycle-binding — Bound session metadata is only a prerequisite for later user-facing operations; it cannot execute resume, cancel, or answer or infer control state from a manifest or trace [DEPRECATED]
+RES-004: research-session-lifecycle-binding — Binding creation, refresh, invalidation, and recovery are atomic, contained, redacted, and auditable without cross-user enumeration or host-path/provider-detail disclosure [DEPRECATED]
+RES-005: research-session-lifecycle-binding — Retired public full-fixture bindings remain bounded inspection records and cannot select, import, resume, cancel, migrate, or reinterpret a fixture recipe before provider or graph access [DEPRECATED]
+RES-006: research-session-lifecycle-binding — Legacy lifecycle bindings cannot resolve, authorize, or recover a Deep Research Run Bundle [DEPRECATED]
 
-# research-session-discovery-and-operations
-RDO-001: research-session-discovery-and-operations — An authorized local principal discovers only its bounded retained-session projections and safe artifact references without filesystem or cross-user enumeration
-RDO-002: research-session-discovery-and-operations — A runtime-owned resolver recreates operation context only from current trusted DeerFlow identity, configuration, thread data, and sandbox APIs after private binding revalidation
-RDO-003: research-session-discovery-and-operations — Local open/status/resume/cancel operations revalidate the authoritative checkpoint and preserve existing lifecycle and pending-interrupt authority without a manifest-controlled transition
-RDO-004: research-session-discovery-and-operations — Discovery and operation results fail closed for stale, unauthorized, non-durable, corrupt, or unavailable sessions without exposing raw scope, provider, host-path, artifact-body, or checkpoint data
-RDO-005: research-session-discovery-and-operations — Authorized broker resume preserves typed advertised pending-input responses without inferring actions or widening authority
-RDO-006: research-session-discovery-and-operations — The authorized local broker projects current typed visible controls and resolves a generic control id under its namespace lock only against the current advertised pending action, failing closed for stale, unknown, or unadvertised controls
-RDO-007: research-session-discovery-and-operations — Scoped Bundle discovery and operations use Bundle-local authority without a session index or checkpoint fallback
+# run-bundle-discovery-and-operations
+RDO-001: run-bundle-discovery-and-operations — An authorized local principal discovers only bounded Run Bundle facts and safe artifact references without filesystem or cross-user enumeration
+RDO-002: run-bundle-discovery-and-operations — A runtime-owned resolver obtains operation scope only from current trusted DeerFlow identity, configuration, thread data, and sandbox APIs without a retired binding or manifest revalidation path
+RDO-003: run-bundle-discovery-and-operations — Local open/status/resume/cancel/refine operations revalidate Bundle-local State and preserve lifecycle and pending-interaction authority without a manifest-controlled transition
+RDO-004: run-bundle-discovery-and-operations — Discovery and operation results fail closed for stale, unauthorized, corrupt, or unavailable Bundles without exposing raw scope, provider, host-path, artifact-body, or checkpoint data
+RDO-005: run-bundle-discovery-and-operations — Authorized local resume preserves typed advertised pending-input responses without inferring actions or widening authority
+RDO-006: run-bundle-discovery-and-operations — The local workbench projects current typed visible controls and resolves a generic control id only against the current advertised pending action, failing closed for stale, unknown, or unadvertised controls
+RDO-007: run-bundle-discovery-and-operations — Scoped Bundle discovery and operations use Bundle-local authority without a retired session index or checkpoint fallback
 
-# research-session-artifact-view
-RSV-001: research-session-artifact-view — A local workbench catalog exposes only fixed owner-visible contained session artifact references without recursive bundle enumeration
-RSV-002: research-session-artifact-view — A selected catalog artifact is reauthorized, contained, regular-file validated, and rendered only as inert local metadata
-RSV-003: research-session-artifact-view — Unknown, foreign, stale, or malformed artifact access fails closed without widening session existence, reading retained paths after denial, or adding provider, sandbox, or graph work
-RSV-004: research-session-artifact-view — Run Bundle artifact views are reauthorized observations rather than Run discovery or recovery
+# run-bundle-artifact-view
+RSV-001: run-bundle-artifact-view — A local workbench catalog exposes only fixed owner-visible contained Run Bundle artifact references without recursive Bundle enumeration
+RSV-002: run-bundle-artifact-view — A selected catalog artifact is reauthorized, contained, regular-file validated, and rendered only as inert local metadata
+RSV-003: run-bundle-artifact-view — Unknown, foreign, stale, or malformed artifact access fails closed without widening Bundle existence, reading retained paths after denial, or adding provider, sandbox, or graph work
+RSV-004: run-bundle-artifact-view — Run Bundle artifact views are reauthorized observations rather than Run discovery or recovery
 
 # research-local-session-workbench
 RWB-001: research-local-session-workbench — A standalone terminal workbench discovers and selects only fixed-profile authorized durable local Deep Research sessions

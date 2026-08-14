@@ -5,8 +5,8 @@ This command is deliberately inspection-only. It first resolves the supplied opa
 Bundle id through the fixed local lifecycle profile, then reads only that selected
 Bundle's diagnostics subtree. It has no external retained-observation fallback.
 
-@impl RUS-003
-@impl RUS-008
+@impl RDO-001
+@impl RDO-004
 @impl REJ-004
 """
 

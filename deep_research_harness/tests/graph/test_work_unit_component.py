@@ -295,7 +295,7 @@ async def test_component_recorder_failure_cannot_change_submit_or_gate_results()
 
 
 async def test_worker_category_is_separate_from_validation_code() -> None:
-    """@impl RUS-005"""
+    """@impl WFC-001"""
     recorder = _Recorder()
 
     async def failed_worker(_spec, _attempt):

@@ -1,9 +1,8 @@
 """Tests for bounded, non-authoritative retained Run observations.
 
-@impl RUS-001
-@impl RUS-002
-@impl RUS-004
-@impl RUS-007
+@impl DRH-001
+@impl REJ-001
+@impl DRH-006
 @impl REJ-002
 @impl REJ-004
 @impl REJ-006

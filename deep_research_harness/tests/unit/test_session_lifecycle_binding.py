@@ -1,8 +1,6 @@
 """Observation stores cannot become lifecycle bindings.
 
-@impl RES-001
-@impl RES-004
-@impl RES-006
+@impl REJ-004
 """
 
 from __future__ import annotations

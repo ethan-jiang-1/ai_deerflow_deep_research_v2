@@ -1,9 +1,10 @@
 """Contracts for retained, observation-only Run Bundle projections.
 
-@impl RUS-001
-@impl RUS-002
-@impl RUS-004
-@impl RUS-007
+@impl DRH-001
+@impl REJ-001
+@impl REJ-002
+@impl DRH-006
+@impl REJ-004
 """
 
 from __future__ import annotations

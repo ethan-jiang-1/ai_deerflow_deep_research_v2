@@ -1,6 +1,5 @@
 """Read-only contained Event Journal coverage for the demo inspection command.
 
-@impl RUS-008
 @impl REJ-004
 """
 
@@ -185,7 +184,7 @@ async def test_inspect_command_reads_only_an_existing_selected_bundle(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    """@impl RUS-003"""
+    """@impl RDO-001"""
     module = _module()
     from _demo_core import DemoAdapter
 
@@ -229,7 +228,7 @@ async def test_fixed_local_profile_reads_only_an_existing_selected_bundle(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """@impl DPL-007
-    @impl RUS-006
+    @impl DRH-006
     """
     module = _module()
     from _demo_core import DemoAdapter

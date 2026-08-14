@@ -1,9 +1,8 @@
 """Integration evidence for contained Journal diagnostics.
 
-@impl RES-002
-@impl RES-003
-@impl RES-006
-@impl RES-005
+@impl DRH-006
+@impl REJ-004
+@impl RUI-003
 @impl REG-014
 """
 

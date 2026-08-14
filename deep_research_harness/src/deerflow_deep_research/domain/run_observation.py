@@ -4,10 +4,11 @@ Run Event Journal records live only in an admitted Run Bundle's diagnostics subt
 They never establish Bundle existence, scope, lifecycle state, or a control target. The
 Bundle lifecycle boundary remains the sole owner of those facts.
 
-@impl RUS-001
-@impl RUS-002
-@impl RUS-004
-@impl RUS-007
+@impl DRH-001
+@impl REJ-001
+@impl REJ-002
+@impl DRH-006
+@impl REJ-004
 @impl REG-014
 """
 

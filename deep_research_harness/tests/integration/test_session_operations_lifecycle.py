@@ -6,6 +6,7 @@
 @impl RDO-005
 @impl RDO-006
 @impl RDO-007
+@impl DRH-006
 """
 
 from __future__ import annotations
