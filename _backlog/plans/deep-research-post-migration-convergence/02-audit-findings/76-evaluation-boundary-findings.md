@@ -119,6 +119,13 @@ test成为旧 parser API consumer，却没有 evaluation-specific语义。迁到
 - **保留负向护栏**: insufficient authority remains typed non-pass；hard invariants still fail independently of metrics。
 - **OpenSpec change slice**: `converge-evaluation-boundary-compatibility` 的首个subtraction stage。
 
+**02 admission decision（2026-08-14）:** User/Evaluation Owner 已授权 clean cutover：只支持已文档化的
+`runtime.evaluation` facade，domain继续是 fact authority，`runtime.evaluation.contracts` 没有 third-party support
+promise。source-controlled 与本机 `evals/runs/` support inventory 均为空；未声明的 private/external record不被视为
+不存在，而是明确不受支持。任何 missing/unknown `evidence_layer` 必须在 Review 或 quality claim 前 fail closed，且不
+写入、回填或升级 provenance。rollback 只能恢复旧 reader；未来重新支持旧 records必须在另一个 inventory-led change
+中完成 hash-preserving migration 与 retention 决定。
+
 ### EV-C05 - Retain live-report classification and fail-closed archive admission
 
 - **证据**: dated legacy baseline route；classifier tests；archive scanner rejects non-EVIDENCE_V1 records。

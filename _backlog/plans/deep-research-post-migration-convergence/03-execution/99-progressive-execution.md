@@ -3,7 +3,7 @@
 > 导航: [执行层索引](README.md) | [Candidate Register](candidate-register.md) | [根总导航](../README.md)
 > 角色: 最终逐步执行总计划
 > 输入: [70-78 findings](../02-audit-findings/) 的54个最终Candidate；change映射以 [80 - Remediation Change Map](80-remediation-change-map.md) 为准
-> 状态: 00 已于 2026-08-14 archive 并同步 main spec（commit `8661693`）；01 已于同日 archive 并同步 main spec（commit `47a3bb5`）；03 已于同日 archive 并同步 main spec（commit `84d533a`）；04 已于同日 archive 并同步 main spec（commits `4ef1d69`、`8a18dbd`）；当前无 active change。02 仍等待 Evaluation Owner 的 supported Python import 决定及 retained `evals/runs` inventory/retention cutover；05、06、07 分别仍等待其列出的 input/support 或 retained-data inventory。全局预算8个change（00-07）；checkbox只记录change closure，不替代active change的 `tasks.md`
+> 状态: 00 已于 2026-08-14 archive 并同步 main spec（commit `8661693`）；01 已于同日 archive 并同步 main spec（commit `47a3bb5`）；03 已于同日 archive 并同步 main spec（commit `84d533a`）；04 已于同日 archive 并同步 main spec（commits `4ef1d69`、`8a18dbd`）；当前无 active change。02 已获 User/Evaluation Owner 授权的 import/retention clean cutover，可创建 proposal；05、06、07 分别仍等待其列出的 input/support 或 retained-data inventory。全局预算8个change（00-07）；checkbox只记录change closure，不替代active change的 `tasks.md`
 
 ## Propose 后强制 Polish
 
@@ -57,11 +57,12 @@
 Owner 的回复必须选定 target 或 bounded retained-support，并给出受支持 consumer/data 的 inventory、notice/denial、
 recovery/rollback 与 removal/review trigger；没有这些输入不得创建 change。
 
-- **02 Evaluation Owner:** 建议只支持已文档化的
+- **02 Evaluation Owner（已授权，2026-08-14）:** 只支持已文档化的
   `deerflow_deep_research.runtime.evaluation` facade，保持 domain 为 fact authority，`runtime.evaluation.contracts`
-  只是待删除的 module-private re-export。还须提交所有 supported/private/external Evaluation Bundle 与 Review Record
-  的 missing-`evidence_layer` inventory，并选择 preserving-hash backfill、明确 rejection，或有期限 retention；缺失或
-  unknown layer必须继续保守为`deterministic_handoff`，不得升级为 live quality。
+  是不受支持的 module-private re-export。source-controlled 与本机 `evals/runs/` support inventory 均为空；未声明的
+  private/external Evaluation Bundle 或 Review Record 不因此被推断为空，而是在 cutover 后明确不受支持：任何 missing/
+  unknown `evidence_layer` 必须在 Review/quality claim 前拒绝，不写入、不回填也不升级为 live quality。紧急 rollback
+  只能恢复旧 reader；若未来要重新纳入旧 records，必须另建有 inventory、hash-preserving migration 与 retention 决定的 change。
 - **05 Product + Python Support Owner:** 建议零凭据 proof统一迁到 fixture graph，退休 no-graph
   `bind_full_fake()`，不保留另一个伪研究完成的 simulator。还须决定 `ResearchGraphRecipe.create()` 与
   `parse_profile_response()` 的 third-party import support boundary，并交付 supported Bundle mode、profile、proposal
@@ -129,6 +130,12 @@ integration/evaluation consumer，且没有 repository-authorized Python support
 tree内没有可盘点的 retained `evals/runs` records，不能推断 private/external Evaluation Bundle或Review archive为空。
 Evaluation Owner必须先提供 supported Python import route决定与 retained-record inventory/retention cutover；在此之前
 02保持`not ready`，不创建 change。
+
+**02 authorization decision（2026-08-14）:** User 以 Evaluation Owner 身份授权上述 clean cutover。唯一 supported
+Python route 是`runtime.evaluation` facade；`.contracts` 没有 third-party support promise。未声明的 missing/unknown-layer
+Evaluation Bundle 或 Review Record 不在支持范围，reader 必须 fail closed，且不得产生 Review、live-quality 或其他
+provenance upgrade；现有 explicit-layer records 不变。紧急 rollback 是恢复该 reader 后再重试，不能在失败读入时改写
+payload。该决定关闭02的 decision/data gate，允许创建 proposal；它不关闭05-07的独立 gates。
 
 **02 post-04 recheck（2026-08-14，`30edb6e`）:** 文档只示例
 `deerflow_deep_research.runtime.evaluation` facade，根包仍只导出 host-facing tool；runtime 内部 modules经
