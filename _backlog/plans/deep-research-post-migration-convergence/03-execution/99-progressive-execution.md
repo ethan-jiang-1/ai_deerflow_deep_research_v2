@@ -3,7 +3,7 @@
 > 导航: [执行层索引](README.md) | [Candidate Register](candidate-register.md) | [根总导航](../README.md)
 > 角色: 最终逐步执行总计划
 > 输入: [70-78 findings](../02-audit-findings/) 的54个最终Candidate；change映射以 [80 - Remediation Change Map](80-remediation-change-map.md) 为准
-> 状态: 00 已于 2026-08-14 archive 并同步 main spec（commit `8661693`）；01 已于同日 archive 并同步 main spec（commit `47a3bb5`）；当前无 active change，下一步为02的current-HEAD consumer/data gate；全局预算8个change（00-07）；checkbox只记录change closure，不替代active change的 `tasks.md`
+> 状态: 00 已于 2026-08-14 archive 并同步 main spec（commit `8661693`）；01 已于同日 archive 并同步 main spec（commit `47a3bb5`）；03 已于同日 archive 并同步 main spec（commit `84d533a`）；当前无 active change。02仍等待 Evaluation Owner 的 supported Python import 决定及 retained `evals/runs` inventory/retention cutover；04仍等待 refinement method 的 supported-consumer matrix。全局预算8个change（00-07）；checkbox只记录change closure，不替代active change的 `tasks.md`
 
 ## Propose 后强制 Polish
 
@@ -110,7 +110,7 @@ Evaluation Owner必须先提供 supported Python import route决定与 retained-
 
 ## Phase D - Node language与产品记录归位
 
-- [ ] **03 `converge-node-language-and-product-records`**: NC-C01/C02/C03、EC-C02、OR-C03/C05。
+- [x] **03 `converge-node-language-and-product-records`**: NC-C01/C02/C03、EC-C02、OR-C03/C05。已 archive 并同步 main spec（`84d533a`）。
 
 `node-contract-language` workstream先关闭legacy capability cohort/default，令missing/invalid required ref fail closed，
 再用一张bounded term table纵向同步AI-facing policy、code、spec、test与registry。其后`glossary-records`
@@ -120,10 +120,19 @@ distinctions、`_Avoid_`、generated projection freshness guard与ADR history。
 **Gate D:** required capability ref唯一；current identity不再使用`Phase Agent`；CONTEXT只承载current terms与
 必要`_Avoid_`，没有丢失Evaluation Workspace/Bundle/Review/Run等真实不同概念；ADR历史事实未被改写。
 
-**03 admission recheck（2026-08-14）:** 所有当前 graph request builders均已传入`required` capability ref，
-但`NodeExecutionRequest`与phase-agent factory随application wheel分发，仓内没有已批准的外部 Python import
-support policy。Node Cognition Owner必须明确这些 symbols是否仅为application-internal contract，或提供consumer
-inventory与兼容/cutover计划；在此之前只允许准备事实，不创建03 change。
+**03 admission recheck（2026-08-14）:** 所有当前 graph request builders均已传入`required` capability ref。根包
+`__all__`只公开`__version__`和host-facing `deep_research_tool`；`NodeExecutionRequest`、phase-agent factory及其
+module paths没有 public facade、文档或 entry-point support promise。它们因此是application-internal contract，03
+不得改变根 tool export；仓内 consumer inventory与现有 fail-closed tests构成其 cutover evidence。若未来出现外部
+consumer，必须在另一个 change 明确支持边界或compatibility，不得倒推为本 change 的隐含义务。
+
+**03 closeout（2026-08-14）:** `openspec/changes/archive/2026-08-14-converge-node-language-and-product-records/`
+保存完成的 program artifacts、七行 glossary owner ledger 与 closeout tasks；主规格已同步，提交为`84d533a`。
+Candidate Register 已记录九项最终 disposition：`NC-C01`、`NC-C02`、`NC-C03`、`EC-C02`、`OR-C03`、`OR-C05`已
+archive；`EV-C01`、`OR-C07`、`OR-C08`重验后保留为可证伪 guard/history。focused suites、`UV_OFFLINE=1 make verify`、
+五个 governance checks、strict OpenSpec、`openspec doctor --json`与git whitespace check均通过。未运行`test-live`、
+真实 Demo/TUI、credentialed/external evaluation、`requires_llm`、`release_e2e`与Postgres lanes；它们不构成已关闭的
+live/external evidence，也未引入新的 compatibility obligation。
 
 ## Phase E - Run/Bundle/Observation authority
 
