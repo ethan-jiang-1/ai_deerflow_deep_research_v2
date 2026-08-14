@@ -101,6 +101,13 @@ change成本，而是同一owner的首个stage。
 **Gate C:** evaluation domain authority与supported import route唯一；missing layer不升级为live；EV-C05 fail-closed
 archive admission和TA-C04 evidence joins保持不变。
 
+**02 admission recheck（2026-08-14）:** `compute_metrics()` 仍是零 caller、零行为的 test helper residue，
+`runtime/evaluation/contracts.py` 仍是 domain contract的纯 re-export；但`runtime.evaluation` facade有仓内
+integration/evaluation consumer，且没有 repository-authorized Python support boundary。更重要的是，application
+tree内没有可盘点的 retained `evals/runs` records，不能推断 private/external Evaluation Bundle或Review archive为空。
+Evaluation Owner必须先提供 supported Python import route决定与 retained-record inventory/retention cutover；在此之前
+02保持`not ready`，不创建 change。
+
 ## Phase D - Node language与产品记录归位
 
 - [ ] **03 `converge-node-language-and-product-records`**: NC-C01/C02/C03、EC-C02、OR-C03/C05。
@@ -112,6 +119,11 @@ distinctions、`_Avoid_`、generated projection freshness guard与ADR history。
 
 **Gate D:** required capability ref唯一；current identity不再使用`Phase Agent`；CONTEXT只承载current terms与
 必要`_Avoid_`，没有丢失Evaluation Workspace/Bundle/Review/Run等真实不同概念；ADR历史事实未被改写。
+
+**03 admission recheck（2026-08-14）:** 所有当前 graph request builders均已传入`required` capability ref，
+但`NodeExecutionRequest`与phase-agent factory随application wheel分发，仓内没有已批准的外部 Python import
+support policy。Node Cognition Owner必须明确这些 symbols是否仅为application-internal contract，或提供consumer
+inventory与兼容/cutover计划；在此之前只允许准备事实，不创建03 change。
 
 ## Phase E - Run/Bundle/Observation authority
 

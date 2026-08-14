@@ -2,7 +2,7 @@
 
 > 导航: [执行层索引](README.md) | [默认执行入口](99-progressive-execution.md) | [Candidate Register](candidate-register.md)
 > 角色: 把 `70-78` 的 54 个最终 Candidate 映射成有界 OpenSpec changes、decision gates 与 non-regression obligations
-> 状态: 编排完成；00 governance bootstrap 已 archive（`8661693`）；01 已 archive 并同步 main spec（`47a3bb5`），其 16-ID budget 已关闭；下一项为 02 的 current-HEAD consumer/data gate；change names 是建议的稳定 slug，创建前仍须以当时 HEAD 复核
+> 状态: 编排完成；00 governance bootstrap 已 archive（`8661693`）；01 已 archive 并同步 main spec（`47a3bb5`），其 16-ID budget 已关闭；02等待Evaluation Owner的retained-record与Python support结论，03等待Node Cognition Owner的Python support结论；change names 是建议的稳定 slug，创建前仍须以当时 HEAD 复核
 > 硬约束: 全局预算 8 个 change（00-07）；一次一个 active change；上一 change archive 后才创建下一项
 
 ## Admission semantics
