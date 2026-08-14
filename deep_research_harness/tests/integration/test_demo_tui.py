@@ -71,6 +71,7 @@ def _failed_report() -> ReadinessReport:
             next_action="Configure a model.",
             retryable=True,
             journal_record_created=False,
+            diagnostic_location="unavailable",
         ),
         durability_note="No research record was created.",
     )
@@ -153,8 +154,18 @@ def _install_scripted(
     return runtime_modes
 
 
+def _install_isolated_fixture_adapter(monkeypatch: pytest.MonkeyPatch, *, bundle_root: Path) -> None:
+    """Keep fixture-graph behavior independent of unsupported local demo data."""
+    adapter_type = demo_tui.DemoAdapter
+    monkeypatch.setattr(demo_tui, "DemoAdapter", lambda: adapter_type(bundle_root=bundle_root))
+
+
 @pytest.mark.asyncio
-async def test_tui_fixture_route_completes_through_shared_experience() -> None:
+async def test_tui_fixture_route_completes_through_shared_experience(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    _install_isolated_fixture_adapter(monkeypatch, bundle_root=tmp_path / "demo-runs")
     app = DeepResearchDemoTUI(mode="fixture")
     async with app.run_test() as pilot:
         await _wait_for(app, pilot, demo_tui.Ready)
@@ -237,7 +248,11 @@ async def test_tui_selects_visible_control_and_keeps_natural_text_as_text(monkey
 
 
 @pytest.mark.asyncio
-async def test_tui_explicit_cancel_uses_shared_cancel_intent() -> None:
+async def test_tui_explicit_cancel_uses_shared_cancel_intent(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    _install_isolated_fixture_adapter(monkeypatch, bundle_root=tmp_path / "demo-runs")
     app = DeepResearchDemoTUI(mode="fixture")
     async with app.run_test() as pilot:
         await _wait_for(app, pilot, demo_tui.Ready)

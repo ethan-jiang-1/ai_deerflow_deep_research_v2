@@ -262,9 +262,9 @@ class RunObservationStore:
         if existing is not None and existing.schema_version != 3:
             return RunObservationView(
                 bundle_id=self._bundle_id,
-                inspectability=ObservationInspectability.AVAILABLE,
-                retention_state=existing.retention_state,
-                durability=existing.durability,
+                inspectability=ObservationInspectability.UNAVAILABLE,
+                durability="unavailable",
+                observation_category=ObservationCategory.RECORD_INVALID,
             )
         now = datetime.now(UTC)
         events = self._read_lines(journal_root / _EVENTS_FILENAME, RunEvent)
@@ -389,11 +389,13 @@ class RunObservationStore:
         if not journal_root.exists():
             return RunObservationInspection(bundle_id=bundle_id, inspectability=ObservationInspectability.NOT_FOUND)
         self._require_directory(journal_root)
-        manifest = self._read_model(journal_root / _JOURNAL_MANIFEST_FILENAME, RunObservationManifest)
-        if manifest is None or manifest.bundle_id != bundle_id:
+        manifest = self._required_bundle_manifest(journal_root)
+        if manifest.bundle_id != bundle_id:
             raise RunObservationError("journal_manifest_invalid")
-        summary = self._read_model(journal_root / _SUMMARY_FILENAME, RunSummary)
         events = self._read_lines(journal_root / _EVENTS_FILENAME, RunEvent)
+        if any(event.schema_version != 3 or event.generation is None for event in events):
+            raise RunObservationError("journal_events_legacy")
+        summary = self._read_model(journal_root / _SUMMARY_FILENAME, RunSummary)
         diagnostics = self._read_lines(journal_root / _DIAGNOSTIC_FILENAME, RetainedDiagnosticRecord)
         incomplete_reasons = self._inspection_incomplete_reasons(manifest, events)
         journal_availability = JournalAvailability.INCOMPLETE if incomplete_reasons else JournalAvailability.COMPLETE

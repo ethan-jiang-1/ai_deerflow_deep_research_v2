@@ -49,7 +49,7 @@ class _RecordingResolver:
 
 def _terminal_snapshot(bundle: RunBundleRef) -> dict[str, object]:
     return {
-        "schema_version": 2,
+        "schema_version": 3,
         "bundle_id": bundle.bundle_id.value,
         "start_message_id": "fixture-start",
         "request_digest": "d_" + "R" * 43,
@@ -59,7 +59,6 @@ def _terminal_snapshot(bundle: RunBundleRef) -> dict[str, object]:
         "phase_status": PhaseStatus.TERMINAL.value,
         "terminal_status": "completed",
         "generation": 0,
-        "repair_counts": {},
         "wave0_results": (),
         "wave1_results": (),
         "consumed_request_ids": (),
@@ -74,7 +73,6 @@ def _full_rerun_update(*, terminal_generation: int) -> dict[str, object]:
         "synthesis_ref": None,
         "decision_brief_ref": None,
         "report_refs": (),
-        "repair_counts": {},
         "hitl2_rerun_payload": None,
         "generation": terminal_generation + 1,
         "parent_generation": terminal_generation,

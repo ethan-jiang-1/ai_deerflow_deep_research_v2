@@ -420,7 +420,7 @@ async def test_topic_planning_corpus_reuses_the_registered_production_node_subje
         node_spec=TOPIC_PLANNING_NODE_SPEC,
         dependencies=dependencies,
         state_factory=lambda fixture, _context: {
-            "schema_version": 2,
+            "schema_version": 3,
             "bundle_id": bundle.bundle_id.value,
             "outer_thread_id": "evaluation-topic-thread",
             "start_message_id": "evaluation-topic-start",
@@ -708,7 +708,7 @@ async def test_hitl1_case_uses_the_real_node_factory_bridge_and_parser_with_fake
         node_spec=HITL1_NODE_SPEC,
         dependencies=dependencies,
         state_factory=lambda fixture, _context: {
-            "schema_version": 2,
+            "schema_version": 3,
             "bundle_id": graph.research_scope_id,
             "outer_thread_id": identity.thread_id,
             "start_message_id": "evaluation-start",

@@ -263,7 +263,6 @@ def apply_invalidation(_scope: RerunScope) -> dict[str, Any]:
         "synthesis_ref": None,
         "decision_brief_ref": None,
         "report_refs": (),
-        "repair_counts": {},
         "hitl2_rerun_payload": None,
     }
 

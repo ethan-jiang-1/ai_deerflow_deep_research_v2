@@ -89,7 +89,7 @@ class _PlannerCapabilities:
 
 def _state() -> dict[str, object]:
     payload: dict[str, object] = {
-        "schema_version": 2,
+        "schema_version": 3,
         "bundle_id": BUNDLE_ID,
         "outer_thread_id": "topic-planning-test",
         "request_text": "Research storage options",

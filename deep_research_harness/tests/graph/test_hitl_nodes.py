@@ -53,14 +53,13 @@ def _dependencies(name: str) -> NodeBuildDependencies:
 
 def _initial() -> dict:
     return {
-        "schema_version": 2,
+        "schema_version": 3,
         "bundle_id": "r_" + "A" * 43,
         "start_message_id": "human-start",
         "request_digest": "d_" + "B" * 43,
         "request_text": "question",
         "phase": "bootstrap",
         "generation": 0,
-        "repair_counts": {},
         "wave0_results": (),
         "wave1_results": (),
         "consumed_request_ids": (),

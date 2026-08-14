@@ -164,6 +164,7 @@ def _presentation_fault() -> Fault:
             next_action="Restart the standalone demo and provide a diagnostic reference if the issue repeats.",
             retryable=False,
             journal_record_created=False,
+            diagnostic_location="unavailable",
         )
     )
 

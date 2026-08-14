@@ -15,8 +15,9 @@ import json
 import os
 import secrets
 import shutil
+import sqlite3
 import stat
-from collections.abc import AsyncIterator, Callable
+from collections.abc import AsyncIterator, Callable, Mapping
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -49,6 +50,7 @@ from deerflow_deep_research.domain.lifecycle import (
 )
 from deerflow_deep_research.domain.run_experience import PendingInputProjection, TerminalIncidentProjection
 from deerflow_deep_research.domain.state import (
+    RESEARCH_STATE_SCHEMA_VERSION,
     BundleLocalState,
     PhaseStatus,
     RefinementAdmission,
@@ -846,8 +848,51 @@ class BundleLifecycle:
         database = root / _GRAPH_FILENAME
         if database.exists() and (database.is_symlink() or not database.is_file()):
             raise BundleLifecycleError("bundle_unavailable")
+        if database.exists():
+            self._validate_current_graph_checkpoint(database=database, bundle=bundle)
         if lease is not None:
             lease.ensure_live()
+
+    @staticmethod
+    def _validate_current_graph_checkpoint(*, database: Path, bundle: RunBundleRef) -> None:
+        """Reject a retained legacy checkpoint before opening a saver or compiling graph work."""
+        try:
+            with sqlite3.connect(f"{database.as_uri()}?mode=ro", uri=True) as connection:
+                table = connection.execute(
+                    "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'checkpoints'"
+                ).fetchone()
+                if table is None:
+                    return
+                row = connection.execute(
+                    """
+                    SELECT type, checkpoint
+                    FROM checkpoints
+                    WHERE thread_id = ? AND checkpoint_ns = ''
+                    ORDER BY rowid DESC
+                    LIMIT 1
+                    """,
+                    (bundle.bundle_id.value,),
+                ).fetchone()
+        except sqlite3.Error as exc:
+            raise BundleLifecycleError("bundle_graph_invalid") from exc
+        if row is None:
+            return
+        encoding, payload = row
+        if not isinstance(encoding, str) or not isinstance(payload, bytes):
+            raise BundleLifecycleError("bundle_graph_invalid")
+        try:
+            from deerflow_deep_research.runtime.checkpoint import build_deep_research_checkpoint_serde
+
+            checkpoint = build_deep_research_checkpoint_serde().loads_typed((encoding, payload))
+        except (TypeError, ValueError) as exc:
+            raise BundleLifecycleError("bundle_graph_invalid") from exc
+        if not isinstance(checkpoint, Mapping):
+            raise BundleLifecycleError("bundle_graph_invalid")
+        values = checkpoint.get("channel_values")
+        if not isinstance(values, Mapping):
+            raise BundleLifecycleError("bundle_graph_invalid")
+        if values.get("schema_version") != RESEARCH_STATE_SCHEMA_VERSION or "repair_counts" in values:
+            raise BundleLifecycleError("bundle_graph_legacy")
 
     async def commit_prepared_refinement_round(
         self,

@@ -215,6 +215,7 @@ def demo_readiness_report(*, mode: str, environ: Mapping[str, str] | None = None
             next_action=next_action,
             retryable=True,
             journal_record_created=False,
+            diagnostic_location="unavailable",
         ),
         durability_note="尚未创建 Run Bundle 或保留观察。",
     )

@@ -433,7 +433,7 @@ async def test_capacity_preserves_diagnostic_anchors_without_renumbering_retaine
     store = RunObservationStore(bundle_root=bundle_root, bundle_id=BUNDLE_ID, max_event_records=3)
     recorder = RunObservationRecorder(store=store, bundle_id=BUNDLE_ID)
 
-    await recorder.establish(generation=0, phase="bootstrap", durability="restart_durable")
+    established = await recorder.establish(generation=0, phase="bootstrap", durability="restart_durable")
     await recorder.record(category=RunEventCategory.NODE, phase="bootstrap", attempt_id="bootstrap_a00")
     await recorder.record(category=RunEventCategory.NODE, phase="topic_planning", attempt_id="topic_planning_a00")
     await recorder.record(
@@ -520,7 +520,7 @@ async def test_bundle_journal_keeps_generation_scoped_canonical_events_and_rejec
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("schema_version", (1, 2))
-async def test_bundle_journal_marks_readable_legacy_correlation_incomplete_without_writing_or_upgrading(
+async def test_bundle_journal_rejects_legacy_manifest_before_append_or_projection(
     tmp_path: Path,
     schema_version: int,
 ) -> None:
@@ -577,16 +577,16 @@ async def test_bundle_journal_marks_readable_legacy_correlation_incomplete_witho
         )
     }
 
-    await recorder.establish(generation=0, phase="bootstrap", durability="restart_durable")
+    established = await recorder.establish(generation=0, phase="bootstrap", durability="restart_durable")
     await recorder.record(category=RunEventCategory.NODE, phase="bootstrap", attempt_id="bootstrap_a00")
 
     inspection = await store.inspect(bundle_id=BUNDLE_ID)
 
-    assert inspection.inspectability is ObservationInspectability.AVAILABLE
-    assert inspection.journal_availability is JournalAvailability.INCOMPLETE
-    assert inspection.summary is not None
-    assert inspection.summary.journal_availability is JournalAvailability.INCOMPLETE
-    assert inspection.incomplete_reasons == (JournalIncompleteReason.LEGACY, JournalIncompleteReason.PERSISTENCE)
+    assert established.inspectability is ObservationInspectability.UNAVAILABLE
+    assert inspection.inspectability is ObservationInspectability.UNAVAILABLE
+    assert inspection.journal_availability is JournalAvailability.UNAVAILABLE
+    assert inspection.summary is None
+    assert inspection.incomplete_reasons == ()
     assert {
         path.name: path.read_bytes()
         for path in (

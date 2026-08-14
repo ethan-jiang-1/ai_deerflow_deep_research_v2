@@ -1496,6 +1496,41 @@ REQUIREMENT_IMPACTS = (
             "call covers only model output behavior."
         ),
     ),
+    RequirementImpact(
+        "GAK-004",
+        "gate-kernel",
+        StableSeam.RUNTIME_INTEGRATION,
+        "tests/unit/test_retained_checkpoint_cutover.py::test_registered_checkpoint_migration_writes_reloads_and_replays_current_gate_facts",
+        "checkpoint cutover could leave a second repair counter or reset gate-owned attempt and budget facts",
+    ),
+    RequirementImpact(
+        "REG-011",
+        "research-graph-lifecycle",
+        StableSeam.RUNTIME_INTEGRATION,
+        "tests/unit/test_retained_bundle_cutover.py::test_unregistered_repair_exhausted_bundle_is_unavailable_before_status_projection",
+        "an incompatible retained Bundle could be projected or replaced before the lifecycle schema guard",
+    ),
+    RequirementImpact(
+        "DRH-002",
+        "deep-research-harness-run-bundles",
+        StableSeam.RUNTIME_INTEGRATION,
+        "tests/unit/test_retained_bundle_cutover.py::test_registered_terminal_migration_preserves_only_identity_and_terminal_status",
+        "a terminal migration could lose Bundle identity/status or invent a replacement lifecycle reason",
+    ),
+    RequirementImpact(
+        "REJ-002",
+        "run-event-journal",
+        StableSeam.RUNTIME_INTEGRATION,
+        "tests/unit/test_retained_journal_cutover.py::test_partial_or_unregistered_old_journal_is_unavailable_before_append_or_projection",
+        "an old or partial Journal could be appended or projected as current retained evidence",
+    ),
+    RequirementImpact(
+        "RER-009",
+        "research-run-experience",
+        StableSeam.LIFECYCLE_MIXED_GRAPH,
+        "tests/unit/test_retained_terminal_result_cutover.py::test_persisted_terminal_without_location_rejects_before_any_projection",
+        "a missing terminal location could be guessed by a participant or become an external recovery path",
+    ),
 )
 
 

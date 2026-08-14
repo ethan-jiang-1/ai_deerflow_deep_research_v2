@@ -738,7 +738,7 @@ class BundleGraphExecutor:
         # own defaults, while lifecycle/request facts come from the already-published
         # Bundle State.  No compatibility checkpoint object is instantiated here.
         initial_state = {
-            "schema_version": 2,
+            "schema_version": 3,
             "bundle_id": bundle.bundle_id.value,
             "generation": state.generation,
             "start_message_id": start_message.message_id,

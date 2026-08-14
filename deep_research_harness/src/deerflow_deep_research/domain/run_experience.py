@@ -387,19 +387,22 @@ class RunFailure(FrozenRunContract):
     provider_recovery: ProviderRecoveryProjection | None = None
     provider_observation: ProviderObservation | None = None
     recovery_action: Literal["fresh_start"] | None = None
-    diagnostic_location: Literal["bundle_journal", "unavailable"] | None = None
+    diagnostic_location: Literal["bundle_journal", "unavailable"]
 
     @model_validator(mode="after")
     def validate_provider_diagnostic_projection(self) -> RunFailure:
         _validate_final_provider_observation(code=self.code, observation=self.provider_observation)
         provider_diagnostic = self.provider_recovery is not None or self.provider_observation is not None
+        if self.diagnostic_location == "bundle_journal":
+            if self.diagnostic_ref is None or not self.journal_record_created:
+                raise ValueError("bundle_journal_location_requires_verified_record")
+        elif self.journal_record_created:
+            raise ValueError("unavailable_diagnostic_cannot_claim_journal_record")
         if provider_diagnostic:
-            if self.diagnostic_ref is None or self.diagnostic_location is None:
+            if self.diagnostic_ref is None:
                 raise ValueError("provider_diagnostic_location_required")
             if self.journal_record_created != (self.diagnostic_location == "bundle_journal"):
                 raise ValueError("provider_diagnostic_record_truth_invalid")
-        elif self.diagnostic_location is not None:
-            raise ValueError("legacy_failure_diagnostic_location_invalid")
         if self.provider_recovery is not None:
             disposition = self.provider_recovery.disposition
             if disposition == "retry_followed_by_terminal_failure" and self.code in {

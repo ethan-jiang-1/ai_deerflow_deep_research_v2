@@ -117,7 +117,7 @@ test-work-unit:
 	@started=$$(date +%s); echo "work-unit: ledger and controller boundaries"; uv run --extra operations $(PYTEST) tests/domain/test_submission_ledger.py tests/graph/test_work_unit_component.py; status=$$?; echo "work-unit elapsed: $$(( $$(date +%s) - started ))s"; exit $$status
 
 test-strict-checkpoint:
-	@started=$$(date +%s); echo "strict-checkpoint: msgpack compatibility"; LANGGRAPH_STRICT_MSGPACK=true uv run --extra operations $(PYTEST) tests/unit/test_checkpoint_msgpack.py; status=$$?; echo "strict-checkpoint elapsed: $$(( $$(date +%s) - started ))s"; exit $$status
+	@started=$$(date +%s); echo "strict-checkpoint: serde and current-only checkpoint admission"; LANGGRAPH_STRICT_MSGPACK=true uv run --extra operations $(PYTEST) tests/unit/test_checkpoint_msgpack.py tests/unit/test_retained_checkpoint_cutover.py tests/unit/test_state_contracts.py tests/engine/test_gate_kernel.py; status=$$?; echo "strict-checkpoint elapsed: $$(( $$(date +%s) - started ))s"; exit $$status
 
 test-duration-policy:
 	uv run --extra operations python scripts/check_test_durations.py .reports/test-fast.xml

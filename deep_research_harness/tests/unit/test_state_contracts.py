@@ -164,9 +164,9 @@ def test_research_graph_state_rejects_unsupported_schema_version() -> None:
         ResearchGraphState(**_base_values(schema_version=99))
 
 
-def test_schema_version_is_two() -> None:
+def test_schema_version_is_three() -> None:
     """@impl REG-018"""
-    assert RESEARCH_STATE_SCHEMA_VERSION == 2
+    assert RESEARCH_STATE_SCHEMA_VERSION == 3
     checkpoint = ResearchGraphState(**_base_values())
     assert checkpoint.schema_version == RESEARCH_STATE_SCHEMA_VERSION
     assert checkpoint.profile_ref is None
@@ -235,15 +235,8 @@ def test_terminal_status_must_be_a_terminal_lifecycle_status() -> None:
         )
 
 
-def test_graph_state_preserves_terminal_reason() -> None:
-    checkpoint = ResearchGraphState(
-        **_base_values(
-            phase_status=PhaseStatus.TERMINAL,
-            terminal_status=LifecycleStatus.BLOCKED,
-            terminal_reason=TerminalReason.REPAIR_EXHAUSTED,
-        )
-    )
-    assert checkpoint.terminal_reason is TerminalReason.REPAIR_EXHAUSTED
+def test_repair_exhausted_is_not_a_current_terminal_reason() -> None:
+    assert "REPAIR_EXHAUSTED" not in TerminalReason.__members__
 
 
 def test_max_checkpoint_state_bytes_is_bounded() -> None:
@@ -409,7 +402,7 @@ def test_hitl1_profile_fields_are_state_owned_and_controller_authorized() -> Non
     assert update["pending_profile"] == {"depth": "standard"}
 
 
-def test_hitl1_profile_graph_state_fields_validate_and_stay_version_two() -> None:
+def test_hitl1_profile_graph_state_fields_validate_and_stay_version_three() -> None:
     ref = ContentRef(
         sandbox_path=f"{BUNDLE_ROOT}/request/profile.json",
         content_hash="h_" + "A" * 43,
@@ -442,7 +435,7 @@ def test_hitl1_profile_graph_state_fields_validate_and_stay_version_two() -> Non
             profile_followup_round=2,
         )
     )
-    assert checkpoint.schema_version == 2
+    assert checkpoint.schema_version == 3
     assert checkpoint.profile_ref == ref
     assert checkpoint.must_answer_questions == ("Q1", "Q2")
     assert checkpoint.pending_profile == {
@@ -507,10 +500,10 @@ def test_topic_planning_fields_are_state_owned_and_planner_authorized() -> None:
     assert update["topic_refs"] == ("batteries",)
 
 
-def test_topic_planning_graph_state_fields_validate_and_stay_version_two() -> None:
+def test_topic_planning_graph_state_fields_validate_and_stay_version_three() -> None:
     registry = ({"topic_id": "batteries", "slug": "batteries", "title": "Batteries"},)
     checkpoint = ResearchGraphState(**_base_values(topic_refs=("batteries",), topic_registry=registry))
-    assert checkpoint.schema_version == 2
+    assert checkpoint.schema_version == 3
     assert checkpoint.topic_refs == ("batteries",)
     assert checkpoint.topic_registry == registry
 

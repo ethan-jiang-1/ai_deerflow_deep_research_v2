@@ -16,7 +16,7 @@ import secrets
 import time
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from contextlib import suppress
-from typing import Any, Protocol
+from typing import Any, Literal, Protocol
 
 from langchain_core.messages import HumanMessage, ToolMessage
 from langgraph.types import Command
@@ -933,8 +933,8 @@ class ResearchRunExperience:
         if control.terminal_incident is not None:
             incident = control.terminal_incident
             provider_diagnostic = self._is_provider_diagnostic(control)
-            diagnostic_location: str | None = None
-            journal_record_created: bool | None = None
+            diagnostic_location: Literal["bundle_journal", "unavailable"] = "unavailable"
+            journal_record_created = False
             if provider_diagnostic:
                 if incident.diagnostic_ref is None:
                     raise ValueError("provider_diagnostic_reference_missing")
@@ -1009,8 +1009,8 @@ class ResearchRunExperience:
         worker_failure_category: str | None = None,
         provider_recovery: ProviderRecoveryProjection | None = None,
         provider_observation: ProviderObservation | None = None,
-        diagnostic_location: str | None = None,
-        journal_record_created: bool | None = None,
+        diagnostic_location: Literal["bundle_journal", "unavailable"] = "unavailable",
+        journal_record_created: bool = False,
         source: Any = None,
     ) -> RunFailure:
         message, next_action, retryable = _FAILURE_COPY[code]
@@ -1025,9 +1025,6 @@ class ResearchRunExperience:
             recovery_action = "fresh_start"
         del source
         reference = diagnostic_ref
-        record_created = (
-            self._observation_view is not None if journal_record_created is None else journal_record_created
-        )
         return RunFailure(
             code=code,
             phase=phase or self._lifecycle_phase,
@@ -1036,12 +1033,12 @@ class ResearchRunExperience:
             next_action=next_action,
             retryable=retryable,
             diagnostic_ref=reference,
-            journal_record_created=record_created,
+            journal_record_created=journal_record_created,
             worker_failure_category=worker_failure_category,
             provider_recovery=provider_recovery,
             provider_observation=provider_observation,
             recovery_action=recovery_action,
-            diagnostic_location=diagnostic_location,  # type: ignore[arg-type]
+            diagnostic_location=diagnostic_location,
         )
 
     @staticmethod

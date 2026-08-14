@@ -716,7 +716,7 @@ async def _run_scripted_final_delivery(
     _trace_final_delivery(monkeypatch, events)
     result = await _compile_final_delivery_graph().ainvoke(
         {
-            "schema_version": 2,
+            "schema_version": 3,
             "bundle_id": identity.bundle_id,
             "generation": 0,
             "accepted_submission_refs": (accepted_ref,),

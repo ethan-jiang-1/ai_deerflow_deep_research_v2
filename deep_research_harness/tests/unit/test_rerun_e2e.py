@@ -69,7 +69,6 @@ class TestFixtureRerunRegression:
             "generation": 0,
             "bundle_id": "r_" + "A" * 43,
             "synthesis_ref": {"path": "x", "hash": "h_" + "A" * 43, "schema_version": 1},
-            "repair_counts": {"wave0": 5},
         }
         run = build_fixture(
             NodeBuildDependencies(
@@ -81,8 +80,6 @@ class TestFixtureRerunRegression:
         result = asyncio.run(run(state))
         # Fixture adapter does not invalidate the real synthesis projection.
         assert "synthesis_ref" not in result
-        # Fixture adapter resets repair counts.
-        assert result["repair_counts"] == {}
 
 
 class TestRealNodeSpecContract:

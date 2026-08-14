@@ -74,8 +74,8 @@ from deerflow_deep_research.domain.work_units import (
     CONTENT_HASH_RE as WORK_UNIT_HASH_RE,
 )
 
-RESEARCH_STATE_SCHEMA_VERSION = 2
-BUNDLE_STATE_SCHEMA_VERSION = 4
+RESEARCH_STATE_SCHEMA_VERSION = 3
+BUNDLE_STATE_SCHEMA_VERSION = 5
 
 # Hard bound on the serialized ResearchState checkpoint. Normal control state, artifact
 # refs, branch summaries, HITL correlation, consumed ids, and the logical trace stay far
@@ -1276,7 +1276,6 @@ class ResearchGraphState:
     # content refs (sandbox-backed large content)
     content_refs: tuple[ContentRef, ...] = ()
     route: str | None = None
-    repair_counts: dict[str, int] = field(default_factory=dict)
     consumed_request_ids: tuple[str, ...] = ()
     consumed_message_ids: tuple[str, ...] = ()
     execution_trace: tuple[str, ...] = ()
@@ -1497,7 +1496,6 @@ class ResearchState(TypedDict, total=False):
     # content refs
     content_refs: Annotated[tuple[ContentRef, ...], merge_content_refs]
     route: str
-    repair_counts: dict[str, int]
     consumed_request_ids: tuple[str, ...]
     consumed_message_ids: tuple[str, ...]
     execution_trace: Annotated[tuple[str, ...], merge_trace]
@@ -1715,8 +1713,6 @@ OWNERSHIP_TABLE: tuple[FieldOwnership, ...] = (
     FieldOwnership("content_refs", WriterRole.WORKER, (WriterRole.CONTROLLER, WriterRole.GATE), "merge_content_refs"),
     # @impl GAK-003 — gate writes route for gated phases
     FieldOwnership("route", WriterRole.GATE, (WriterRole.CONTROLLER, WriterRole.GATE), "last_write_wins"),
-    # frozen — superseded by gate_attempts_by_phase + repair_budget_by_phase (change 03)  @impl GAK-003
-    FieldOwnership("repair_counts", WriterRole.GATE, (WriterRole.CONTROLLER,), "last_write_wins"),
     FieldOwnership("consumed_request_ids", WriterRole.CONTROLLER, (WriterRole.CONTROLLER,), "last_write_wins"),
     FieldOwnership("consumed_message_ids", WriterRole.CONTROLLER, (WriterRole.CONTROLLER,), "last_write_wins"),
     FieldOwnership("execution_trace", WriterRole.CONTROLLER, (WriterRole.CONTROLLER,), "merge_trace"),

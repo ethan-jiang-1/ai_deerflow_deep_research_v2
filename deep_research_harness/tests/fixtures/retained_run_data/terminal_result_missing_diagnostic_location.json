@@ -1,0 +1,8 @@
+{
+  "certainty": "direct",
+  "code": "configuration.model_missing",
+  "journal_record_created": false,
+  "message": "A model configuration is required.",
+  "next_action": "Configure a model before starting a distinct Run.",
+  "retryable": false
+}

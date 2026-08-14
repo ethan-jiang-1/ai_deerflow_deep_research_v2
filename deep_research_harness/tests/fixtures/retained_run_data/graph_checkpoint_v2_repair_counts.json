@@ -1,0 +1,15 @@
+{
+  "bundle_id": "b_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+  "gate_attempts_by_phase": {
+    "wave0": 2
+  },
+  "generation": 0,
+  "outer_thread_id": "thread-legacy-checkpoint",
+  "repair_budget_by_phase": {
+    "wave0": 1
+  },
+  "repair_counts": {
+    "wave0": 2
+  },
+  "schema_version": 2
+}

@@ -16,6 +16,6 @@ def build_fixture(_dependencies: NodeBuildDependencies):
                 phase_status=PhaseStatus.TERMINAL.value,
                 terminal_reason=TerminalReason.RERUN_EXHAUSTED.value,
             )
-        return node_state_update("rerun", route="next", generation=generation + 1, repair_counts={})
+        return node_state_update("rerun", route="next", generation=generation + 1)
 
     return run

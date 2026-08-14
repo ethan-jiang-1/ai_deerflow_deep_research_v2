@@ -77,7 +77,7 @@ def _envelope(tmp_path: Path) -> TrustedRuntimeEnvelope:
 
 def _terminal_snapshot(bundle: RunBundleRef, *, generation: int = 0) -> dict[str, object]:
     return {
-        "schema_version": 2,
+        "schema_version": 3,
         "bundle_id": bundle.bundle_id.value,
         "start_message_id": "fixture-start",
         "request_digest": "d_" + "R" * 43,
@@ -87,7 +87,6 @@ def _terminal_snapshot(bundle: RunBundleRef, *, generation: int = 0) -> dict[str
         "phase_status": PhaseStatus.TERMINAL.value,
         "terminal_status": LifecycleStatus.COMPLETED.value,
         "generation": generation,
-        "repair_counts": {},
         "wave0_results": (),
         "wave1_results": (),
         "consumed_request_ids": (),

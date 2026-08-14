@@ -345,7 +345,7 @@ def _v2_proposal(
     output_language: str | None = "en",
 ) -> dict[str, object]:
     return {
-        "schema_version": 2,
+        "schema_version": 3,
         **_current_proposal(),
         "comparison_required": comparison_required,
         "comparison_subjects": comparison_subjects,

@@ -164,7 +164,7 @@ def _context(
 
 def _state() -> dict[str, Any]:
     return {
-        "schema_version": 2,
+        "schema_version": 3,
         "bundle_id": _BUNDLE_ID,
         "start_message_id": _START_MESSAGE_ID,
         "request_digest": _REQUEST_DIGEST,

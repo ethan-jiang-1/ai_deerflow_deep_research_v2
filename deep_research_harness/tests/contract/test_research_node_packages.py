@@ -51,7 +51,6 @@ def _state() -> dict:
         "bundle_id": "r_" + "A" * 43,
         "generation": 0,
         "execution_trace": (),
-        "repair_counts": {},
     }
 
 

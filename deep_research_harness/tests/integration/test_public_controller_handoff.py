@@ -106,7 +106,7 @@ async def _stage_terminal_bundle(
         await graph.aupdate_state(
             config,
             {
-                "schema_version": 2,
+                "schema_version": 3,
                 "bundle_id": bundle.bundle_id.value,
                 "start_message_id": "controller-fixture-start",
                 "request_digest": "d_" + "R" * 43,
@@ -116,7 +116,6 @@ async def _stage_terminal_bundle(
                 "phase_status": PhaseStatus.TERMINAL.value,
                 "terminal_status": LifecycleStatus.COMPLETED.value,
                 "generation": 0,
-                "repair_counts": {},
                 "wave0_results": (),
                 "wave1_results": (),
                 "consumed_request_ids": (),

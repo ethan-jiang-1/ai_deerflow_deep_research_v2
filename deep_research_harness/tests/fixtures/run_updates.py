@@ -238,6 +238,7 @@ def provider_fault() -> Fault:
             retryable=True,
             diagnostic_ref="diag_ABCDEFGHIJKL",
             journal_record_created=True,
+            diagnostic_location="bundle_journal",
         ),
     )
 
@@ -269,7 +270,8 @@ def typed_hitl1_terminal(*, code: RunFailureCode) -> Terminal:
             next_action=next_action,
             retryable=code is RunFailureCode.OUTPUT_STRUCTURED_INVALID,
             diagnostic_ref=DIAGNOSTIC_REF,
-            journal_record_created=True,
+            journal_record_created=False,
+            diagnostic_location="unavailable",
         ),
     )
 

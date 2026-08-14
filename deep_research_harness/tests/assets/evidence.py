@@ -2541,6 +2541,54 @@ EVIDENCE_CLAIMS = (
         StableSeam.RUNTIME_INTEGRATION,
         requirement_ids=("EVH-030", "WAN-012", "WON-012"),
     ),
+    _correctness_claim(
+        "retained-checkpoint-admission-negative",
+        "tests/unit/test_retained_checkpoint_cutover.py::test_unregistered_repair_counts_checkpoint_rejects_before_graph_compile_or_execution",
+        StableSeam.RUNTIME_INTEGRATION,
+        requirement_ids=("GAK-004", "REG-011"),
+    ),
+    _correctness_claim(
+        "retained-checkpoint-gate-replay",
+        "tests/unit/test_retained_checkpoint_cutover.py::test_registered_checkpoint_migration_writes_reloads_and_replays_current_gate_facts",
+        StableSeam.RUNTIME_INTEGRATION,
+        requirement_ids=("GAK-004", "REG-011"),
+    ),
+    _correctness_claim(
+        "retained-bundle-admission-negative",
+        "tests/unit/test_retained_bundle_cutover.py::test_unregistered_repair_exhausted_bundle_is_unavailable_before_status_projection",
+        StableSeam.RUNTIME_INTEGRATION,
+        requirement_ids=("DRH-002", "REG-011"),
+    ),
+    _correctness_claim(
+        "retained-bundle-migration-reload",
+        "tests/unit/test_retained_bundle_cutover.py::test_registered_terminal_migration_preserves_only_identity_and_terminal_status",
+        StableSeam.RUNTIME_INTEGRATION,
+        requirement_ids=("DRH-002",),
+    ),
+    _correctness_claim(
+        "retained-journal-admission-negative",
+        "tests/unit/test_retained_journal_cutover.py::test_partial_or_unregistered_old_journal_is_unavailable_before_append_or_projection",
+        StableSeam.RUNTIME_INTEGRATION,
+        requirement_ids=("REJ-002",),
+    ),
+    _correctness_claim(
+        "retained-journal-migration-reload",
+        "tests/unit/test_retained_journal_cutover.py::test_registered_complete_v2_journal_migrates_without_inferred_v3_provenance",
+        StableSeam.RUNTIME_INTEGRATION,
+        requirement_ids=("REJ-002",),
+    ),
+    _correctness_claim(
+        "retained-terminal-location-negative",
+        "tests/unit/test_retained_terminal_result_cutover.py::test_persisted_terminal_without_location_rejects_before_any_projection",
+        StableSeam.LIFECYCLE_MIXED_GRAPH,
+        requirement_ids=("RER-009",),
+    ),
+    _correctness_claim(
+        "retained-terminal-location-writers",
+        "tests/unit/test_retained_terminal_result_cutover.py::test_verified_provider_publication_writer_retains_bundle_journal_location",
+        StableSeam.LIFECYCLE_MIXED_GRAPH,
+        requirement_ids=("RER-009",),
+    ),
 )
 
 

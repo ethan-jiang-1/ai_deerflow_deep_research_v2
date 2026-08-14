@@ -128,7 +128,6 @@ class TestApplyInvalidation:
         assert result["synthesis_ref"] is None
         assert result["decision_brief_ref"] is None
         assert result["report_refs"] == ()
-        assert result["repair_counts"] == {}
         assert result["hitl2_rerun_payload"] is None
 
     def test_does_not_change_passed_dict(self) -> None:
@@ -269,7 +268,6 @@ class TestFullRerunUpdateCompiler:
                 "report_refs": ("report:prior",),
                 "accepted_submission_refs": ("ref:prior",),
                 "content_refs": ("artifact:prior",),
-                "repair_counts": {"wave0": 1},
                 "gate_attempts_by_phase": {"wave0": 2},
                 "repair_budget_by_phase": {"wave0": 1},
             },

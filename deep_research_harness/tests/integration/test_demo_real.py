@@ -65,6 +65,7 @@ def _failed_report() -> ReadinessReport:
             next_action="Configure a model.",
             retryable=True,
             journal_record_created=False,
+            diagnostic_location="unavailable",
         ),
         durability_note="No research record was created.",
     )

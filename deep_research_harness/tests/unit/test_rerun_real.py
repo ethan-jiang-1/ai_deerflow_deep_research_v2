@@ -52,7 +52,6 @@ def _state(**kwargs):
             "schema_version": 1,
         },
         "report_refs": (),
-        "repair_counts": {"wave0": 1},
         "accepted_submission_refs": ("ref:1", "ref:2"),
         "topic_registry": (
             {"topic_id": "topic-a"},
@@ -86,7 +85,6 @@ class TestRealRerunFactory:
         # Invalidation
         assert result["synthesis_ref"] is None
         assert result["decision_brief_ref"] is None
-        assert result["repair_counts"] == {}
         assert result["hitl2_rerun_payload"] is None
         # FULL: no pending work, empty filter
         assert result["pending_work_ids"] == ()

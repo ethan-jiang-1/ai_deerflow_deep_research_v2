@@ -1,0 +1,57 @@
+{
+  "families": {
+    "bundle_state": {
+      "failed": 0,
+      "migrated": 0,
+      "registered": 0,
+      "rejected": 0
+    },
+    "graph_checkpoint": {
+      "failed": 0,
+      "migrated": 0,
+      "registered": 0,
+      "rejected": 0
+    },
+    "journal": {
+      "failed": 0,
+      "migrated": 0,
+      "registered": 0,
+      "rejected": 0
+    },
+    "terminal_result": {
+      "failed": 0,
+      "migrated": 0,
+      "registered": 0,
+      "rejected": 0
+    }
+  },
+  "matrix": {
+    "bundle_state": {
+      "current_writer": "current Bundle State without REPAIR_EXHAUSTED",
+      "offline_reader": "registered v4 REPAIR_EXHAUSTED terminal only",
+      "runtime_reader": "current Bundle State only"
+    },
+    "graph_checkpoint": {
+      "current_writer": "current checkpoint without repair_counts",
+      "offline_reader": "registered v2 checkpoint with repair_counts only",
+      "runtime_reader": "current checkpoint without repair_counts"
+    },
+    "journal": {
+      "current_writer": "v3 manifest and events; Summary v2 unchanged",
+      "offline_reader": "registered complete v2 manifest and events only",
+      "runtime_reader": "v3 manifest and events only"
+    },
+    "terminal_result": {
+      "current_writer": "explicit bundle_journal or unavailable location",
+      "offline_reader": "registered missing-location result for rejection only",
+      "runtime_reader": "result with explicit diagnostic_location only"
+    }
+  },
+  "totals": {
+    "failed": 0,
+    "migrated": 0,
+    "registered": 0,
+    "rejected": 0,
+    "unaccounted_supported": 0
+  }
+}

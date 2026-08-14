@@ -106,7 +106,7 @@ def _plan_json(*topics: dict[str, object]) -> str:
 
 def _state(**overrides: object) -> dict[str, Any]:
     payload: dict[str, Any] = {
-        "schema_version": 2,
+        "schema_version": 3,
         "bundle_id": BUNDLE_ID,
         "outer_thread_id": "thread-1",
         "request_text": "Compare storage options",
