@@ -3,7 +3,7 @@
 > 导航: [执行层索引](README.md) | [Candidate Register](candidate-register.md) | [根总导航](../README.md)
 > 角色: 最终逐步执行总计划
 > 输入: [70-78 findings](../02-audit-findings/) 的54个最终Candidate；change映射以 [80 - Remediation Change Map](80-remediation-change-map.md) 为准
-> 状态: 00 已于 2026-08-14 archive 并同步 main spec（commit `8661693`）；01 已于同日 archive 并同步 main spec（commit `47a3bb5`）；02 已于同日 archive 并同步 main spec（commit `9b68e4d`，全量验证的范围外 node-agent 基线失败已如实记录为 evidence-limited）；03 已于同日 archive 并同步 main spec（commit `84d533a`）；04 已于同日 archive 并同步 main spec（commits `4ef1d69`、`8a18dbd`）；05 已于 2026-08-15 archive 并同步 main spec（commit `4d91571`）；06 已于同日 archive 并同步 main spec（commit `69a2dcd`）；07 仍等待其列出的 retained-data inventory。全局预算8个change（00-07）；checkbox只记录change closure，不替代active change的 `tasks.md`
+> 状态: 00 已于 2026-08-14 archive 并同步 main spec（commit `8661693`）；01 已于同日 archive 并同步 main spec（commit `47a3bb5`）；02 已于同日 archive 并同步 main spec（commit `9b68e4d`，全量验证的范围外 node-agent 基线失败已如实记录为 evidence-limited）；03 已于同日 archive 并同步 main spec（commit `84d533a`）；04 已于同日 archive 并同步 main spec（commits `4ef1d69`、`8a18dbd`）；05 已于 2026-08-15 archive 并同步 main spec（commit `4d91571`）；06 已于同日 archive 并同步 main spec（commit `69a2dcd`）；07 已于同日 archive 并同步 main spec（commit `a8293b6`）。全局预算8个change（00-07）已关闭；checkbox只记录change closure，不替代active change的 `tasks.md`
 
 ## Propose 后强制 Polish
 
@@ -318,7 +318,7 @@ spec 已同步。trusted-context、provider/diagnostics、node bridge focused su
 样本只提供风险下界。每个workstream都要有dry-run、old/new reader-writer matrix、restart/replay、rollback、
 negative evidence和post-cutover count。
 
-- [ ] **07 `converge-retained-run-data-compatibility`**: PC-C03/C04/C06、RC-C06。
+- [x] **07 `converge-retained-run-data-compatibility`**: PC-C03/C04/C06、RC-C06。已 archive 并同步 main spec（`a8293b6`）。
 
 `repair-lifecycle-data` workstream迁移graph checkpoints后删除`repair_counts`，再迁移/拒绝old Bundle terminal并
 退役`REPAIR_EXHAUSTED`。`observation-result-data` workstream收敛Journal manifest/event readers，再迁移/过期old
@@ -333,6 +333,16 @@ manifest中56份为v2、145份为v3，另有201份 current `run-summary.json`。
 external checkpoint/Bundle/Journal/public Run result支持范围为空。Checkpoint、Bundle terminal、Journal和 diagnostic
 result inventories，以及 dry-run、old/new reader-writer、restart/replay、rollback matrices仍是 proposal 前置条件；
 focused state/Journal baseline tests通过（149 passed）。
+
+**07 closeout（2026-08-15）:** `converge-retained-run-data-compatibility` 已在强制 polish 后完成两个
+workstream，并归档至`openspec/changes/archive/2026-08-15-converge-retained-run-data-compatibility/`；五份
+main specs 已同步，提交为`a8293b6`。source-controlled inventory 明确为零 supported records；四个 family
+都有 migration/reject disposition、old/new reader-writer matrix、write/reload/replay 与 planted-negative proof。
+current checkpoint、Bundle、Journal 与 terminal readers 不保留 old runtime branch，Summary v2 保持 current；唯一
+恢复仍是 Data Owner 批准的完整 local reader hotfix/revert。focused retained-data suites、Demo CLI/TUI/adapter suite、
+strict OpenSpec、requirements/specs/architecture/charter governance 和 whitespace 检查均通过。`make verify` 的
+selector registry 及 cognitive digest failures 为已记录且与本 change无关的 evidence-limited baseline；未对
+credentialed/live、external deployment/data 或 Python consumer 作通过或 support claim。
 
 ## Phase I - 最终全量复审与关闭
 
