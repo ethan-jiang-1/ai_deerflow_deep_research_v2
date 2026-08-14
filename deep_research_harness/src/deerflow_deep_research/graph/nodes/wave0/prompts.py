@@ -120,7 +120,6 @@ def build_wave0_worker_prompt(
         expected_output=_wave0_completion_contract(initial=True),
         minimum_tool_calls=1,
         tool_call_limit=3,
-        capability_binding="required",
         capability_ref=WAVE0_AUTHORITATIVE_SOURCE_INTAKE,
     )
 
@@ -167,7 +166,6 @@ def build_wave0_repair_prompt(
         objective=objective,
         expected_output=_wave0_completion_contract(initial=False),
         tools_enabled=False,
-        capability_binding="required",
         capability_ref=WAVE0_SOURCE_INTAKE_REPAIR,
     )
 

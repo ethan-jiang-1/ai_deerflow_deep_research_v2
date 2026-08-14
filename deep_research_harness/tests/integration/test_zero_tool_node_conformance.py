@@ -24,7 +24,7 @@ from deerflow_deep_research_fixtures.graph.nodes.wave0 import adapter as fixture
 from deerflow_deep_research_fixtures.work_units import FixtureResultDocument
 from langgraph.graph import END, START, StateGraph
 
-from deerflow_deep_research.agents.phase_prompt import render_phase_agent_prompt
+from deerflow_deep_research.agents.node_cognitive_control_program import render_node_cognitive_control_program
 from deerflow_deep_research.agents.policies import ExecutionBudget, ExecutionPolicy
 from deerflow_deep_research.domain.bundle import (
     BundleId,
@@ -720,7 +720,7 @@ async def _run_scripted_final_delivery(
         context=context,
     )
     assert resolver.attempt_root is not None
-    expected_prompt = render_phase_agent_prompt(
+    expected_prompt = render_node_cognitive_control_program(
         build_final_delivery_request(plan, evidence),
         attempt_workspace=resolver.attempt_root,
     )

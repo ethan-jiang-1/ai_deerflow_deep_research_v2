@@ -48,9 +48,9 @@
 
 | Candidate | Grounded disposition | Admission | Target / change |
 | --- | --- | --- | --- |
-| [NC-C01](../02-audit-findings/70-node-cognition-findings.md#nc-c01---close-node-capability-migration) | delete legacy capability cohort/default | ready | required capability ref / `converge-node-language-and-product-records` |
-| [NC-C02](../02-audit-findings/70-node-cognition-findings.md#nc-c02---converge-node-cognition-language-vertically) | vertical rename | ready after NC-C01 | canonical product/program/runtime terms / `converge-node-language-and-product-records` |
-| [NC-C03](../02-audit-findings/70-node-cognition-findings.md#nc-c03---restore-context-to-glossary-only-ownership) | migrate design facts, delete glossary tail | after NC-C02 term table | ADR/spec own design / `converge-node-language-and-product-records` |
+| [NC-C01](../02-audit-findings/70-node-cognition-findings.md#nc-c01---close-node-capability-migration) | archived 03: deleted legacy binding/default; required ref is the only admission fact | constructor/renderer/bridge negatives and 20-branch join pass | `2026-08-14-converge-node-language-and-product-records` |
+| [NC-C02](../02-audit-findings/70-node-cognition-findings.md#nc-c02---converge-node-cognition-language-vertically) | archived 03: vertical terminology convergence | current-surface contract and six synced specs pass | `2026-08-14-converge-node-language-and-product-records` |
+| [NC-C03](../02-audit-findings/70-node-cognition-findings.md#nc-c03---restore-context-to-glossary-only-ownership) | archived 03: owner-ledger closure deleted glossary residue | retained definitions and `_Avoid_` contract pass | `2026-08-14-converge-node-language-and-product-records` |
 
 ## Run, Bundle, Session, Observation
 
@@ -76,7 +76,7 @@
 | Candidate | Grounded disposition | Admission | Target / change |
 | --- | --- | --- | --- |
 | [EC-C01](../02-audit-findings/73-entry-and-configuration-findings.md#ec-c01---keep-distinct-current-entry-surfaces) | guard-retained: distinct entries | archived 01; entry guard remains falsifiable | product/operator/evaluation roles remain distinct |
-| [EC-C02](../02-audit-findings/73-entry-and-configuration-findings.md#ec-c02---move-dormant-local-first-direction-out-of-current-language) | migrate history, delete dormant glossary term | ready | ADR history + current entry terms / `converge-node-language-and-product-records` |
+| [EC-C02](../02-audit-findings/73-entry-and-configuration-findings.md#ec-c02---move-dormant-local-first-direction-out-of-current-language) | archived 03: retired dormant glossary term; retained ADR history and current entry routes | glossary owner ledger and entry distinctions pass | `2026-08-14-converge-node-language-and-product-records` |
 | [EC-C03](../02-audit-findings/73-entry-and-configuration-findings.md#ec-c03---retain-old-entry-rejection-guards) | guard-retained: old-entry rejection | archived 01; entry guard remains falsifiable | deployment/structure admission |
 | [EC-C04](../02-audit-findings/73-entry-and-configuration-findings.md#ec-c04---delete-test-only-demo-compatibility-helpers) | retired after canonical profile/preflight transfer | archived 01; canonical pre-Adapter failure and redaction tests pass | canonical demo profile/preflight APIs |
 | [EC-C05](../02-audit-findings/73-entry-and-configuration-findings.md#ec-c05---decide-legacy-checkpointer-support-explicitly) | deployment decision | linked to PC-C07 | database-only or bounded legacy reader / `converge-runtime-input-compatibility` |
@@ -111,7 +111,7 @@
 
 | Candidate | Grounded disposition | Admission | Target / change |
 | --- | --- | --- | --- |
-| [EV-C01](../02-audit-findings/76-evaluation-boundary-findings.md#ev-c01---keep-the-evaluation-workspacebundlereviewrun-distinctions) | keep distinctions | non-regression | evaluation domain owners |
+| [EV-C01](../02-audit-findings/76-evaluation-boundary-findings.md#ev-c01---keep-the-evaluation-workspacebundlereviewrun-distinctions) | rechecked 03: keep distinctions | glossary contract preserves Workspace, Bundle, Review/Record, Run, and product Run Bundle terms | evaluation domain owners |
 | [EV-C02](../02-audit-findings/76-evaluation-boundary-findings.md#ev-c02---retain-missing-layer-compatibility-until-evaluation-bundle-data-closes) | migrate then retire default reader | blocked: evaluation archive inventory | explicit layer / `converge-evaluation-boundary-compatibility` |
 | [EV-C03](../02-audit-findings/76-evaluation-boundary-findings.md#ev-c03---converge-evaluation-contract-imports-onto-one-supported-route) | migrate then delete re-export module | blocked: Python import support | domain authority + chosen facade / `converge-evaluation-boundary-compatibility` |
 | [EV-C04](../02-audit-findings/76-evaluation-boundary-findings.md#ev-c04---delete-the-unused-compute_metrics-shim) | delete | ready | typed metrics / `converge-evaluation-boundary-compatibility` |
@@ -124,12 +124,12 @@
 | --- | --- | --- | --- |
 | [OR-C01](../02-audit-findings/77-openspec-and-record-findings.md#or-c01---restore-tracked-ci-workflow-delivery-before-cleanup-implementation) | repaired: tracked CI delivery | archived 01; Git-index guard and clean-clone preflight pass | tracked CI + trackedness guard |
 | [OR-C02](../02-audit-findings/77-openspec-and-record-findings.md#or-c02---resolve-and-restore-reproducible-project-openspec-skill-delivery) | repaired: repository-tracked skill delivery | archived 01; no external installer admitted | reproducible skill delivery |
-| [OR-C03](../02-audit-findings/77-openspec-and-record-findings.md#or-c03---converge-owner-drifted-capabilities-through-owner-local-changes) | owner-local migrate/rename/retire | umbrella | attached to changes 03-05; no spec-cleanup mega-change |
+| [OR-C03](../02-audit-findings/77-openspec-and-record-findings.md#or-c03---converge-owner-drifted-capabilities-through-owner-local-changes) | 03 archived: owner-local node terminology/spec convergence | current-language contract, requirement coverage, and strict OpenSpec pass | remains attached to 04-05; no spec-cleanup mega-change |
 | [OR-C04](../02-audit-findings/77-openspec-and-record-findings.md#or-c04---correct-the-structural-registry-in-both-directions) | repaired: delivery inventory and scaffold row | archived 01; structure and trackedness guards pass | completed delivery/test-structure workstreams |
-| [OR-C05](../02-audit-findings/77-openspec-and-record-findings.md#or-c05---restore-product-context-to-glossary-only-scope-without-rewriting-adr-history) | migrate/delete current glossary residue; keep ADRs | ready | glossary/ADR/spec roles / `converge-node-language-and-product-records` |
+| [OR-C05](../02-audit-findings/77-openspec-and-record-findings.md#or-c05---restore-product-context-to-glossary-only-scope-without-rewriting-adr-history) | archived 03: migrated/deleted glossary residue; ADRs retained | seven-row ledger, glossary contract, and no-ADR-diff scan pass | `2026-08-14-converge-node-language-and-product-records` |
 | [OR-C06](../02-audit-findings/77-openspec-and-record-findings.md#or-c06---keep-current-indexes-and-historical-evidence-delete-only-the-grounded-dpt-duplicate) | retired duplicate; retained current and historical routes | archived 01; provenance route contract passes | current docs/evidence owners |
-| [OR-C07](../02-audit-findings/77-openspec-and-record-findings.md#or-c07---retain-generated-projections-and-their-freshness-guards) | retain projections/guards | non-regression | generators + source authorities |
-| [OR-C08](../02-audit-findings/77-openspec-and-record-findings.md#or-c08---preserve-archive-and-completed-backlog-history-as-evidence-only) | historical keep | non-regression | archive/backlog lifecycle |
+| [OR-C07](../02-audit-findings/77-openspec-and-record-findings.md#or-c07---retain-generated-projections-and-their-freshness-guards) | rechecked 03: retain projections/guards | missing, stale, and extra generated projection output still fails | generators + source authorities |
+| [OR-C08](../02-audit-findings/77-openspec-and-record-findings.md#or-c08---preserve-archive-and-completed-backlog-history-as-evidence-only) | rechecked 03: historical keep | archive/completed-backlog records remain evidence-only and unchanged | archive/backlog lifecycle |
 
 ## Residual Compatibility Sweep
 

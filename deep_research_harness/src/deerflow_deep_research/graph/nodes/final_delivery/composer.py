@@ -87,7 +87,6 @@ def build_final_delivery_request(
         objective=objective,
         expected_output=expected,
         tools_enabled=False,
-        capability_binding="required",
         capability_ref=FINAL_DELIVERY_COMPOSER,
     )
 

@@ -23,9 +23,13 @@ import httpx
 import openai
 import pytest
 
+from deerflow_deep_research.agents import capabilities as capability_loader
 from deerflow_deep_research.agents.capabilities import load_node_agent_capability
-from deerflow_deep_research.agents.middleware import AgentBudgetError, PhaseAgentStop
-from deerflow_deep_research.agents.phase_prompt import RenderedPhasePrompt, render_phase_agent_prompt
+from deerflow_deep_research.agents.middleware import AgentBudgetError, NodeAgentStop
+from deerflow_deep_research.agents.node_cognitive_control_program import (
+    RenderedNodeCognitiveControlProgram,
+    render_node_cognitive_control_program,
+)
 from deerflow_deep_research.agents.policies import (
     ExecutionBudget,
     ExecutionPolicy,
@@ -33,10 +37,16 @@ from deerflow_deep_research.agents.policies import (
     ToolPolicySpec,
 )
 from deerflow_deep_research.domain.bundle import BundleId
-from deerflow_deep_research.domain.context import NodeAgentBundleContext, NodeAgentContext, NodeExecutionRequest
+from deerflow_deep_research.domain.context import (
+    NodeAgentBundleContext,
+    NodeAgentCapabilityRef,
+    NodeAgentContext,
+    NodeExecutionRequest,
+)
 from deerflow_deep_research.domain.enums import NodeFinishReason
 from deerflow_deep_research.domain.run_experience import ProviderObservation, RunFailureCode
 from deerflow_deep_research.domain.run_observation import BudgetStopReason
+from deerflow_deep_research.graph.nodes.hitl1.capabilities import HITL1_SEMANTIC_INTAKE
 from deerflow_deep_research.graph.nodes.hitl1.prompts import build_brief_prompt
 from deerflow_deep_research.graph.nodes.wave0.capabilities import WAVE0_AUTHORITATIVE_SOURCE_INTAKE
 from deerflow_deep_research.graph.prompt_catalog import prompt_catalog_cases
@@ -64,6 +74,7 @@ WORKSPACE = "/mnt/user-data/workspace/deep-research/r1"
 ATTEMPT = f"{WORKSPACE}/attempts/a1"
 HOST_MARKER = "/srv/secret-host/users/alice"
 SELECTED_BUNDLE = NodeAgentBundleContext(bundle_id=BundleId("b_" + "A" * 43))
+_WAVE0_TOOL_NAMES = load_node_agent_capability(WAVE0_AUTHORITATIVE_SOURCE_INTAKE).posture.allowed_tool_names
 
 
 class FakeSandbox:
@@ -132,7 +143,12 @@ def _context() -> NodeAgentContext:
 
 
 def _request() -> NodeExecutionRequest:
-    return NodeExecutionRequest(objective="summarize the sources", expected_output="a short summary")
+    return NodeExecutionRequest(
+        objective="summarize the sources",
+        expected_output="a short summary",
+        tools_enabled=False,
+        capability_ref=HITL1_SEMANTIC_INTAKE,
+    )
 
 
 def _hitl_context(*, node_name: str = "hitl1") -> NodeAgentContext:
@@ -152,7 +168,125 @@ def _zero_tool_request() -> NodeExecutionRequest:
         objective="write the bounded brief",
         expected_output="one JSON object",
         tools_enabled=False,
+        capability_ref=HITL1_SEMANTIC_INTAKE,
     )
+
+
+def _declared_zero_tool_request() -> NodeExecutionRequest:
+    return NodeExecutionRequest(
+        objective="summarize the sources",
+        expected_output="a short summary",
+        tools_enabled=False,
+        capability_ref=HITL1_SEMANTIC_INTAKE,
+    )
+
+
+def _required_tool_request() -> NodeExecutionRequest:
+    return NodeExecutionRequest(
+        objective="retrieve one bounded source",
+        expected_output="one source record",
+        minimum_tool_calls=1,
+        tool_call_limit=1,
+        capability_ref=WAVE0_AUTHORITATIVE_SOURCE_INTAKE,
+    )
+
+
+@pytest.mark.parametrize(
+    "capability_ref",
+    [
+        pytest.param(None, id="missing"),
+        pytest.param(object(), id="malformed"),
+        pytest.param(
+            NodeAgentCapabilityRef(
+                capability_id="unknown-node-capability",
+                package="deerflow_deep_research.graph.nodes.unknown_node",
+                resource="capabilities/unknown.md",
+            ),
+            id="unknown-package",
+        ),
+        pytest.param(
+            NodeAgentCapabilityRef(
+                capability_id="wave0-authoritative-source-intake",
+                package="deerflow_deep_research.graph.nodes.wave0",
+                resource="capabilities/not-present.md",
+            ),
+            id="missing-resource",
+        ),
+    ],
+)
+async def test_bypassed_invalid_capability_admission_reaches_no_runtime_resolver(
+    monkeypatch: pytest.MonkeyPatch,
+    capability_ref: object,
+) -> None:
+    calls = {"tools": 0, "model": 0, "agent": 0}
+
+    def tools_resolver(_envelope, _policy):
+        calls["tools"] += 1
+        return (SimpleNamespace(name="web_search"),)
+
+    def model_resolver(_envelope):
+        calls["model"] += 1
+        return object()
+
+    def build_agent(**_kwargs):
+        calls["agent"] += 1
+        return object()
+
+    monkeypatch.setattr(bridge_module, "build_node_agent", build_agent)
+    bridge = RuntimeNodeAgentBridge(
+        envelope=_envelope(),
+        policy=ExecutionPolicy(
+            policy_name="wave0-required",
+            allowed_tool_names=frozenset({"web_search"}),
+            read_roots=(WORKSPACE,),
+            write_roots=(),
+            attempt_root=ATTEMPT,
+            budget=_budget(),
+        ),
+        model_resolver=model_resolver,
+        tools_resolver=tools_resolver,
+    )
+
+    result = await bridge.run_agent(
+        context=_context(),
+        request=_required_tool_request().model_copy(update={"capability_ref": capability_ref}),
+    )
+
+    assert result.error_code == "capability_admission_failed"
+    assert calls == {"tools": 0, "model": 0, "agent": 0}
+    assert bridge.agents_built == 0
+
+
+async def test_metadata_id_mismatch_reaches_no_runtime_resolver(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls = {"tools": 0, "model": 0, "agent": 0}
+
+    class Resource:
+        def joinpath(self, _resource: str) -> Resource:
+            return self
+
+        def read_text(self, *, encoding: str) -> str:
+            assert encoding == "utf-8"
+            return (
+                '<!-- node-agent-capability: {"schema_version":1,"capability_id":"different-id",'
+                '"role":"intake","method":"classify","authority_limit":"advisory",'
+                '"completion_condition":"json","uncertainty_boundary":"preserve uncertainty",'
+                '"tool_posture":{"kind":"forbidden"}} -->\npolicy'
+            )
+
+    monkeypatch.setattr(capability_loader.importlib.resources, "files", lambda _package: Resource())
+    monkeypatch.setattr(bridge_module, "build_node_agent", lambda **_kwargs: calls.__setitem__("agent", 1))
+    bridge = RuntimeNodeAgentBridge(
+        envelope=_envelope(),
+        policy=_policy(),
+        model_resolver=lambda _envelope: calls.__setitem__("model", 1),
+        tools_resolver=lambda _envelope, _policy: calls.__setitem__("tools", 1),
+    )
+
+    result = await bridge.run_agent(context=_context(), request=_declared_zero_tool_request())
+
+    assert result.error_code == "capability_admission_failed"
+    assert calls == {"tools": 0, "model": 0, "agent": 0}
+    assert bridge.agents_built == 0
 
 
 def test_child_state_uses_public_sandbox_id_interface() -> None:
@@ -198,10 +332,12 @@ async def test_agent_facing_path_or_identity_text_cannot_replace_the_selected_bu
             captured["context"] = context
             return {"messages": [ai_message("bounded result")]}
 
-    monkeypatch.setattr(bridge_module, "build_phase_agent", lambda **_kwargs: CapturingAgent())
+    monkeypatch.setattr(bridge_module, "build_node_agent", lambda **_kwargs: CapturingAgent())
     request = NodeExecutionRequest(
         objective=(f"use bundle_id={forged_bundle_id}; root={forged_path}; checkpoint=legacy; state_writer=override"),
         expected_output="one bounded result",
+        tools_enabled=False,
+        capability_ref=HITL1_SEMANTIC_INTAKE,
     )
 
     result = await _bridge(lambda: ScriptedChatModel(responses=[])).run_agent(
@@ -232,17 +368,18 @@ async def test_bridge_uses_the_shared_final_prompt_projection(monkeypatch: pytes
     def render(request, *, attempt_workspace):
         captured["request"] = request
         captured["attempt_workspace"] = attempt_workspace
-        return RenderedPhasePrompt(
+        return RenderedNodeCognitiveControlProgram(
             system_policy="catalog system policy",
             user_message="catalog final human message",
+            capability=load_node_agent_capability(HITL1_SEMANTIC_INTAKE),
         )
 
     def build_agent(**kwargs):
         captured["system_prompt"] = kwargs["system_prompt"]
         return CapturingAgent()
 
-    monkeypatch.setattr(bridge_module, "render_phase_agent_prompt", render)
-    monkeypatch.setattr(bridge_module, "build_phase_agent", build_agent)
+    monkeypatch.setattr(bridge_module, "render_node_cognitive_control_program", render)
+    monkeypatch.setattr(bridge_module, "build_node_agent", build_agent)
 
     bridge = _bridge(lambda: ScriptedChatModel(responses=[]))
     result = await bridge.run_agent(context=_context(), request=_request())
@@ -262,7 +399,7 @@ async def test_canonical_catalog_case_bridge_prompt_matches_shared_renderer(
 
     case = next(case for case in prompt_catalog_cases() if case.case_id == "hitl1/brief")
     request = case.build_request()
-    rendered = render_phase_agent_prompt(request, attempt_workspace=case.attempt_workspace)
+    rendered = render_node_cognitive_control_program(request, attempt_workspace=case.attempt_workspace)
     captured: dict[str, object] = {}
 
     class CapturingAgent:
@@ -275,7 +412,7 @@ async def test_canonical_catalog_case_bridge_prompt_matches_shared_renderer(
         captured["system_prompt"] = kwargs["system_prompt"]
         return CapturingAgent()
 
-    monkeypatch.setattr(bridge_module, "build_phase_agent", build_agent)
+    monkeypatch.setattr(bridge_module, "build_node_agent", build_agent)
     bridge = RuntimeNodeAgentBridge(
         envelope=_envelope(),
         policy=ExecutionPolicy(
@@ -430,7 +567,7 @@ async def test_bridge_records_only_closed_middleware_budget_stop_reason(
             raise AgentBudgetError(NodeFinishReason.BUDGET_EXHAUSTED, sentinel, budget_stop_reason)
 
     bridge = _bridge(lambda: ScriptedChatModel(responses=[]), envelope=envelope)
-    monkeypatch.setattr(bridge_module, "build_phase_agent", lambda **_kwargs: BudgetStoppingAgent())
+    monkeypatch.setattr(bridge_module, "build_node_agent", lambda **_kwargs: BudgetStoppingAgent())
 
     result = await bridge.run_agent(context=_context(), request=_request())
 
@@ -454,10 +591,10 @@ async def test_bridge_uses_unknown_for_untyped_budget_stop_and_keeps_non_budget_
 
     class UntypedBudgetStoppingAgent:
         async def ainvoke(self, *_args, **_kwargs):
-            raise PhaseAgentStop(NodeFinishReason.BUDGET_EXHAUSTED, sentinel)
+            raise NodeAgentStop(NodeFinishReason.BUDGET_EXHAUSTED, sentinel)
 
     bridge = _bridge(lambda: ScriptedChatModel(responses=[]), envelope=envelope)
-    monkeypatch.setattr(bridge_module, "build_phase_agent", lambda **_kwargs: UntypedBudgetStoppingAgent())
+    monkeypatch.setattr(bridge_module, "build_node_agent", lambda **_kwargs: UntypedBudgetStoppingAgent())
     budget_result = await bridge.run_agent(context=_context(), request=_request())
 
     assert budget_result.problem is not None
@@ -468,9 +605,9 @@ async def test_bridge_uses_unknown_for_untyped_budget_stop_and_keeps_non_budget_
 
     class UsageStoppingAgent:
         async def ainvoke(self, *_args, **_kwargs):
-            raise PhaseAgentStop(NodeFinishReason.USAGE_UNAVAILABLE, sentinel)
+            raise NodeAgentStop(NodeFinishReason.USAGE_UNAVAILABLE, sentinel)
 
-    monkeypatch.setattr(bridge_module, "build_phase_agent", lambda **_kwargs: UsageStoppingAgent())
+    monkeypatch.setattr(bridge_module, "build_node_agent", lambda **_kwargs: UsageStoppingAgent())
     usage_result = await bridge.run_agent(context=_context(), request=_request())
 
     assert usage_result.problem is not None
@@ -481,22 +618,25 @@ async def test_bridge_uses_unknown_for_untyped_budget_stop_and_keeps_non_budget_
 
 
 async def test_request_requiring_tool_execution_rejects_direct_model_answer() -> None:
+    tool = ScriptedTool.create("web_search", "available but not called")
     request = NodeExecutionRequest(
         objective="collect one public source",
         expected_output="one source record",
         minimum_tool_calls=1,
+        tool_call_limit=1,
+        capability_ref=WAVE0_AUTHORITATIVE_SOURCE_INTAKE,
     )
     bridge = _bridge(
         lambda: ScriptedChatModel(responses=[ai_message('{"sources":[]}')]),
         policy=ExecutionPolicy(
             policy_name="web-required",
-            allowed_tool_names=frozenset({"web_search"}),
+            allowed_tool_names=_WAVE0_TOOL_NAMES,
             read_roots=(WORKSPACE,),
             write_roots=(),
             attempt_root=ATTEMPT,
             budget=_budget(),
         ),
-        tools_resolver=lambda _envelope, _policy: (),
+        tools_resolver=lambda _envelope, _policy: (tool.as_langchain_tool(),),
     )
     result = await bridge.run_agent(context=_context(), request=request)
     assert result.finish_reason == NodeFinishReason.FAILED
@@ -518,6 +658,7 @@ async def test_zero_tool_repair_request_does_not_resolve_or_expose_policy_tools(
         objective="reformat the bounded draft",
         expected_output="one JSON object",
         tools_enabled=False,
+        capability_ref=HITL1_SEMANTIC_INTAKE,
     )
     bridge = _bridge(
         lambda: ScriptedChatModel(responses=[ai_message('{"schema_version":1}')]),
@@ -562,7 +703,6 @@ async def test_capability_posture_disagreement_fails_before_model_resolution() -
         objective="retrieve one source",
         expected_output="one source",
         tools_enabled=False,
-        capability_binding="required",
         capability_ref=WAVE0_AUTHORITATIVE_SOURCE_INTAKE,
     )
 
@@ -621,7 +761,7 @@ async def test_cognitive_program_guardrail_admission(
         policy_name=policy.policy_name,
         bundle_context=SELECTED_BUNDLE,
     )
-    monkeypatch.setattr(bridge_module, "build_phase_agent", build_agent)
+    monkeypatch.setattr(bridge_module, "build_node_agent", build_agent)
     bridge = RuntimeNodeAgentBridge(
         envelope=_envelope(),
         policy=policy,
@@ -698,7 +838,6 @@ async def test_profile_brief_capability_posture_disagreement_fails_before_model_
 
     result = await bridge.run_agent(context=_hitl_context(), request=request)
 
-    assert built_request.capability_binding == "required"
     assert built_request.capability_ref is not None
     assert built_request.tools_enabled is False
     assert result.error_code == "capability_admission_failed"
@@ -722,7 +861,7 @@ async def test_success_result_carries_bounded_untrusted_tool_observations() -> N
     tool = ScriptedTool.create("web_search", "fixed source result")
     policy = ExecutionPolicy(
         policy_name="web-observation",
-        allowed_tool_names=frozenset({"web_search"}),
+        allowed_tool_names=_WAVE0_TOOL_NAMES,
         read_roots=(WORKSPACE,),
         write_roots=(),
         attempt_root=ATTEMPT,
@@ -746,6 +885,7 @@ async def test_success_result_carries_bounded_untrusted_tool_observations() -> N
             expected_output="one JSON object",
             minimum_tool_calls=1,
             tool_call_limit=1,
+            capability_ref=WAVE0_AUTHORITATIVE_SOURCE_INTAKE,
         ),
     )
     assert result.finish_reason == NodeFinishReason.SUCCESS
@@ -756,7 +896,7 @@ async def test_tool_failure_is_classified_as_tool_execution_failure() -> None:
     tool = ScriptedTool.create("web_search", ValueError("release_source_set_empty"))
     policy = ExecutionPolicy(
         policy_name="web-failure",
-        allowed_tool_names=frozenset({"web_search"}),
+        allowed_tool_names=_WAVE0_TOOL_NAMES,
         read_roots=(WORKSPACE,),
         write_roots=(),
         attempt_root=ATTEMPT,
@@ -780,6 +920,7 @@ async def test_tool_failure_is_classified_as_tool_execution_failure() -> None:
             expected_output="one JSON object",
             minimum_tool_calls=1,
             tool_call_limit=1,
+            capability_ref=WAVE0_AUTHORITATIVE_SOURCE_INTAKE,
         ),
     )
 
@@ -846,7 +987,14 @@ async def test_bridge_projects_closed_safe_problem_for_each_runtime_source(
     elif source == "tools":
         bridge = RuntimeNodeAgentBridge(
             envelope=envelope,
-            policy=_policy(),
+            policy=ExecutionPolicy(
+                policy_name="wave0-required",
+                allowed_tool_names=_WAVE0_TOOL_NAMES,
+                read_roots=(WORKSPACE,),
+                write_roots=(),
+                attempt_root=ATTEMPT,
+                budget=_budget(),
+            ),
             model_resolver=lambda _envelope: ScriptedChatModel(responses=[]),
             tools_resolver=lambda _envelope, _policy: (_ for _ in ()).throw(
                 NodeAgentConfigurationError("tools_unavailable", sentinel)
@@ -855,7 +1003,7 @@ async def test_bridge_projects_closed_safe_problem_for_each_runtime_source(
     else:
         bridge = _bridge(lambda: ScriptedChatModel(responses=[]), envelope=envelope)
         agent = StructuredOutputAgent() if source == "structured" else ExplodingAgent()
-        monkeypatch.setattr(bridge_module, "build_phase_agent", lambda **_kwargs: agent)
+        monkeypatch.setattr(bridge_module, "build_node_agent", lambda **_kwargs: agent)
         if source == "structured":
             monkeypatch.setattr(
                 bridge_module,
@@ -863,7 +1011,8 @@ async def test_bridge_projects_closed_safe_problem_for_each_runtime_source(
                 lambda *_args, **_kwargs: (_ for _ in ()).throw(ValueError(sentinel)),
             )
 
-    result = await bridge.run_agent(context=_context(), request=_request())
+    request = _required_tool_request() if source == "tools" else _request()
+    result = await bridge.run_agent(context=_context(), request=request)
 
     assert result.problem is not None
     assert result.problem.code is expected
@@ -927,13 +1076,13 @@ async def test_missing_usage_metadata_is_terminal() -> None:
         pytest.param(NodeFinishReason.POLICY_DENIED, "policy.denied", id="policy"),
     ],
 )
-async def test_phase_agent_stops_keep_closed_cause_without_raw_detail(
+async def test_node_agent_stops_keep_closed_cause_without_raw_detail(
     monkeypatch: pytest.MonkeyPatch,
     finish_reason: NodeFinishReason,
     expected_code: str,
 ) -> None:
     sentinel = "raw stop detail /Users/alice/private provider-body-secret"
-    result = await _run_hitl_provider_error(monkeypatch, PhaseAgentStop(finish_reason, sentinel))
+    result = await _run_hitl_provider_error(monkeypatch, NodeAgentStop(finish_reason, sentinel))
 
     assert result.finish_reason is finish_reason
     assert result.problem is not None
@@ -943,12 +1092,12 @@ async def test_phase_agent_stops_keep_closed_cause_without_raw_detail(
     assert sentinel not in result.model_dump_json()
 
 
-async def test_unsupported_phase_agent_stop_fails_closed_without_tool_projection(
+async def test_unsupported_node_agent_stop_fails_closed_without_tool_projection(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     result = await _run_hitl_provider_error(
         monkeypatch,
-        PhaseAgentStop(NodeFinishReason.INVALID_OUTPUT, "raw stop detail must remain private"),
+        NodeAgentStop(NodeFinishReason.INVALID_OUTPUT, "raw stop detail must remain private"),
     )
 
     assert result.finish_reason is NodeFinishReason.INVALID_OUTPUT
@@ -960,7 +1109,12 @@ async def test_unsupported_phase_agent_stop_fails_closed_without_tool_projection
 
 async def test_token_admission_upper_bound_refuses_oversized_request() -> None:
     tight = _budget(total_token_budget=60, per_call_output_token_cap=40)
-    request = NodeExecutionRequest(objective="x" * 200, expected_output="y")
+    request = NodeExecutionRequest(
+        objective="x" * 200,
+        expected_output="y",
+        tools_enabled=False,
+        capability_ref=HITL1_SEMANTIC_INTAKE,
+    )
     bridge = _bridge(lambda: ScriptedChatModel(responses=[ai_message("never reached")]), policy=_policy(tight))
     result = await bridge.run_agent(context=_context(), request=request)
     assert result.finish_reason == NodeFinishReason.BUDGET_EXHAUSTED
@@ -986,7 +1140,7 @@ async def test_real_bridge_enforces_exact_model_tool_budget_without_publication(
     tool = ScriptedTool.create("web_search", "fixed source result")
     policy = ExecutionPolicy(
         policy_name="budget-exhaustion-replay",
-        allowed_tool_names=frozenset({"web_search"}),
+        allowed_tool_names=_WAVE0_TOOL_NAMES,
         read_roots=(WORKSPACE,),
         write_roots=(),
         attempt_root=ATTEMPT,
@@ -1010,6 +1164,7 @@ async def test_real_bridge_enforces_exact_model_tool_budget_without_publication(
             expected_output="one result",
             minimum_tool_calls=1,
             tool_call_limit=1,
+            capability_ref=WAVE0_AUTHORITATIVE_SOURCE_INTAKE,
         ),
     )
 
@@ -1083,7 +1238,7 @@ def test_factory_uses_full_takeover_with_no_checkpointer(monkeypatch: pytest.Mon
 
     monkeypatch.setattr("deerflow.agents.factory.create_deerflow_agent", fake_create)
     sentinel_mw = object()
-    agent = factory_module.build_phase_agent(
+    agent = factory_module.build_node_agent(
         model="MODEL",
         tools=["TOOL"],
         middleware=[sentinel_mw],
@@ -1133,7 +1288,7 @@ async def test_middleware_chain_order_is_pinned(monkeypatch: pytest.MonkeyPatch)
         captured["middleware"] = middleware
         return FakeAgent()
 
-    monkeypatch.setattr(bridge_module, "build_phase_agent", fake_build)
+    monkeypatch.setattr(bridge_module, "build_node_agent", fake_build)
     bridge = _bridge(lambda: ScriptedChatModel(responses=[ai_message("ok")]))
     await bridge.run_agent(context=_context(), request=_request())
     # Budget admission wraps outermost; tool/path policy wraps tool dispatch.
@@ -1177,7 +1332,7 @@ async def _run_hitl_provider_error(
         ),
         tools_resolver=lambda _envelope, _policy: (),
     )
-    monkeypatch.setattr(bridge_module, "build_phase_agent", lambda **_kwargs: _RaisingAgent(error))
+    monkeypatch.setattr(bridge_module, "build_node_agent", lambda **_kwargs: _RaisingAgent(error))
     return await bridge.run_agent(context=context or _hitl_context(), request=request or _zero_tool_request())
 
 
@@ -1227,7 +1382,7 @@ async def test_admitted_hitl_bridge_deadline_has_only_bridge_timeout_origin(
         model_resolver=lambda _envelope: ScriptedChatModel(responses=[]),
         tools_resolver=lambda _envelope, _policy: (),
     )
-    monkeypatch.setattr(bridge_module, "build_phase_agent", lambda **_kwargs: BlockingAgent())
+    monkeypatch.setattr(bridge_module, "build_node_agent", lambda **_kwargs: BlockingAgent())
 
     result = await bridge.run_agent(context=_hitl_context(), request=_zero_tool_request())
 
@@ -1356,9 +1511,9 @@ async def test_admitted_zero_tool_topic_planning_timeout_has_safe_provider_obser
     [
         pytest.param(
             _hitl_context(),
-            _request(),
+            _zero_tool_request().model_copy(update={"tools_enabled": True}),
             _policy(provider_observation_admission=ProviderObservationAdmission.CONFIGURED_MODEL_SERVICE),
-            id="tools-enabled-admitted-policy",
+            id="tools-enabled-posture-mismatch",
         ),
         pytest.param(_hitl_context(), _zero_tool_request(), _policy(), id="zero-tool-denied-policy"),
     ],

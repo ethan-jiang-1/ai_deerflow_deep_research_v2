@@ -11,7 +11,7 @@ from dataclasses import replace
 
 import pytest
 
-from deerflow_deep_research.agents.phase_prompt import render_phase_agent_prompt
+from deerflow_deep_research.agents.node_cognitive_control_program import render_node_cognitive_control_program
 from deerflow_deep_research.domain.bundle import BundleId, RunBundleRef, bundle_profile_path
 from deerflow_deep_research.domain.context import NodeExecutionRequest
 from deerflow_deep_research.domain.profile import (
@@ -198,7 +198,7 @@ def test_initial_and_repair_requests_project_the_compact_topic_plan_envelope() -
 
     for request in requests:
         expected = json.loads(request.expected_output)
-        rendered = render_phase_agent_prompt(request, attempt_workspace="/virtual/topic-plan/compact")
+        rendered = render_node_cognitive_control_program(request, attempt_workspace="/virtual/topic-plan/compact")
 
         assert expected["instruction"] == (
             "Return exactly one compact JSON object and no markdown, prose, or code fences."
@@ -228,8 +228,8 @@ def test_runtime_rendered_capabilities_own_method_while_python_projects_only_ass
     )
     initial = build_planner_prompt(inputs)
     repair = build_planner_prompt(inputs, repair_error="topic_plan_invalid", invalid_draft='{"topics":[]}')
-    initial_rendered = render_phase_agent_prompt(initial, attempt_workspace="/virtual/topic-plan/initial")
-    repair_rendered = render_phase_agent_prompt(repair, attempt_workspace="/virtual/topic-plan/repair")
+    initial_rendered = render_node_cognitive_control_program(initial, attempt_workspace="/virtual/topic-plan/initial")
+    repair_rendered = render_node_cognitive_control_program(repair, attempt_workspace="/virtual/topic-plan/repair")
 
     assert initial_rendered.capability is not None
     assert repair_rendered.capability is not None

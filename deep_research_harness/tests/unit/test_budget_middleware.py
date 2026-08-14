@@ -11,7 +11,7 @@ import pytest
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 
 from deerflow_deep_research.agents.middleware import AgentBudgetError, BudgetMiddleware
-from deerflow_deep_research.agents.phase_prompt import render_phase_agent_prompt
+from deerflow_deep_research.agents.node_cognitive_control_program import render_node_cognitive_control_program
 from deerflow_deep_research.agents.policies import ExecutionBudget
 from deerflow_deep_research.domain.enums import NodeFinishReason
 from deerflow_deep_research.domain.run_observation import BudgetStopReason
@@ -94,7 +94,7 @@ def _fixed_demo_request() -> FakeRequest:
         request_language="en",
         output_language="en",
     )
-    rendered = render_phase_agent_prompt(
+    rendered = render_node_cognitive_control_program(
         build_planner_prompt(assignment),
         attempt_workspace="/mnt/user-data/workspace/deep-research/fixed/topic_planning",
     )

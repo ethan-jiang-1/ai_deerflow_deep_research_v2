@@ -152,7 +152,7 @@ def test_generation_does_not_construct_agents_resolve_tools_or_open_network(
     def forbidden(*_args: object, **_kwargs: object) -> None:
         raise AssertionError("prompt catalog generation must remain pure")
 
-    monkeypatch.setattr(agent_factory, "build_phase_agent", forbidden)
+    monkeypatch.setattr(agent_factory, "build_node_agent", forbidden)
     monkeypatch.setattr(node_agent_bridge, "_default_model_resolver", forbidden)
     monkeypatch.setattr(node_agent_bridge, "_default_tools_resolver", forbidden)
     monkeypatch.setattr(socket, "create_connection", forbidden)

@@ -1,4 +1,4 @@
-"""Zero-API scripted chat models for bounded phase-agent contract tests.
+"""Zero-API scripted chat models for bounded node-agent contract tests.
 
 These fakes return pre-scripted ``AIMessage`` responses (optionally with tool
 calls and ``usage_metadata``) so budget, tool, and cancellation behaviour can be

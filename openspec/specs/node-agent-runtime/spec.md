@@ -3,43 +3,76 @@
 > req: NOA-001, NOA-002, NOA-003, NOA-004, NOA-005, NOA-006, NOA-007, NOA-008, NOA-009, NOA-010, NOA-011, NOA-012, NOA-013, NOA-014, NOA-015
 
 ## Purpose
-The bounded embedded phase-agent runtime: parent-context bridge, explicit budgets, fail-closed tool/path policy, untrusted-source isolation, normalized results, and no self-initiated clarification.
+The bounded embedded node-agent runtime: parent-context bridge, explicit budgets, fail-closed tool/path policy, untrusted-source isolation, normalized results, and no self-initiated clarification.
 ## Requirements
-### Requirement: Phase agents inherit one parent runtime
-The runtime-owned node-agent bridge SHALL implement a pure domain capability protocol used by graph nodes. It SHALL resolve model/tools from TrustedRuntimeEnvelope, seed an ephemeral child state/context with the already validated parent sandbox and thread data, and invoke a bounded embedded agent produced by the full-takeover factory. The agents layer SHALL not import runtime; raw AppConfig, identity, host paths, sandbox internals, and checkpoint identity SHALL not enter graph/node contracts, checkpoints, events, or model-visible context. Each bound compiled child SHALL be created for one `run_agent` request, invoked as a separate runnable with `checkpointer=None`, and discarded after completion/cancellation; it SHALL never be cached across actions/users/threads/attempts, mounted as a checkpoint-inheriting subgraph, or create another sandbox lifecycle, thread namespace, or persistent controller.
+### Requirement: LLM-Bearing Nodes inherit one parent runtime
+
+The runtime-owned node-agent bridge SHALL implement a pure domain capability
+protocol used by graph nodes. It SHALL resolve model/tools from
+`TrustedRuntimeEnvelope`, seed an ephemeral child state/context with the already
+validated parent sandbox and thread data, and invoke a bounded embedded
+LLM-Bearing Node agent produced by the full-takeover factory. The agents layer
+SHALL not import runtime; raw AppConfig, identity, host paths, sandbox internals,
+and checkpoint identity SHALL not enter graph/node contracts, checkpoints, events,
+or model-visible context. Each bound compiled child SHALL be created for one
+`run_agent` request, invoked as a separate runnable with `checkpointer=None`, and
+discarded after completion/cancellation; it SHALL never be cached across
+actions/users/threads/attempts, mounted as a checkpoint-inheriting subgraph, or
+create another sandbox lifecycle, thread namespace, or persistent controller.
+(`NOA-001`)
 
 #### Scenario: Parent context is preserved
-- **WHEN** a fake node starts an embedded agent with a parent sandbox and thread-data fixture
-- **THEN** authorized tools observe those same scoped values and no independent checkpointer or thread root is created
+- **WHEN** a fake node starts an embedded LLM-Bearing Node agent with a parent
+  sandbox and thread-data fixture
+- **THEN** authorized tools observe those same scoped values and no independent
+  checkpointer or thread root is created
 
 #### Scenario: Missing parent isolation fails
 - **WHEN** a node requests an agent without validated parent sandbox/thread context
 - **THEN** the factory refuses construction before a model or tool is invoked
 
-### Requirement: Phase-agent execution has explicit budgets
-Every node-agent policy SHALL specify a resolved model, exact tools, maximum model calls, total tool calls, tool calls per model response, parallel tool-call limit, total token budget, per-model-call output-token cap, per-tool-result size cap, structured-result size cap, and wall-time budget. Before each text-only model call the runtime SHALL use a deterministic no-network conservative upper bound over the actual messages/tool schemas plus capped model output; non-text content SHALL require an explicit conservative modality estimator or fail admission. It SHALL then reconcile actual usage metadata. Missing usable token accounting SHALL terminate with `usage_unavailable` before tool execution or another model call. Tool results SHALL be bounded before re-entering model context. Exhausting any budget SHALL stop the agent with a typed non-success finish reason and cancel outstanding child work.
+### Requirement: LLM-Bearing Node execution has explicit budgets
+
+Every node-agent policy SHALL specify a resolved model, exact tools, maximum model
+calls, total tool calls, tool calls per model response, parallel tool-call limit,
+total token budget, per-model-call output-token cap, per-tool-result size cap,
+structured-result size cap, and wall-time budget. Before each text-only model call
+the runtime SHALL use a deterministic no-network conservative upper bound over the
+actual messages/tool schemas plus capped model output; non-text content SHALL
+require an explicit conservative modality estimator or fail admission. It SHALL
+then reconcile actual usage metadata. Missing usable token accounting SHALL
+terminate with `usage_unavailable` before tool execution or another model call.
+Tool results SHALL be bounded before re-entering model context. Exhausting any
+budget SHALL stop the LLM-Bearing Node agent with a typed non-success finish reason
+and cancel outstanding child work.
 
 Every request-level tool-call limit SHALL be enforced cumulatively before tool
-dispatch, including a model response that proposes parallel calls. If prior calls plus
-the current response exceed the remaining request quota, middleware SHALL deny the
-batch with a typed non-success result; the declared request limit SHALL never be
-exceeded in observed dispatch accounting.
+dispatch, including a model response that proposes parallel calls. If prior calls
+plus the current response exceed the remaining request quota, middleware SHALL deny
+the batch with a typed non-success result; the declared request limit SHALL never be
+exceeded in observed dispatch accounting. (`NOA-002`)
 
 #### Scenario: Work completes within budget
-- **WHEN** ReplayChatModel returns a valid structured result within all configured limits
-- **THEN** the adapter returns a successful normalized result with recorded usage and finish reason
+- **WHEN** a replay model returns a valid structured result within all configured limits
+- **THEN** the adapter returns a successful normalized result with recorded usage and
+  finish reason
 
 #### Scenario: Budget exhaustion stops execution
-- **WHEN** a fake model exceeds the model-call, tool-call, parallelism, token, tool-result, structured-result, or wall-time limit
-- **THEN** execution terminates without another tool call and reports the exhausted budget as a failure
+- **WHEN** a fake model exceeds a declared model-call, tool-call, parallelism, token,
+  tool-result, structured-result, or wall-time limit
+- **THEN** execution terminates without another tool call and reports the exhausted
+  budget as a failure
 
 #### Scenario: Parallel response cannot cross request quota
-- **WHEN** one tool call has already run under a two-call request limit and the next model response proposes two parallel calls
-- **THEN** middleware rejects the response before either new call dispatches and observed request tool calls remain one
+- **WHEN** one tool call has already run under a two-call request limit and the next
+  model response proposes two parallel calls
+- **THEN** middleware rejects the response before either new call dispatches and
+  observed request tool calls remain one
 
 #### Scenario: Missing usage cannot disable the token budget
 - **WHEN** a model response omits usable token accounting
-- **THEN** the runtime emits terminal `usage_unavailable`, strips tool calls, and does not make another model request
+- **THEN** the runtime emits terminal `usage_unavailable`, strips tool calls, and does
+  not make another model request
 
 ### Requirement: Tool and path policy fails closed
 
@@ -97,15 +130,25 @@ The adapter SHALL validate structured model output and project stable redacted p
 - **THEN** child work is cancelled and awaited, cleanup completes, and no successful result is emitted
 
 ### Requirement: Clarification belongs only to graph HITL nodes
-The phase-agent factory SHALL omit `ask_clarification` and clarification middleware. A phase agent SHALL not create a user interrupt; only a graph-owned HITL node introduced by a later change can do so.
+
+The node-agent factory SHALL omit `ask_clarification` and clarification middleware.
+An LLM-Bearing Node agent SHALL not create a user interrupt; only a graph-owned HITL
+node introduced by a later change can do so. (`NOA-006`)
+
+#### Scenario: Node cognition cannot request clarification
+- **WHEN** a model proposes an `ask_clarification` action during a node-agent run
+- **THEN** the runtime denies the action without creating a graph interrupt or user-
+  input artifact
 
 #### Scenario: Normal node toolset has no clarification
-- **WHEN** the factory builds its full-takeover middleware and tool list
-- **THEN** neither the clarification tool nor clarification middleware is present
+- **WHEN** the node-agent factory assembles a normal direct branch toolset
+- **THEN** the clarification tool and middleware are absent without changing its
+  declared model, tool, budget, or graph-owned HITL behavior
 
 #### Scenario: Fabricated clarification call is refused
-- **WHEN** a fake model emits an `ask_clarification` tool call despite the schema
-- **THEN** tool policy rejects it and no graph interrupt or user-input artifact is created
+- **WHEN** a direct node-agent model output fabricates an `ask_clarification` call
+- **THEN** runtime enforcement rejects it without a user interrupt, candidate
+  admission, retry, or graph lifecycle action
 
 ### Requirement: Node-agent failures retain a closed causal category for the parent graph
 
@@ -122,25 +165,27 @@ path. (`NOA-007`, `NOA-008`, `PRS-002`)
 - **THEN** it finds their declaration and lock metadata beneath
   `deep_research_harness/` without widening node-agent lifecycle authority
 
-### Requirement: Phase execution policies are named and independently bounded
+### Requirement: Node-agent execution policies are named and independently bounded
 
-The runtime SHALL bind each distinct direct model-calling phase to a named
-`ExecutionPolicy` whose model-call, token, tool, and wall-time bounds are explicit.
-Topic planning SHALL use a policy distinct from HITL1 with zero tool authority, one
-model call per invocation, and a 60-second wall-time ceiling. A policy timeout SHALL
-continue to return the existing safe `provider.timeout` result shape; policy
-separation SHALL not alter cancellation handling or grant retry authority to the
-bridge.
+The runtime SHALL bind each distinct direct model-calling LLM-Bearing Node branch to
+a named node-agent execution policy with explicit budgets and allowed tool names.
+One branch's policy SHALL not grant its tools, budget, or recovery behavior to
+another branch. (`NOA-008`)
 
-#### Scenario: Topic planning no longer inherits the HITL1 wall-time budget
-- **WHEN** real HITL1 and real topic planning are assembled in one recipe
-- **THEN** they receive distinct named policies and a topic-planning invocation can
-  run until its own 60-second ceiling without changing HITL1's configured bound
+#### Scenario: A node-agent budget expiry remains classified
+- **WHEN** a node-agent invocation exhausts its wall-time budget
+- **THEN** its typed failure retains the existing bounded budget classification and
+  no raw exception text for the owning branch to handle
 
 #### Scenario: A phase budget expiry remains classified
-- **WHEN** a phase invocation exhausts its wall-time budget
-- **THEN** the bridge returns a safe non-success result with the bounded timeout
-  classification and no raw exception text for the owning phase to handle
+- **WHEN** a node-agent invocation exhausts its wall-time budget
+- **THEN** its typed failure retains the existing bounded budget classification and
+  no raw exception text for the owning branch to handle
+
+#### Scenario: Topic planning no longer inherits the HITL1 wall-time budget
+- **WHEN** real HITL1 and topic planning are assembled in one recipe
+- **THEN** they receive distinct named node-agent policies and topic planning uses
+  its existing 60-second bound without changing HITL1's configured bound
 
 ### Requirement: Semantic-intake invocations remain bounded zero-tool node work
 
@@ -155,66 +200,74 @@ cross-request three-call semantic budget and recovery. (`NOA-009`)
 - **THEN** the trusted bridge receives `tools_enabled=false` and no tool policy or
   graph action is available to that invocation
 
-### Requirement: Phase-agent bridge consumes the shared final prompt projection
+### Requirement: Node-agent bridge consumes the shared final prompt projection
 
-Before constructing a phase-agent child state, `RuntimeNodeAgentBridge` SHALL obtain
-the system-policy text and final human message from the agents-owned pure final-prompt
-renderer using the current validated `NodeExecutionRequest` and attempt workspace. It
-SHALL preserve the existing child sandbox/thread metadata, model and tool resolution,
-budget enforcement, agent invocation, and result projection ownership. The renderer
-and a deterministic prompt catalog SHALL not receive runtime envelope facts or gain
-model, tool, route, checkpoint, or lifecycle authority. (`NOA-010`)
+Before constructing an embedded LLM-Bearing Node child state, the node-agent bridge
+SHALL obtain the shared final Node Cognitive Control Program projection from the
+agents-owned renderer. The renderer SHALL validate the mandatory capability ref
+before it returns the projection. The bridge SHALL reuse that projection as the
+child's system and user messages and SHALL NOT reconstruct policy from request
+fields, a legacy binding mode, runtime configuration, or a caller-supplied system
+prompt. (`NOA-010`)
+
+#### Scenario: Runtime uses the renderer's exact projection
+- **WHEN** a direct branch is invoked through the bridge
+- **THEN** its child receives the same ordered base/capability/assignment/untrusted
+  projection reviewed by the catalog, without a second runtime policy source
+
+#### Scenario: Invalid capability admission reaches no runtime resolver
+- **WHEN** a request has a missing, invalid, unknown, or package-mismatched ref
+- **THEN** prompt admission produces the existing bounded failure before the bridge
+  resolves tools or a model, or constructs an embedded agent
 
 #### Scenario: Runtime message construction does not fork from the review projection
-- **WHEN** the bridge executes a request corresponding to a canonical prompt-catalog
-  case
-- **THEN** its agent system policy and human message equal that case's shared rendered
-  projection while its runtime-only metadata remains outside the catalog
+- **WHEN** the bridge executes a request corresponding to a canonical prompt-catalog case
+- **THEN** its child system policy and human message equal that case's shared rendered
+  projection while runtime-only metadata remains outside the catalog
 
 #### Scenario: Canonical bridge capture proves source-faithful text
-- **WHEN** a deterministic test runs one graph-owned canonical prompt case through
-  the bridge with fake model and tool bindings that capture agent construction and
-  child state
-- **THEN** the captured system policy and first human message exactly equal the shared
-  renderer's projection for that same case, without the catalog receiving any runtime
-  envelope fact
+- **WHEN** a deterministic test runs a graph-owned canonical prompt case through the
+  bridge with fake model and tool bindings that capture construction and child state
+- **THEN** captured policy and first human message exactly equal the shared renderer
+  projection without the catalog receiving a runtime-envelope fact
 
 ### Requirement: Runtime execution admits capability posture before model-visible work
 
-For a request carrying a validated `NodeAgentCapabilityRef`, the runtime node-agent
-bridge SHALL receive the renderer's validated capability projection and compare its
-closed tool posture with the request window and the selected `ExecutionPolicy` before
-constructing a model-visible agent. A `forbidden` posture SHALL require
-`tools_enabled=false`, no request call requirement, and no model-visible tool. A
-`required` posture SHALL require `tools_enabled=true`, `minimum_tool_calls >= 1`, a
-non-empty request call limit, and a non-empty capability name set contained by
-`ExecutionPolicy.allowed_tool_names`. The bridge SHALL expose only the intersection
-of that set with configured actual tools; at least one permitted actual tool is
-required, but Wave0's alternative retrieval names do not require every configured
-provider. Existing middleware remains the owner of path, sandbox, budget,
-cancellation, and dispatch enforcement. An unknown capability, empty permitted-tool
-intersection, forbidden visible tool, or posture/window disagreement SHALL fail before
-`build_phase_agent` or tool dispatch. The bridge SHALL NOT interpret capability policy
-as a graph route, state write, retry, or arbitrary full-system-prompt override.
-(`NOA-011`)
+The node-agent bridge SHALL validate the rendered capability posture against the
+request tool window before it resolves tools, a model, or an embedded agent. A
+forbidden posture SHALL reject any nonzero tool request; a required posture SHALL
+reject a disabled, empty, or out-of-policy window. A missing, invalid, unknown, or
+package-mismatched capability ref SHALL fail at the same pre-resolver admission
+boundary. The bridge SHALL not interpret capability policy as graph route, parser,
+state writer, repair controller, or lifecycle authority. (`NOA-011`)
+
+#### Scenario: A forbidden capability cannot enable a tool window
+- **WHEN** a forbidden capability is paired with an enabled tool request
+- **THEN** the bridge returns its typed non-success result before tool resolution,
+  model construction, or tool dispatch
+
+#### Scenario: A required capability cannot be bypassed
+- **WHEN** a required capability is missing, invalid, package-mismatched, disabled,
+  or has no eligible configured tool
+- **THEN** the bridge returns its existing typed non-success result without a generic
+  capability, a legacy renderer path, or a model invocation
 
 #### Scenario: Required tool posture is mechanically aligned
-- **WHEN** a migrated `wave0/worker` request declares the required retrieval
-  capability and the trusted runtime supplies one matching allowed alternative
+- **WHEN** a required-tool request declares its capability and the trusted runtime
+  supplies one matching allowed tool
 - **THEN** the bridge binds that tool under its existing policy and records the
-  bounded call window without exposing another configured tool outside the capability
-  intersection
+  bounded call window without exposing another configured tool
 
 #### Scenario: Tool disagreement fails closed
-- **WHEN** a migrated capability forbids tools, has no permitted configured tool, or
-  disagrees with its request window or `ExecutionPolicy`
-- **THEN** the bridge returns the existing typed non-success result without a model
-  invocation, tool dispatch, new retry, or graph action
+- **WHEN** a capability forbids tools, has no permitted configured tool, or disagrees
+  with its request window or node-agent execution policy
+- **THEN** the bridge returns its typed non-success result without model invocation,
+  tool dispatch, retry, or graph action
 
 #### Scenario: Wave2 does not inherit HITL1 tool posture
 - **WHEN** a mixed real recipe resolves `wave2_synthesis`
-- **THEN** both synthesis catalog cases use the dedicated zero-tool policy and no
-  model-visible tool, independent of HITL1's bridge or budget
+- **THEN** both synthesis catalog cases use their dedicated zero-tool policy and no
+  model-visible tool, independently of HITL1's policy or budget
 
 ### Requirement: Branch review evidence distinguishes requested from enforced execution posture
 

@@ -1,4 +1,4 @@
-"""Bounded phase-agent middleware: admission-controlled budgets.
+"""Bounded node-agent middleware: admission-controlled budgets.
 
 @impl NOA-002
 
@@ -29,7 +29,7 @@ from deerflow_deep_research.domain.enums import NodeFinishReason
 from deerflow_deep_research.domain.run_observation import BudgetStopReason
 
 
-class PhaseAgentStop(RuntimeError):
+class NodeAgentStop(RuntimeError):
     """Base for typed, non-success stops raised by the bounded agent chain."""
 
     def __init__(self, finish_reason: NodeFinishReason, detail: str) -> None:
@@ -38,7 +38,7 @@ class PhaseAgentStop(RuntimeError):
         self.detail = detail
 
 
-class AgentBudgetError(PhaseAgentStop):
+class AgentBudgetError(NodeAgentStop):
     """Raised to stop the agent with a typed budget/usage finish reason."""
 
     def __init__(
@@ -51,7 +51,7 @@ class AgentBudgetError(PhaseAgentStop):
         self.budget_stop_reason = budget_stop_reason
 
 
-class AgentPolicyError(PhaseAgentStop):
+class AgentPolicyError(NodeAgentStop):
     """Raised to deny a tool/path before dispatch with POLICY_DENIED."""
 
     def __init__(self, detail: str) -> None:
@@ -237,7 +237,7 @@ class ToolPolicyMiddleware(AgentMiddleware):
         self._authorize(name, args)
         try:
             result = await handler(request)
-        except (asyncio.CancelledError, PhaseAgentStop):
+        except (asyncio.CancelledError, NodeAgentStop):
             raise
         except Exception:
             raise ToolExecutionFailure from None
@@ -281,7 +281,7 @@ __all__ = [
     "AgentBudgetError",
     "AgentPolicyError",
     "BudgetMiddleware",
-    "PhaseAgentStop",
+    "NodeAgentStop",
     "ToolExecutionFailure",
     "ToolPolicyMiddleware",
 ]

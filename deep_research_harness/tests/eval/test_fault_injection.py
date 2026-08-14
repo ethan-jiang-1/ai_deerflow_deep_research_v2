@@ -23,6 +23,8 @@ from deerflow_deep_research.domain.context import (
 from deerflow_deep_research.domain.enums import NodeFinishReason
 from deerflow_deep_research.domain.profile import ResearchProfile
 from deerflow_deep_research.domain.run_experience import RunFailureCode
+from deerflow_deep_research.graph.nodes.wave0.capabilities import WAVE0_AUTHORITATIVE_SOURCE_INTAKE
+from deerflow_deep_research.graph.nodes.wave2_synthesis.capabilities import WAVE2_EVIDENCE_SYNTHESIS
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
 from deerflow_deep_research.runtime.node_agent_bridge import NodeAgentConfigurationError, RuntimeNodeAgentBridge
 from deerflow_deep_research.runtime.request_bundle import RequestBundleStore
@@ -119,7 +121,12 @@ async def test_model_timeout_cancellation_propagates_through_real_runtime_bridge
         policy_name=policy.policy_name,
         bundle_context=NodeAgentBundleContext.from_selected_bundle(SelectedBundleContext(bundle=identity.bundle_ref)),
     )
-    request = NodeExecutionRequest(objective=scenario.family_id, expected_output="one bounded result")
+    request = NodeExecutionRequest(
+        objective=scenario.family_id,
+        expected_output="one bounded result",
+        tools_enabled=False,
+        capability_ref=WAVE2_EVIDENCE_SYNTHESIS,
+    )
     task = asyncio.create_task(bridge.run_agent(context=context, request=request))
     await asyncio.wait_for(started.wait(), timeout=1)
     task.cancel()
@@ -170,7 +177,12 @@ async def test_wall_time_timeout_returns_typed_budget_exhausted_outcome(tmp_path
                 SelectedBundleContext(bundle=identity.bundle_ref)
             ),
         ),
-        request=NodeExecutionRequest(objective="timeout", expected_output="one bounded result"),
+        request=NodeExecutionRequest(
+            objective="timeout",
+            expected_output="one bounded result",
+            tools_enabled=False,
+            capability_ref=WAVE2_EVIDENCE_SYNTHESIS,
+        ),
     )
 
     assert result.finish_reason is NodeFinishReason.BUDGET_EXHAUSTED
@@ -213,7 +225,13 @@ async def test_tool_unavailable_timeout_bridge_fails_closed(tmp_path: Path, case
     )
     unavailable = await unavailable_bridge.run_agent(
         context=context,
-        request=NodeExecutionRequest(objective="search", expected_output="one result", minimum_tool_calls=1),
+        request=NodeExecutionRequest(
+            objective="search",
+            expected_output="one result",
+            minimum_tool_calls=1,
+            tool_call_limit=1,
+            capability_ref=WAVE0_AUTHORITATIVE_SOURCE_INTAKE,
+        ),
     )
     assert unavailable.finish_reason is NodeFinishReason.FAILED
     assert unavailable.error_code == "tools_unavailable"
@@ -229,7 +247,12 @@ async def test_tool_unavailable_timeout_bridge_fails_closed(tmp_path: Path, case
     )
     timeout = await timeout_bridge.run_agent(
         context=context,
-        request=NodeExecutionRequest(objective="wait", expected_output="one result"),
+        request=NodeExecutionRequest(
+            objective="wait",
+            expected_output="one result",
+            tools_enabled=False,
+            capability_ref=WAVE2_EVIDENCE_SYNTHESIS,
+        ),
     )
     assert timeout.finish_reason is NodeFinishReason.BUDGET_EXHAUSTED
     assert timeout.error_code == "wall_time"
@@ -245,7 +268,12 @@ async def test_tool_unavailable_timeout_bridge_fails_closed(tmp_path: Path, case
     task = asyncio.create_task(
         cancel_bridge.run_agent(
             context=context,
-            request=NodeExecutionRequest(objective="cancel", expected_output="one result"),
+            request=NodeExecutionRequest(
+                objective="cancel",
+                expected_output="one result",
+                tools_enabled=False,
+                capability_ref=WAVE2_EVIDENCE_SYNTHESIS,
+            ),
         )
     )
     await asyncio.wait_for(cancel_started.wait(), timeout=1)

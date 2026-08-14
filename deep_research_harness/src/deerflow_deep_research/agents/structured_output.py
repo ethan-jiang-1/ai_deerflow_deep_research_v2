@@ -2,7 +2,7 @@
 
 @impl NOA-005
 
-The bridge never returns a phase agent's raw output. Model output is validated
+The bridge never returns a node-agent's raw output. Model output is validated
 and normalized into a typed ``NodeExecutionResult``: the summary is bounded to
 the policy's structured-result byte cap, artifact references must be well-formed
 and contained by the node's virtual roots, and failure detail is redacted of

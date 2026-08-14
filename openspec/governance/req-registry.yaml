@@ -175,16 +175,16 @@ HIC-003: human-interaction-contract — Proposal questions yield only bounded re
 HIC-004: human-interaction-contract — HITL1 lifecycle feedback retains current-proposal controls and gives bounded decision or recovery guidance without raw semantic output, hidden action tokens, schema teaching, or JSON instruction
 
 # node-agent-runtime
-NOA-001: node-agent-runtime — A runtime-owned bridge gives phase agents the parent sandbox and trusted ephemeral context without leaking authority or adding a checkpointer
-NOA-002: node-agent-runtime — Phase-agent execution is bounded by explicit model-call, tool-call, token, output, result-size, and wall-time policy
-NOA-003: node-agent-runtime — Phase-agent tool and filesystem access fails closed outside the active attempt policy
+NOA-001: node-agent-runtime — A runtime-owned bridge gives LLM-Bearing Nodes the parent sandbox and trusted ephemeral context without leaking authority or adding a checkpointer
+NOA-002: node-agent-runtime — Node-agent execution is bounded by explicit model-call, tool-call, token, output, result-size, and wall-time policy
+NOA-003: node-agent-runtime — Node-agent tool and filesystem access fails closed outside the active attempt policy
 NOA-004: node-agent-runtime — External source content remains untrusted data and cannot change control instructions or authority
-NOA-005: node-agent-runtime — Phase-agent results, progress, cancellation, and failures are normalized for the parent graph
-NOA-006: node-agent-runtime — Phase agents cannot initiate user clarification outside graph-owned HITL nodes
+NOA-005: node-agent-runtime — Node-agent results, progress, cancellation, and failures are normalized for the parent graph
+NOA-006: node-agent-runtime — LLM-Bearing Nodes cannot initiate user clarification outside graph-owned HITL nodes
 NOA-007: node-agent-runtime — Node-agent source failures retain closed safe causal categories for graph routing and user-facing lifecycle projection
 NOA-008: node-agent-runtime — Transient provider failures use bounded retry with cancellation, policy budget, and safe attempt observations preserved
 NOA-009: node-agent-runtime — HITL1 semantic-intake invocations remain independent zero-tool structured requests whose bridge makes one model call and never interprets candidates, retries, routes, writes checkpoints, or grants action authority
-NOA-010: node-agent-runtime — The phase-agent bridge obtains system-policy text and final human message from the agents-owned pure renderer before constructing child state, preserving existing ownership without granting the renderer model, tool, route, checkpoint, or lifecycle authority
+NOA-010: node-agent-runtime — The node-agent bridge obtains Node Cognitive Control Program system-policy text and final human message from the agents-owned pure renderer before constructing child state, preserving existing ownership without granting the renderer model, tool, route, checkpoint, or lifecycle authority
 NOA-011: node-agent-runtime — The runtime bridge admits only a validated declared node-agent capability and binds actual tools to its closed posture before model construction or dispatch
 NOA-012: node-agent-runtime — Branch-review evidence distinguishes each request's tool window from bridge-enforced capability posture, eligible tools, and safe failure projection without changing execution behavior
 NOA-013: node-agent-runtime — Final report composition uses a dedicated one-invocation zero-tool bridge with explicit token, result-size, and wall-time bounds while retaining closed failure projection and no retry, publication, route, or lifecycle authority

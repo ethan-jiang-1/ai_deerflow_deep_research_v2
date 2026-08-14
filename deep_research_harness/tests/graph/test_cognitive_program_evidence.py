@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import pytest
 
-from deerflow_deep_research.agents.phase_prompt import render_phase_agent_prompt
+from deerflow_deep_research.agents.node_cognitive_control_program import render_node_cognitive_control_program
 from deerflow_deep_research.graph.prompt_catalog import prompt_catalog_cases
 from tests.assets.node_agent_capabilities import (
     COGNITIVE_PROGRAM_EVIDENCE,
@@ -179,7 +179,7 @@ def test_cognitive_program_composition(row) -> None:
 
     catalog_case = next(case for case in prompt_catalog_cases() if case.case_id == row.case_id)
     request = catalog_case.build_request()
-    rendered = render_phase_agent_prompt(request, attempt_workspace=catalog_case.attempt_workspace)
+    rendered = render_node_cognitive_control_program(request, attempt_workspace=catalog_case.attempt_workspace)
 
     assert catalog_case.builder_id == row.catalog_builder_id
     assert request.capability_ref is not None
@@ -202,7 +202,7 @@ def test_wave1_cognitive_program_keeps_method_in_the_rendered_capability(case_id
 
     catalog_case = next(case for case in prompt_catalog_cases() if case.case_id == case_id)
     request = catalog_case.build_request()
-    rendered = render_phase_agent_prompt(request, attempt_workspace=catalog_case.attempt_workspace)
+    rendered = render_node_cognitive_control_program(request, attempt_workspace=catalog_case.attempt_workspace)
 
     assert rendered.capability is not None
     assert rendered.capability.policy.strip() in rendered.system_policy
@@ -252,7 +252,7 @@ def test_wave2_cognitive_program_keeps_method_in_the_rendered_capability(
 
     catalog_case = next(case for case in prompt_catalog_cases() if case.case_id == case_id)
     request = catalog_case.build_request()
-    rendered = render_phase_agent_prompt(request, attempt_workspace=catalog_case.attempt_workspace)
+    rendered = render_node_cognitive_control_program(request, attempt_workspace=catalog_case.attempt_workspace)
 
     assert rendered.capability is not None
     assert rendered.capability.policy.strip() in rendered.system_policy

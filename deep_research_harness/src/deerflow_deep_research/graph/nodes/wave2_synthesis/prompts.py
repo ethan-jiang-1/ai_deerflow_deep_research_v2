@@ -89,7 +89,6 @@ def build_synthesis_prompt(
         objective=objective,
         expected_output=_expected_synthesis_output(),
         tools_enabled=False,
-        capability_binding="required",
         capability_ref=WAVE2_EVIDENCE_SYNTHESIS,
     )
 
@@ -130,6 +129,5 @@ def build_synthesis_repair_prompt(
         objective=objective,
         expected_output=_expected_synthesis_output(),
         tools_enabled=False,
-        capability_binding="required",
         capability_ref=WAVE2_EVIDENCE_SYNTHESIS_REPAIR,
     )

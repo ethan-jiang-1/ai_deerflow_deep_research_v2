@@ -121,7 +121,6 @@ def build_wave1_worker_prompt(
         expected_output=_wave1_completion_contract(initial=True),
         minimum_tool_calls=1,
         tool_call_limit=1,
-        capability_binding="required",
         capability_ref=WAVE1_EVIDENCE_EXTRACTION,
     )
 
@@ -168,7 +167,6 @@ def build_wave1_repair_prompt(
         objective=objective,
         expected_output=_wave1_completion_contract(initial=False),
         tools_enabled=False,
-        capability_binding="required",
         capability_ref=WAVE1_EVIDENCE_EXTRACTION_REPAIR,
     )
 
@@ -222,7 +220,6 @@ def build_wave1_source_diagnostic_prompt(
         objective=objective,
         expected_output=json.dumps(expected, sort_keys=True, separators=(",", ":")),
         tools_enabled=False,
-        capability_binding="required",
         capability_ref=WAVE1_SOURCE_DIAGNOSTIC,
     )
 
@@ -266,7 +263,6 @@ def build_wave1_claim_verifier_prompt(
         objective=objective,
         expected_output=json.dumps(expected, sort_keys=True, separators=(",", ":")),
         tools_enabled=False,
-        capability_binding="required",
         capability_ref=WAVE1_CLAIM_VERIFIER,
     )
 

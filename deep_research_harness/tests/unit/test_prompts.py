@@ -26,7 +26,7 @@ ADVERSARIAL_SOURCES = [
 
 def test_policy_prompt_is_loaded_from_package_resources() -> None:
     prompt = load_policy_prompt()
-    assert "Runtime Policy" in prompt
+    assert "Node Cognitive Control Program" in prompt
     assert "untrusted-source-data" in prompt
 
 

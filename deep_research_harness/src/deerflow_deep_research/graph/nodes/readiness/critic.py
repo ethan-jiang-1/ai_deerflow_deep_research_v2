@@ -79,7 +79,6 @@ def build_readiness_critic_request(
         objective=objective,
         expected_output=json.dumps(expected, sort_keys=True, separators=(",", ":")),
         tools_enabled=False,
-        capability_binding="required",
         capability_ref=READINESS_EVIDENCE_CRITIC,
     )
 

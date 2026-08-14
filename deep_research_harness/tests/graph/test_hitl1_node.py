@@ -443,7 +443,6 @@ async def test_first_visit_generates_brief_and_interrupts(monkeypatch: pytest.Mo
 
     assert len(caps.requests) == 1
     assert "Research storage options" in caps.requests[0].objective
-    assert caps.requests[0].capability_binding == "required"
     assert caps.requests[0].capability_ref is not None
     assert caps.requests[0].capability_ref.capability_id == "hitl1-profile-brief"
     assert caps.requests[0].tools_enabled is False

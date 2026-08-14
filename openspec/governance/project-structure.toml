@@ -420,7 +420,7 @@ kind = "file"
 owner = "PRS-001"
 
 [[required_paths]]
-path = "deep_research_harness/src/deerflow_deep_research/agents/phase_prompt.py"
+path = "deep_research_harness/src/deerflow_deep_research/agents/node_cognitive_control_program.py"
 kind = "file"
 owner = "PRS-011"
 
@@ -715,7 +715,7 @@ kind = "directory"
 owner = "PRS-001"
 
 [[required_paths]]
-path = "deep_research_harness/tests/unit/test_phase_prompt.py"
+path = "deep_research_harness/tests/unit/test_node_cognitive_control_program.py"
 kind = "file"
 owner = "PRS-011"
 

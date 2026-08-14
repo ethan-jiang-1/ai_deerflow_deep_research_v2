@@ -20,11 +20,32 @@ from deerflow_deep_research.graph.prompt_catalog import (
 )
 
 SOURCE_ROOT = Path(__file__).resolve().parents[2] / "src" / "deerflow_deep_research"
+TEST_ROOT = Path(__file__).resolve().parents[1]
+HARNESS_ROOT = SOURCE_ROOT.parents[1]
+_RETIRED_CAPABILITY_FIELD = "_".join(("capability", "binding"))
 _REQUEST_BUILDER_PATHS = (
     *(SOURCE_ROOT / "graph" / "nodes").glob("*/prompts.py"),
     SOURCE_ROOT / "graph" / "nodes" / "readiness" / "critic.py",
     SOURCE_ROOT / "graph" / "nodes" / "final_delivery" / "composer.py",
 )
+
+
+def _retired_capability_field_uses() -> set[str]:
+    uses: set[str] = set()
+    for path in sorted((*SOURCE_ROOT.rglob("*.py"), *TEST_ROOT.rglob("*.py"))):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        relative_path = path.relative_to(HARNESS_ROOT).as_posix()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Attribute) and node.attr == _RETIRED_CAPABILITY_FIELD:
+                uses.add(f"{relative_path}:{node.lineno}")
+            if (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Name)
+                and node.func.id == "NodeExecutionRequest"
+                and any(keyword.arg == _RETIRED_CAPABILITY_FIELD for keyword in node.keywords)
+            ):
+                uses.add(f"{relative_path}:{node.lineno}")
+    return uses
 
 
 def _direct_prompt_builders() -> set[str]:
@@ -92,3 +113,7 @@ def test_catalog_cases_are_safe_deterministic_synthetic_requests() -> None:
     assert SYNTHETIC_FIXTURE_MARKER in serialized
     for forbidden in ("/Users/", "TAVILY_API_KEY", "api_key", "sk-"):
         assert forbidden not in serialized
+
+
+def test_current_request_constructors_do_not_use_retired_capability_field() -> None:
+    assert _retired_capability_field_uses() == set()

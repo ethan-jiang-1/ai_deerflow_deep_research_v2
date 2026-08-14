@@ -2036,7 +2036,7 @@ EVIDENCE_CLAIMS = (
     ),
     _correctness_claim(
         "nac-renderer-composition",
-        "tests/unit/test_phase_prompt.py::test_renderer_composes_a_declared_local_capability_after_base_policy",
+        "tests/unit/test_node_cognitive_control_program.py::test_renderer_composes_a_declared_local_capability_after_base_policy",
         StableSeam.RUNTIME_INTEGRATION,
         requirement_ids=("NAC-002",),
     ),

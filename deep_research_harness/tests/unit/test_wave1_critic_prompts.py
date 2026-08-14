@@ -172,7 +172,6 @@ class TestWave1LocalCriticPrompts:
 
         assert isinstance(request, NodeExecutionRequest)
         assert request.tools_enabled is False
-        assert request.capability_binding == "required"
         assert request.capability_ref is not None
         assert request.capability_ref.capability_id == "wave1-source-diagnostic"
         assert load_node_agent_capability(request.capability_ref).posture.kind == "forbidden"
@@ -203,7 +202,6 @@ class TestWave1LocalCriticPrompts:
 
         assert isinstance(request, NodeExecutionRequest)
         assert request.tools_enabled is False
-        assert request.capability_binding == "required"
         assert request.capability_ref is not None
         assert request.capability_ref.capability_id == "wave1-claim-verifier"
         assert load_node_agent_capability(request.capability_ref).posture.kind == "forbidden"

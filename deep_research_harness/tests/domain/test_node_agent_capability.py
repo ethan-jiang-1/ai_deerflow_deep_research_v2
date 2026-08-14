@@ -32,7 +32,9 @@ from deerflow_deep_research.graph.nodes.wave2_synthesis.capabilities import WAVE
 
 
 def _request(**overrides: object) -> NodeExecutionRequest:
-    return NodeExecutionRequest(objective="bounded assignment", expected_output="one result", **overrides)
+    values: dict[str, object] = {"capability_ref": HITL1_SEMANTIC_INTAKE}
+    values.update(overrides)
+    return NodeExecutionRequest(objective="bounded assignment", expected_output="one result", **values)
 
 
 @pytest.mark.parametrize(
@@ -49,12 +51,11 @@ def test_ref_rejects_escaping_or_non_node_local_resources(package: str, resource
         NodeAgentCapabilityRef(capability_id="bounded-policy", package=package, resource=resource)
 
 
-def test_request_enforces_exclusive_capability_binding() -> None:
-    assert _request().capability_binding == "legacy"
-    with pytest.raises(ValidationError, match="legacy_capability_ref_forbidden"):
-        _request(capability_ref=HITL1_SEMANTIC_INTAKE)
-    with pytest.raises(ValidationError, match="required_capability_ref_missing"):
-        _request(capability_binding="required")
+def test_request_requires_one_capability_ref_at_construction() -> None:
+    with pytest.raises(ValidationError, match="capability_ref"):
+        NodeExecutionRequest(objective="bounded assignment", expected_output="one result")
+
+    assert _request().capability_ref == HITL1_SEMANTIC_INTAKE
 
 
 def test_node_agent_bundle_context_drops_scope_and_locator_authority() -> None:

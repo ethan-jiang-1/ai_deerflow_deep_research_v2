@@ -126,7 +126,6 @@ def build_brief_prompt(
         objective=objective,
         expected_output=json.dumps(expected, ensure_ascii=False, sort_keys=True, separators=(",", ":")),
         tools_enabled=False,
-        capability_binding="required",
         capability_ref=HITL1_PROFILE_BRIEF_REPAIR if repair_error else HITL1_PROFILE_BRIEF,
     )
 
@@ -208,7 +207,6 @@ def build_semantic_intake_prompt(
         objective=objective,
         expected_output=json.dumps(expected, ensure_ascii=False, sort_keys=True, separators=(",", ":")),
         tools_enabled=False,
-        capability_binding="required",
         capability_ref=HITL1_SEMANTIC_INTAKE_REPAIR if repair_error else HITL1_SEMANTIC_INTAKE,
     )
 

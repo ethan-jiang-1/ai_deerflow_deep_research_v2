@@ -1,4 +1,4 @@
-"""Runtime-owned bridge from graph nodes to bounded phase agents.
+"""Runtime-owned bridge from graph nodes to bounded node-agents.
 
 @impl NOA-001
 @impl NOA-014
@@ -31,15 +31,15 @@ import httpx
 import openai
 from langchain_core.messages import HumanMessage
 
-from deerflow_deep_research.agents.factory import build_phase_agent
+from deerflow_deep_research.agents.factory import build_node_agent
 from deerflow_deep_research.agents.middleware import (
     AgentBudgetError,
     BudgetMiddleware,
-    PhaseAgentStop,
+    NodeAgentStop,
     ToolExecutionFailure,
     ToolPolicyMiddleware,
 )
-from deerflow_deep_research.agents.phase_prompt import render_phase_agent_prompt
+from deerflow_deep_research.agents.node_cognitive_control_program import render_node_cognitive_control_program
 from deerflow_deep_research.agents.policies import ExecutionPolicy, ProviderObservationAdmission
 from deerflow_deep_research.agents.structured_output import project_failure, project_success
 from deerflow_deep_research.domain.context import (
@@ -92,7 +92,7 @@ _LOGICAL_PHASES = frozenset(
         "final_delivery",
     }
 )
-_PHASE_AGENT_STOP_CODES = {
+_NODE_AGENT_STOP_CODES = {
     NodeFinishReason.USAGE_UNAVAILABLE: RunFailureCode.PROVIDER_USAGE_UNAVAILABLE,
     NodeFinishReason.BUDGET_EXHAUSTED: RunFailureCode.BUDGET_EXHAUSTED,
     NodeFinishReason.POLICY_DENIED: RunFailureCode.POLICY_DENIED,
@@ -312,14 +312,13 @@ class RuntimeNodeAgentBridge:
                 code=RunFailureCode.INTERNAL_UNEXPECTED,
             )
         try:
-            rendered_prompt = render_phase_agent_prompt(request, attempt_workspace=context.attempt_root)
+            rendered_prompt = render_node_cognitive_control_program(request, attempt_workspace=context.attempt_root)
             capability = rendered_prompt.capability
-            if capability is not None:
-                self._validate_capability_window(
-                    request,
-                    capability.posture.kind,
-                    capability.posture.allowed_tool_names,
-                )
+            self._validate_capability_window(
+                request,
+                capability.posture.kind,
+                capability.posture.allowed_tool_names,
+            )
         except asyncio.CancelledError:
             raise
         except (TypeError, ValueError):
@@ -331,7 +330,7 @@ class RuntimeNodeAgentBridge:
             )
         try:
             resolved_tools = list(self.tools_resolver(self.envelope, self.policy)) if request.tools_enabled else []
-            if capability is not None and capability.posture.kind == "required":
+            if capability.posture.kind == "required":
                 resolved_tools = [
                     tool
                     for tool in resolved_tools
@@ -379,7 +378,7 @@ class RuntimeNodeAgentBridge:
         budget_middleware = BudgetMiddleware(self.policy.budget)
         tool_policy_middleware = ToolPolicyMiddleware(self.policy, tool_call_limit=request.tool_call_limit)
         try:
-            agent = build_phase_agent(
+            agent = build_node_agent(
                 model=binding.model,
                 tools=resolved_tools,
                 middleware=[budget_middleware, tool_policy_middleware],
@@ -440,7 +439,7 @@ class RuntimeNodeAgentBridge:
                 error_code="tool_execution_failed",
                 code=RunFailureCode.TOOL_EXECUTION_FAILED,
             )
-        except PhaseAgentStop as exc:
+        except NodeAgentStop as exc:
             if exc.finish_reason is NodeFinishReason.BUDGET_EXHAUSTED:
                 candidate = exc.budget_stop_reason if isinstance(exc, AgentBudgetError) else None
                 recording.budget_stop_reason = (
@@ -451,7 +450,7 @@ class RuntimeNodeAgentBridge:
                 context,
                 exc.finish_reason,
                 error_code="policy",
-                code=_PHASE_AGENT_STOP_CODES.get(exc.finish_reason, RunFailureCode.INTERNAL_UNEXPECTED),
+                code=_NODE_AGENT_STOP_CODES.get(exc.finish_reason, RunFailureCode.INTERNAL_UNEXPECTED),
             )
         except asyncio.CancelledError:
             # Never convert cancellation into success; the child runnable and its

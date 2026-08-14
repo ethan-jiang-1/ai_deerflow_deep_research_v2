@@ -1,4 +1,4 @@
-"""Immutable execution policy, budget, and tool policy for the phase agent.
+"""Immutable execution policy, budget, and tool policy for the node-agent.
 
 @impl NOA-002
 @impl NOA-003

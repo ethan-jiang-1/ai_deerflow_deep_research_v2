@@ -343,7 +343,7 @@ EXPECTED_COHORT_BINDINGS = {
 _NO_TOOLS = RequestedToolWindow(tools_enabled=False, minimum_tool_calls=0, tool_call_limit=None)
 _WAVE0_TOOLS = RequestedToolWindow(tools_enabled=True, minimum_tool_calls=1, tool_call_limit=3)
 _ONE_RETRIEVAL = RequestedToolWindow(tools_enabled=True, minimum_tool_calls=1, tool_call_limit=1)
-_FINAL_RENDER_SEAM = "agents/phase_prompt.py::render_phase_agent_prompt"
+_FINAL_RENDER_SEAM = "agents/node_cognitive_control_program.py::render_node_cognitive_control_program"
 _BRIDGE_ENFORCER = "runtime/node_agent_bridge.py::RuntimeNodeAgentBridge._validate_capability_window"
 _DETERMINISTIC_EVALUATION_RATIONALE = "No model-quality claim is asserted; deterministic evidence is sufficient."
 _JUDGMENT_EVALUATIONS = {

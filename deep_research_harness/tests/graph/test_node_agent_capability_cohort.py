@@ -21,7 +21,7 @@ from dataclasses import replace
 import pytest
 
 from deerflow_deep_research.agents.capabilities import load_node_agent_capability
-from deerflow_deep_research.agents.phase_prompt import render_phase_agent_prompt
+from deerflow_deep_research.agents.node_cognitive_control_program import render_node_cognitive_control_program
 from deerflow_deep_research.graph.prompt_catalog import prompt_catalog_cases
 from tests.assets.evidence import (
     EVIDENCE_CLAIMS,
@@ -167,7 +167,6 @@ LEGACY: set[str] = set()
 def test_cohort_branch_binding(case_id: str) -> None:
     request = next(case.build_request() for case in prompt_catalog_cases() if case.case_id == case_id)
     capability_id, package, resource, posture = EXPECTED[case_id]
-    assert request.capability_binding == "required"
     assert request.capability_ref is not None
     assert request.capability_ref.capability_id == capability_id
     assert request.capability_ref.package == package
@@ -282,7 +281,7 @@ def test_runtime_renderer_injects_the_exact_capability_method(
     """TOP-006/WAN-009/WON-010: renderer, not file presence, supplies the method."""
     catalog_case = next(case for case in prompt_catalog_cases() if case.case_id == case_id)
     request = catalog_case.build_request()
-    rendered = render_phase_agent_prompt(request, attempt_workspace=catalog_case.attempt_workspace)
+    rendered = render_node_cognitive_control_program(request, attempt_workspace=catalog_case.attempt_workspace)
 
     assert rendered.capability is not None
     assert rendered.capability.policy.strip() in rendered.system_policy
@@ -307,7 +306,7 @@ def test_hitl1_runtime_renderer_injects_the_exact_capability_method(case_id: str
 
     catalog_case = next(case for case in prompt_catalog_cases() if case.case_id == case_id)
     request = catalog_case.build_request()
-    rendered = render_phase_agent_prompt(request, attempt_workspace=catalog_case.attempt_workspace)
+    rendered = render_node_cognitive_control_program(request, attempt_workspace=catalog_case.attempt_workspace)
 
     assert rendered.capability is not None
     assert rendered.capability.policy.strip() in rendered.system_policy
@@ -324,7 +323,7 @@ def test_hitl1_brief_method_stays_compatible_with_the_strict_output_contract(cas
 
     catalog_case = next(case for case in prompt_catalog_cases() if case.case_id == case_id)
     request = catalog_case.build_request()
-    rendered = render_phase_agent_prompt(request, attempt_workspace=catalog_case.attempt_workspace)
+    rendered = render_node_cognitive_control_program(request, attempt_workspace=catalog_case.attempt_workspace)
 
     assert rendered.capability is not None
     assert "output contract compatibility" in rendered.system_policy.lower()
@@ -332,12 +331,10 @@ def test_hitl1_brief_method_stays_compatible_with_the_strict_output_contract(cas
     assert "brief_summary_language" not in request.expected_output
 
 
-def test_closed_legacy_inventory_has_no_inferred_capability() -> None:
+def test_catalog_inventory_has_no_inferred_capability() -> None:
     cases = {case.case_id: case.build_request() for case in prompt_catalog_cases()}
-    assert set(cases) - set(EXPECTED) == LEGACY
-    assert all(
-        cases[case_id].capability_binding == "legacy" and cases[case_id].capability_ref is None for case_id in LEGACY
-    )
+    assert set(cases) == set(EXPECTED)
+    assert all(request.capability_ref is not None for request in cases.values())
 
 
 def test_cohort_evidence_matrix_has_two_collected_claims_per_branch() -> None:

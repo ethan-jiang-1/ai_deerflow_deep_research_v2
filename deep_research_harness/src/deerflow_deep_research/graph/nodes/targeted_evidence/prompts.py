@@ -47,7 +47,6 @@ def build_targeted_worker_prompt(gap_id: str) -> NodeExecutionRequest:
         expected_output=json.dumps(expected, sort_keys=True, separators=(",", ":")),
         minimum_tool_calls=1,
         tool_call_limit=1,
-        capability_binding="required",
         capability_ref=TARGETED_GAP_EVIDENCE_RETRIEVAL,
     )
 
@@ -92,7 +91,6 @@ def build_targeted_worker_repair_prompt(
         objective=objective,
         expected_output=json.dumps(expected, sort_keys=True, separators=(",", ":")),
         tools_enabled=False,
-        capability_binding="required",
         capability_ref=TARGETED_GAP_EVIDENCE_REPAIR,
     )
 
@@ -138,7 +136,6 @@ def build_source_diagnostic_prompt(
         objective=objective,
         expected_output=json.dumps(expected, sort_keys=True, separators=(",", ":")),
         tools_enabled=False,
-        capability_binding="required",
         capability_ref=TARGETED_SOURCE_DIAGNOSTIC,
     )
 
@@ -181,6 +178,5 @@ def build_claim_verifier_prompt(
         objective=objective,
         expected_output=json.dumps(expected, sort_keys=True, separators=(",", ":")),
         tools_enabled=False,
-        capability_binding="required",
         capability_ref=TARGETED_CLAIM_VERIFIER,
     )

@@ -22,7 +22,9 @@ CATALOG_ROOT = AGENT_ROOT / ".node-prompt-review"
 if str(AGENT_ROOT) not in sys.path:
     sys.path.insert(0, str(AGENT_ROOT))
 
-from deerflow_deep_research.agents.phase_prompt import render_phase_agent_prompt  # noqa: E402
+from deerflow_deep_research.agents.node_cognitive_control_program import (  # noqa: E402
+    render_node_cognitive_control_program,
+)
 from deerflow_deep_research.domain.context import NodeExecutionRequest  # noqa: E402
 from deerflow_deep_research.graph.prompt_catalog import PromptCatalogCase, prompt_catalog_cases  # noqa: E402
 
@@ -83,19 +85,12 @@ def _requested_tool_policy(request: NodeExecutionRequest) -> str:
     )
 
 
-def _capability_projection(request: NodeExecutionRequest, capability: object) -> str:
-    if capability is None:
-        return (
-            "## Capability Binding\n\n"
-            "- Binding: `legacy`\n"
-            "- Local capability: none (closed transitional legacy inventory)\n\n"
-        )
+def _capability_projection(capability: object) -> str:
     ref = capability.ref
     posture = capability.posture
     names = ", ".join(f"`{name}`" for name in sorted(posture.allowed_tool_names)) or "none"
     return (
-        "## Capability Binding\n\n"
-        "- Binding: `required`\n"
+        "## Node Cognitive Control Program\n\n"
         f"- Capability ID: `{ref.capability_id}`\n"
         f"- Local source: `{ref.package}:{ref.resource}`\n"
         f"- Declared tool posture: `{posture.kind}` ({names})\n\n"
@@ -109,7 +104,7 @@ def _capability_projection(request: NodeExecutionRequest, capability: object) ->
 
 def _render_case(case: PromptCatalogCase) -> str:
     request = case.build_request()
-    rendered = render_phase_agent_prompt(request, attempt_workspace=case.attempt_workspace)
+    rendered = render_node_cognitive_control_program(request, attempt_workspace=case.attempt_workspace)
     return (
         f"# Node Prompt: `{case.case_id}`\n\n"
         "> Generated review artifact. It is a deterministic projection, not runtime authority.\n\n"
@@ -118,7 +113,7 @@ def _render_case(case: PromptCatalogCase) -> str:
         f"- Branch: `{case.branch}`\n"
         f"- Source builder: `{case.builder_id}`\n"
         f"- Variant: `{'repair' if case.is_repair else 'initial'}`\n\n"
-        f"{_capability_projection(request, rendered.capability)}"
+        f"{_capability_projection(rendered.capability)}"
         "## Shared System Policy\n\n"
         f"{fenced_literal_prompt(rendered.system_policy)}\n"
         "## Final Human Message\n\n"

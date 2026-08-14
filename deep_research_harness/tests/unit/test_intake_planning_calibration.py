@@ -85,8 +85,7 @@ def test_calibration_cases_compose_real_zero_tool_branch_requests() -> None:
     requests = [build_calibration_request(case) for case in CALIBRATION_CASES]
 
     assert all(request.tools_enabled is False for request in requests)
-    assert all(request.capability_binding == "required" for request in requests)
-    assert {request.capability_ref.capability_id for request in requests if request.capability_ref} == {
+    assert {request.capability_ref.capability_id for request in requests} == {
         "hitl1-profile-brief",
         "hitl1-profile-brief-repair",
         "hitl1-semantic-intake",

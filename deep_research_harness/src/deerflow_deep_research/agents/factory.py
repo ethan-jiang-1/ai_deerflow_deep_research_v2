@@ -1,4 +1,4 @@
-"""Full-takeover embedded phase-agent factory.
+"""Full-takeover embedded node-agent factory.
 
 @impl NOA-001
 
@@ -19,18 +19,18 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any
 
-PHASE_AGENT_NAME = "deep-research-phase"
+NODE_AGENT_NAME = "deep-research-node-agent"
 
 
-def build_phase_agent(
+def build_node_agent(
     *,
     model: Any,
     tools: Sequence[Any],
     middleware: Sequence[Any],
     system_prompt: str,
-    name: str = PHASE_AGENT_NAME,
+    name: str = NODE_AGENT_NAME,
 ) -> Any:
-    """Build one bounded, non-persistent phase agent as a separate runnable."""
+    """Build one bounded, non-persistent node-agent as a separate runnable."""
     from deerflow.agents.factory import create_deerflow_agent
 
     return create_deerflow_agent(
@@ -43,4 +43,4 @@ def build_phase_agent(
     )
 
 
-__all__ = ["PHASE_AGENT_NAME", "build_phase_agent"]
+__all__ = ["NODE_AGENT_NAME", "build_node_agent"]

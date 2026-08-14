@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import re
-from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -101,13 +100,12 @@ class NodeAgentCapabilityRef(FrozenDomainModel):
 
 class NodeExecutionRequest(FrozenDomainModel):
     objective: str = Field(min_length=1, max_length=16_384)
-    source_artifact_refs: tuple[ArtifactRef, ...] = ()
     expected_output: str = Field(min_length=1, max_length=2048)
+    capability_ref: NodeAgentCapabilityRef
+    source_artifact_refs: tuple[ArtifactRef, ...] = ()
     minimum_tool_calls: int = Field(default=0, ge=0, le=32)
     tool_call_limit: int | None = Field(default=None, ge=1, le=32)
     tools_enabled: bool = True
-    capability_binding: Literal["legacy", "required"] = "legacy"
-    capability_ref: NodeAgentCapabilityRef | None = None
 
     @model_validator(mode="after")
     def validate_tool_window(self) -> NodeExecutionRequest:
@@ -115,10 +113,6 @@ class NodeExecutionRequest(FrozenDomainModel):
             raise ValueError("minimum_tool_calls_exceed_limit")
         if not self.tools_enabled and (self.minimum_tool_calls or self.tool_call_limit is not None):
             raise ValueError("disabled_tools_cannot_have_call_requirements")
-        if self.capability_binding == "legacy" and self.capability_ref is not None:
-            raise ValueError("legacy_capability_ref_forbidden")
-        if self.capability_binding == "required" and self.capability_ref is None:
-            raise ValueError("required_capability_ref_missing")
         return self
 
 

@@ -33,7 +33,7 @@ first, then use `UV_OFFLINE=1 make verify` as the complete deterministic gate.
 
 ## Node Prompt Review Catalog
 
-When a node prompt builder or the shared phase-agent policy changes, run `make
+When a node prompt builder or the shared Node Cognitive Control Program changes, run `make
 prompt-dump` and inspect the generated files below `.node-prompt-review/`. Each file is a
 code-owned synthetic case with the final system policy, final human message, and the
 request's tool policy; it is intentionally not a locally resolved tool inventory.

@@ -151,7 +151,6 @@ def build_planner_prompt(
         objective=objective,
         expected_output=json.dumps(expected, sort_keys=True, separators=(",", ":")),
         tools_enabled=False,
-        capability_binding="required",
         capability_ref=TOPIC_PLANNING_PLAN_REPAIR if repair_error else TOPIC_PLANNING_PROFILE_DECOMPOSITION,
     )
 

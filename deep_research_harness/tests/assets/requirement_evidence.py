@@ -172,7 +172,7 @@ REQUIREMENT_IMPACTS = (
         "NAC-002",
         "node-agent-capabilities",
         StableSeam.RUNTIME_INTEGRATION,
-        "tests/unit/test_phase_prompt.py::test_renderer_composes_a_declared_local_capability_after_base_policy",
+        "tests/unit/test_node_cognitive_control_program.py::test_renderer_composes_a_declared_local_capability_after_base_policy",
         "the static capability policy must remain ordered after base policy",
     ),
     RequirementImpact(

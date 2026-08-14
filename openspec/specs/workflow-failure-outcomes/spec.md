@@ -21,9 +21,13 @@ result. The newly closed `provider.usage_unavailable`, `budget.exhausted`, and
 they SHALL not be replaced by `tool.execution_failed`, `research.blocked`, or an
 unclassified local failure. A direct phase SHALL retain a supplied safe diagnostic
 reference when present and SHALL derive or publish diagnostic identity only from typed
-safe fields, never from a raw exception or stop detail. Cancellation SHALL propagate.
-Raw exceptions, provider bodies, and generic replacement `ValueError` values SHALL NOT
-be the durable or user-facing representation of a known invocation failure.
+safe fields, never from a raw exception or node-agent stop detail. Cancellation SHALL
+propagate. Raw exceptions, provider bodies, and generic replacement `ValueError` values
+SHALL NOT be the durable or user-facing representation of a known invocation failure.
+
+The exact legacy scenario title below is retained only because modified-requirement
+validation requires the accepted scenario-title set. It is not current terminology; the
+scenario body uses the current `node-agent` mechanism term.
 
 #### Scenario: A direct phase preserves a known provider timeout
 - **WHEN** a direct real phase receives a non-successful result with a
@@ -36,8 +40,8 @@ be the durable or user-facing representation of a known invocation failure.
 - **WHEN** topic planning receives a non-successful result with
   `provider.usage_unavailable`, `budget.exhausted`, or `policy.denied`
 - **THEN** its terminal incident and later diagnostic/presentation projection retain
-  that same code and phase without attaching provider recovery facts or replacing it
-  with a tool failure
+  that same closed node-agent stop code and phase without attaching provider recovery
+  facts or replacing it with a tool failure
 
 #### Scenario: A worker phase preserves a known failure through its controller
 - **WHEN** a real worker phase receives a non-successful result with a safe
@@ -51,7 +55,7 @@ be the durable or user-facing representation of a known invocation failure.
   classified node problem
 - **THEN** it fails closed with an explicit bounded unknown outcome and does not
   label it as provider timeout, provider unavailable, structured output failure, or a
-  known phase-agent stop
+  known node-agent stop
 
 ### Requirement: Workflow outcome evidence is complete for every discovered model owner
 
