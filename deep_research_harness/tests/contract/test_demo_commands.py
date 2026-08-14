@@ -39,7 +39,7 @@ def _dry_run_command(target: str, script: str) -> str:
     return next(line for line in completed.stdout.splitlines() if f"python scripts/{script}" in line)
 
 
-def test_demo_commands_keep_fake_and_real_dependency_boundaries() -> None:
+def test_demo_commands_keep_fixture_and_real_dependency_boundaries() -> None:
     """@impl DPL-005
     @impl RED-002
     """
@@ -47,7 +47,7 @@ def test_demo_commands_keep_fake_and_real_dependency_boundaries() -> None:
     readme = (AGENT_ROOT / "README.md").read_text(encoding="utf-8")
     operations = (AGENT_ROOT / "docs/local-operations.md").read_text(encoding="utf-8")
 
-    assert "demo-fixture-graph demo-real demo-real-scripted demo-tui demo-tui-fake" in makefile
+    assert "demo-fixture-graph demo-real demo-real-scripted demo-tui demo-tui-fixture" in makefile
     assert "ENTRY_RUN = PYTHONDONTWRITEBYTECODE=1 env -u VIRTUAL_ENV uv run --locked --no-sync" in makefile
     assert (
         "install:\n\tenv -u VIRTUAL_ENV uv sync --locked --extra operations --extra demo-tui --extra demo-real"
@@ -60,7 +60,7 @@ def test_demo_commands_keep_fake_and_real_dependency_boundaries() -> None:
         "demo-real",
         "demo-real-scripted",
         "demo-tui",
-        "demo-tui-fake",
+        "demo-tui-fixture",
         "demo-sessions",
         "session-workbench",
     ):
@@ -80,28 +80,27 @@ def test_demo_commands_keep_fake_and_real_dependency_boundaries() -> None:
         )
     )
     assert real_tui in makefile
-    fake_tui = " ".join(
+    fixture_tui = " ".join(
         (
             f"{FIXTURE_PYTHONPATH} $(ENTRY_RUN) --extra operations --extra demo-tui",
-            "python scripts/demo_tui.py --fake $(DEMO_ARGS)",
+            "python scripts/demo_tui.py --fixture $(DEMO_ARGS)",
         )
     )
-    assert fake_tui in makefile
+    assert fixture_tui in makefile
     for target in (
         "demo",
         "demo-scripted",
         "demo-fixture-graph",
-        "demo-tui-fake",
+        "demo-tui-fixture",
         "demo-sessions",
         "session-workbench",
     ):
         assert FIXTURE_PYTHONPATH in _target_body(makefile, target)
     for target in ("demo-real", "demo-real-scripted", "demo-tui"):
         assert FIXTURE_PYTHONPATH not in _target_body(makefile, target)
-    assert "make demo-tui-fake" in readme
-    assert "make demo-fixture-graph" in readme
-    assert "deterministic graph-composition verification" in readme
-    assert "full fake" in readme
+    assert "make demo-tui-fixture" in readme
+    assert "make demo-fixture-graph" not in readme
+    assert "full fake" not in readme.lower()
     assert "docs/local-operations.md" in readme
     assert "TAVILY_API_KEY" in operations
 
@@ -110,8 +109,7 @@ def test_make_commands_scope_fixture_source_to_fixture_children() -> None:
     fixture_targets = {
         "demo": "demo.py",
         "demo-scripted": "demo.py",
-        "demo-fixture-graph": "demo_fixture_graph.py",
-        "demo-tui-fake": "demo_tui.py",
+        "demo-tui-fixture": "demo_tui.py",
         "demo-sessions": "demo_sessions.py",
         "session-workbench": "session_workbench.py",
     }
@@ -132,18 +130,17 @@ def test_make_commands_scope_fixture_source_to_fixture_children() -> None:
         assert "PYTHONDONTWRITEBYTECODE=1 env -u VIRTUAL_ENV uv run --locked --no-sync" in command
 
 
-def test_fixture_graph_make_help_is_a_distinct_graph_verification_route() -> None:
+def test_zero_credential_demo_help_is_the_fixture_graph_route() -> None:
     completed = subprocess.run(
-        ["make", "demo-fixture-graph", "DEMO_ARGS=--help"],
+        ["make", "demo", "DEMO_ARGS=--help"],
         cwd=AGENT_ROOT,
         check=True,
         capture_output=True,
         text=True,
     )
 
-    assert "deterministic fixture-graph composition verification" in completed.stdout.lower()
-    normalized = " ".join(completed.stdout.split())
-    assert "not a replacement for make demo, make demo-scripted, or make demo-tui-fake" in normalized
+    assert "fixture-graph" in completed.stdout.lower()
+    assert "full-fake" not in completed.stdout.lower()
     assert "--fake" not in completed.stdout
 
 
@@ -177,8 +174,7 @@ def test_readme_entry_surfaces_route_to_current_detail_owners() -> None:
         "Dedicated Agent + reflected `deep_research` tool",
         "Standalone operator CLI",
         "Demo TUI visualizer",
-        "Full-fake demonstrations",
-        "Fixture-graph verification",
+        "Fixture-graph demonstrations",
         "Configured-fixture local workbench",
     ):
         assert route in surfaces
@@ -188,7 +184,7 @@ def test_readme_entry_surfaces_route_to_current_detail_owners() -> None:
         "all real",
         "not a versioned product cli",
         "not a current primary user tui",
-        "presentation, not fixture-graph verification",
+        "fixture-graph proof",
         "configured fixture demo profile",
         "not a generic product ui",
     ):

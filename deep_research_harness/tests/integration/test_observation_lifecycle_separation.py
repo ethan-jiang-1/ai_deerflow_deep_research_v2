@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-from deerflow_deep_research.domain.lifecycle import BundleAvailability, LifecycleAction
+from deerflow_deep_research.domain.lifecycle import BundleAvailability, ImplementationMode, LifecycleAction
 from deerflow_deep_research.domain.run_observation import RecordBearingLifecycleFact
 from deerflow_deep_research.domain.session_workbench import WorkbenchAvailability
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
@@ -28,7 +28,11 @@ async def test_contained_journal_is_unavailable_after_bundle_loss_and_cannot_blo
 ) -> None:
     scope = ("alice", "conversation-1")
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
-    bundle = await lifecycle.start(scope=scope, request_text="Research the lifecycle model.")
+    bundle = await lifecycle.start(
+        scope=scope,
+        request_text="Research the lifecycle model.",
+        implementation_mode=ImplementationMode.ALL_REAL,
+    )
     store = RunObservationStore(
         bundle_root=lifecycle.private_root(bundle),
         bundle_id=bundle.bundle_id.value,
@@ -48,7 +52,11 @@ async def test_contained_journal_is_unavailable_after_bundle_loss_and_cannot_blo
 
     status = await lifecycle.status(scope=scope, bundle_id=bundle.bundle_id)
     observation = await BundleWorkbench(lifecycle=lifecycle, scope=scope).diagnosis(bundle_id=bundle.bundle_id.value)
-    replacement = await lifecycle.start(scope=scope, request_text="Start an independent run.")
+    replacement = await lifecycle.start(
+        scope=scope,
+        request_text="Start an independent run.",
+        implementation_mode=ImplementationMode.ALL_REAL,
+    )
 
     assert status.availability is BundleAvailability.UNAVAILABLE
     assert observation.availability is WorkbenchAvailability.UNAVAILABLE

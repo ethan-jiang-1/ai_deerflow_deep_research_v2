@@ -45,6 +45,7 @@ class _FakeStore:
         self.bundle = _BUNDLE
         self._state = BundleLocalState(
             bundle_id=self.bundle.bundle_id,
+            implementation_mode="all_real",
             start_message_id=_START_MESSAGE_ID,
             start_request_digest=_REQUEST_DIGEST,
             schema_version=BUNDLE_STATE_SCHEMA_VERSION,
@@ -64,7 +65,7 @@ class _FakeStore:
 class _FakeRequestStore:
     def __init__(self) -> None:
         self.write_calls = 0
-        self._state = BundleLocalState(bundle_id=_BUNDLE.bundle_id)
+        self._state = BundleLocalState(bundle_id=_BUNDLE.bundle_id, implementation_mode="all_real")
 
     async def read_bundle_state(self) -> BundleLocalState:
         return self._state

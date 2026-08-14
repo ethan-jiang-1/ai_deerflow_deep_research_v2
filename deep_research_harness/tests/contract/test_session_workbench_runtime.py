@@ -42,7 +42,11 @@ FOREIGN_SCOPE = ("foreign-user", "foreign-thread")
 
 async def _workbench(tmp_path: Path) -> tuple[BundleLifecycle, BundleWorkbench, LocalBundleWorkbench, str]:
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
-    bundle = await lifecycle.start(scope=SCOPE, request_text="Compare public storage options.")
+    bundle = await lifecycle.start(
+        scope=SCOPE,
+        request_text="Compare public storage options.",
+        implementation_mode="all_real",
+    )
     bundle_workbench = BundleWorkbench(lifecycle=lifecycle, scope=SCOPE)
     return lifecycle, bundle_workbench, LocalBundleWorkbench(bundle_workbench=bundle_workbench), bundle.bundle_id.value
 

@@ -23,6 +23,7 @@ import pytest
 
 from deerflow_deep_research.domain.bundle import RunBundleRef, new_bundle_id
 from deerflow_deep_research.domain.lifecycle import WorkUnitStorageReason
+from deerflow_deep_research.domain.state import BundleLocalState
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle, scope_bucket
 from deerflow_deep_research.runtime.work_unit_storage import WorkUnitStoreError
 from deerflow_deep_research.runtime.work_unit_store import WorkUnitStore
@@ -191,7 +192,7 @@ def _published_bundle(lifecycle: BundleLifecycle, *, thread_id: str) -> RunBundl
         bundle_id=new_bundle_id(),
         scope_bucket=scope_bucket(effective_user_id="fixture-user", outer_thread_id=thread_id),
     )
-    lifecycle._publish_sync(bundle)
+    lifecycle._publish_sync(bundle, BundleLocalState(bundle_id=bundle.bundle_id, implementation_mode="all_real"))
     return bundle
 
 

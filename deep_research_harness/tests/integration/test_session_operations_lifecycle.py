@@ -16,14 +16,18 @@ from pathlib import Path
 
 import pytest
 
-from deerflow_deep_research.domain.lifecycle import BundleAvailability, LifecycleStatus, ResultCode
+from deerflow_deep_research.domain.lifecycle import BundleAvailability, ImplementationMode, LifecycleStatus, ResultCode
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
 from deerflow_deep_research.runtime.session_workbench import BundleWorkbench
 
 
 async def _workbench(tmp_path: Path) -> tuple[BundleWorkbench, BundleLifecycle, object]:
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
-    bundle = await lifecycle.start(scope=("alice", "thread-1"), request_text="research question")
+    bundle = await lifecycle.start(
+        scope=("alice", "thread-1"),
+        request_text="research question",
+        implementation_mode=ImplementationMode.ALL_REAL,
+    )
     await lifecycle.set_pending_request(bundle=bundle, request_id="drh_pending", suspension_cursor="start-message")
     return BundleWorkbench(lifecycle=lifecycle, scope=("alice", "thread-1")), lifecycle, bundle
 
@@ -149,7 +153,11 @@ async def test_deleted_bundle_is_unavailable_and_fresh_start_is_independent(tmp_
     shutil.rmtree(root)
 
     unavailable = await workbench.status(bundle_id=bundle.bundle_id.value)
-    fresh = await lifecycle.start(scope=("alice", "thread-1"), request_text="fresh question")
+    fresh = await lifecycle.start(
+        scope=("alice", "thread-1"),
+        request_text="fresh question",
+        implementation_mode=ImplementationMode.ALL_REAL,
+    )
 
     assert unavailable.availability is BundleAvailability.UNAVAILABLE
     assert unavailable.bundle_id is None

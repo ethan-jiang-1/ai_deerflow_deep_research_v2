@@ -225,22 +225,6 @@ class ResearchGraphRecipe:
             node_agent_bridge_factory=node_agent_bridge_factory,
         )
 
-    @classmethod
-    def create(
-        cls,
-        *,
-        work_unit_store_factory: Any = None,
-        request_bundle_store_factory: Any = None,
-        node_agent_bridge_factory: Any = None,
-    ) -> ResearchGraphRecipe:
-        """Compatibility constructor for internal callers; it is always all-real."""
-
-        return cls.all_real(
-            work_unit_store_factory=work_unit_store_factory,
-            request_bundle_store_factory=request_bundle_store_factory,
-            node_agent_bridge_factory=node_agent_bridge_factory,
-        )
-
 
 def _hitl1_node_agent_policy(graph_context: Any) -> ExecutionPolicy:
     """Zero-tool, one-model-call policy for HITL1 brief generation.

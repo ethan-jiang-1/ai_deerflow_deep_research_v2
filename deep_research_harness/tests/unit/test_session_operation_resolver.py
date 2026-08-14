@@ -20,7 +20,7 @@ from deerflow_deep_research.runtime.session_workbench import BundleWorkbench
 async def test_workbench_uses_only_trusted_scope_and_bundle_local_state(tmp_path: Path) -> None:
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
     scope = ("alice", "thread-1")
-    bundle = await lifecycle.start(scope=scope, request_text="research the market")
+    bundle = await lifecycle.start(scope=scope, request_text="research the market", implementation_mode="all_real")
     workbench = BundleWorkbench(
         lifecycle=lifecycle,
         scope=scope,
@@ -38,7 +38,9 @@ async def test_workbench_uses_only_trusted_scope_and_bundle_local_state(tmp_path
 @pytest.mark.asyncio
 async def test_workbench_hides_foreign_bundle_without_provider_or_index_fallback(tmp_path: Path) -> None:
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
-    foreign = await lifecycle.start(scope=("bob", "thread-2"), request_text="foreign research")
+    foreign = await lifecycle.start(
+        scope=("bob", "thread-2"), request_text="foreign research", implementation_mode="all_real"
+    )
     workbench = BundleWorkbench(lifecycle=lifecycle, scope=("alice", "thread-1"))
 
     status = await workbench.result(bundle_id=foreign.bundle_id.value)

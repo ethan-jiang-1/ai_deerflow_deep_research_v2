@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Run deterministic fixture-graph composition verification.
 
-This command is intentionally separate from the credential-free full-fake demos.
 It creates the fixture recipe and its BundleGraphExecutor, then checks the returned
 graph-owned terminal projection.
 
@@ -48,12 +47,12 @@ async def run_demo(*, question: str) -> int:
     """Exercise the fixed fixture graph without exposing a route selector."""
 
     print("\n  DeerFlow Deep Research · fixture-graph verification")
-    print("  This deterministic command verifies graph composition; it is not a full-fake demo.")
+    print("  This deterministic command verifies fixture-graph composition.")
     transport = DemoLifecycleTransport()
     experience = ResearchRunExperience(
         transport=transport,
-        mode="fake",
-        readiness_provider=lambda: demo_readiness_report(mode="fake"),
+        mode="fixture",
+        readiness_provider=lambda: demo_readiness_report(mode="fixture"),
     )
     report = await experience.preflight()
     if not report.ready:
@@ -94,10 +93,7 @@ async def run_demo(*, question: str) -> int:
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Run deterministic fixture-graph composition verification.",
-        epilog=(
-            "This fixed verification route constructs the fixture recipe and graph executor. "
-            "It is not a replacement for make demo, make demo-scripted, or make demo-tui-fake."
-        ),
+        epilog=("This fixed verification route constructs the fixture recipe and graph executor."),
     )
     parser.add_argument(
         "--question",

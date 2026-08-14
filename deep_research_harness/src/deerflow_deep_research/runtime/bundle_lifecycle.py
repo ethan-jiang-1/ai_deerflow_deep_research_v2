@@ -331,8 +331,8 @@ class BundleLifecycle:
         *,
         scope: tuple[str, str],
         request_text: str,
+        implementation_mode: ImplementationMode,
         start_message_id: str | None = None,
-        implementation_mode: ImplementationMode = ImplementationMode.ALL_REAL,
     ) -> RunBundleRef:
         """Atomically publish a fresh initialized Bundle when no active Bundle exists."""
 
@@ -985,7 +985,7 @@ class BundleLifecycle:
     def _publish_sync(
         self,
         bundle: RunBundleRef,
-        initial_state: BundleLocalState | None = None,
+        initial_state: BundleLocalState,
         scope_lease: BundleTransitionLease | None = None,
     ) -> None:
         scope_root = self._ensure_scope_root_sync(bundle.scope_bucket)
@@ -1000,7 +1000,7 @@ class BundleLifecycle:
             staging.mkdir(mode=0o700)
             for subtree in BUNDLE_SUBTREES:
                 (staging / subtree).mkdir(mode=0o700)
-            self._write_initial_state(staging, initial_state or BundleLocalState(bundle_id=bundle.bundle_id))
+            self._write_initial_state(staging, initial_state)
             self._fault("before_bundle_publish")
             if scope_lease is not None:
                 scope_lease.ensure_live()

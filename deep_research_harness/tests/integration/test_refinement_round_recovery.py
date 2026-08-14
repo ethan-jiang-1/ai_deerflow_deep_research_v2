@@ -18,6 +18,7 @@ import pytest
 
 from deerflow_deep_research.domain.bundle import RunBundleRef
 from deerflow_deep_research.domain.lifecycle import (
+    ImplementationMode,
     LifecycleAction,
     LifecycleStatus,
     RefinementAdmissionDisposition,
@@ -142,6 +143,14 @@ async def _admit(
     return operation
 
 
+async def _start_fixture(lifecycle: BundleLifecycle) -> RunBundleRef:
+    return await lifecycle.start(
+        scope=_SCOPE,
+        request_text="Question",
+        implementation_mode=ImplementationMode.FIXTURE,
+    )
+
+
 @pytest.mark.asyncio
 async def test_preparation_crash_leaves_terminal_pending_state_and_status_never_reconciles(tmp_path: Path) -> None:
     """DRH-005: a prepared rerun checkpoint is not public application before CAS."""
@@ -151,7 +160,7 @@ async def test_preparation_crash_leaves_terminal_pending_state_and_status_never_
             raise _InjectedCrash(point)
 
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path, fault_hook=fault)
-    bundle = await lifecycle.start(scope=_SCOPE, request_text="Question")
+    bundle = await _start_fixture(lifecycle)
     executor = BundleGraphExecutor(recipe=fixture_recipe())
     await _stage_terminal(lifecycle=lifecycle, bundle=bundle, executor=executor)
     original = await _admit(lifecycle=lifecycle, bundle=bundle)
@@ -196,7 +205,7 @@ async def test_matching_replay_reconciles_prepared_checkpoint_once_without_anoth
             raise _InjectedCrash(point)
 
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path, fault_hook=fault)
-    bundle = await lifecycle.start(scope=_SCOPE, request_text="Question")
+    bundle = await _start_fixture(lifecycle)
     executor = BundleGraphExecutor(recipe=fixture_recipe())
     await _stage_terminal(lifecycle=lifecycle, bundle=bundle, executor=executor)
     original = await _admit(lifecycle=lifecycle, bundle=bundle)
@@ -246,7 +255,7 @@ async def test_precommit_reconciliation_preserves_first_round_and_rejects_a_diff
             raise _InjectedCrash(point)
 
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path, fault_hook=fault)
-    bundle = await lifecycle.start(scope=_SCOPE, request_text="Question")
+    bundle = await _start_fixture(lifecycle)
     executor = BundleGraphExecutor(recipe=fixture_recipe())
     await _stage_terminal(lifecycle=lifecycle, bundle=bundle, executor=executor)
     first = await _admit(lifecycle=lifecycle, bundle=bundle)
@@ -291,7 +300,7 @@ async def test_textless_continuation_reconciles_only_the_selected_prepared_pendi
             raise _InjectedCrash(point)
 
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path, fault_hook=fault)
-    bundle = await lifecycle.start(scope=_SCOPE, request_text="Question")
+    bundle = await _start_fixture(lifecycle)
     executor = BundleGraphExecutor(recipe=fixture_recipe())
     await _stage_terminal(lifecycle=lifecycle, bundle=bundle, executor=executor)
     original = await _admit(lifecycle=lifecycle, bundle=bundle)
@@ -331,7 +340,7 @@ async def test_public_matching_retry_reconciles_prepared_token_and_runs_one_queu
             raise _InjectedCrash(point)
 
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path, fault_hook=fault)
-    bundle = await lifecycle.start(scope=_SCOPE, request_text="Question")
+    bundle = await _start_fixture(lifecycle)
     executor = _fixture_executor(tmp_path)
     await _stage_terminal(lifecycle=lifecycle, bundle=bundle, executor=executor)
     original = await _admit(lifecycle=lifecycle, bundle=bundle)
@@ -373,7 +382,7 @@ async def test_public_precommit_competitor_reconciles_first_round_then_returns_c
             raise _InjectedCrash(point)
 
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path, fault_hook=fault)
-    bundle = await lifecycle.start(scope=_SCOPE, request_text="Question")
+    bundle = await _start_fixture(lifecycle)
     executor = _fixture_executor(tmp_path)
     await _stage_terminal(lifecycle=lifecycle, bundle=bundle, executor=executor)
     original = await _admit(lifecycle=lifecycle, bundle=bundle)
@@ -422,7 +431,7 @@ async def test_concurrent_textless_continuations_reconcile_the_selected_pending_
             raise _InjectedCrash(point)
 
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path, fault_hook=fault)
-    bundle = await lifecycle.start(scope=_SCOPE, request_text="Question")
+    bundle = await _start_fixture(lifecycle)
     executor = _fixture_executor(tmp_path)
     await _stage_terminal(lifecycle=lifecycle, bundle=bundle, executor=executor)
     original = await _admit(lifecycle=lifecycle, bundle=bundle)
@@ -493,7 +502,7 @@ async def test_stale_or_terminal_losing_graph_projection_cannot_overwrite_commit
     """REG-021: generation/token/terminal fences leave the current Bundle fact intact."""
 
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
-    bundle = await lifecycle.start(scope=_SCOPE, request_text="Question")
+    bundle = await _start_fixture(lifecycle)
     executor = BundleGraphExecutor(recipe=fixture_recipe())
     await _stage_terminal(lifecycle=lifecycle, bundle=bundle, executor=executor)
     original = await _admit(lifecycle=lifecycle, bundle=bundle)
@@ -539,7 +548,7 @@ async def test_crash_before_preparation_leaves_no_graph_transition_and_after_cas
             raise _InjectedCrash(point)
 
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path, fault_hook=before_preparation)
-    bundle = await lifecycle.start(scope=_SCOPE, request_text="Question")
+    bundle = await _start_fixture(lifecycle)
     executor = _fixture_executor(tmp_path)
     await _stage_terminal(lifecycle=lifecycle, bundle=bundle, executor=executor)
     original = await _admit(lifecycle=lifecycle, bundle=bundle)
@@ -588,7 +597,7 @@ async def test_explicit_textless_retry_recovers_only_the_current_queued_task_aft
             raise _InjectedCrash(point)
 
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path, fault_hook=after_cas)
-    bundle = await lifecycle.start(scope=_SCOPE, request_text="Question")
+    bundle = await _start_fixture(lifecycle)
     executor = _fixture_executor(tmp_path)
     await _stage_terminal(lifecycle=lifecycle, bundle=bundle, executor=executor)
     original = await _admit(lifecycle=lifecycle, bundle=bundle)
@@ -640,7 +649,7 @@ async def test_independent_instances_prepare_one_round_and_cancelled_execution_w
     """REG-021: transition and execution exclusions serialize different critical regions."""
 
     first = BundleLifecycle(workspace_host_path=tmp_path)
-    bundle = await first.start(scope=_SCOPE, request_text="Question")
+    bundle = await _start_fixture(first)
     first_executor = _fixture_executor(tmp_path)
     await _stage_terminal(lifecycle=first, bundle=bundle, executor=first_executor)
     original = await _admit(lifecycle=first, bundle=bundle)
@@ -687,7 +696,7 @@ async def test_two_execution_owners_run_the_one_prepared_graph_task_once(tmp_pat
     """REG-021: the execution contender rereads instead of invoking a second task."""
 
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
-    bundle = await lifecycle.start(scope=_SCOPE, request_text="Question")
+    bundle = await _start_fixture(lifecycle)
     executor = _fixture_executor(tmp_path)
     await _stage_terminal(lifecycle=lifecycle, bundle=bundle, executor=executor)
     original = await _admit(lifecycle=lifecycle, bundle=bundle)
@@ -731,7 +740,7 @@ async def test_root_loss_before_checkpoint_preparation_is_unavailable_and_never_
             shutil.rmtree(lifecycle.private_root(bundle))
 
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path, fault_hook=remove_root)
-    bundle = await lifecycle.start(scope=_SCOPE, request_text="Question")
+    bundle = await _start_fixture(lifecycle)
     executor = _fixture_executor(tmp_path)
     await _stage_terminal(lifecycle=lifecycle, bundle=bundle, executor=executor)
     original = await _admit(lifecycle=lifecycle, bundle=bundle)

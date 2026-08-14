@@ -187,7 +187,7 @@ async def test_release_bundle_adapter_reauthorizes_the_public_id_before_observin
     invocation = new_release_invocation()
     bundle_id = BundleId(f"b_{'a' * 43}")
     bundle = RunBundleRef(bundle_id=bundle_id, scope_bucket=f"s_{'b' * 43}")
-    state = BundleLocalState(bundle_id=bundle_id)
+    state = BundleLocalState(bundle_id=bundle_id, implementation_mode="all_real")
     records = (types.SimpleNamespace(record_hash="ref:contained"),)
     lifecycle_calls: list[object] = []
     store_calls: list[object] = []
@@ -249,6 +249,7 @@ async def test_release_bundle_adapter_fails_on_bundle_loss_before_any_store_obse
     bundle = await lifecycle.start(
         scope=(invocation.user_id, invocation.thread_id),
         request_text="Release observation must not recover a missing Bundle.",
+        implementation_mode="all_real",
     )
     shutil.rmtree(lifecycle.private_root(bundle))
     store_calls: list[object] = []

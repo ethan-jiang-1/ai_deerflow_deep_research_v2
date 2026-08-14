@@ -1112,7 +1112,7 @@ REQUIREMENT_IMPACTS = (
         "DPL-008",
         "demo-pipeline",
         StableSeam.PUBLIC_ENTRY,
-        "tests/contract/test_demo_commands.py::test_demo_commands_keep_fake_and_real_dependency_boundaries",
+        "tests/contract/test_demo_commands.py::test_demo_commands_keep_fixture_and_real_dependency_boundaries",
         "fixture source could otherwise leak onto a real or production launch path",
     ),
     RequirementImpact(

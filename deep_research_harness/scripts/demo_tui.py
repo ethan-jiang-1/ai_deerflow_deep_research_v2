@@ -317,7 +317,7 @@ class DeepResearchDemoTUI(App[None]):
     _WORKER_GROUP = "research-lifecycle"
     _EXAMPLE_QUESTION = "Compare renewable-energy storage approaches"
 
-    def __init__(self, *, mode: Literal["fake", "real"] = "real") -> None:
+    def __init__(self, *, mode: Literal["fixture", "real"] = "real") -> None:
         super().__init__()
         self.mode = mode
         self._adapter: DemoAdapter | None = None
@@ -341,7 +341,7 @@ class DeepResearchDemoTUI(App[None]):
             yield Button("Cancel", id="cancel", variant="error")
 
     def on_mount(self) -> None:
-        mode_label = "full-fake" if self.mode == "fake" else "all-real"
+        mode_label = "fixture-graph" if self.mode == "fixture" else "all-real"
         self.query_one("#banner", Static).update(Text(f"Deep Research · {mode_label} demo", style="bold cyan"))
         self._render_view(
             TuiRenderedUpdate(
@@ -379,7 +379,7 @@ class DeepResearchDemoTUI(App[None]):
             if self.mode == "real":
                 self._transport.bind(runtime=build_demo_runtime(mode="real", adapter=adapter))
             else:
-                self._transport.bind_full_fake(adapter=adapter)
+                self._transport.bind(runtime=build_demo_runtime(mode="fixture_graph", adapter=adapter))
             if hasattr(self._experience, "set_observation_publisher"):
                 self._experience.set_observation_publisher(adapter.observation_publisher)
             self._adapter = adapter
@@ -468,9 +468,9 @@ def main() -> None:
             "inspectable local bundle; inspection is not cross-process resume."
         ),
     )
-    parser.add_argument("--fake", action="store_true", help="Run the zero-credential full-fake lifecycle.")
+    parser.add_argument("--fixture", action="store_true", help="Run the zero-credential fixture graph.")
     args = parser.parse_args()
-    app = DeepResearchDemoTUI(mode="fake" if args.fake else "real")
+    app = DeepResearchDemoTUI(mode="fixture" if args.fixture else "real")
     try:
         app.run()
     finally:

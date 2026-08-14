@@ -23,6 +23,7 @@ from deerflow_deep_research.domain.context import (
 from deerflow_deep_research.domain.enums import NodeFinishReason
 from deerflow_deep_research.domain.profile import ResearchProfile
 from deerflow_deep_research.domain.run_experience import RunFailureCode
+from deerflow_deep_research.domain.state import BundleLocalState
 from deerflow_deep_research.graph.nodes.wave0.capabilities import WAVE0_AUTHORITATIVE_SOURCE_INTAKE
 from deerflow_deep_research.graph.nodes.wave2_synthesis.capabilities import WAVE2_EVIDENCE_SYNTHESIS
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
@@ -41,12 +42,18 @@ def _scenario(scenario_id: str):
 
 def _profile() -> ResearchProfile:
     return ResearchProfile(
+        schema_version=2,
         depth="standard",
         audience="practitioner",
         format="detailed_report",
         cost_tolerance="moderate",
         time_budget="standard",
         must_answer=("Which evidence supports the conclusion?",),
+        comparison_required=False,
+        comparison_subjects=None,
+        request_language="en",
+        output_language="en",
+        degraded_profile=False,
     )
 
 
@@ -54,7 +61,10 @@ async def test_filesystem_fault_leaves_no_partial_authoritative_profile(tmp_path
     scenario = _scenario("sandbox-filesystem-failure")
     identity = unique_run_identity()
     envelope = local_runtime_envelope(tmp_path, identity=identity)
-    BundleLifecycle(workspace_host_path=envelope.workspace_host_path)._publish_sync(identity.bundle_ref)
+    BundleLifecycle(workspace_host_path=envelope.workspace_host_path)._publish_sync(
+        identity.bundle_ref,
+        BundleLocalState(bundle_id=identity.bundle_ref.bundle_id, implementation_mode="all_real"),
+    )
 
     async def ready(*_args: object, **_kwargs: object):
         from deerflow_deep_research.runtime.work_unit_storage import WorkUnitStorageCheck
@@ -145,7 +155,7 @@ async def test_wall_time_timeout_returns_typed_budget_exhausted_outcome(tmp_path
         max_total_tool_calls=1,
         max_tool_calls_per_response=1,
         max_parallel_tool_calls=1,
-        total_token_budget=2_000,
+        total_token_budget=20_000,
         per_call_output_token_cap=500,
         per_tool_result_bytes=1_024,
         structured_result_bytes=1_024,
@@ -204,10 +214,20 @@ async def test_tool_unavailable_timeout_bridge_fails_closed(tmp_path: Path, case
         policy_name="fault-replay",
         bundle_context=NodeAgentBundleContext.from_selected_bundle(SelectedBundleContext(bundle=identity.bundle_ref)),
     )
-    budget = ExecutionBudget(1, 1, 1, 1, 2_000, 500, 1_024, 1_024, 0.01)
+    budget = ExecutionBudget(1, 1, 1, 1, 20_000, 500, 1_024, 1_024, 0.01)
     policy = ExecutionPolicy(
         policy_name="fault-replay",
-        allowed_tool_names=frozenset({"web_search"}),
+        allowed_tool_names=frozenset(
+            {
+                "duckduckgo_search",
+                "firecrawl_scrape",
+                "jina_ai",
+                "tavily_extract",
+                "tavily_search",
+                "web_fetch",
+                "web_search",
+            }
+        ),
         read_roots=(workspace,),
         write_roots=(),
         attempt_root=context.attempt_root,

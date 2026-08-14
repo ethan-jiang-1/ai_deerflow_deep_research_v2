@@ -14,6 +14,7 @@ import pytest
 from deerflow_deep_research.domain.bundle import RunBundleRef, run_bundle_root
 from deerflow_deep_research.domain.context import GraphContextView, NodeAgentContext
 from deerflow_deep_research.domain.invocation import GraphInvocationContext
+from deerflow_deep_research.domain.lifecycle import ImplementationMode
 from deerflow_deep_research.domain.node_spec import NodeBuildDependencies
 from deerflow_deep_research.domain.state import PhaseStatus, node_state_update
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
@@ -98,7 +99,11 @@ async def test_rerun_writer_prepares_same_bundle_topic_planning_without_precommi
     """REG-021: the production writer queues the existing rerun edge without running it."""
 
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
-    bundle = await lifecycle.start(scope=("fixture-user", "fixture-thread"), request_text="Fixture question.")
+    bundle = await lifecycle.start(
+        scope=("fixture-user", "fixture-thread"),
+        request_text="Fixture question.",
+        implementation_mode=ImplementationMode.FIXTURE,
+    )
     root = lifecycle.private_root(bundle)
     graph_context = GraphContextView(
         research_scope_id=bundle.bundle_id.value,

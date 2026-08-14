@@ -40,7 +40,11 @@ async def test_journal_envelope_retains_profile_only_after_lifecycle_admission(t
     """The trusted profile crosses only the admitted Bundle's recorder boundary."""
 
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
-    bundle = await lifecycle.start(scope=("journal-user", "journal-thread"), request_text="Research journals")
+    bundle = await lifecycle.start(
+        scope=("journal-user", "journal-thread"),
+        request_text="Research journals",
+        implementation_mode="all_real",
+    )
     state = await lifecycle.read_state(bundle)
     profile = ExecutionProfileEvidence(profile_id="deepseek-v4-flash", registry_revision="v1")
 
@@ -75,7 +79,7 @@ async def test_rejected_start_creates_no_bundle_or_profile_journal(tmp_path: Pat
     _envelope(tmp_path, execution_profile=profile)
 
     with pytest.raises(ValueError, match="start_request_invalid"):
-        await lifecycle.start(scope=("journal-user", "journal-thread"), request_text="")
+        await lifecycle.start(scope=("journal-user", "journal-thread"), request_text="", implementation_mode="all_real")
 
     assert await lifecycle.discover_active(scope=("journal-user", "journal-thread")) is None
     journal_manifests = await asyncio.to_thread(lambda: tuple(tmp_path.rglob("journal-manifest.json")))

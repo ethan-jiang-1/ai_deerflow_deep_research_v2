@@ -38,7 +38,7 @@ from deerflow_deep_research.domain.context import GraphContextView, SelectedBund
 from deerflow_deep_research.domain.invocation import GraphInvocationContext
 from deerflow_deep_research.domain.node_spec import NodeBuildDependencies
 from deerflow_deep_research.domain.profile import ResearchProfile, profile_state_fields
-from deerflow_deep_research.domain.state import ContentRef, ResearchState
+from deerflow_deep_research.domain.state import BundleLocalState, ContentRef, ResearchState
 from deerflow_deep_research.domain.synthesis import SynthesisEvidence
 from deerflow_deep_research.domain.work_units import (
     CandidateResult,
@@ -132,7 +132,9 @@ def _bridge(tmp_path: Path, node_name: str, response: str):
     identity = unique_run_identity()
     envelope = local_runtime_envelope(tmp_path, identity=identity)
     bundle = identity.bundle_ref
-    BundleLifecycle(workspace_host_path=envelope.workspace_host_path)._publish_sync(bundle)
+    BundleLifecycle(workspace_host_path=envelope.workspace_host_path)._publish_sync(
+        bundle, BundleLocalState(bundle_id=bundle.bundle_id, implementation_mode="all_real")
+    )
     selected = SelectedBundleContext(bundle=bundle)
     graph = project_research_scope(envelope, bundle=bundle)
     workspace = graph.workspace_root
@@ -664,7 +666,9 @@ async def _run_scripted_final_delivery(
     identity = unique_run_identity()
     envelope = local_runtime_envelope(tmp_path, identity=identity)
     bundle = identity.bundle_ref
-    BundleLifecycle(workspace_host_path=envelope.workspace_host_path)._publish_sync(bundle)
+    BundleLifecycle(workspace_host_path=envelope.workspace_host_path)._publish_sync(
+        bundle, BundleLocalState(bundle_id=bundle.bundle_id, implementation_mode="all_real")
+    )
     selected = SelectedBundleContext(bundle=bundle)
     graph = project_research_scope(envelope, bundle=bundle)
     store = WorkUnitStore(

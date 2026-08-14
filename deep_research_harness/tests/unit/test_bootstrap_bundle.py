@@ -52,6 +52,7 @@ def _marker(
 def _bundle_state(**overrides: object) -> BundleLocalState:
     values: dict[str, object] = {
         "bundle_id": BUNDLE.bundle_id,
+        "implementation_mode": "all_real",
         "start_message_id": _START_MESSAGE_ID,
         "start_request_digest": _REQUEST_DIGEST,
         "schema_version": BUNDLE_STATE_SCHEMA_VERSION,
@@ -143,7 +144,11 @@ class TestLifecyclePublication:
     async def test_fresh_bundle_is_published_only_after_state_and_content_roots_exist(self, tmp_path: Path) -> None:
         """DRH-001: discovery cannot observe a partial Bundle publication."""
         lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
-        bundle = await lifecycle.start(scope=("user-1", "thread-1"), request_text="Research batteries")
+        bundle = await lifecycle.start(
+            scope=("user-1", "thread-1"),
+            request_text="Research batteries",
+            implementation_mode="all_real",
+        )
 
         root = lifecycle.private_root(bundle)
         assert root.name == bundle.bundle_id.value
@@ -159,7 +164,11 @@ class TestLifecyclePublication:
         lifecycle = BundleLifecycle(workspace_host_path=tmp_path, fault_hook=fail)
 
         with pytest.raises(RuntimeError):
-            await lifecycle.start(scope=("user-1", "thread-1"), request_text="Research batteries")
+            await lifecycle.start(
+                scope=("user-1", "thread-1"),
+                request_text="Research batteries",
+                implementation_mode="all_real",
+            )
         assert await lifecycle.discover_active(scope=("user-1", "thread-1")) is None
 
 

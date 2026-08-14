@@ -9,14 +9,14 @@ without implying production Terminal Workbench, Web UI, Gateway, or generic
 human-input integration.
 ## Requirements
 
-### Requirement: Standalone TUI demo traverses fake and real lifecycle modes through the shared experience
+### Requirement: Standalone TUI demo traverses fixture-graph and all-real lifecycle modes through the shared experience
 
 The Textual demo SHALL use one owned `DemoAdapter` and the shared
 `ResearchRunExperience` Module. Default mode SHALL obtain its all-real recipe,
 demo-local bridge, and graph executor from the same shared demo runtime composition
-boundary used by the real CLI; it SHALL not dispatch without that executor into the
-existing full-fake fallback. `--fake` SHALL retain the existing full-fake behavior
-without a model, Tavily, Gateway, root configuration, or network. Both modes SHALL retain
+boundary used by the real CLI; it SHALL not dispatch without that executor into a
+no-graph fallback. `--fixture` SHALL select the fixed fixture graph without a model,
+Tavily, Gateway, root configuration, or network. Both modes SHALL retain
 graph-owned free-text HITL-1, explicit graph cancellation, and a truthful selected-mode
 label. Current HITL2 is an autonomous graph continuation, not an advertised choice.
 
@@ -36,9 +36,9 @@ progress without a real observed event. A missing all-real executor or absent
 graph-backed final-delivery evidence SHALL leave the TUI in its bounded fault or
 non-completed terminal state; it SHALL not display completed research. (`RED-001`)
 
-#### Scenario: User completes the deterministic fake visual path
-- **WHEN** a user launches `--fake`, submits a question and HITL-1 response
-- **THEN** the shell visibly identifies fake mode and completes without credentials,
+#### Scenario: User completes the deterministic fixture-graph visual path
+- **WHEN** a user launches `--fixture`, submits a question and HITL-1 response
+- **THEN** the shell visibly identifies fixture-graph mode and completes without credentials,
   network, or a HITL2 choice control while every UI state came from shared `RunUpdate`
   values
 
@@ -47,7 +47,7 @@ non-completed terminal state; it SHALL not display completed research. (`RED-001
 - **THEN** it passes shared preflight, starts the all-real recipe, and presents a
   returned bootstrap-plus-HITL-1 state as an `AwaitingInput` scope prompt
 
-#### Scenario: Real TUI cannot use a full-fake completion
+#### Scenario: Real TUI cannot use a synthetic completion
 - **WHEN** the default real TUI cannot obtain its all-real graph composition
 - **THEN** it shows the bounded startup fault and does not report completed research
 
@@ -67,10 +67,10 @@ non-completed terminal state; it SHALL not display completed research. (`RED-001
 ### Requirement: Demo remains bounded and explicitly non-product
 
 The demo SHALL launch from `deep_research_harness/` through the canonical
-`make demo-tui` and `make demo-tui-fake` targets. It retains its existing real/fake
-preflight, explicit non-product boundary, deterministic fake-pilot coverage, and
-no-upstream-change constraint. Real mode loads `deep_research_harness/.env` when
-present; fake mode remains credential-free. It SHALL project the shared Bundle
+`make demo-tui` and `make demo-tui-fixture` targets. It retains its existing all-real/
+fixture preflight, explicit non-product boundary, deterministic fixture-graph coverage,
+and no-upstream-change constraint. Real mode loads `deep_research_harness/.env` when
+present; fixture mode remains credential-free. It SHALL project the shared Bundle
 lifecycle result and never treat retained demo output as a recoverable session.
 (`RED-002`)
 
@@ -172,3 +172,23 @@ fixture-local cache. (`RED-008`)
 #### Scenario: Demo TUI does not treat retained output as a resumable Run
 - **WHEN** a demo retains output for a Bundle that is no longer available
 - **THEN** it renders the shared unavailable observation and submits no resume/control action for that Bundle
+
+### Requirement: Credential-free TUI uses the fixed fixture graph
+
+The credential-free standalone TUI SHALL use the same fixture catalog, fixed fixture
+recipe, graph executor, shared Bundle lifecycle result, and truthful `fixture`
+composition fact as the credential-free CLI. It SHALL remain a non-product
+visualization, require no model, Gateway, network, or real-demo configuration, and
+shall not construct a no-graph lifecycle or infer completed research from local UI
+state. (`RED-001`, `RED-002`, `RED-008`)
+
+#### Scenario: Credential-free TUI starts a fixture-backed Run
+- **WHEN** an operator starts the named credential-free TUI route in a prepared
+  checkout with fixture source available to that child process
+- **THEN** its shared updates originate from the fixture graph and Bundle-local State
+  identifies `implementation_mode=fixture`
+
+#### Scenario: Credential-free TUI lacks its fixture executor
+- **WHEN** the TUI cannot construct its fixed fixture executor
+- **THEN** it presents the bounded startup fault and does not create a State record or
+  render completed research

@@ -75,7 +75,7 @@ from deerflow_deep_research.domain.work_units import (
 )
 
 RESEARCH_STATE_SCHEMA_VERSION = 2
-BUNDLE_STATE_SCHEMA_VERSION = 3
+BUNDLE_STATE_SCHEMA_VERSION = 4
 
 # Hard bound on the serialized ResearchState checkpoint. Normal control state, artifact
 # refs, branch summaries, HITL correlation, consumed ids, and the logical trace stay far
@@ -104,7 +104,7 @@ _PROFILE_ENUM_VALUES = {
     "output_format": frozenset({"", "executive_brief", "detailed_report", "annotated_bibliography", "faq"}),
     "cost_tolerance": frozenset({"", "minimal", "moderate", "extensive"}),
     "time_budget": frozenset({"", "very_quick", "standard", "thorough", "overnight"}),
-    "request_language": frozenset({"", "zh", "en", "unspecified", "legacy_unspecified"}),
+    "request_language": frozenset({"", "zh", "en", "unspecified"}),
     "output_language": frozenset({"", "zh", "en"}),
 }
 _PENDING_PROFILE_KEYS = frozenset(
@@ -155,10 +155,10 @@ class BundleLocalState:
     """
 
     bundle_id: BundleId
+    implementation_mode: ImplementationMode
     generation: int = 0
     revision: int = 0
     schema_version: int = BUNDLE_STATE_SCHEMA_VERSION
-    implementation_mode: ImplementationMode = ImplementationMode.ALL_REAL
     phase: LogicalPhase = LogicalPhase.BOOTSTRAP
     phase_status: PhaseStatus = PhaseStatus.IN_PROGRESS
     start_message_id: str | None = None
@@ -498,13 +498,13 @@ class BundleLocalState:
             "interaction_feedback",
             "execution_trace",
         }
-        optional = {"current_refinement", "refinement_replay_receipts", "implementation_mode"}
+        optional = {"current_refinement", "refinement_replay_receipts"}
         if not (allowed - optional) <= set(value) <= allowed:
             raise ValueError("bundle_state_invalid")
         try:
             return cls(
                 schema_version=value["schema_version"],  # type: ignore[arg-type]
-                implementation_mode=value.get("implementation_mode", ImplementationMode.ALL_REAL),  # type: ignore[arg-type]
+                implementation_mode=value["implementation_mode"],  # type: ignore[arg-type]
                 bundle_id=BundleId(value["bundle_id"]),  # type: ignore[arg-type]
                 generation=value["generation"],  # type: ignore[arg-type]
                 revision=value["revision"],  # type: ignore[arg-type]
@@ -819,8 +819,7 @@ def _validate_pending_profile(value: Mapping[str, Any] | None) -> dict[str, Any]
         return None
     if not isinstance(value, Mapping):
         raise ValueError("pending_profile_invalid")
-    unknown = set(value) - _PENDING_PROFILE_KEYS
-    if unknown:
+    if set(value) != _PENDING_PROFILE_KEYS or value.get("schema_version") != 2:
         raise ValueError("pending_profile_invalid")
     payload = dict(value)
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=_json_default)

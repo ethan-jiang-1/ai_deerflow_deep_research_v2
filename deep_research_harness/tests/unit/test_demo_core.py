@@ -102,6 +102,7 @@ def test_demo_recipe_factories_do_not_expose_a_mode_selector(_scripts_path):
     import _demo_core
 
     assert not hasattr(_demo_core, "build_demo_recipe")
+    assert not hasattr(_demo_core.DemoLifecycleTransport, "bind_full_fake")
 
 
 def test_real_demo_prerequisites_reject_missing_and_blank_values_before_adapter_construction(
@@ -151,9 +152,9 @@ def test_real_demo_prerequisites_reject_missing_and_blank_values_before_adapter_
 def test_demo_readiness_report_is_safe_and_non_network(_scripts_path):
     from _demo_core import demo_readiness_report
 
-    fake = demo_readiness_report(mode="fake", environ={})
-    assert fake.ready is True
-    assert fake.mode == "fake"
+    fixture = demo_readiness_report(mode="fixture", environ={})
+    assert fixture.ready is True
+    assert fixture.mode == "fixture"
 
     real = demo_readiness_report(mode="real", environ={})
     assert real.ready is False

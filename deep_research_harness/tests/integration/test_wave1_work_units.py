@@ -44,7 +44,12 @@ from deerflow_deep_research.domain.run_experience import (
     RunFailureCode,
 )
 from deerflow_deep_research.domain.run_observation import FinalResponseShape, RunEventCategory
-from deerflow_deep_research.domain.state import WORK_UNIT_GATE_PREVIEW_FIELDS, merge_trace, preview_work_unit_update
+from deerflow_deep_research.domain.state import (
+    WORK_UNIT_GATE_PREVIEW_FIELDS,
+    BundleLocalState,
+    merge_trace,
+    preview_work_unit_update,
+)
 from deerflow_deep_research.domain.wave1 import OpenQuestionState
 from deerflow_deep_research.domain.work_units import (
     WORK_UNIT_GATE_VIEW_KEY,
@@ -267,7 +272,9 @@ class BaseResolver:
 
 
 def _publish_bundle(workspace: Path, bundle: RunBundleRef = BUNDLE) -> None:
-    BundleLifecycle(workspace_host_path=workspace)._publish_sync(bundle)
+    BundleLifecycle(workspace_host_path=workspace)._publish_sync(
+        bundle, BundleLocalState(bundle_id=bundle.bundle_id, implementation_mode="all_real")
+    )
 
 
 def _store(

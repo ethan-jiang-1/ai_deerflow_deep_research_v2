@@ -31,7 +31,9 @@ _RERUN_POLICY = FullRerunPolicy(max_rerun_generations=2)
 
 
 def test_bundle_refinement_is_bounded_and_preserves_pending_human_response() -> None:
-    state = BundleLocalState(bundle_id=BundleId("b_" + "A" * 43), pending_request_id="request-1")
+    state = BundleLocalState(
+        bundle_id=BundleId("b_" + "A" * 43), implementation_mode="all_real", pending_request_id="request-1"
+    )
     refined = admit_bundle_refinement(
         state,
         RefinementOperation.from_text(operation_key="operation-1", text="Prioritize source quality"),
@@ -56,7 +58,9 @@ def test_bundle_refinement_is_bounded_and_preserves_pending_human_response() -> 
 
 
 def test_bundle_resume_rejects_a_stale_or_missing_pending_correlation() -> None:
-    state = BundleLocalState(bundle_id=BundleId("b_" + "A" * 43), pending_request_id="request-1")
+    state = BundleLocalState(
+        bundle_id=BundleId("b_" + "A" * 43), implementation_mode="all_real", pending_request_id="request-1"
+    )
     with pytest.raises(ValueError, match="response_mismatch"):
         consume_bundle_response(
             state,
@@ -70,7 +74,7 @@ def test_bundle_resume_rejects_a_stale_or_missing_pending_correlation() -> None:
 
 
 def test_refinement_is_durable_before_its_safe_point_consumes_it() -> None:
-    state = BundleLocalState(bundle_id=BundleId("b_" + "A" * 43))
+    state = BundleLocalState(bundle_id=BundleId("b_" + "A" * 43), implementation_mode="all_real")
     admitted = admit_bundle_refinement(
         state,
         RefinementOperation.from_text(operation_key="operation-1", text="Add regulatory risks"),

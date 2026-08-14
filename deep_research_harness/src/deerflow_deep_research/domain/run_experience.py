@@ -56,7 +56,7 @@ class FailureCertainty(StrEnum):
     UNKNOWN = "unknown"
 
 
-RunMode = Literal["fake", "real"]
+RunMode = Literal["fixture", "real"]
 LogicalPhaseName = Literal[
     "bootstrap",
     "hitl1",

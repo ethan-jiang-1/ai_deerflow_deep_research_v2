@@ -26,7 +26,7 @@ import pytest
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 
 from deerflow_deep_research.domain.bundle import BundleId, RunBundleRef
-from deerflow_deep_research.domain.lifecycle import LifecycleStatus, RefinementOperation
+from deerflow_deep_research.domain.lifecycle import ImplementationMode, LifecycleStatus, RefinementOperation
 from deerflow_deep_research.domain.state import PhaseStatus
 from deerflow_deep_research.runtime.bundle_graph import BundleGraphExecutor
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
@@ -149,6 +149,7 @@ def _terminal_bundle(
             scope=scope,
             request_text="Fixture terminal research request.",
             start_message_id=f"{thread_id}-fixture-start",
+            implementation_mode=ImplementationMode.FIXTURE,
         )
     )
     executor = _fixture_graph_executor()
@@ -553,7 +554,13 @@ def test_ambiguous_criticism_makes_no_lifecycle_call(
     app_config = request.getfixturevalue("configured_deerflow_home")(deferred_discovery=False)
     thread_id = "controller-ambiguous-criticism"
     lifecycle = _lifecycle_for(thread_id)
-    bundle = _await(lifecycle.start(scope=("default", thread_id), request_text="Research question"))
+    bundle = _await(
+        lifecycle.start(
+            scope=("default", thread_id),
+            request_text="Research question",
+            implementation_mode=ImplementationMode.ALL_REAL,
+        )
+    )
 
     result = _run_controller_turn(
         app_config=app_config,
@@ -574,7 +581,13 @@ def test_profile_note_request_does_not_mutate_then_clarified_direction_is_admitt
     app_config = request.getfixturevalue("configured_deerflow_home")(deferred_discovery=False)
     thread_id = "controller-profile-note"
     lifecycle = _lifecycle_for(thread_id)
-    bundle = _await(lifecycle.start(scope=("default", thread_id), request_text="Research question"))
+    bundle = _await(
+        lifecycle.start(
+            scope=("default", thread_id),
+            request_text="Research question",
+            implementation_mode=ImplementationMode.ALL_REAL,
+        )
+    )
     profile_note = HumanMessage(content="Save this as a profile note.", id=f"{thread_id}-profile-note")
 
     no_call = _run_controller_turn(
@@ -615,7 +628,13 @@ def test_active_conflict_preserves_the_first_direction(
     app_config = request.getfixturevalue("configured_deerflow_home")(deferred_discovery=False)
     thread_id = "controller-active-conflict"
     lifecycle = _lifecycle_for(thread_id)
-    bundle = _await(lifecycle.start(scope=("default", thread_id), request_text="Research question"))
+    bundle = _await(
+        lifecycle.start(
+            scope=("default", thread_id),
+            request_text="Research question",
+            implementation_mode=ImplementationMode.ALL_REAL,
+        )
+    )
     _await(
         lifecycle.admit_refinement(
             scope=("default", thread_id),

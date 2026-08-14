@@ -14,6 +14,7 @@ import sys
 from pathlib import Path
 from types import SimpleNamespace
 
+from deerflow_deep_research.domain.lifecycle import ImplementationMode
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
 from deerflow_deep_research.runtime.checkpoint import resolve_effective_provider
 from deerflow_deep_research.runtime.probe import build_probe_graph_host
@@ -95,7 +96,11 @@ async def test_file_sqlite_probe_visits_are_isolated_from_bundle_lifecycle(tmp_p
 
     before = await host.run_action(action="infra_probe", envelope=envelope, action_input="p1")
     lifecycle = BundleLifecycle(workspace_host_path=envelope.workspace_host_path)
-    bundle = await lifecycle.start(scope=("alice", "thread-1"), request_text="research question")
+    bundle = await lifecycle.start(
+        scope=("alice", "thread-1"),
+        request_text="research question",
+        implementation_mode=ImplementationMode.ALL_REAL,
+    )
     after = await host.run_action(action="infra_probe", envelope=envelope, action_input="p1")
 
     assert (await lifecycle.status(scope=("alice", "thread-1"), bundle_id=bundle.bundle_id)).code == "active"

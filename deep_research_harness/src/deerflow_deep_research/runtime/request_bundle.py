@@ -30,6 +30,7 @@ from deerflow_deep_research.domain.profile import (
     ResearchProfile,
     canonical_profile_bytes,
     compute_profile_content_hash,
+    validate_current_profile_content,
 )
 from deerflow_deep_research.domain.state import BundleLocalState, ContentRef
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycleError, BundleStateStore
@@ -245,6 +246,7 @@ class RequestBundleStore:
     async def write_profile(self, profile: ResearchProfile) -> ContentRef:
         if not isinstance(profile, ResearchProfile):
             raise TypeError("profile_required")
+        validate_current_profile_content(profile.model_dump(mode="json"))
         content = canonical_profile_bytes(profile)
         if len(content) > MAX_PROFILE_BYTES:
             raise ValueError("profile_too_large")
@@ -277,7 +279,7 @@ class RequestBundleStore:
             await self._raise_if_bundle_unavailable()
             raise
         try:
-            profile = ResearchProfile.model_validate(json.loads(content))
+            profile = validate_current_profile_content(json.loads(content))
         except (TypeError, UnicodeDecodeError, ValueError) as exc:
             raise ValueError("profile_schema_invalid") from exc
         if compute_profile_content_hash(profile) != profile_ref.content_hash:

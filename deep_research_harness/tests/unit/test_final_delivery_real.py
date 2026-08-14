@@ -25,7 +25,7 @@ from deerflow_deep_research.domain.context import GraphContextView, NodeAgentCon
 from deerflow_deep_research.domain.enums import NodeFinishReason
 from deerflow_deep_research.domain.failure_codes import FailureCode
 from deerflow_deep_research.domain.node_spec import NodeBuildDependencies
-from deerflow_deep_research.domain.state import ContentRef
+from deerflow_deep_research.domain.state import BundleLocalState, ContentRef
 from deerflow_deep_research.domain.synthesis import SynthesisEvidence
 from deerflow_deep_research.domain.work_units import canonical_json_bytes
 from deerflow_deep_research.engine.gate_kernel import evaluate_gate, gate_result_to_state_update
@@ -382,7 +382,9 @@ class TestRealFinalDelivery:
 
     @pytest.mark.asyncio
     async def test_publication_replay_is_idempotent_and_conflicting_content_fails_closed(self, tmp_path) -> None:
-        BundleLifecycle(workspace_host_path=tmp_path)._publish_sync(BUNDLE)
+        BundleLifecycle(workspace_host_path=tmp_path)._publish_sync(
+            BUNDLE, BundleLocalState(bundle_id=BUNDLE.bundle_id, implementation_mode="all_real")
+        )
         store = WorkUnitStore(
             workspace_host_path=tmp_path,
             bundle=BUNDLE,

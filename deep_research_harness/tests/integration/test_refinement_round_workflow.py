@@ -25,6 +25,7 @@ from deerflow_deep_research.domain.lifecycle import (
     HumanInputMode,
     HumanInputOption,
     HumanInputRequest,
+    ImplementationMode,
     LifecycleAction,
     LifecycleStatus,
     PendingResearchInterrupt,
@@ -140,7 +141,11 @@ async def test_explicit_ended_direction_commits_and_starts_topic_planning_in_the
     """DRH-005/RUI-006: an ended target is not merely marked pending."""
 
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
-    bundle = await lifecycle.start(scope=_SCOPE, request_text="Question")
+    bundle = await lifecycle.start(
+        scope=_SCOPE,
+        request_text="Question",
+        implementation_mode=ImplementationMode.FIXTURE,
+    )
     executor = _fixture_executor(tmp_path)
     await _stage_terminal(lifecycle=lifecycle, bundle=bundle, executor=executor)
 
@@ -173,7 +178,11 @@ async def test_fresh_start_waits_while_ended_reactivation_holds_the_scope_decisi
     """DRH-007: scope -> transition keeps fresh start and reactivation linearizable."""
 
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
-    bundle = await lifecycle.start(scope=_SCOPE, request_text="Question")
+    bundle = await lifecycle.start(
+        scope=_SCOPE,
+        request_text="Question",
+        implementation_mode=ImplementationMode.FIXTURE,
+    )
     executor = _fixture_executor(tmp_path)
     await _stage_terminal(lifecycle=lifecycle, bundle=bundle, executor=executor)
     operation = RefinementOperation.from_text(
@@ -207,7 +216,13 @@ async def test_fresh_start_waits_while_ended_reactivation_holds_the_scope_decisi
     )
     await entered_cas.wait()
     fresh_lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
-    fresh_start = asyncio.create_task(fresh_lifecycle.start(scope=_SCOPE, request_text="Fresh question"))
+    fresh_start = asyncio.create_task(
+        fresh_lifecycle.start(
+            scope=_SCOPE,
+            request_text="Fresh question",
+            implementation_mode=ImplementationMode.FIXTURE,
+        )
+    )
     await asyncio.sleep(0.05)
     assert not fresh_start.done()
 
@@ -228,7 +243,12 @@ async def test_active_suspended_round_consumes_its_direction_only_after_complete
     """DRH-005: the current HITL subject remains intact until the graph completes."""
 
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
-    bundle = await lifecycle.start(scope=_SCOPE, request_text="Question", start_message_id="start-message")
+    bundle = await lifecycle.start(
+        scope=_SCOPE,
+        request_text="Question",
+        start_message_id="start-message",
+        implementation_mode=ImplementationMode.FIXTURE,
+    )
     executor = _fixture_executor(tmp_path)
     envelope = _envelope(tmp_path)
     await executor.start(
@@ -305,7 +325,12 @@ async def test_terminal_projection_race_preserves_one_direction_token_and_contin
     """REG-021: either side of the terminal boundary owns one next round."""
 
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
-    bundle = await lifecycle.start(scope=_SCOPE, request_text="Question", start_message_id="start-message")
+    bundle = await lifecycle.start(
+        scope=_SCOPE,
+        request_text="Question",
+        start_message_id="start-message",
+        implementation_mode=ImplementationMode.FIXTURE,
+    )
     executor = _fixture_executor(tmp_path)
     envelope = _envelope(tmp_path)
     await executor.start(
@@ -430,7 +455,11 @@ async def test_active_hitl2_subject_survives_independent_direction_admission(tmp
     """DRH-005: an independent direction cannot consume a current HITL2 choice."""
 
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
-    bundle = await lifecycle.start(scope=_SCOPE, request_text="Question")
+    bundle = await lifecycle.start(
+        scope=_SCOPE,
+        request_text="Question",
+        implementation_mode=ImplementationMode.FIXTURE,
+    )
     pending = PendingResearchInterrupt(
         request=HumanInputRequest(
             request_id="hitl2-choice",
@@ -491,7 +520,12 @@ async def test_non_completed_terminal_keeps_direction_pending_until_explicit_tex
     """DRH-005: stop/cancel/block never turn a queued direction into auto-restart."""
 
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
-    bundle = await lifecycle.start(scope=_SCOPE, request_text="Question", start_message_id="start-message")
+    bundle = await lifecycle.start(
+        scope=_SCOPE,
+        request_text="Question",
+        start_message_id="start-message",
+        implementation_mode=ImplementationMode.FIXTURE,
+    )
     executor = _fixture_executor(tmp_path)
     await _stage_terminal(
         lifecycle=lifecycle,

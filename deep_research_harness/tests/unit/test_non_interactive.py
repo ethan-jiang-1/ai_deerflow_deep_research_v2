@@ -16,8 +16,10 @@ from types import SimpleNamespace
 from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.types import Command
 
+from deerflow_deep_research.runtime.bundle_graph import BundleGraphExecutor
 from deerflow_deep_research.runtime.runtime_adapter import TrustedRuntimeEnvelope
 from deerflow_deep_research.tool import run_deep_research
+from tests.fixtures.recipes import fixture_recipe
 
 
 class _FakeAppConfig:
@@ -67,6 +69,10 @@ def _runtime(*, context: dict[str, object]) -> SimpleNamespace:
     return SimpleNamespace(state={"messages": [user, control]}, context=context, tool_call_id=call_id)
 
 
+def _fixture_executor() -> BundleGraphExecutor:
+    return BundleGraphExecutor(recipe=fixture_recipe())
+
+
 async def test_tool_allows_declared_non_interactive_policy_for_start(tmp_path: Path) -> None:
     """@impl RUI-009"""
     adapter = _Adapter(_envelope(tmp_path))
@@ -80,6 +86,7 @@ async def test_tool_allows_declared_non_interactive_policy_for_start(tmp_path: P
             }
         ),
         adapter=adapter,
+        bundle_graph_executor_factory=_fixture_executor,
     )
 
     assert isinstance(result, Command)
@@ -135,6 +142,7 @@ async def test_tool_accepts_the_compatibility_marker_under_the_closed_policy_rul
             }
         ),
         adapter=adapter,
+        bundle_graph_executor_factory=_fixture_executor,
     )
 
     assert isinstance(result, Command)

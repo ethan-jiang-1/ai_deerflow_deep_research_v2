@@ -24,7 +24,7 @@ from deerflow_deep_research.domain.context import GraphContextView, NodeAgentCon
 from deerflow_deep_research.domain.enums import NodeFinishReason
 from deerflow_deep_research.domain.lifecycle import LifecycleStatus
 from deerflow_deep_research.domain.node_spec import NodeBuildDependencies
-from deerflow_deep_research.domain.state import ContentRef
+from deerflow_deep_research.domain.state import BundleLocalState, ContentRef
 from deerflow_deep_research.domain.synthesis import SynthesisEvidence
 from deerflow_deep_research.domain.work_units import canonical_json_bytes
 from deerflow_deep_research.graph.nodes.readiness.contracts import ReadinessReportPlan
@@ -157,7 +157,9 @@ def _state(*, questions: tuple[str, ...] = ("Q1",), refs: tuple[str, ...] = (LED
 class TestRealReadiness:
     @pytest.mark.asyncio
     async def test_admitted_plan_round_trips_at_its_canonical_hashed_ref(self, tmp_path) -> None:
-        BundleLifecycle(workspace_host_path=tmp_path)._publish_sync(BUNDLE)
+        BundleLifecycle(workspace_host_path=tmp_path)._publish_sync(
+            BUNDLE, BundleLocalState(bundle_id=BUNDLE.bundle_id, implementation_mode="all_real")
+        )
         store = WorkUnitStore(
             workspace_host_path=tmp_path,
             bundle=BUNDLE,

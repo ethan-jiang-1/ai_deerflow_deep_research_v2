@@ -28,6 +28,7 @@ from deerflow_deep_research.domain.invocation import (
     WorkUnitWorkerDependencies,
 )
 from deerflow_deep_research.domain.node_spec import NodeBuildDependencies, PolicyRef
+from deerflow_deep_research.domain.state import BundleLocalState
 from deerflow_deep_research.domain.wave1 import ClaimDraft, Wave1SourceIntakeResult, Wave1SourceRef
 from deerflow_deep_research.domain.work_units import (
     CandidateResult,
@@ -49,7 +50,9 @@ NOW = datetime(2026, 7, 14, tzinfo=UTC)
 
 
 def _publish_bundle(workspace) -> None:
-    BundleLifecycle(workspace_host_path=workspace)._publish_sync(BUNDLE)
+    BundleLifecycle(workspace_host_path=workspace)._publish_sync(
+        BUNDLE, BundleLocalState(bundle_id=BUNDLE.bundle_id, implementation_mode="all_real")
+    )
 
 
 async def _run_wave0_fixture_work_units(state, *, controller, clock):

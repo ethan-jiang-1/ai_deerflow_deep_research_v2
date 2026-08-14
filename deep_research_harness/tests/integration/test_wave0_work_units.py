@@ -40,6 +40,7 @@ from deerflow_deep_research.domain.run_experience import (
 from deerflow_deep_research.domain.run_observation import FinalResponseShape, RunEventCategory
 from deerflow_deep_research.domain.state import (
     WORK_UNIT_GATE_PREVIEW_FIELDS,
+    BundleLocalState,
     ContentRef,
     merge_trace,
     preview_work_unit_update,
@@ -165,7 +166,9 @@ class FailOneWorkerResolver:
 
 
 def _publish_bundle(workspace, bundle: RunBundleRef = BUNDLE) -> None:
-    BundleLifecycle(workspace_host_path=workspace)._publish_sync(bundle)
+    BundleLifecycle(workspace_host_path=workspace)._publish_sync(
+        bundle, BundleLocalState(bundle_id=bundle.bundle_id, implementation_mode="all_real")
+    )
 
 
 def _store(tmp_path, *, bundle: RunBundleRef = BUNDLE) -> WorkUnitStore:

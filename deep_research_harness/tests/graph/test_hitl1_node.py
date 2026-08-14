@@ -73,7 +73,7 @@ def test_hitl1_receives_a_selected_bundle_context_without_legacy_identity_or_che
 
 def _brief_json(**overrides: object) -> str:
     payload: dict[str, object] = {
-        "schema_version": 1,
+        "schema_version": 2,
         "brief_summary": "A structured research intake brief.",
         "depth": "standard",
         "audience": "practitioner",
@@ -83,6 +83,10 @@ def _brief_json(**overrides: object) -> str:
         "must_answer": ["Q1"],
         "scope_boundaries": "Scope",
         "custom_notes": "",
+        "comparison_required": False,
+        "comparison_subjects": None,
+        "request_language": "en",
+        "output_language": "en",
     }
     payload.update(overrides)
     return json.dumps(payload)
@@ -132,6 +136,7 @@ class _RequestStore:
         seed = _GRAPH_STATE_SEED.get() or {}
         return BundleLocalState(
             bundle_id=_BUNDLE.bundle_id,
+            implementation_mode="all_real",
             generation=int(seed.get("generation", 0)),
             start_message_id=str(seed.get("start_message_id") or "human-start"),
             start_request_digest=seed.get("request_digest"),
@@ -270,7 +275,7 @@ def _semantic_candidate_json(intent: str, **overrides: object) -> str:
 
 def _revision_payload(**overrides: object) -> dict[str, object]:
     payload: dict[str, object] = {
-        "schema_version": 1,
+        "schema_version": 2,
         "depth": "deep_dive",
         "audience": "domain_expert",
         "format": "annotated_bibliography",
@@ -279,6 +284,10 @@ def _revision_payload(**overrides: object) -> dict[str, object]:
         "must_answer": ["Q1", "Q2"],
         "scope_boundaries": "Revised scope",
         "custom_notes": "",
+        "comparison_required": False,
+        "comparison_subjects": None,
+        "request_language": "en",
+        "output_language": "en",
     }
     payload.update(overrides)
     return payload
@@ -287,18 +296,45 @@ def _revision_payload(**overrides: object) -> dict[str, object]:
 def _current_proposal() -> dict[str, object]:
     payload = json.loads(_brief_json())
     return {
-        field: payload[field]
-        for field in (
-            "depth",
-            "audience",
-            "format",
-            "cost_tolerance",
-            "time_budget",
-            "must_answer",
-            "scope_boundaries",
-            "custom_notes",
-        )
+        "schema_version": 2,
+        **{
+            field: payload[field]
+            for field in (
+                "depth",
+                "audience",
+                "format",
+                "cost_tolerance",
+                "time_budget",
+                "must_answer",
+                "scope_boundaries",
+                "custom_notes",
+            )
+        },
+        "comparison_required": False,
+        "comparison_subjects": None,
+        "request_language": "en",
+        "output_language": "en",
     }
+
+
+def _partial_profile(**overrides: object) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "schema_version": 2,
+        "depth": None,
+        "audience": None,
+        "format": None,
+        "cost_tolerance": None,
+        "time_budget": None,
+        "must_answer": [],
+        "scope_boundaries": "",
+        "custom_notes": "",
+        "comparison_required": False,
+        "comparison_subjects": None,
+        "request_language": "en",
+        "output_language": "en",
+    }
+    payload.update(overrides)
+    return payload
 
 
 def _v2_proposal(
@@ -335,6 +371,7 @@ async def test_hitl1_request_id_uses_selected_bundle_not_legacy_graph_identity(
         store = _RequestStore(
             BundleLocalState(
                 bundle_id=_BUNDLE.bundle_id,
+                implementation_mode="all_real",
                 start_message_id="human-start",
                 proposed_profile=proposal,
                 proposal_version=1,
@@ -369,6 +406,7 @@ async def test_bundle_pending_profile_survives_graph_replay_and_reuses_the_reque
     store = _RequestStore(
         BundleLocalState(
             bundle_id=_BUNDLE.bundle_id,
+            implementation_mode="all_real",
             start_message_id="human-start",
             proposed_profile=_v2_proposal(),
             proposal_version=1,
@@ -404,6 +442,7 @@ async def test_accepted_profile_writes_content_before_its_bundle_state_reference
     store = _RequestStore(
         BundleLocalState(
             bundle_id=_BUNDLE.bundle_id,
+            implementation_mode="all_real",
             start_message_id="human-start",
             proposed_profile=_v2_proposal(),
             proposal_version=1,
@@ -1211,7 +1250,9 @@ async def test_incomplete_response_checkpoints_followup_and_next_visit_asks_miss
         "interrupt",
         lambda value: _accepted(value["request"]["request_id"], '{"depth":"quick_overview","audience":"layperson"}'),
     )
-    first = await hitl1_node.build_real(_deps(_Caps()))(_state(pending_profile={}, execution_trace=("hitl1",)))
+    first = await hitl1_node.build_real(_deps(_Caps()))(
+        _state(pending_profile=_partial_profile(), execution_trace=("hitl1",))
+    )
     assert first["route"] == "needs_followup"
     assert first["profile_followup_round"] == 1
     assert first["pending_profile"]["depth"] == "quick_overview"
@@ -1251,7 +1292,7 @@ async def test_followup_response_merges_checkpointed_progress(monkeypatch: pytes
     monkeypatch.setattr(hitl1_node, "interrupt", fake_interrupt)
     result = await hitl1_node.build_real(_deps(_Caps(), store))(
         _state(
-            pending_profile={"depth": "quick_overview", "audience": "layperson"},
+            pending_profile=_partial_profile(depth="quick_overview", audience="layperson"),
             profile_followup_round=1,
             execution_trace=("hitl1",),
         )
@@ -1273,7 +1314,7 @@ async def test_unrecognized_answer_is_rejected_without_degrading_profile(monkeyp
     )
     result = await hitl1_node.build_real(_deps(_Caps(), store))(
         _state(
-            pending_profile={"depth": "standard"},
+            pending_profile=_partial_profile(depth="standard"),
             profile_followup_round=2,
             execution_trace=("hitl1", "hitl1"),
         )

@@ -83,7 +83,11 @@ def test_research_state_has_seven_blocks_with_frozen_control_fields() -> None:
 
 def test_bundle_local_state_uses_bundle_id_without_legacy_identity_or_locator() -> None:
     """DRH-002: State is the Bundle-local lifecycle authority, not a directory map."""
-    state = BundleLocalState(bundle_id=BundleId("b_" + "A" * 43), generation=0)
+    state = BundleLocalState(
+        bundle_id=BundleId("b_" + "A" * 43),
+        implementation_mode="all_real",
+        generation=0,
+    )
 
     assert state.bundle_id.value == "b_" + "A" * 43
     assert state.is_active
@@ -420,14 +424,42 @@ def test_hitl1_profile_graph_state_fields_validate_and_stay_version_two() -> Non
             time_budget="overnight",
             must_answer_questions=("Q1", "Q2"),
             degraded_profile=True,
-            pending_profile={"depth": "deep_dive"},
+            pending_profile={
+                "schema_version": 2,
+                "depth": "deep_dive",
+                "audience": None,
+                "format": None,
+                "cost_tolerance": None,
+                "time_budget": None,
+                "must_answer": [],
+                "scope_boundaries": "",
+                "custom_notes": "",
+                "comparison_required": False,
+                "comparison_subjects": None,
+                "request_language": "en",
+                "output_language": "en",
+            },
             profile_followup_round=2,
         )
     )
     assert checkpoint.schema_version == 2
     assert checkpoint.profile_ref == ref
     assert checkpoint.must_answer_questions == ("Q1", "Q2")
-    assert checkpoint.pending_profile == {"depth": "deep_dive"}
+    assert checkpoint.pending_profile == {
+        "schema_version": 2,
+        "depth": "deep_dive",
+        "audience": None,
+        "format": None,
+        "cost_tolerance": None,
+        "time_budget": None,
+        "must_answer": [],
+        "scope_boundaries": "",
+        "custom_notes": "",
+        "comparison_required": False,
+        "comparison_subjects": None,
+        "request_language": "en",
+        "output_language": "en",
+    }
 
     with pytest.raises(ValueError, match="research_depth_invalid"):
         ResearchGraphState(**_base_values(research_depth="invented"))

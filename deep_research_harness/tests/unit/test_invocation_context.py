@@ -83,7 +83,7 @@ def test_invocation_context_accepts_pure_request_bundle_protocol() -> None:
 
     class Store:
         def __init__(self) -> None:
-            self._state = BundleLocalState(bundle_id=BundleId("b_" + "A" * 43))
+            self._state = BundleLocalState(bundle_id=BundleId("b_" + "A" * 43), implementation_mode="all_real")
 
         async def read_profile(self, _profile_ref: ContentRef) -> ResearchProfile:
             raise AssertionError("profile read is outside this invocation-context test")

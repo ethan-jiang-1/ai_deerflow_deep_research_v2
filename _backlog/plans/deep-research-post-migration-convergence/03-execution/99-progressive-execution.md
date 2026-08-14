@@ -3,7 +3,7 @@
 > 导航: [执行层索引](README.md) | [Candidate Register](candidate-register.md) | [根总导航](../README.md)
 > 角色: 最终逐步执行总计划
 > 输入: [70-78 findings](../02-audit-findings/) 的54个最终Candidate；change映射以 [80 - Remediation Change Map](80-remediation-change-map.md) 为准
-> 状态: 00 已于 2026-08-14 archive 并同步 main spec（commit `8661693`）；01 已于同日 archive 并同步 main spec（commit `47a3bb5`）；02 已于同日 archive 并同步 main spec（commit `9b68e4d`，全量验证的范围外 node-agent 基线失败已如实记录为 evidence-limited）；03 已于同日 archive 并同步 main spec（commit `84d533a`）；04 已于同日 archive 并同步 main spec（commits `4ef1d69`、`8a18dbd`）；当前无 active change。05、06、07 分别仍等待其列出的 input/support 或 retained-data inventory。全局预算8个change（00-07）；checkbox只记录change closure，不替代active change的 `tasks.md`
+> 状态: 00 已于 2026-08-14 archive 并同步 main spec（commit `8661693`）；01 已于同日 archive 并同步 main spec（commit `47a3bb5`）；02 已于同日 archive 并同步 main spec（commit `9b68e4d`，全量验证的范围外 node-agent 基线失败已如实记录为 evidence-limited）；03 已于同日 archive 并同步 main spec（commit `84d533a`）；04 已于同日 archive 并同步 main spec（commits `4ef1d69`、`8a18dbd`）；05 为唯一 active program change：proposal 已完成、强制 polish 已通过并 `ready for apply`；06、07 分别仍等待其列出的 input/support 或 retained-data inventory。全局预算8个change（00-07）；checkbox只记录change closure，不替代active change的 `tasks.md`
 
 ## Propose 后强制 Polish
 
@@ -63,10 +63,12 @@ recovery/rollback 与 removal/review trigger；没有这些输入不得创建 ch
   private/external Evaluation Bundle 或 Review Record 不因此被推断为空，而是在 cutover 后明确不受支持：任何 missing/
   unknown `evidence_layer` 必须在 Review/quality claim 前拒绝，不写入、不回填也不升级为 live quality。紧急 rollback
   只能恢复旧 reader；若未来要重新纳入旧 records，必须另建有 inventory、hash-preserving migration 与 retention 决定的 change。
-- **05 Product + Python Support Owner:** 建议零凭据 proof统一迁到 fixture graph，退休 no-graph
-  `bind_full_fake()`，不保留另一个伪研究完成的 simulator。还须决定 `ResearchGraphRecipe.create()` 与
-  `parse_profile_response()` 的 third-party import support boundary，并交付 supported Bundle mode、profile、proposal
-  与 checkpoint producer inventory；每个旧 input必须选择迁移、明确拒绝或有期限 reader，不能以本机零命中替代。
+- **05 Product + Python Support Owner（已授权，2026-08-14）:** 零凭据 proof统一迁到 fixture graph，退休 no-graph
+  `bind_full_fake()`，不保留另一个 simulator。`ResearchGraphRecipe.create()` 与
+  `parse_profile_response()` 对 third-party Python consumer clean-cutover，不保留 external support。已盘点的
+  source-controlled current inputs是唯一 supported scope；未盘点的旧/外部 Bundle mode、profile、proposal 或 checkpoint
+  input明确拒绝，不保留 reader。紧急 rollback只能恢复旧 reader，不能改写 payload；任何未来重新支持均须另建 change
+  决定 inventory、notice、removal trigger与迁移/retention。
 - **06 Runtime + Deployment Owner:** 必须分别决定 `disable_clarification` 的 trusted-producer support window、legacy
   `checkpointer` 相对 `database` 的 precedence，以及 AppConfig endpoint aliases。每项都要列出 supported producer/
   config version，定义 conflicting/stale input 的 notice 或 fail-closed denial，以及回滚期间 writer/reader 的一致选择。
@@ -228,6 +230,35 @@ State writer仍存在；`ResearchGraphRecipe.create()`与`parse_profile_response
 proposal/checkpoint producers不可由仓内样本穷举。Product Owner的 zero-credential UX 选择、Python support boundary、
 以及 supported Bundle mode/profile/proposal/checkpoint producer inventories仍未提供。相关组合 baseline command通过
 （149 passed）；不得因此把05 proposal的 product/data gates视为关闭。
+
+**05 current-HEAD recheck（2026-08-14，`e92a941`）:** 当前无 active change。`scripts/demo.py`、
+`scripts/demo_tui.py` 与 README仍把零凭据 full-fake presentation 路由到无 graph executor 的
+`bind_full_fake()`；不能由既有实现反推零凭据产品体验的目标选择。`ResearchGraphRecipe.create()`仍是只转发
+`all_real()` 的导出兼容构造器，`parse_profile_response()`仍在 domain export 中，仓内 tests仍消费两者；
+`BundleLocalState.from_dict()`仍将缺失 `implementation_mode` 默认成 `all_real`。仓内 source/test 的枚举不能
+证明 third-party Python consumer 或 profile/proposal/checkpoint retained producer 为空。因此 Gate F 仍为
+`not ready`，不得 `propose`：
+
+1. Product Owner须明确批准 recommended fixture-graph proof并退休 `bind_full_fake()`，或批准一个另命名、显式
+   persisted/result semantics 的 honest no-graph simulator；
+2. Python Support Owner须为 `ResearchGraphRecipe.create()` 与 `parse_profile_response()` 分别决定 clean cutover
+   或 bounded third-party support，并给出通知/拒绝、rollback与 removal trigger；
+3. Product + Data Owners须提供 supported Bundle mode、profile、proposal 与 checkpoint producer/data inventory；
+   每个旧 input须选择迁移、明确拒绝或有期限 reader，并给出恢复/rollback与完成计数，不能以本机零命中替代。
+
+**05 authorization decision（2026-08-14）:** User以 Product + Python Support Owner身份确认上述 recommended
+fixture-graph target、两个 Python surface的clean cutover，以及未盘点旧/外部 input的explicit rejection；rollback
+只恢复旧 reader。该决定关闭05的proposal admission decision/data/export gates，授权创建
+`converge-run-input-and-composition-contracts`；它不宣称 Gate F已实现，apply必须证明无 graph execution不再写成
+`all_real`/research-completed truth、supported State显式携带mode，且旧 input按已批准的拒绝路径fail closed。
+
+**05 proposal + polish（2026-08-14）:** active program change
+`converge-run-input-and-composition-contracts` 已生成 proposal、七个 delta specs、design 与19项未完成 tasks；
+polish 的 whole-change pass补齐七-delta scope与真实 focused-test seams，risk-led pass把 legacy/full-fake
+accepted-spec cleanup精确绑定到 sync task，并把两个 clean-cutover Python surface的consumer/denial/rollback
+evidence并入 input matrix。最终 strict OpenSpec、Agent Charter、project specs、project requirements、doctor和
+`git diff --check`通过；05为 `ready for apply`。这只是 planning readiness，不代表 Gate F已实现，也不授权
+implementation/archive。
 
 ## Phase G - Runtime host input compatibility
 

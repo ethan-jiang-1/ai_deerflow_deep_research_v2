@@ -26,7 +26,7 @@ from deerflow_deep_research.graph.nodes.hitl1.prompts import (
 
 def _brief_json(**overrides: object) -> str:
     payload: dict[str, object] = {
-        "schema_version": 1,
+        "schema_version": 2,
         "brief_summary": "Compare grid-scale storage options with cost and maturity tradeoffs.",
         "depth": "standard",
         "audience": "practitioner",
@@ -36,6 +36,10 @@ def _brief_json(**overrides: object) -> str:
         "must_answer": ["Which storage options are commercially mature?"],
         "scope_boundaries": "Grid-scale storage only.",
         "custom_notes": "",
+        "comparison_required": False,
+        "comparison_subjects": None,
+        "request_language": "en",
+        "output_language": "en",
     }
     payload.update(overrides)
     return json.dumps(payload)
@@ -119,7 +123,7 @@ def test_initial_and_repair_brief_descriptors_remain_strict_parser_compatible() 
         )
         assert parser_required <= set(descriptor["required_keys"])
         assert advertised_fields <= parser_accepted
-        assert descriptor["schema_version"] in (1, 2)
+        assert descriptor["schema_version"] == 2
 
         candidate = {
             "schema_version": descriptor["schema_version"],
@@ -132,6 +136,10 @@ def test_initial_and_repair_brief_descriptors_remain_strict_parser_compatible() 
             "must_answer": ["Q" * 256],
             "scope_boundaries": "S" * 2048,
             "custom_notes": "N" * 1024,
+            "comparison_required": False,
+            "comparison_subjects": None,
+            "request_language": "en",
+            "output_language": "en",
         }
         assert parse_brief_output(json.dumps(candidate)).brief_summary == candidate["brief_summary"]
 

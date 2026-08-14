@@ -28,7 +28,7 @@ from deerflow_deep_research.domain.context import (
 )
 from deerflow_deep_research.domain.invocation import WorkUnitControllerDependencies
 from deerflow_deep_research.domain.node_spec import NodeBuildDependencies
-from deerflow_deep_research.domain.state import RESEARCH_STATE_SCHEMA_VERSION, validate_research_state
+from deerflow_deep_research.domain.state import RESEARCH_STATE_SCHEMA_VERSION, BundleLocalState, validate_research_state
 from deerflow_deep_research.domain.synthesis import GapRecord, SynthesisResult
 from deerflow_deep_research.domain.wave1 import ClaimDraft, Wave1SourceIntakeResult, Wave1SourceRef
 from deerflow_deep_research.domain.work_units import (
@@ -123,7 +123,7 @@ async def build_live_seed_bundle(
     )
     lifecycle = BundleLifecycle(workspace_host_path=workspace_host_path)
     if not lifecycle.private_root(bundle).exists():
-        lifecycle._publish_sync(bundle)
+        lifecycle._publish_sync(bundle, BundleLocalState(bundle_id=bundle.bundle_id, implementation_mode="all_real"))
     store = WorkUnitStore(
         workspace_host_path=workspace_host_path,
         bundle=bundle,

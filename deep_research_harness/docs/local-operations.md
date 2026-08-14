@@ -19,7 +19,7 @@ Run commands from `deep_research_harness/`. Use the root README's
 | Run the deterministic non-interactive demo | `make demo-scripted` |
 | Run an interactive all-real demo | `DEERFLOW_DEMO_MODEL=<profile> make demo-real` |
 | Run a non-interactive all-real demo | `DEERFLOW_DEMO_MODEL=<profile> make demo-real-scripted` |
-| Start the Textual real or fixture visualizer | `DEERFLOW_DEMO_MODEL=<profile> make demo-tui`, `make demo-tui-fake` |
+| Start the Textual real or fixture visualizer | `DEERFLOW_DEMO_MODEL=<profile> make demo-tui`, `make demo-tui-fixture` |
 | Open the standalone local workbench | `make session-workbench` |
 | Inspect one retained observation | `make demo-sessions DEMO_ARGS="inspect <bundle-id>"` |
 
@@ -86,11 +86,11 @@ not isolated by a profile.
 
 ## Fixture And Real Demos
 
-`make demo`, `make demo-scripted`, and `make demo-tui-fake` are zero-credential fixture
+`make demo`, `make demo-scripted`, and `make demo-tui-fixture` are zero-credential fixture-graph
 routes: no Gateway, config, model credentials, or network are needed. Their Make targets
 add `src_fake` only to the selected child process. The production package and reflected
-runtime neither import nor discover that package. These routes demonstrate lifecycle
-presentation; they are not research results.
+runtime neither import nor discover that package. These routes execute the fixed fixture recipe;
+they are deterministic composition proof, not product research results.
 
 `make demo-real`, `make demo-real-scripted`, and `make demo-tui` require one of
 `DEEPSEEK_API_KEY`, `ANTHROPIC_API_KEY`, or `OPENAI_API_KEY`, plus `TAVILY_API_KEY`.

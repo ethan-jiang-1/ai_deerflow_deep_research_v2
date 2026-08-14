@@ -146,7 +146,7 @@ def test_request_bundle_store_protocol_is_pure_and_runtime_checkable() -> None:
             raise AssertionError("profile read is outside this protocol test")
 
         async def read_bundle_state(self) -> BundleLocalState:
-            return BundleLocalState(bundle_id=BUNDLE.bundle_id)
+            return BundleLocalState(bundle_id=BUNDLE.bundle_id, implementation_mode="all_real")
 
         async def write_bundle_state(
             self,

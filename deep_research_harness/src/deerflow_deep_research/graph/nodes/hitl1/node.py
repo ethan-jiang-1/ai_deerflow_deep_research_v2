@@ -102,12 +102,7 @@ _SEMANTIC_INVALID_MESSAGE = (
 
 
 def _profile_progress_payload(profile: PartialResearchProfile) -> dict[str, Any]:
-    payload = profile.model_dump(mode="json", exclude_none=True)
-    if profile.schema_version == 1:
-        payload.pop("schema_version", None)
-        for field in ("comparison_required", "comparison_subjects", "request_language", "output_language"):
-            payload.pop(field, None)
-    return payload
+    return profile.model_dump(mode="json", exclude_none=False)
 
 
 _BUNDLE_HITL_FIELDS = (

@@ -65,7 +65,6 @@ class LegalNextAction(StrEnum):
 
 class ImplementationMode(StrEnum):
     FIXTURE = "fixture"
-    FULL_FAKE = "full_fake"
     MIXED = "mixed"
     ALL_REAL = "all_real"
 

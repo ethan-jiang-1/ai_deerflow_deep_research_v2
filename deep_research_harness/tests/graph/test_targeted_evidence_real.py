@@ -31,6 +31,7 @@ from deerflow_deep_research.domain.run_experience import (
     ProviderObservation,
     RunFailureCode,
 )
+from deerflow_deep_research.domain.state import BundleLocalState
 from deerflow_deep_research.graph.nodes.targeted_evidence import NODE_SPEC
 from deerflow_deep_research.graph.nodes.targeted_evidence.prompts import (
     MAX_TARGETED_REPAIR_DRAFT_CHARS,
@@ -98,7 +99,9 @@ class _Resolver:
 
 
 def _publish_bundle(workspace: Path) -> None:
-    BundleLifecycle(workspace_host_path=workspace)._publish_sync(BUNDLE)
+    BundleLifecycle(workspace_host_path=workspace)._publish_sync(
+        BUNDLE, BundleLocalState(bundle_id=BUNDLE.bundle_id, implementation_mode="all_real")
+    )
 
 
 def _dependencies(tmp_path: Path, capabilities: _Capabilities) -> NodeBuildDependencies:

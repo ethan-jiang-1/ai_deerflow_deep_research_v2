@@ -15,6 +15,7 @@ from pathlib import Path
 
 import pytest
 
+from deerflow_deep_research.domain.lifecycle import ImplementationMode
 from deerflow_deep_research.domain.run_observation import (
     JournalAvailability,
     JournalIncompleteReason,
@@ -194,7 +195,11 @@ async def test_inspect_command_reads_only_an_existing_selected_bundle(
     try:
         lifecycle = adapter._bundle_lifecycle
         scope = (adapter._envelope.effective_user_id, adapter._envelope.outer_thread_id)
-        bundle = await lifecycle.start(scope=scope, request_text="Inspect this contained journal.")
+        bundle = await lifecycle.start(
+            scope=scope,
+            request_text="Inspect this contained journal.",
+            implementation_mode=ImplementationMode.ALL_REAL,
+        )
         await RunObservationStore(
             bundle_root=lifecycle.private_root(bundle),
             bundle_id=bundle.bundle_id.value,
@@ -238,7 +243,11 @@ async def test_fixed_local_profile_reads_only_an_existing_selected_bundle(
     try:
         lifecycle = adapter._bundle_lifecycle
         scope = (adapter._envelope.effective_user_id, adapter._envelope.outer_thread_id)
-        bundle = await lifecycle.start(scope=scope, request_text="Inspect this contained journal.")
+        bundle = await lifecycle.start(
+            scope=scope,
+            request_text="Inspect this contained journal.",
+            implementation_mode=ImplementationMode.ALL_REAL,
+        )
         store = RunObservationStore(
             bundle_root=lifecycle.private_root(bundle),
             bundle_id=bundle.bundle_id.value,

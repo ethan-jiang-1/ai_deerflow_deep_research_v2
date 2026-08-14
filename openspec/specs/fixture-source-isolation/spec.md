@@ -44,12 +44,12 @@ as required before it calls that seam. It MAY import
 `ResearchGraphRecipe` solely for that call. A test or credential-free demo SHALL explicitly
 load that catalog when it constructs a fixture or mixed recipe. A production composition root
 SHALL not discover, import, or substitute that catalog. The fixture package SHALL not call
-`ResearchGraphRecipe.all_real()` or `.create()`, or import `GraphHost`, a research action
+`ResearchGraphRecipe.all_real()`, or import `GraphHost`, a research action
 handler, or a control host. Missing, duplicate, unknown, or incomplete fixture catalog entries
 SHALL fail before graph compilation and SHALL not select a fallback adapter.
 
 #### Scenario: Credential-free demo composes the fixture catalog explicitly
-- **WHEN** a supported fake demo is selected in a checkout with the fixture source root
+- **WHEN** a supported credential-free fixture-graph demo is selected in a checkout with the fixture source root
   enabled for that command
 - **THEN** it runs the deterministic fixture lifecycle without model credentials, network
   access, or a production-to-fixture import
@@ -88,3 +88,18 @@ import, include, or treat fixture paths/Bundles as production Run authority. (`F
 #### Scenario: Fixture root cannot become a production or Bundle-discovery root
 - **WHEN** structural or lifecycle validation encounters a fixture source/run location
 - **THEN** it rejects it as a production source or Deep Research Run Bundle candidate while allowing explicit test/demo composition
+
+### Requirement: Fixture source is the sole credential-free execution composition
+
+Credential-free demo roots SHALL explicitly compose the complete fixture catalog and
+matching gate definitions through the existing generic composition seam, then execute
+that recipe through its graph executor. Fixture source SHALL remain test/demo-only and
+shall not gain production, root-tool, lifecycle-controller, or Bundle-discovery
+authority. An incomplete catalog or executor SHALL fail before graph compilation or
+lifecycle dispatch and shall not select a no-graph fallback. (`FSI-002`, `FSI-003`)
+
+#### Scenario: Credential-free composition remains explicit and isolated
+- **WHEN** a supported credential-free CLI or TUI starts with fixture source available
+  to that child process
+- **THEN** it uses the complete fixture catalog and executor, while production assembly
+  and reflected runtime neither import nor discover fixture source

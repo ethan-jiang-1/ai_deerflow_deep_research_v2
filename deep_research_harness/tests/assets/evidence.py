@@ -1287,7 +1287,7 @@ EVIDENCE_CLAIMS = (
     ),
     _correctness_claim(
         "demo-tui-question-onboarding",
-        "tests/integration/test_demo_tui.py::test_tui_fake_route_completes_through_shared_experience",
+        "tests/integration/test_demo_tui.py::test_tui_fixture_route_completes_through_shared_experience",
         StableSeam.LIFECYCLE_MIXED_GRAPH,
         requirement_ids=("RED-001", "RED-002", "RED-003"),
     ),
@@ -1317,7 +1317,7 @@ EVIDENCE_CLAIMS = (
     ),
     _correctness_claim(
         "demo-command-dependency-boundaries",
-        "tests/contract/test_demo_commands.py::test_demo_commands_keep_fake_and_real_dependency_boundaries",
+        "tests/contract/test_demo_commands.py::test_demo_commands_keep_fixture_and_real_dependency_boundaries",
         StableSeam.PUBLIC_ENTRY,
         requirement_ids=("DPL-005", "DPL-008", "RED-002"),
     ),

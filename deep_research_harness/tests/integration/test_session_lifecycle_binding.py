@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from deerflow_deep_research.domain.lifecycle import BundleAvailability
+from deerflow_deep_research.domain.lifecycle import BundleAvailability, ImplementationMode
 from deerflow_deep_research.domain.run_observation import RecordBearingLifecycleFact
 from deerflow_deep_research.domain.session_workbench import WorkbenchAvailability
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
@@ -25,7 +25,11 @@ from deerflow_deep_research.runtime.session_workbench import BundleWorkbench
 async def test_contained_journal_does_not_reauthorize_a_lost_bundle(tmp_path: Path) -> None:
     scope = ("alice", "thread-1")
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
-    bundle = await lifecycle.start(scope=scope, request_text="Investigate observation authority.")
+    bundle = await lifecycle.start(
+        scope=scope,
+        request_text="Investigate observation authority.",
+        implementation_mode=ImplementationMode.ALL_REAL,
+    )
     observations = RunObservationStore(
         bundle_root=lifecycle.private_root(bundle),
         bundle_id=bundle.bundle_id.value,

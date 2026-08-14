@@ -186,7 +186,7 @@ class ResearchRunExperience:
     async def preflight(self) -> ReadinessReport:
         """Return a non-network readiness report before a question is collected."""
         if self._readiness_provider is None:
-            mode_detail = "已选择真实模式。" if self._mode == "real" else "已选择无凭据的模拟模式。"
+            mode_detail = "已选择真实模式。" if self._mode == "real" else "已选择无凭据 fixture 图模式。"
             return ReadinessReport(
                 mode=self._mode,
                 ready=True,

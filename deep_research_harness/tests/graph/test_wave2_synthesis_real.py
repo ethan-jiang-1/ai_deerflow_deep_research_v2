@@ -37,6 +37,7 @@ from deerflow_deep_research.domain.run_experience import (
     ProviderObservation,
     RunFailureCode,
 )
+from deerflow_deep_research.domain.state import BundleLocalState
 from deerflow_deep_research.domain.synthesis import (
     WAVE2_GATE_PREVIEW_KEY,
     GapRecord,
@@ -253,7 +254,9 @@ class _Wave2Resolver:
 
 
 def _dependencies(tmp_path: Path, capabilities: _Capabilities) -> NodeBuildDependencies:
-    BundleLifecycle(workspace_host_path=tmp_path)._publish_sync(BUNDLE)
+    BundleLifecycle(workspace_host_path=tmp_path)._publish_sync(
+        BUNDLE, BundleLocalState(bundle_id=BUNDLE.bundle_id, implementation_mode="all_real")
+    )
     store = WorkUnitStore(
         workspace_host_path=tmp_path,
         bundle=BUNDLE,

@@ -39,6 +39,7 @@ def _marker() -> BootstrapMarker:
 def _bundle_state() -> BundleLocalState:
     return BundleLocalState(
         bundle_id=BUNDLE.bundle_id,
+        implementation_mode="all_real",
         start_message_id="human-start",
         start_request_digest="d_" + "B" * 43,
         schema_version=BUNDLE_STATE_SCHEMA_VERSION,

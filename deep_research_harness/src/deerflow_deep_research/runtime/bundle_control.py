@@ -22,11 +22,9 @@ from deerflow_deep_research.domain.lifecycle import (
     Durability,
     HumanInputMode,
     HumanInputRequest,
-    ImplementationMode,
     InfrastructureResultCode,
     LegalNextAction,
     LifecycleAction,
-    LifecycleStatus,
     PendingResearchInterrupt,
     RefinementAdmissionDisposition,
     RefinementOperation,
@@ -40,7 +38,7 @@ from deerflow_deep_research.runtime.bundle_lifecycle import (
     BundleLifecycleError,
     CurrentBundleHandle,
 )
-from deerflow_deep_research.runtime.human_input import HumanInputError, SelectedStartMessage, project_suspension
+from deerflow_deep_research.runtime.human_input import HumanInputError, SelectedStartMessage
 
 if TYPE_CHECKING:
     from deerflow_deep_research.runtime.bundle_graph import BundleGraphExecutor
@@ -150,16 +148,18 @@ class BundleControl:
     ) -> Any:
         if start_message is None:
             return self._unavailable(action=LifecycleAction.START, code=ResultCode.START_MESSAGE_INVALID)
+        if envelope is None:
+            return self._unavailable(action=LifecycleAction.START)
+        try:
+            executor = self._checked_graph_executor()
+        except (RuntimeError, ValueError):
+            return self._unavailable(action=LifecycleAction.START)
         try:
             bundle = await self._lifecycle.start(
                 scope=scope,
                 request_text=start_message.text,
                 start_message_id=start_message.message_id,
-                implementation_mode=(
-                    self._checked_graph_executor().implementation_mode
-                    if self._has_graph_executor()
-                    else ImplementationMode.ALL_REAL
-                ),
+                implementation_mode=executor.implementation_mode,
             )
         except BundleAlreadyActive as exc:
             try:
@@ -177,51 +177,32 @@ class BundleControl:
                 code=None if same_start else ResultCode.ACTIVE_BUNDLE_EXISTS,
             )
             if same_start and state.pending_request_id is not None and state.pending_cursor is not None:
-                if self._has_graph_executor() and envelope is not None:
-                    return await self._checked_graph_executor().reproject(
+                try:
+                    return await executor.reproject(
                         lifecycle=self._lifecycle,
                         bundle=exc.bundle,
                         action=LifecycleAction.START,
                         tool_call_id=tool_call_id,
                     )
-                return project_suspension(
-                    pending=self._pending_interrupt(
-                        state=state,
-                        request_id=state.pending_request_id,
-                        cursor=state.pending_cursor,
-                    ),
-                    result=result,
-                    tool_call_id=tool_call_id,
-                )
+                except BundleLifecycleError:
+                    return self._unavailable(action=LifecycleAction.START)
+                except ValueError:
+                    return self._unavailable(action=LifecycleAction.START)
             return result.model_dump(mode="json", exclude_none=True)
         except BundleLifecycleError:
             return self._unavailable(action=LifecycleAction.START)
 
-        if self._has_graph_executor() and envelope is not None:
-            try:
-                return await self._checked_graph_executor().start(
-                    lifecycle=self._lifecycle,
-                    bundle=bundle,
-                    envelope=envelope,
-                    start_message=start_message,
-                    tool_call_id=tool_call_id,
-                    start_input=start_input,
-                )
-            except BundleLifecycleError:
-                return self._unavailable(action=LifecycleAction.START)
-
-        request_id = self._request_id(bundle)
         try:
-            state = await self._lifecycle.set_pending_request(
+            return await executor.start(
                 bundle=bundle,
-                request_id=request_id,
-                suspension_cursor=start_message.message_id,
+                lifecycle=self._lifecycle,
+                envelope=envelope,
+                start_message=start_message,
+                tool_call_id=tool_call_id,
+                start_input=start_input,
             )
-        except BundleLifecycleError:
+        except (BundleLifecycleError, ValueError):
             return self._unavailable(action=LifecycleAction.START)
-        result = self._lifecycle.result_for_state(action=LifecycleAction.START, bundle=bundle, state=state)
-        pending = self._pending_interrupt(state=state, request_id=request_id, cursor=start_message.message_id)
-        return project_suspension(pending=pending, result=result, tool_call_id=tool_call_id)
 
     async def _resume(
         self,
@@ -236,32 +217,28 @@ class BundleControl:
         bundle = await self._lifecycle.resolve(scope=scope, bundle_id=bundle_id, handle=handle)
         if bundle is None:
             return self._unavailable(action=LifecycleAction.RESUME)
+        if envelope is None:
+            return self._unavailable(action=LifecycleAction.RESUME)
+        try:
+            executor = self._checked_graph_executor()
+        except (RuntimeError, ValueError):
+            return self._unavailable(action=LifecycleAction.RESUME)
         try:
             state = await self._lifecycle.read_state(bundle)
-            response = self._response_from_messages(messages=messages, state=state)
-            if self._has_graph_executor() and envelope is not None:
-                return await self._checked_graph_executor().resume(
-                    lifecycle=self._lifecycle,
+            if not state.is_active:
+                return self._lifecycle.result_for_state(
+                    action=LifecycleAction.RESUME,
                     bundle=bundle,
-                    envelope=envelope,
-                    response=response,
-                    tool_call_id=tool_call_id,
-                )
-            updated = await self._lifecycle.resume(
-                scope=scope,
-                response=response,
-                bundle_id=bundle.bundle_id,
-            )
-            # The approved full-fake lifecycle has no findings/report production.  A
-            # valid answer therefore reaches its bounded terminal state here; real
-            # graph execution is attached at the same Bundle boundary.
-            if updated.is_active and updated.pending_request_id is None:
-                updated = await self._lifecycle.end(bundle=bundle, terminal_status=LifecycleStatus.COMPLETED)
-            return self._lifecycle.result_for_state(
-                action=LifecycleAction.RESUME,
+                    state=state,
+                ).model_dump(mode="json", exclude_none=True)
+            response = self._response_from_messages(messages=messages, state=state)
+            return await executor.resume(
+                lifecycle=self._lifecycle,
                 bundle=bundle,
-                state=updated,
-            ).model_dump(mode="json", exclude_none=True)
+                envelope=envelope,
+                response=response,
+                tool_call_id=tool_call_id,
+            )
         except BundleLifecycleError as exc:
             if exc.code == "response_mismatch":
                 try:

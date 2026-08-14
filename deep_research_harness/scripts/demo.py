@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the credential-free full-fake lifecycle through the shared experience.
+"""Run the credential-free fixture graph through the shared experience.
 
 Usage:
   make demo                    interactive
@@ -20,6 +20,7 @@ from _demo_core import (
     PHASE_META,
     DemoAdapter,
     DemoLifecycleTransport,
+    build_demo_runtime,
     demo_readiness_report,
 )
 from _terminal_failure_presentation import inspection_command
@@ -94,14 +95,14 @@ def _answer(update: AwaitingInput, *, scripted: bool) -> str | None:
 
 
 async def run_demo(*, question: str, scripted: bool) -> int:
-    print("\n  DeerFlow Deep Research · full-fake standalone demo")
-    print("  No model, web request, Gateway, findings, or report is created.")
-    print("  A returned lifecycle record retains an inspectable local bundle; inspection never resumes execution.")
+    print("\n  DeerFlow Deep Research · fixture-graph standalone demo")
+    print("  No model, web request, Gateway, findings, or external report is created.")
+    print("  The fixed fixture recipe executes the graph and retains an inspectable local bundle.")
     transport = DemoLifecycleTransport()
     experience = ResearchRunExperience(
         transport=transport,
-        mode="fake",
-        readiness_provider=lambda: demo_readiness_report(mode="fake"),
+        mode="fixture",
+        readiness_provider=lambda: demo_readiness_report(mode="fixture"),
     )
     report = await experience.preflight()
     print(f"  {report.summary}")
@@ -112,8 +113,8 @@ async def run_demo(*, question: str, scripted: bool) -> int:
     try:
         if hasattr(experience, "set_observation_publisher"):
             experience.set_observation_publisher(adapter.observation_publisher)
-        transport.bind_full_fake(adapter=adapter)
-        update = await experience.handle(StartRun(question=question), observer=_render)
+        transport.bind(runtime=build_demo_runtime(mode="fixture_graph", adapter=adapter))
+        update = await experience.handle(StartRun(question=question, scripted=scripted), observer=_render)
         while isinstance(update, AwaitingInput):
             _render(update)
             value = _answer(update, scripted=scripted)
@@ -123,7 +124,7 @@ async def run_demo(*, question: str, scripted: bool) -> int:
             update = await experience.handle(AnswerRun(value=value), observer=_render)
         _render(update)
         if isinstance(update, Terminal) and update.outcome == "completed":
-            print("  Demo complete. This terminal fixture is not completed research.")
+            print("  Fixture-graph demo complete.")
             return 0
         return 1
     except asyncio.CancelledError:
@@ -138,17 +139,17 @@ async def run_demo(*, question: str, scripted: bool) -> int:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Run the credential-free full-fake standalone Deep Research demo.",
+        description="Run the credential-free fixture-graph standalone Deep Research demo.",
         epilog=(
-            "The fake route performs local preflight and renders shared prompts only. It does not "
-            "create research findings or a cross-process resumable run. Returned lifecycle records retain "
-            "an inspectable local bundle; inspection never resumes execution."
+            "This fixed route constructs the fixture recipe and graph executor. It creates no model or web "
+            "traffic. Returned lifecycle records retain an inspectable local bundle; "
+            "inspection never resumes execution."
         ),
     )
     parser.add_argument(
         "--question",
         default="Compare the evidence for two approaches to renewable energy storage.",
-        help="Visible research question for the standalone fake demo.",
+        help="Visible research question for the standalone fixture-graph demo.",
     )
     parser.add_argument("--scripted", action="store_true", help="Use deterministic graph responses without stdin.")
     args = parser.parse_args()

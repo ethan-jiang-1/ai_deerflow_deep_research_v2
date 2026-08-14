@@ -12,6 +12,7 @@ from types import SimpleNamespace
 import pytest
 
 from deerflow_deep_research.domain.bundle import BundleId, RunBundleRef, bundle_host_relative_root, run_bundle_root
+from deerflow_deep_research.domain.state import BundleLocalState
 from deerflow_deep_research.domain.work_units import CandidateResult, compute_candidate_hash, compute_work_spec_hash
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
 from deerflow_deep_research.runtime.work_unit_storage import WorkUnitStorageCheck
@@ -67,7 +68,9 @@ async def _ready(*_args, **_kwargs) -> WorkUnitStorageCheck:
 async def _store(tmp_path: Path, *, publish: bool = True, **hooks) -> WorkUnitStore:
     envelope = SimpleNamespace(workspace_host_path=tmp_path, parent_sandbox=object(), app_config=object())
     if publish:
-        BundleLifecycle(workspace_host_path=tmp_path)._publish_sync(BUNDLE)
+        BundleLifecycle(workspace_host_path=tmp_path)._publish_sync(
+            BUNDLE, BundleLocalState(bundle_id=BUNDLE.bundle_id, implementation_mode="all_real")
+        )
     return await WorkUnitStore.create(
         envelope,
         bundle=BUNDLE,

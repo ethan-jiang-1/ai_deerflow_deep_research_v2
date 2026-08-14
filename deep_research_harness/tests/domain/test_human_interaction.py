@@ -26,6 +26,7 @@ from deerflow_deep_research.domain.human_interaction import (
 
 def _proposal(**overrides: object) -> ProposalValues:
     values: dict[str, object] = {
+        "schema_version": 2,
         "depth": "deep_dive",
         "audience": "domain_expert",
         "format": "detailed_report",
@@ -34,6 +35,10 @@ def _proposal(**overrides: object) -> ProposalValues:
         "must_answer": ("What is the adoption level?",),
         "scope_boundaries": "Use primary sources.",
         "custom_notes": "Include citations.",
+        "comparison_required": False,
+        "comparison_subjects": None,
+        "request_language": "en",
+        "output_language": "en",
     }
     values.update(overrides)
     return ProposalValues(**values)

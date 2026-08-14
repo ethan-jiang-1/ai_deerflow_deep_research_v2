@@ -171,7 +171,7 @@ never replaces the lower test assets or proves distributional quality by itself.
 asyncio cancellation through a nested LangGraph without private Gateway cancellation
 state.
 
-The runtime substrate and full-fake graph are verified with zero-API tests: the trusted
+The runtime substrate and fixed fixture graph are verified with zero-API tests: the trusted
 `RuntimeAdapter`, `GraphHost` with isolated checkpoint namespaces, the node-agent bridge
 with budgets/policy, the reflected `infra_probe` tool, configuration materialization
 (`configure.py`), the source-loading preparation core (`prepare.py`) and Docker override,

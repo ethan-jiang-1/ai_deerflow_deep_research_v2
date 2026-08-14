@@ -18,6 +18,7 @@ from deerflow_deep_research.agents.policies import ExecutionBudget, ExecutionPol
 from deerflow_deep_research.domain.context import GraphContextView, NodeAgentContext
 from deerflow_deep_research.domain.invocation import WorkUnitControllerDependencies
 from deerflow_deep_research.domain.node_spec import NodeBuildDependencies
+from deerflow_deep_research.domain.state import BundleLocalState
 from deerflow_deep_research.graph.nodes.targeted_evidence import NODE_SPEC as TARGETED_SPEC
 from deerflow_deep_research.graph.nodes.wave0.subgraph import run_wave0_work_units_real
 from deerflow_deep_research.graph.nodes.wave1.subgraph import run_wave1_work_units_real
@@ -184,7 +185,9 @@ async def test_scripted_worker_traverses_real_bridge_tool_policy_artifacts_and_l
     identity = unique_run_identity()
     envelope = local_runtime_envelope(tmp_path, identity=identity)
     bundle = identity.bundle_ref
-    BundleLifecycle(workspace_host_path=envelope.workspace_host_path)._publish_sync(bundle)
+    BundleLifecycle(workspace_host_path=envelope.workspace_host_path)._publish_sync(
+        bundle, BundleLocalState(bundle_id=bundle.bundle_id, implementation_mode="all_real")
+    )
     graph = project_research_scope(envelope, bundle=bundle)
     workspace = graph.workspace_root
     search = ScriptedTool.create("web_search", "fixed search result")

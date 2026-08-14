@@ -13,6 +13,7 @@ from types import SimpleNamespace
 
 from deerflow_deep_research.domain.bundle import BundleId, RunBundleRef, bundle_host_relative_root
 from deerflow_deep_research.domain.profile import ResearchProfile
+from deerflow_deep_research.domain.state import BundleLocalState
 from deerflow_deep_research.runtime import request_bundle as request_bundle_module
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
 from deerflow_deep_research.runtime.request_bundle import RequestBundleStore
@@ -39,7 +40,9 @@ def _profile() -> ResearchProfile:
 
 
 async def _store(workspace: Path) -> RequestBundleStore:
-    BundleLifecycle(workspace_host_path=workspace)._publish_sync(BUNDLE)
+    BundleLifecycle(workspace_host_path=workspace)._publish_sync(
+        BUNDLE, BundleLocalState(bundle_id=BUNDLE.bundle_id, implementation_mode="all_real")
+    )
     envelope = SimpleNamespace(workspace_host_path=workspace, parent_sandbox=object(), app_config=object())
     return await RequestBundleStore.create(envelope, bundle=BUNDLE, storage_verifier=_ready)
 

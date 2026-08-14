@@ -15,6 +15,7 @@ import pytest
 
 from deerflow_deep_research.domain.lifecycle import (
     AcceptedHumanResponse,
+    ImplementationMode,
     LifecycleAction,
     ResponseKind,
 )
@@ -27,7 +28,12 @@ async def test_bundle_local_pending_hitl_survives_a_fresh_lifecycle_instance(tmp
     """A restart reads one pending request from the Bundle, not an external saver."""
     scope = ("alice", "thread-1")
     started = BundleLifecycle(workspace_host_path=tmp_path)
-    bundle = await started.start(scope=scope, request_text="Research storage options", start_message_id="human-start")
+    bundle = await started.start(
+        scope=scope,
+        request_text="Research storage options",
+        start_message_id="human-start",
+        implementation_mode=ImplementationMode.ALL_REAL,
+    )
     await started.set_pending_request(bundle=bundle, request_id="hitl-1", suspension_cursor="human-start")
 
     restarted = BundleLifecycle(workspace_host_path=tmp_path)
@@ -52,7 +58,12 @@ async def test_bundle_lifecycle_state_survives_restart_without_external_checkpoi
     assert scenario_case_id == "bundle-lifecycle-control"
     scope = ("alice", "bundle-lifecycle-control")
     started = BundleLifecycle(workspace_host_path=tmp_path)
-    bundle = await started.start(scope=scope, request_text="Research storage options", start_message_id="human-start")
+    bundle = await started.start(
+        scope=scope,
+        request_text="Research storage options",
+        start_message_id="human-start",
+        implementation_mode=ImplementationMode.ALL_REAL,
+    )
     await started.set_pending_request(bundle=bundle, request_id="hitl-1", suspension_cursor="human-start")
 
     restarted = BundleLifecycle(workspace_host_path=tmp_path)
@@ -69,7 +80,11 @@ async def test_bundle_lifecycle_state_survives_restart_without_external_checkpoi
 async def test_refinement_preserves_pending_response_and_correlated_resume_is_idempotent(tmp_path: Path) -> None:
     scope = ("alice", "thread-1")
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
-    bundle = await lifecycle.start(scope=scope, request_text="Research storage options")
+    bundle = await lifecycle.start(
+        scope=scope,
+        request_text="Research storage options",
+        implementation_mode=ImplementationMode.ALL_REAL,
+    )
     waiting = await lifecycle.set_pending_request(bundle=bundle, request_id="hitl-1")
 
     refined = (
@@ -105,7 +120,11 @@ async def test_refinement_of_an_ended_bundle_requires_explicit_target_and_reopen
 ) -> None:
     scope = ("alice", "thread-1")
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
-    ended = await lifecycle.start(scope=scope, request_text="Original question")
+    ended = await lifecycle.start(
+        scope=scope,
+        request_text="Original question",
+        implementation_mode=ImplementationMode.ALL_REAL,
+    )
     await lifecycle.end(bundle=ended)
 
     with pytest.raises(BundleLifecycleError, match="explicit_bundle_id_required"):
@@ -134,7 +153,11 @@ async def test_refinement_of_an_ended_bundle_requires_explicit_target_and_reopen
 async def test_lost_bundle_cannot_supply_pending_input_or_be_reactivated(tmp_path: Path) -> None:
     scope = ("alice", "thread-1")
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
-    bundle = await lifecycle.start(scope=scope, request_text="Question")
+    bundle = await lifecycle.start(
+        scope=scope,
+        request_text="Question",
+        implementation_mode=ImplementationMode.ALL_REAL,
+    )
     await lifecycle.set_pending_request(bundle=bundle, request_id="hitl-1")
     root = lifecycle.private_root(bundle)
 

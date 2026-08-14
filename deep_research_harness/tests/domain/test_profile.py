@@ -30,13 +30,13 @@ from deerflow_deep_research.domain.profile import (
     missing_dimensions,
     normalize_clear_confirmation,
     parse_profile_input,
-    parse_profile_response,
-    read_legacy_profile,
+    validate_current_profile_content,
 )
 
 
 def _complete_profile(**overrides: object) -> dict[str, object]:
     payload: dict[str, object] = {
+        "schema_version": 2,
         "depth": "standard",
         "audience": "practitioner",
         "format": "detailed_report",
@@ -45,6 +45,10 @@ def _complete_profile(**overrides: object) -> dict[str, object]:
         "must_answer": ("What matters most?",),
         "scope_boundaries": "Use grid-scale deployment only.",
         "custom_notes": "Prefer recent sources.",
+        "comparison_required": False,
+        "comparison_subjects": None,
+        "request_language": "en",
+        "output_language": "en",
     }
     payload.update(overrides)
     return payload
@@ -73,19 +77,19 @@ def test_closed_enums_are_stable_machine_values() -> None:
     assert {item.value for item in TimeBudget} == {"very_quick", "standard", "thorough", "overnight"}
 
 
-def test_profile_contracts_are_frozen_extra_forbid_and_schema_version_one() -> None:
+def test_profile_contracts_are_frozen_extra_forbid_and_current_schema_version() -> None:
     brief = StructuredBrief(
         brief_summary="A scoped research request.",
         **_complete_profile(),
     )
-    assert brief.schema_version == 1
+    assert brief.schema_version == 2
     with pytest.raises(ValidationError):
         StructuredBrief(brief_summary="x", unexpected=True, **_complete_profile())
     with pytest.raises(ValidationError):
         brief.brief_summary = "changed"  # type: ignore[misc]
 
     partial = PartialResearchProfile(depth="quick_overview")
-    assert partial.schema_version == 1
+    assert partial.schema_version == 2
     with pytest.raises(ValidationError):
         partial.depth = ResearchDepth.STANDARD  # type: ignore[misc]
 
@@ -107,20 +111,20 @@ def test_profile_bounds_and_final_completeness() -> None:
 
     degraded = ResearchProfile(depth="standard", must_answer=("Q1",), degraded_profile=True)
     assert degraded.degraded_profile is True
-    assert missing_dimensions(degraded) == ("audience", "format", "cost_tolerance", "time_budget")
+    assert missing_dimensions(degraded) == ("audience", "format", "cost_tolerance", "time_budget", "output_language")
 
 
 def test_canonical_profile_json_is_stable_and_rejects_wrong_type() -> None:
     profile = ResearchProfile(**_complete_profile())
     encoded = canonical_profile_json(profile)
     assert encoded == json.dumps(json.loads(encoded), sort_keys=True, separators=(",", ":"), ensure_ascii=False)
-    assert json.loads(encoded)["schema_version"] == 1
+    assert json.loads(encoded)["schema_version"] == 2
     with pytest.raises(TypeError, match="profile_required"):
         canonical_profile_json(PartialResearchProfile(depth="standard"))  # type: ignore[arg-type]
 
 
-def test_parse_profile_response_accepts_json_and_ignores_unknown_enum_values() -> None:
-    parsed = parse_profile_response(
+def test_parse_profile_input_accepts_json_and_ignores_unknown_enum_values() -> None:
+    parsed = parse_profile_input(
         json.dumps(
             {
                 "depth": "superficial",
@@ -132,24 +136,24 @@ def test_parse_profile_response_accepts_json_and_ignores_unknown_enum_values() -
             }
         )
     )
-    assert parsed.depth is None
-    assert parsed.audience is TargetAudience.DOMAIN_EXPERT
-    assert parsed.format is OutputFormat.ANNOTATED_BIBLIOGRAPHY
-    assert parsed.cost_tolerance is CostTolerance.EXTENSIVE
-    assert parsed.time_budget is TimeBudget.OVERNIGHT
-    assert parsed.must_answer == ("Q1",)
+    assert parsed.partial.depth is None
+    assert parsed.partial.audience is TargetAudience.DOMAIN_EXPERT
+    assert parsed.partial.format is OutputFormat.ANNOTATED_BIBLIOGRAPHY
+    assert parsed.partial.cost_tolerance is CostTolerance.EXTENSIVE
+    assert parsed.partial.time_budget is TimeBudget.OVERNIGHT
+    assert parsed.partial.must_answer == ("Q1",)
 
     with pytest.raises(ValueError, match="profile_response_json_invalid"):
-        parse_profile_response("[1, 2]")
+        parse_profile_input("[1, 2]")
     with pytest.raises(ValueError, match="profile_response_extra_fields"):
-        parse_profile_response('{"depth":"standard","host_path":"/tmp/x"}')
+        parse_profile_input('{"depth":"standard","host_path":"/tmp/x"}')
 
 
-def test_parse_profile_response_is_deterministic_for_free_text() -> None:
-    parsed = parse_profile_response(
+def test_parse_profile_input_is_deterministic_for_free_text() -> None:
+    parsed = parse_profile_input(
         "standard depth, for practitioners, detailed report, moderate cost, standard time; must answer: Q1 and Q2"
     )
-    assert parsed == PartialResearchProfile(
+    assert parsed.partial == PartialResearchProfile(
         depth=ResearchDepth.STANDARD,
         audience=TargetAudience.PRACTITIONER,
         format=OutputFormat.DETAILED_REPORT,
@@ -158,9 +162,9 @@ def test_parse_profile_response_is_deterministic_for_free_text() -> None:
         must_answer=("Q1", "Q2"),
     )
 
-    unknown = parse_profile_response("depth=superficial; must answer: Q1")
-    assert unknown.depth is None
-    assert unknown.must_answer == ("Q1",)
+    unknown = parse_profile_input("depth=superficial; must answer: Q1")
+    assert unknown.partial.depth is None
+    assert unknown.partial.must_answer == ("Q1",)
 
 
 def test_parse_profile_input_recognizes_chinese_aliases_without_cross_dimension_guessing() -> None:
@@ -208,10 +212,7 @@ def test_v2_profile_requires_typed_comparison_and_language_facts() -> None:
     with pytest.raises(ValidationError, match="profile_incomplete:comparison_subjects"):
         ResearchProfile(**base)
 
-    profile = ResearchProfile(
-        **base,
-        comparison_subjects=("锂离子电池", "全钒液流电池"),
-    )
+    profile = ResearchProfile(**(base | {"comparison_subjects": ("锂离子电池", "全钒液流电池")}))
     assert profile.comparison_subjects is not None
     assert missing_dimensions(profile) == ()
     assert json.loads(canonical_profile_json(profile))["schema_version"] == 2
@@ -256,10 +257,7 @@ def test_clear_confirmation_rejects_modifying_text(reply: str) -> None:
     assert normalize_clear_confirmation(reply) is False
 
 
-def test_legacy_profile_reader_retains_v1_without_inferred_facts() -> None:
-    legacy = read_legacy_profile(_complete_profile(schema_version=1))
-    assert legacy.schema_version == 1
-    assert legacy.request_language is RequestLanguage.LEGACY_UNSPECIFIED
-    assert legacy.comparison_required is False
-    assert legacy.comparison_subjects is None
-    assert legacy.output_language is None
+@pytest.mark.parametrize("payload", ({}, _complete_profile(schema_version=1), _complete_profile(legacy_field="x")))
+def test_profile_contracts_reject_absent_legacy_and_external_shapes(payload: dict[str, object]) -> None:
+    with pytest.raises(ValueError, match="profile_schema_invalid"):
+        validate_current_profile_content(payload)

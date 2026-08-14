@@ -27,7 +27,6 @@ MAX_SCOPE_CHARS = 2_048
 MAX_NOTES_CHARS = 1_024
 MAX_BRIEF_SUMMARY_CHARS = 512
 PROFILE_SCHEMA_VERSION = 2
-LEGACY_PROFILE_SCHEMA_VERSION = 1
 MAX_COMPARISON_SUBJECT_CHARS = 256
 
 
@@ -69,7 +68,6 @@ class RequestLanguage(StrEnum):
     ZH = "zh"
     EN = "en"
     UNSPECIFIED = "unspecified"
-    LEGACY_UNSPECIFIED = "legacy_unspecified"
 
 
 class SupportedLanguage(StrEnum):
@@ -189,20 +187,31 @@ def normalize_clear_confirmation(reply: str) -> bool:
 
 _DIMENSION_FIELDS = ("depth", "audience", "format", "cost_tolerance", "time_budget")
 _REQUIRED_FIELDS = (*_DIMENSION_FIELDS, "must_answer")
+_CURRENT_PROFILE_FIELDS = frozenset(
+    {
+        "schema_version",
+        *_REQUIRED_FIELDS,
+        "scope_boundaries",
+        "custom_notes",
+        "comparison_required",
+        "comparison_subjects",
+        "request_language",
+        "output_language",
+        "degraded_profile",
+    }
+)
 
 
 class _ProfileBase(FrozenContract):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    # An absent schema in retained checkpoint values denotes the former v1 payload.
-    # New HITL1 writes explicitly seed schema v2 before profile materialization.
-    schema_version: Literal[1, 2] = LEGACY_PROFILE_SCHEMA_VERSION
+    schema_version: Literal[2] = PROFILE_SCHEMA_VERSION
     must_answer: tuple[str, ...] = Field(default=(), max_length=MAX_MUST_ANSWER)
     scope_boundaries: str = Field(default="", max_length=MAX_SCOPE_CHARS)
     custom_notes: str = Field(default="", max_length=MAX_NOTES_CHARS)
     comparison_required: bool = False
     comparison_subjects: ComparisonSubjects | None = None
-    request_language: RequestLanguage = RequestLanguage.LEGACY_UNSPECIFIED
+    request_language: RequestLanguage = RequestLanguage.UNSPECIFIED
     output_language: SupportedLanguage | None = None
 
     @field_validator("comparison_subjects", mode="before")
@@ -335,6 +344,17 @@ def canonical_profile_json(profile: ResearchProfile) -> str:
 def compute_profile_content_hash(profile: ResearchProfile) -> str:
     digest = hashlib.sha256(canonical_profile_bytes(profile)).digest()
     return "h_" + base64.urlsafe_b64encode(digest).decode("ascii").rstrip("=")
+
+
+def validate_current_profile_content(value: Mapping[str, Any]) -> ResearchProfile:
+    """Read only the one supported persisted profile-content shape."""
+
+    if not isinstance(value, Mapping) or set(value) != _CURRENT_PROFILE_FIELDS:
+        raise ValueError("profile_schema_invalid")
+    try:
+        return ResearchProfile.model_validate(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("profile_schema_invalid") from exc
 
 
 def missing_dimensions(profile: PartialResearchProfile | ResearchProfile) -> tuple[str, ...]:
@@ -554,30 +574,10 @@ def parse_profile_input(text: str, *, allow_comparison_pair: bool = False) -> Pr
     return ProfileParseResult(partial=partial, recognized_fields=recognized)
 
 
-def parse_profile_response(text: str) -> PartialResearchProfile:
-    """Compatibility wrapper for callers that only need the parsed profile."""
-    return parse_profile_input(text).partial
-
-
-def read_legacy_profile(payload: Mapping[str, Any]) -> ResearchProfile:
-    """Read v1 retained content without manufacturing v2 intake facts."""
-
-    if not isinstance(payload, Mapping) or payload.get("schema_version", LEGACY_PROFILE_SCHEMA_VERSION) != 1:
-        raise ValueError("legacy_profile_required")
-    legacy = dict(payload)
-    legacy.pop("comparison_required", None)
-    legacy.pop("comparison_subjects", None)
-    legacy.pop("request_language", None)
-    legacy.pop("output_language", None)
-    legacy["schema_version"] = LEGACY_PROFILE_SCHEMA_VERSION
-    return ResearchProfile.model_validate(legacy)
-
-
 __all__ = [
     "ComparisonIntakeSeed",
     "ComparisonSubjects",
     "CostTolerance",
-    "LEGACY_PROFILE_SCHEMA_VERSION",
     "OutputFormat",
     "PartialResearchProfile",
     "ProfileParseResult",
@@ -597,8 +597,7 @@ __all__ = [
     "merge_profile_progress",
     "missing_dimensions",
     "normalize_clear_confirmation",
-    "parse_profile_response",
     "parse_profile_input",
     "profile_state_fields",
-    "read_legacy_profile",
+    "validate_current_profile_content",
 ]

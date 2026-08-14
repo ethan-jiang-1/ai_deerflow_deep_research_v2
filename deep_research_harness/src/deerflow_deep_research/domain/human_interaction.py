@@ -62,7 +62,7 @@ class MissingProposalMaterial(StrEnum):
 class ProposalValues(FrozenInteractionContract):
     """Every material proposal field, in stable human-safe machine values."""
 
-    schema_version: Literal[1, 2] = 1
+    schema_version: Literal[2] = 2
     depth: Literal["quick_overview", "standard", "deep_dive", "exhaustive"]
     audience: Literal["layperson", "practitioner", "domain_expert", "executive"]
     format: Literal["executive_brief", "detailed_report", "annotated_bibliography", "faq"]
@@ -73,7 +73,7 @@ class ProposalValues(FrozenInteractionContract):
     custom_notes: str = Field(default="", max_length=MAX_CUSTOM_NOTES_CHARS)
     comparison_required: bool = False
     comparison_subjects: tuple[str, str] | None = None
-    request_language: Literal["zh", "en", "unspecified", "legacy_unspecified"] = "legacy_unspecified"
+    request_language: Literal["zh", "en", "unspecified"] = "unspecified"
     output_language: Literal["zh", "en"] | None = None
 
     @field_validator("must_answer", mode="before")
@@ -110,8 +110,6 @@ class ProposalValues(FrozenInteractionContract):
     def missing_material(self) -> tuple[MissingProposalMaterial, ...]:
         """Return the bounded facts that prevent current-proposal acceptance."""
 
-        if self.schema_version == 1:
-            return ()
         missing: list[MissingProposalMaterial] = []
         if self.comparison_required and self.comparison_subjects is None:
             missing.append(MissingProposalMaterial.COMPARISON_SUBJECTS)

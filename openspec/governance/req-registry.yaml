@@ -137,8 +137,8 @@ SCC-002: selected-change-closeout-evidence — A verified boundary can retain on
 SCC-003: selected-change-closeout-evidence — Deterministic zero-API fixtures prove valid committed-boundary records and every closed missing-boundary rejection without task or archive side effects
 
 # research-fake-cli-onboarding
-FCO-001: research-fake-cli-onboarding — Fixture CLI onboarding provides paste-safe commands and never asks users to select an internal HITL2 route while clearly labelling fixture output
-FCO-002: research-fake-cli-onboarding — The credential-free fake CLI mirrors bounded Bundle lifecycle identity without creating real Run control authority
+FCO-001: research-fake-cli-onboarding — Credential-free fixture-graph CLI onboarding provides paste-safe commands and never asks users to select an internal HITL2 route while clearly labelling fixture output
+FCO-002: research-fake-cli-onboarding — The credential-free fixture-graph CLI mirrors bounded Bundle lifecycle identity without creating real Run control authority
 
 # deployment-configuration
 DEC-001: deployment-configuration — Deep Research source loads through project-owned local, production, and Docker launch paths
@@ -169,10 +169,10 @@ HIT-002: hitl2-node — HITL2 continues autonomously without a human interrupt: 
 HIT-003: hitl2-node — Real HITL2 integrates into the all-real or explicitly composed mixed graph through the full real chain from targeted_evidence with unchanged topology while deterministic fixture behavior remains test/demo-only
 
 # human-interaction-contract
-HIC-001: human-interaction-contract — Frozen domain contracts bound a current HITL proposal, closed semantic candidate intent, resolution, feedback, and adapter-safe visible controls without graph, checkpoint, action, or runtime authority
-HIC-002: human-interaction-contract — A complete current proposal preserves its human-safe subject, bounded feedback, and current-proposal control across question, clarification, ambiguity, malformed output, or semantic-provider failure without requiring hidden tokens or JSON confirmation
+HIC-001: human-interaction-contract — Frozen domain contracts and the canonical profile parser produce bounded current-proposal and semantic candidates without graph, checkpoint, action, or runtime authority
+HIC-002: human-interaction-contract — A complete current proposal preserves its human-safe subject, bounded feedback, and current-proposal control across question, clarification, ambiguity, malformed output, semantic-provider failure, or rejected persisted input without requiring hidden tokens or JSON confirmation
 HIC-003: human-interaction-contract — Proposal questions yield only bounded recommendation explanations tied to the supplied question and current proposal, never research findings, citations, requirements, or proposal mutation
-HIC-004: human-interaction-contract — HITL1 lifecycle feedback retains current-proposal controls and gives bounded decision or recovery guidance without raw semantic output, hidden action tokens, schema teaching, or JSON instruction
+HIC-004: human-interaction-contract — HITL1 lifecycle feedback retains current-proposal controls and gives bounded decision or recovery guidance without raw semantic output, hidden action tokens, schema teaching, JSON instruction, or compatibility inference
 
 # node-agent-runtime
 NOA-001: node-agent-runtime — A runtime-owned bridge gives LLM-Bearing Nodes the parent sandbox and trusted ephemeral context without leaking authority or adding a checkpointer
@@ -264,8 +264,8 @@ CES-008: cognitive-evaluation-suite — Cognitive Evaluation Bundles remain a se
 CES-009: cognitive-evaluation-suite — The supported Evaluation runtime facade projects domain-owned contracts while the retired runtime contract re-export has no alias, fallback, or compatibility route
 
 # research-demo-tui
-RED-001: research-demo-tui — A standalone Textual demo renders an explicit fixture recipe through both HITL requests without Gateway, model, or network dependencies
-RED-002: research-demo-tui — The demo remains an explicitly non-product visualization with deterministic tests and no claim of formal DeerFlow TUI or Web UI integration
+RED-001: research-demo-tui — A standalone Textual demo renders the fixed fixture graph through both HITL requests without Gateway, model, or network dependencies
+RED-002: research-demo-tui — The demo remains an explicitly non-product fixture-graph or all-real visualization with deterministic tests and no claim of formal DeerFlow TUI or Web UI integration
 RED-003: research-demo-tui — The Textual demo consumes shared run updates and does not infer lifecycle state or construct graph response envelopes
 RED-004: research-demo-tui — The Textual demo exposes safe failure, diagnostic, durability, and cancellation semantics without raw runtime data
 RED-005: research-demo-tui — The Textual demo exposes a safe run reference and inspectability state without inferring lifecycle control or exposing host paths
@@ -371,14 +371,14 @@ RUI-012: runtime-integration — Reflected refinement results distinguish submit
 REG-001: research-graph-lifecycle — One explicit topology and complete adapter/gate selection assemble every stable Deep Research phase from registered real-only NodeSpec packages
 REG-002: research-graph-lifecycle — Deterministic fixture adapters exercise routing, repair, rerun, and parallel Send fan-in through explicit test/demo composition without models, web access, or sandbox research tools
 REG-003: research-graph-lifecycle — Graph-owned HITL requests bridge to the existing human-input message contract and resume only from the matching latest HumanMessage response
-REG-004: research-graph-lifecycle — Start, resume, status, and cancel enforce typed lifecycle transitions, idempotency, and fail-closed scope checks
-REG-005: research-graph-lifecycle — Explicit fixture graph checkpoints, restart recovery, topology snapshots, and end-to-end paths remain non-public, isolated, and deterministic
-REG-006: research-graph-lifecycle — One typed versioned ResearchState is the canonical checkpointed control authority
+REG-004: research-graph-lifecycle — Lifecycle start requires trusted executor composition while start, resume, status, and cancel enforce typed transitions, idempotency, and fail-closed scope checks
+REG-005: research-graph-lifecycle — Explicit fixture graph checkpoints, explicit composition State, restart recovery, topology snapshots, and end-to-end paths remain non-public, isolated, and deterministic
+REG-006: research-graph-lifecycle — One typed versioned ResearchState is the canonical checkpointed control authority with explicit closed composition provenance
 REG-007: research-graph-lifecycle — State reducers enforce terminal monotonicity, duplicate-hash idempotency, different-hash conflict, ref dedupe, and sole-writer ownership
 REG-008: research-graph-lifecycle — Large research content stays out of the checkpoint as path, hash, schema-version, and short-summary refs under a hard size bound
 REG-009: research-graph-lifecycle — Checkpointed control state, the validated submission ledger, and sandbox artifact files remain three distinct authorities
 REG-010: research-graph-lifecycle — A minimal research bundle layout and path-containment contract scope every sandbox write to its research and attempt root
-REG-011: research-graph-lifecycle — A versioned ResearchState schema fails closed on incompatible versions and never silently resets or auto-migrates
+REG-011: research-graph-lifecycle — A versioned ResearchState schema and explicit composition mode fail closed on incompatible inputs and never silently reset, default, backfill, or auto-migrate
 REG-012: research-graph-lifecycle — Pending interrupt presentation projection never becomes a second graph-control authority or rewrites committed phase
 REG-013: research-graph-lifecycle — Blocked terminal state retains only a compact safe incident visible through status and restart recovery
 REG-014: research-graph-lifecycle — Run-session manifest and lifecycle trace are derived projections that never become a second phase, pending-input, or transition authority
@@ -386,7 +386,7 @@ REG-015: research-graph-lifecycle — Correlated graph-owned human input support
 REG-016: research-graph-lifecycle — A checkpointed canonical bundle locator selects physical artifact roots while opaque research id remains lifecycle identity
 REG-017: research-graph-lifecycle — Visible controls bind only through trusted runtime or authorized broker code to a current pending request's advertised typed graph action, while adapters and ordinary text cannot map phrases or action ids into actions and stale or forged controls fail closed
 REG-018: research-graph-lifecycle — ResearchState retains only controller-owned bounded proposal-version and interaction-feedback facts with safe schema-v2 defaults, excluding raw replies, prompts, candidates, model output, and provider bodies while clearing transient feedback on acceptance, cancellation, and terminal handling
-REG-019: research-graph-lifecycle — Every generic graph recipe supplies a complete explicit real-or-injected adapter/gate selection before compilation; the fixed all-real factory is the only production-owned selection and no default fixture selection exists
+REG-019: research-graph-lifecycle — Every generic graph recipe supplies a complete explicit real-or-injected adapter/gate selection before compilation; the fixed all-real factory is the only production-owned selection, no compatibility factory remains, and no default fixture selection exists
 REG-020: research-graph-lifecycle — Deep Research graph lifecycle persists only through the selected Run Bundle rather than a generic external checkpoint
 REG-021: research-graph-lifecycle — Graph lifecycle actions use Bundle identity and safe refinement transitions
 
@@ -414,19 +414,19 @@ GAK-007: gate-kernel — Wave0 exhausted gate outcomes derive and write an optio
 # hitl1-node
 HIN-001: hitl1-node — Real HITL1 generates a validated structured brief from the original question through the runtime node-agent bridge with closed-enum profile dimensions and fail-closed schema validation
 HIN-002: hitl1-node — Real HITL1 presents structured brief and follow-up prompts through the existing graph-owned interrupt protocol with bounded compact context and deterministic request ordinals
-HIN-003: hitl1-node — Real HITL1 parses JSON or free-text human responses deterministically, accumulates durable partial profile progress, bounds follow-up rounds, and rejects forged or mismatched responses
-HIN-004: hitl1-node — Real HITL1 records the validated profile as request-bundle profile.json plus checkpoint ContentRef and short controller-owned profile fields without bumping ResearchState schema version
+HIN-003: hitl1-node — Real HITL1 parses raw human text deterministically and admits only current versioned profile/proposal input, accumulating durable partial profile progress while rejecting unsupported or mismatched persisted input before mutation
+HIN-004: hitl1-node — Real HITL1 records only the current validated profile as request-bundle profile.json plus checkpoint ContentRef and short controller-owned profile fields without bumping ResearchState schema version
 HIN-005: hitl1-node — Real HITL1 integrates into the all-real and explicitly composed mixed graph with explicit follow-up and blocked routes while preserving deterministic fixture test/demo behavior and downstream boundary constraints
 HIN-006: hitl1-node — Real HITL1 preserves typed brief-generation failure category through its existing blocked route without raw error leakage
-HIN-007: hitl1-node — Real HITL1 durably presents advisory profile proposals, deterministic localized answer feedback, and explicit human acceptance without silently degrading unrecognized input
+HIN-007: hitl1-node — Real HITL1 durably presents advisory current-schema profile proposals, deterministic localized answer feedback, and explicit human acceptance without silently degrading unrecognized or unsupported input
 HIN-008: hitl1-node — Real HITL1 retries a transient brief-generation provider failure within a bounded graph-owned policy and reports safe exhaustion facts
-HIN-009: hitl1-node — For a complete checkpointed proposal, HITL1 interprets a raw reply only through zero-tool structured semantic intake, preserves graph authority for correlation and publication, confirms only the current proposal, makes full revisions visible before fresh confirmation, and reissues questions or clarifications without consuming profile-answer or rejection rounds
+HIN-009: hitl1-node — For a complete current-schema checkpointed proposal, HITL1 interprets a raw reply only through zero-tool structured semantic intake, preserves graph authority for correlation and publication, confirms only the current proposal, makes full revisions visible before fresh confirmation, and reissues questions or clarifications without consuming profile-answer or rejection rounds
 HIN-010: hitl1-node — HITL1 bounds semantic intake to three bridge/model calls per raw proposal reply with at most two retry-eligible transient retries and one structured-output repair, preserving a confirmable proposal with non-terminal feedback after exhaustion, non-transient failure, or invalid output
 HIN-011: hitl1-node — HITL1 profile interaction acceptance preserves graph-owned admission through confirmation, source-constrained revision, question, ambiguity, and exhausted semantic fallback without unauthorized profile publication
 HIN-012: hitl1-node — HITL1 calibration policies preserve conservative decision-ready profile proposals and untrusted semantic-intake boundaries without changing deterministic or human acceptance authority
 HIN-013: hitl1-node — HITL1 brief expected output remains compatible with strict admission
 HIN-014: hitl1-node — HITL1 adapts complete interactive proposals through Research Confirmation while retaining correlation, state, profile publication, routes, and bounded semantic recovery ownership
-HIN-015: hitl1-node — HITL1 keeps durable interaction facts in the selected Run Bundle rather than external checkpoint authority
+HIN-015: hitl1-node — HITL1 keeps current-schema durable interaction facts in the selected Run Bundle rather than external checkpoint authority
 HIN-016: hitl1-node — HITL1 runtime-loaded capability resources own bounded cognitive methods while deterministic admission, recovery, and lifecycle authority remain outside Markdown
 
 # topic-planning-node
@@ -567,11 +567,11 @@ WOU-009: work-unit-kernel — Work-unit artifacts and content references derive 
 WOU-010: work-unit-kernel — Work-unit terminal projections preserve closed worker failure diagnosis without changing retry, ledger, gate, or lifecycle authority
 WOU-011: work-unit-kernel — Work-unit, evidence, and content stores use one runtime-bound Run Bundle reference without legacy identity or path overrides
 WOU-012: work-unit-kernel — Shared submit validation records only rejected candidates as correlated post-candidate Journal facts while preserving typed rejection, controller, ledger, and lifecycle authority
-DPL-001: demo-pipeline — A shared demo core module provides DemoAdapter, synthetic tool-call helpers, phase metadata, and importable infrastructure for all demo scripts
+DPL-001: demo-pipeline — A shared demo core module provides DemoAdapter, synthetic tool-call helpers, phase metadata, and graph-backed infrastructure for all demo scripts; credential-free execution is the fixed fixture graph
 DPL-002: demo-pipeline — Phase progress display reads execution_trace from DeepResearchControlResult and renders completed phases with → and suspended phases with ⏸
-DPL-003: demo-pipeline — Named fixture and all-real demo factories construct their fixed recipes explicitly, without a mode selector or a production fixture fallback
+DPL-003: demo-pipeline — Named fixture and all-real demo factories construct their fixed recipes and executors explicitly, without a mode selector, no-graph lifecycle, or a production fixture fallback
 DPL-004: demo-pipeline — An independent CLI real demo validates supported model and Tavily prerequisites, builds the all-real recipe, and supports scripted non-interactive mode
-DPL-005: demo-pipeline — Makefile provides fixture and real CLI/TUI demos plus demo-sessions and session-workbench with DEMO_ARGS passthrough and their documented fixed profiles
+DPL-005: demo-pipeline — Makefile provides fixed fixture-graph and all-real CLI/TUI demos plus demo-sessions and session-workbench with DEMO_ARGS passthrough and no full-fake/no-graph command surface
 DPL-006: demo-pipeline — Demo command targets select or clearly reject a foreign active environment before user onboarding
 DPL-007: demo-pipeline — Local demo runs retain inspectable run bundles through an explicit bounded retention policy instead of deleting all artifacts on process exit
 DPL-008: demo-pipeline — Fixture demo and fixed-profile local-session commands enable the separate fixture source root only for their own child process while real and production paths do not

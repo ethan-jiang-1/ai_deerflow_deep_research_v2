@@ -29,12 +29,12 @@
         {
           "name": "profile_schema_digest",
           "source_path": "src/deerflow_deep_research/domain/profile.py",
-          "digest": "5226b63abc3e1ad26eb14f2add0df51326f0bf0cfb25d38308d20f08c716c910"
+          "digest": "55083178d7c798c0036ab7e8c570ea83a56ff34ef75a8f8c0a23913650a48359"
         },
         {
           "name": "semantic_candidate_schema_digest",
           "source_path": "src/deerflow_deep_research/domain/human_interaction.py",
-          "digest": "c09d91314e41951ed502ccc8e2b79a872b7915ed04fc986e9a096590252e5fa1"
+          "digest": "2ab99d4865d92139be38f1ce835a218654424857d4e8f7bd97ad0be7f4339896"
         }
       ],
       "required_resource_fields": [

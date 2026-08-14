@@ -36,7 +36,7 @@ def _operation(*, key: str, text: str) -> RefinementOperation:
 
 
 def test_pending_refinement_is_first_write_wins_and_same_operation_replays() -> None:
-    state = BundleLocalState(bundle_id=_BUNDLE_ID)
+    state = BundleLocalState(bundle_id=_BUNDLE_ID, implementation_mode="all_real")
     first = admit_bundle_refinement(
         state,
         _operation(key="operation-1", text="Prioritize primary sources"),
@@ -66,7 +66,7 @@ def test_pending_refinement_is_first_write_wins_and_same_operation_replays() -> 
 
 def test_same_trusted_operation_with_altered_text_fails_closed() -> None:
     first = admit_bundle_refinement(
-        BundleLocalState(bundle_id=_BUNDLE_ID),
+        BundleLocalState(bundle_id=_BUNDLE_ID, implementation_mode="all_real"),
         _operation(key="operation-1", text="Cover regulation"),
         policy=_PRODUCTION_POLICY,
     )
@@ -83,7 +83,7 @@ def test_same_trusted_operation_with_altered_text_fails_closed() -> None:
 
 def test_applied_current_round_retains_replay_receipt_and_allows_one_later_pending_direction() -> None:
     first = admit_bundle_refinement(
-        BundleLocalState(bundle_id=_BUNDLE_ID),
+        BundleLocalState(bundle_id=_BUNDLE_ID, implementation_mode="all_real"),
         _operation(key="operation-1", text="Compare primary sources"),
         policy=_PRODUCTION_POLICY,
     )
@@ -115,7 +115,7 @@ def test_applied_current_round_retains_replay_receipt_and_allows_one_later_pendi
 
 def test_same_text_from_a_new_operation_is_conflict_only_while_pending_then_becomes_later_admission() -> None:
     first = admit_bundle_refinement(
-        BundleLocalState(bundle_id=_BUNDLE_ID),
+        BundleLocalState(bundle_id=_BUNDLE_ID, implementation_mode="all_real"),
         _operation(key="operation-1", text="Preserve citations"),
         policy=_PRODUCTION_POLICY,
     )
@@ -140,6 +140,7 @@ def test_same_text_from_a_new_operation_is_conflict_only_while_pending_then_beco
 def test_legacy_text_only_pending_same_text_is_effect_free() -> None:
     legacy = BundleLocalState(
         bundle_id=_BUNDLE_ID,
+        implementation_mode="all_real",
         admitted_refinement={"text": "Keep the legal scope"},
         revision=7,
     )
@@ -156,10 +157,11 @@ def test_legacy_text_only_pending_same_text_is_effect_free() -> None:
 
 
 def _pre_change_mapping(*, bundle_id: BundleId = _BUNDLE_ID) -> dict[str, object]:
-    """Return a literal complete schema-v3 mapping from before Phase 1."""
+    """Return a literal complete schema-v3 mapping from before the cutover."""
 
     return {
         "schema_version": 3,
+        "implementation_mode": "all_real",
         "bundle_id": bundle_id.value,
         "generation": 0,
         "revision": 7,
@@ -202,38 +204,50 @@ def _pre_change_mapping(*, bundle_id: BundleId = _BUNDLE_ID) -> dict[str, object
     }
 
 
-def test_pre_change_bundle_mapping_defaults_new_refinement_fields_without_mutating_input() -> None:
+def test_pre_change_bundle_mapping_is_rejected_without_mutating_input() -> None:
     mapping = _pre_change_mapping()
     before = copy.deepcopy(mapping)
 
-    state = BundleLocalState.from_mapping(mapping)
+    with pytest.raises(ValueError, match="bundle_state_invalid"):
+        BundleLocalState.from_mapping(mapping)
+    assert mapping == before
 
-    assert state.revision == 7
-    assert state.current_refinement is None
-    assert state.refinement_replay_receipts == ()
+
+@pytest.mark.parametrize("mode", (None, "full_fake", "unknown_mode"))
+def test_unsupported_bundle_composition_is_rejected_without_mutating_input(mode: str | None) -> None:
+    mapping = _pre_change_mapping()
+    mapping["implementation_mode"] = mode
+    if mode is None:
+        mapping.pop("implementation_mode")
+    before = copy.deepcopy(mapping)
+
+    with pytest.raises(ValueError, match="bundle_state_invalid"):
+        BundleLocalState.from_mapping(mapping)
+
     assert mapping == before
 
 
 @pytest.mark.asyncio
-async def test_pre_change_state_store_read_preserves_literal_bytes_and_revision(tmp_path) -> None:
+async def test_pre_change_state_store_rejects_without_rewriting_literal_bytes(tmp_path) -> None:
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
-    bundle = await lifecycle.start(scope=("alice", "old-state"), request_text="Question")
+    bundle = await lifecycle.start(
+        scope=("alice", "old-state"),
+        request_text="Question",
+        implementation_mode="all_real",
+    )
     state_path = lifecycle.private_root(bundle) / "state.json"
     mapping = _pre_change_mapping(bundle_id=bundle.bundle_id)
     state_path.write_text(json.dumps(mapping, indent=2, sort_keys=True), encoding="utf-8")
     before = state_path.read_bytes()
 
-    observed = await lifecycle.read_state(bundle)
-
-    assert observed.revision == 7
-    assert observed.current_refinement is None
-    assert observed.refinement_replay_receipts == ()
+    with pytest.raises(Exception, match="bundle_state_invalid"):
+        await lifecycle.read_state(bundle)
     assert state_path.read_bytes() == before
 
 
 def test_production_receipt_capacity_retains_each_committed_operation_and_rejects_lower_policy_mismatch() -> None:
     first = admit_bundle_refinement(
-        BundleLocalState(bundle_id=_BUNDLE_ID),
+        BundleLocalState(bundle_id=_BUNDLE_ID, implementation_mode="all_real"),
         _operation(key="operation-1", text="First direction"),
         policy=_PRODUCTION_POLICY,
     )
@@ -283,7 +297,7 @@ def test_production_receipt_capacity_retains_each_committed_operation_and_reject
 
 def test_state_rejects_conflicting_reuse_of_one_operation_key_across_current_and_receipt() -> None:
     first = admit_bundle_refinement(
-        BundleLocalState(bundle_id=_BUNDLE_ID),
+        BundleLocalState(bundle_id=_BUNDLE_ID, implementation_mode="all_real"),
         _operation(key="operation-1", text="Original direction"),
         policy=_PRODUCTION_POLICY,
     )
@@ -293,6 +307,7 @@ def test_state_rejects_conflicting_reuse_of_one_operation_key_across_current_and
     with pytest.raises(ValueError, match="refinement_current_operation_conflict"):
         BundleLocalState(
             bundle_id=_BUNDLE_ID,
+            implementation_mode="all_real",
             generation=1,
             refinement_round=1,
             current_refinement=applied.current_refinement,
@@ -312,7 +327,7 @@ def test_lifecycle_and_state_reject_policy_above_the_public_generation_ceiling(t
 
     with pytest.raises(ValueError, match="public_generation_ceiling_exceeded"):
         admit_bundle_refinement(
-            BundleLocalState(bundle_id=_BUNDLE_ID),
+            BundleLocalState(bundle_id=_BUNDLE_ID, implementation_mode="all_real"),
             _operation(key="operation-1", text="Direction"),
             policy=high,
         )
@@ -323,7 +338,7 @@ def test_lifecycle_and_state_reject_policy_above_the_public_generation_ceiling(t
 def test_generation_ceiling_and_lower_trusted_policy_bound_admission_and_receipts() -> None:
     lower = FullRerunPolicy(max_rerun_generations=1)
     first = admit_bundle_refinement(
-        BundleLocalState(bundle_id=_BUNDLE_ID),
+        BundleLocalState(bundle_id=_BUNDLE_ID, implementation_mode="all_real"),
         _operation(key="operation-1", text="First direction"),
         policy=lower,
     )

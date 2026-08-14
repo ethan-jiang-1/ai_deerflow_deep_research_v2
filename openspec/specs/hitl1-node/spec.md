@@ -13,7 +13,7 @@ parses JSON or free-text human responses deterministically with restart-durable
 partial-profile accumulation and bounded follow-up rounds, records the validated profile
 as request-bundle `profile.json` plus checkpoint short fields and a `ContentRef` without
 bumping the `ResearchState` schema version, and integrates into the mixed graph with
-explicit follow-up and blocked routes while preserving full-fake behavior and the
+explicit follow-up and blocked routes while preserving explicit fixture-graph behavior and the
 backend/frontend boundary.
 ## Requirements
 
@@ -191,7 +191,7 @@ writes no final profile fields. (`HIN-004`)
 
 ### Requirement: HITL1 integrates into the mixed graph with explicit lifecycle and governance updates
 
-The real HITL1 SHALL retain its existing mixed-graph selection, full-fake isolation,
+The real HITL1 SHALL retain its existing mixed-graph selection, fixture-graph isolation,
 declared `accepted`, `cancel`, `needs_followup`, and `exhausted` routes, bounded
 follow-up loop, and no-upstream/UI-change boundary. A real HITL1 factory SHALL receive a
 preselected available Bundle context rather than require real Bootstrap to create or
@@ -205,8 +205,8 @@ The project-structure registry and generated
 - **WHEN** the implementation map sets `hitl1=real` with a valid preselected Bundle and every later phase fake
 - **THEN** the graph compiles, runs only its declared HITL1 routes, preserves the mixed implementation result, and HITL1 cannot create a second Bundle or external lifecycle authority
 
-#### Scenario: Full-fake graph remains isolated
-- **WHEN** the implementation map sets all phases to `fake`
+#### Scenario: Fixture graph remains isolated
+- **WHEN** the explicit fixture recipe selects fixture adapters for all phases
 - **THEN** the graph completes the existing deterministic path without a real request-profile writer, external lifecycle recovery, or a production-to-fixture import
 
 ### Requirement: Real HITL-1 preserves brief-generation failure category through its blocked route
@@ -461,22 +461,6 @@ complete and the response remains correlated to the current HITL1 request.
 - **THEN** HITL1 presents the explicit correlated language choice and does not accept
   a model-selected or default English preference
 
-### Requirement: HITL1 retains explicit profile-schema compatibility
-
-HITL1 SHALL read retained profile and checkpoint records that predate typed comparison
-and language facts through a documented compatibility representation. A legacy record
-shall remain explicitly legacy or unspecified for the absent facts; HITL1 SHALL NOT
-derive a pair, request language, or output language from its prose, hash, prompt, or
-prior acceptance. Newly accepted profiles SHALL use the current profile schema and
-canonical content representation, while retained legacy content remains verifiable by
-its recorded schema and bytes.
-
-#### Scenario: Legacy profile does not acquire inferred facts
-- **WHEN** HITL1 reloads a valid retained profile from before comparison and language
-  fields existed
-- **THEN** it remains readable with its absence marked by the compatibility contract
-  and no current comparison or language fact is invented
-
 ### Requirement: HITL1 brief expected output remains compatible with strict admission
 
 Every initial and structural-repair HITL1 brief request SHALL advertise a JSON output
@@ -635,3 +619,25 @@ manifest. Neither layer nor a review result is a release claim or lifecycle auth
 - **THEN** it records only `deterministic_handoff`; strict live preflight creates no
   live manifest, review, or fabricated rubric result, and the change closeout marks
   live-quality evidence availability `limited` without a live or release pass
+
+### Requirement: HITL1 admits only the current versioned profile and proposal matrix
+
+HITL1 SHALL consume and write only the source-controlled current profile-content and
+proposal/checkpoint schema rows. An absent schema, legacy version, legacy alias,
+unknown field, malformed shape, or unregistered external profile/proposal/checkpoint
+input SHALL be rejected before it produces a profile reference, proposal, visible
+control, State mutation, or graph continuation. The rejection SHALL not infer
+comparison, language, or other profile facts, and shall not rewrite the input. (`HIN-003`,
+`HIN-004`, `HIN-007`, `HIN-009`, `HIN-015`)
+
+#### Scenario: Unsupported profile checkpoint cannot create a proposal
+- **WHEN** a HITL1 read/reload receives an unsupported profile or proposed-profile
+  mapping
+- **THEN** it rejects that input before proposal/control projection, State write, or
+  continuation and preserves the stored mapping byte-for-byte
+
+#### Scenario: Current writer round-trips through HITL1
+- **WHEN** HITL1 reads a profile/proposal emitted by the current source-controlled
+  writer
+- **THEN** it preserves the current bounded profile facts and existing correlation/
+  acceptance behavior without invoking a legacy reader

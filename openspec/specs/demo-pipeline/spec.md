@@ -5,7 +5,7 @@
 ## Purpose
 
 Provide a standalone, bounded Deep Research demo pipeline with truthful lifecycle
-progress, fake and real recipes, local real-demo web tools, and separate CLI/TUI
+progress, fixture-graph and all-real recipes, local real-demo web tools, and separate CLI/TUI
 entry points without changing graph topology, `backend/`, or `frontend/`.
 ## Requirements
 ### Requirement: Shared demo core provides infrastructure, lifecycle transport, and prerequisite checks
@@ -19,21 +19,18 @@ the required bridge, and its executor before lifecycle dispatch. That boundary S
 not accept a recipe, executor, checkpoint, or graph-route selection from a CLI, TUI,
 or reflected public-tool caller.
 
-For a graph-backed Bundle, the selected recipe's `implementation_mode` SHALL be
+For every accepted graph-backed Bundle, the selected recipe's `implementation_mode` SHALL be
 persisted with the Bundle and every later lifecycle projection for that Bundle SHALL
 read its mode from that authoritative state. Fixture-graph execution SHALL therefore
-project `fixture`, and real execution SHALL project `all_real`. Retained state and a
-separate full-fake compatibility path without a graph executor retain their existing
-`all_real` default; neither path gains a caller-selectable mode input.
+project `fixture`, and real execution SHALL project `all_real`. No supported demo path
+may default or backfill a mode, and no caller gains a mode input.
 
 The generic control probe host SHALL remain usable only for its explicitly named
 infrastructure-probe seam and SHALL NOT be treated as a graph-backed lifecycle
-composition or completion source. A graph-backed transport binding without the
-matching executor SHALL fail closed before dispatch can reach the existing
-`BundleControl` full-fake fallback or claim completed research. The older full-fake
-commands SHALL remain separately named, zero-credential demonstrations with their
-current deterministic behavior; they SHALL NOT be silently reclassified as
-fixture-graph verification.
+composition or completion source. A missing graph executor or incomplete fixture
+catalog SHALL fail closed before Bundle State write, graph dispatch, or a completed
+research presentation. Credential-free execution is the fixed fixture-graph route;
+no no-graph lifecycle or simulator is supported.
 
 The core SHALL consume only the shared typed Bundle lifecycle result for Deep Research
 identity, status, and legal control; it SHALL not derive `research_id`, select a
@@ -44,11 +41,11 @@ Bundle path, or make retained demo material a lifecycle recovery source. (`DPL-0
 - **THEN** it resolves `deep_research_harness/scripts/_demo_core.py` and receives only
   the shared Bundle lifecycle outcome for a Deep Research Run
 
-#### Scenario: Graph-backed demo cannot fall back to full fake
+#### Scenario: Graph-backed demo cannot fall back to a no-graph lifecycle
 - **WHEN** a real or fixture-graph entry starts without the graph composition required
   for its fixed mode
 - **THEN** it produces a bounded startup failure and does not dispatch a probe-only
-  host, reach the full-fake fallback, or report a completed research lifecycle
+  host, select a no-graph fallback, or report a completed research lifecycle
 
 #### Scenario: Fixture graph projects its selected implementation mode durably
 - **WHEN** the named fixture-graph route starts a Bundle and its lifecycle is later
@@ -92,8 +89,8 @@ progress, changing the request ID, or constructing a lifecycle result. (`DPL-002
 - **THEN** each demo adapter renders that step from the shared display map with an
   automatic-policy label and does not raise or invent a logical phase
 
-#### Scenario: Fake demo shows phases that actually executed
-- **WHEN** `make demo --scripted` runs the fake lifecycle
+#### Scenario: Fixture demo shows phases that actually executed
+- **WHEN** `make demo --scripted` runs the fixture graph
 - **THEN** it renders the actual trace order before, during, and after its HITL1
   interaction without inventing an HITL2 prompt
 
@@ -102,7 +99,7 @@ progress, changing the request ID, or constructing a lifecycle result. (`DPL-002
 - **THEN** neither adapter renders `proceed`, `repair`, `rerun`, or another internal
   route as an input menu
 
-### Requirement: Recipe factory supports fake and real implementation modes
+### Requirement: Recipe factory supports fixture and all-real implementation modes
 
 The graph-backed demo runtime SHALL construct one explicit recipe for each of its two
 fixed modes. Fixture-graph mode SHALL load the fixture package's complete catalog and
@@ -112,10 +109,8 @@ store factory, and the demo-local bridge factory. The runtime factory SHALL not
 construct the recipe dataclass manually, and graph-backed dispatch SHALL use the
 executor constructed from that selected recipe.
 
-Fixture-graph mode is a named deterministic verification route and is distinct from
-the existing full-fake demonstrations. The full-fake commands retain their established
-zero-credential behavior and do not become an alternate spelling for fixture-graph
-execution. (`DPL-003`)
+Fixture-graph mode is the sole credential-free deterministic execution route. It is
+not a simulator or an alternate lifecycle contract. (`DPL-003`)
 
 #### Scenario: Fixture recipe has no node-agent bridge requirement
 - **WHEN** the named fixture-graph verification route is selected with the fixture
@@ -142,7 +137,7 @@ demo process, a checkpoint, or a retained-session record, and it SHALL not accep
 recipe, executor, checkpoint, or graph-route selection as a command input.
 
 If the required all-real composition is unavailable, the CLI SHALL present the bounded
-startup outcome and SHALL NOT render a full-fake terminal completion as completed
+startup outcome and SHALL NOT render a synthetic terminal completion as completed
 research. Its scripted real question SHALL contain an explicit comparison pair
 expressed in a supported language before bounded report-delivery evidence is asserted.
 (`DPL-004`)
@@ -153,20 +148,18 @@ expressed in a supported language before bounded report-delivery evidence is ass
   all-real executor comes from the shared demo runtime, and its lifecycle result
   remains Bundle-authoritative
 
-#### Scenario: Real demo cannot claim full-fake completion
+#### Scenario: Real demo cannot claim synthetic completion
 - **WHEN** a real CLI composition lacks its all-real executor or returns no
   graph-backed final-delivery evidence
 - **THEN** the command exits nonzero without reporting completed research
 
 ### Requirement: Makefile provides targets for all demo variants
 
-The `deep_research_harness/Makefile` SHALL retain the existing fake and real CLI/TUI
-demo targets, `DEMO_ARGS` forwarding, and direct-extra selection. It SHALL add the
-explicit `make demo-fixture-graph` verification target, which enables fixture source
-only for its child process and selects the fixture-graph composition route. Its
-`--help` and README command description SHALL identify that route as deterministic
-graph-composition verification, not as a replacement for `make demo`,
-`make demo-scripted`, or `make demo-tui-fake`.
+The `deep_research_harness/Makefile` SHALL retain its fixed fixture-graph and all-real
+CLI/TUI demo targets, `DEMO_ARGS` forwarding, and direct-extra selection. It SHALL
+enable fixture source only for the child process of a fixture route. Its `--help` and
+README command description SHALL identify every credential-free route as deterministic
+fixture-graph composition verification.
 
 `make install` SHALL be the explicit project-environment synchronization owner for
 every supported demo CLI, TUI, fixture-graph, retained-observation, and workbench
@@ -176,9 +169,9 @@ optional dependency sets. A reviewed dependency-metadata or lockfile change occu
 outside ordinary target execution; `make install` SHALL use the locked state and SHALL
 fail rather than refresh it implicitly.
 
-Real targets SHALL load `deep_research_harness/.env` when present; full-fake targets
-retain their credential-free behavior. No target SHALL use `deerflow_research/` as a
-working directory or fallback, and no `backend/` or `frontend/` file is changed.
+Real targets SHALL load `deep_research_harness/.env` when present; fixture-graph
+targets remain credential-free. No target SHALL use `deerflow_research/` as a working
+directory or fallback, and no `backend/` or `frontend/` file is changed.
 (`DPL-005`)
 
 #### Scenario: Demo target loads the renamed local environment
@@ -188,15 +181,15 @@ working directory or fallback, and no `backend/` or `frontend/` file is changed.
 
 #### Scenario: Explicit install prepares every supported demo extra
 - **WHEN** a clean checkout runs `make install` followed by a supported real CLI, real
-  TUI, fake TUI, fixture-graph, retained-observation, workbench, or documented
+  TUI, fixture-graph TUI, fixture-graph CLI, retained-observation, workbench, or documented
   prepared all-real launcher entry
 - **THEN** the entry can use its declared optional dependencies from the prepared
   locked project environment without synchronizing a dependency set itself
 
-#### Scenario: Fixture-graph command is not a full-fake alias
+#### Scenario: Credential-free commands are fixture-graph routes
 - **WHEN** an operator reads the fixture-graph command help or the README entry map
-- **THEN** it identifies `make demo-fixture-graph` as graph verification and retains
-  the existing full-fake command names for their separate zero-credential contract
+- **THEN** it identifies the route as fixture-graph verification and names no
+  full-fake/no-graph lifecycle or command alias
 
 ### Requirement: Command boundary selects a comprehensible project environment
 
@@ -233,7 +226,7 @@ or refresh lock freshness. (`DPL-006`)
   mutate dependency state, and names `make install` as the only corrective action
 
 #### Scenario: Ordinary entries preserve dependency state
-- **WHEN** a clean prepared copy runs supported help, full-fake, fixture-graph,
+- **WHEN** a clean prepared copy runs supported help, fixture-graph,
   retained-observation, bounded profile/workbench, and launcher credential-preflight
   commands
 - **THEN** the tracked lockfile and project environment state remain unchanged across
@@ -270,7 +263,7 @@ without recovering the prior one. (`DPL-007`)
 
 ### Requirement: Fixture-backed demo and local-session commands activate fixture source only for their child process
 
-The fake CLI and TUI demo targets, `demo-sessions` operation path, and fixed-profile
+The fixture-graph CLI and TUI demo targets, `demo-sessions` operation path, and fixed-profile
 `session-workbench` target SHALL add the registered fixture source root only to their selected
 child process when they compose a fixture recipe. Real demo targets, ordinary production
 packaging, and reflected runtime launch paths SHALL not add that root. `demo-sessions` and
@@ -279,7 +272,7 @@ into reflected public authority. Every target SHALL retain `DEMO_ARGS` forwardin
 existing credential-free or credentialed prerequisite behavior.
 
 #### Scenario: Fixture demo is self-contained
-- **WHEN** `make demo` or `make demo-tui-fake` runs without model or web credentials
+- **WHEN** `make demo` or `make demo-tui-fixture` runs without model or web credentials
 - **THEN** its child process can import the fixture package, completes the deterministic
   fixture path, and no production package import resolves to fixture source
 
@@ -342,7 +335,7 @@ The demo tool boundary SHALL not create a second worker or lifecycle retry contr
 ### Requirement: Demo pipeline carries Bundle identity through the shared lifecycle transport
 
 The demo pipeline SHALL obtain Deep Research lifecycle identity, status, and legal
-actions only from the shared typed Bundle lifecycle result. Fake and real composition
+actions only from the shared typed Bundle lifecycle result. Fixture and all-real composition
 roots SHALL not derive `research_id`, session references, or Bundle paths, and demo
 retention shall remain an observation of a Bundle rather than an independent resume
 store. (`DPL-010`)
@@ -414,3 +407,41 @@ change a prompt or budget, or relax a graph contract. (`DPL-012`)
   failure pattern
 - **THEN** it supplies no lifecycle action beyond the existing typed outcome and no
   command or automation changes a default model, reruns a Bundle, or changes a budget
+
+### Requirement: Credential-free demo execution is explicitly fixture-graph backed
+
+Every supported credential-free demo CLI or TUI route SHALL construct the complete
+fixture catalog, its fixed fixture recipe, and its graph executor before lifecycle
+dispatch. The selected executor's `fixture` composition SHALL be persisted in the
+Bundle-local State and every later lifecycle projection SHALL read that State fact.
+No credential-free route SHALL bind or dispatch a lifecycle without a graph executor,
+default its composition to `all_real`, use a probe-only host as execution, or claim
+completed research without fixture-graph final-delivery evidence. (`DPL-001`,
+`DPL-003`, `DPL-010`)
+
+#### Scenario: Credential-free CLI persists fixture composition
+- **WHEN** a supported credential-free CLI starts a Run in a prepared checkout with
+  fixture source enabled only for its child process
+- **THEN** it runs the complete fixture graph, persists `implementation_mode=fixture`,
+  and projects lifecycle facts only from that Bundle-local State and graph result
+
+#### Scenario: Missing graph composition fails before a lifecycle claim
+- **WHEN** a credential-free demo route lacks its fixed executor or complete fixture
+  catalog
+- **THEN** it returns a bounded startup failure before a Bundle State write, graph
+  dispatch, or completed-research presentation
+
+### Requirement: Full-fake demo compatibility is retired rather than reclassified
+
+The supported demo command map and documentation SHALL identify credential-free
+execution as fixture-graph proof and SHALL not retain a full-fake/no-graph lifecycle,
+simulator, command alias, or a distinct completed-presentation contract. The fixed
+all-real route and explicit fixture/mixed test composition remain separate and no
+caller receives recipe, executor, checkpoint, graph-route, or mode selection
+authority. (`DPL-003`, `DPL-005`, `DPL-008`)
+
+#### Scenario: A credential-free route is not a no-graph alias
+- **WHEN** an operator inspects supported demo help, Make targets, or README command
+  guidance
+- **THEN** every zero-credential execution route is described as fixture-graph proof
+  and no route names or invokes a full-fake/no-graph lifecycle

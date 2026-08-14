@@ -97,6 +97,7 @@ async def _admit_calibration_bundle(
     bundle = await lifecycle.start(
         scope=(envelope.effective_user_id, envelope.outer_thread_id),
         request_text=f"Run selected evidence-intake calibration: {case.case_id}",
+        implementation_mode="all_real",
     )
     selected_bundle = SelectedBundleContext(bundle=bundle)
     journal_store = RunObservationStore(

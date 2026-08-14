@@ -107,7 +107,11 @@ async def test_runtime_exception_is_redacted_as_a_safe_internal_failure() -> Non
 async def test_admitted_terminal_diagnostic_has_no_external_support_fallback(tmp_path) -> None:
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path / "workspace")
     scope = ("experience-user", "experience-thread")
-    bundle = await lifecycle.start(scope=scope, request_text="Research journal diagnostics.")
+    bundle = await lifecycle.start(
+        scope=scope,
+        request_text="Research journal diagnostics.",
+        implementation_mode="all_real",
+    )
     state = await lifecycle.end(bundle=bundle, terminal_status=LifecycleStatus.BLOCKED)
     result = lifecycle.result_for_state(
         action=LifecycleAction.START,

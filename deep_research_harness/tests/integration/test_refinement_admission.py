@@ -14,6 +14,7 @@ import pytest
 
 from deerflow_deep_research.domain.lifecycle import (
     AcceptedHumanResponse,
+    ImplementationMode,
     LifecycleStatus,
     RefinementAdmissionDisposition,
     ResponseKind,
@@ -35,6 +36,8 @@ def _profile() -> ResearchProfile:
         must_answer=("Which constraints matter?",),
         scope_boundaries="Grid scale only.",
         custom_notes="Prefer primary sources.",
+        request_language="en",
+        output_language="en",
     )
 
 
@@ -52,7 +55,11 @@ async def test_independent_lifecycles_admit_only_one_pending_direction(tmp_path:
     """REG-021: the Bundle root, not one Python instance, serializes admission."""
 
     first = BundleLifecycle(workspace_host_path=tmp_path)
-    bundle = await first.start(scope=_SCOPE, request_text="Research question")
+    bundle = await first.start(
+        scope=_SCOPE,
+        request_text="Research question",
+        implementation_mode=ImplementationMode.ALL_REAL,
+    )
     second = BundleLifecycle(workspace_host_path=tmp_path)
 
     admissions = await asyncio.gather(
@@ -85,7 +92,11 @@ async def test_response_and_direction_race_preserves_each_independent_fact(tmp_p
     """DRH-005: response consumption cannot discard an admitted direction."""
 
     first = BundleLifecycle(workspace_host_path=tmp_path)
-    bundle = await first.start(scope=_SCOPE, request_text="Research question")
+    bundle = await first.start(
+        scope=_SCOPE,
+        request_text="Research question",
+        implementation_mode=ImplementationMode.ALL_REAL,
+    )
     await first.set_pending_request(bundle=bundle, request_id="request-1", suspension_cursor="start-message")
     second = BundleLifecycle(workspace_host_path=tmp_path)
 
@@ -112,7 +123,11 @@ async def test_profile_projection_reduces_from_latest_state_after_direction_admi
     """REG-021: HITL1's permitted profile fields rebase without lifecycle authority."""
 
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
-    bundle = await lifecycle.start(scope=_SCOPE, request_text="Research question")
+    bundle = await lifecycle.start(
+        scope=_SCOPE,
+        request_text="Research question",
+        implementation_mode=ImplementationMode.ALL_REAL,
+    )
     request_store = RequestBundleStore(workspace_host_path=tmp_path, bundle=bundle)
     stale = await request_store.read_bundle_state()
 
@@ -142,7 +157,11 @@ async def test_cancel_and_direction_race_preserves_terminal_and_pending_facts(tm
     """DRH-005: a stale terminal reducer cannot remove a queued direction."""
 
     first = BundleLifecycle(workspace_host_path=tmp_path)
-    bundle = await first.start(scope=_SCOPE, request_text="Research question")
+    bundle = await first.start(
+        scope=_SCOPE,
+        request_text="Research question",
+        implementation_mode=ImplementationMode.ALL_REAL,
+    )
     second = BundleLifecycle(workspace_host_path=tmp_path)
 
     cancelled, admission = await asyncio.gather(

@@ -153,7 +153,7 @@ def _completed() -> dict[str, object]:
 async def test_start_projects_one_bundle_local_pending_request() -> None:
     transport = ReplayTransport([_suspension()])
 
-    update = await ResearchRunExperience(transport=transport, mode="fake").handle(
+    update = await ResearchRunExperience(transport=transport, mode="fixture").handle(
         StartRun(question="Compare storage options")
     )
 
@@ -169,7 +169,7 @@ async def test_start_projects_one_bundle_local_pending_request() -> None:
 @pytest.mark.asyncio
 async def test_resume_uses_the_selected_bundle_id_and_returns_the_same_result_contract() -> None:
     transport = ReplayTransport([_suspension(), _completed()])
-    experience = ResearchRunExperience(transport=transport, mode="fake")
+    experience = ResearchRunExperience(transport=transport, mode="fixture")
 
     first = await experience.handle(StartRun(question="Compare storage options"))
     update = await experience.handle(AnswerRun(value="Use public sources."))
@@ -190,7 +190,7 @@ async def test_scripted_start_projects_policy_once_and_later_actions_do_not_rein
             _completed(),
         ]
     )
-    experience = ResearchRunExperience(transport=transport, mode="fake")
+    experience = ResearchRunExperience(transport=transport, mode="fixture")
 
     await experience.handle(StartRun(question="Compare storage options", scripted=True))
     await experience.handle(RefineRun(text="Focus on lifecycle durability."))
@@ -217,7 +217,7 @@ async def test_policy_trace_marker_is_accepted_as_a_safe_observation(marker: str
     suspended = _suspended().model_copy(update={"execution_trace": ("bootstrap", "hitl1", marker)})
     transport = ReplayTransport([project_suspension(pending=_pending(), result=suspended, tool_call_id="call-1")])
 
-    update = await ResearchRunExperience(transport=transport, mode="fake").handle(
+    update = await ResearchRunExperience(transport=transport, mode="fixture").handle(
         StartRun(question="Compare storage options")
     )
 
@@ -229,7 +229,7 @@ async def test_policy_trace_marker_is_accepted_as_a_safe_observation(marker: str
 @pytest.mark.asyncio
 async def test_refine_is_dispatched_separately_without_consuming_the_pending_response() -> None:
     transport = ReplayTransport([_suspension(), _suspended(action=LifecycleAction.REFINE).model_dump(mode="json")])
-    experience = ResearchRunExperience(transport=transport, mode="fake")
+    experience = ResearchRunExperience(transport=transport, mode="fixture")
 
     await experience.handle(StartRun(question="Compare storage options"))
     update = await experience.handle(RefineRun(text="Focus on lifecycle durability."))
@@ -252,7 +252,7 @@ async def test_unavailable_result_clears_the_local_handle_and_offers_only_a_fres
         legal_next_action=LegalNextAction.START,
     ).model_dump(mode="json")
     transport = ReplayTransport([_suspension(), unavailable])
-    experience = ResearchRunExperience(transport=transport, mode="fake")
+    experience = ResearchRunExperience(transport=transport, mode="fixture")
 
     await experience.handle(StartRun(question="Compare storage options"))
     update = await experience.handle(StatusRun())
@@ -269,7 +269,7 @@ async def test_observation_is_published_only_from_a_shared_available_result() ->
     publisher = RecordingObservationPublisher()
     experience = ResearchRunExperience(
         transport=ReplayTransport([_suspension()]),
-        mode="fake",
+        mode="fixture",
         observation_publisher=publisher,
     )
 
@@ -289,7 +289,7 @@ async def test_rejected_pre_admission_request_creates_no_bundle_or_journal(tmp_p
     scope = ("journal-user", "journal-thread")
 
     with pytest.raises(ValueError, match="start_request_invalid"):
-        await lifecycle.start(scope=scope, request_text="")
+        await lifecycle.start(scope=scope, request_text="", implementation_mode="all_real")
 
     assert await lifecycle.discover_active(scope=scope) is None
     journal_manifests = await asyncio.to_thread(lambda: tuple(tmp_path.rglob("journal-manifest.json")))
@@ -300,11 +300,11 @@ async def test_rejected_pre_admission_request_creates_no_bundle_or_journal(tmp_p
 async def test_journal_publication_failure_does_not_change_the_typed_lifecycle_projection() -> None:
     baseline = await ResearchRunExperience(
         transport=ReplayTransport([_suspension()]),
-        mode="fake",
+        mode="fixture",
     ).handle(StartRun(question="Compare storage options"))
     failed_publication = await ResearchRunExperience(
         transport=ReplayTransport([_suspension()]),
-        mode="fake",
+        mode="fixture",
         observation_publisher=FailingObservationPublisher(),
     ).handle(StartRun(question="Compare storage options"))
 
@@ -322,7 +322,7 @@ async def test_journal_publication_failure_does_not_change_the_typed_lifecycle_p
 async def test_malformed_result_fails_closed_without_creating_a_control_projection() -> None:
     update = await ResearchRunExperience(
         transport=ReplayTransport([{"bundle_id": "r_" + "A" * 43, "code": "completed"}]),
-        mode="fake",
+        mode="fixture",
     ).handle(StartRun(question="Compare storage options"))
 
     assert isinstance(update, Fault)

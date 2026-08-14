@@ -41,7 +41,10 @@ from deerflow_deep_research.domain.context import (
 )
 from deerflow_deep_research.domain.enums import NodeFinishReason
 from deerflow_deep_research.domain.invocation import WorkUnitControllerDependencies
-from deerflow_deep_research.domain.state import WORK_UNIT_GATE_PREVIEW_FIELDS, preview_work_unit_update
+from deerflow_deep_research.domain.state import (
+    WORK_UNIT_GATE_PREVIEW_FIELDS,
+    preview_work_unit_update,
+)
 from deerflow_deep_research.domain.wave1 import WAVE1_GATE_REVIEW_KEY, Wave1GateReview
 from deerflow_deep_research.domain.work_units import (
     WORK_UNIT_GATE_VIEW_KEY,
@@ -91,17 +94,22 @@ _MODEL_CONFIGS = {
 }
 _PROFILE = json.dumps(
     {
+        "schema_version": 2,
         "depth": "quick_overview",
         "audience": "domain_expert",
         "format": "annotated_bibliography",
         "cost_tolerance": "minimal",
         "time_budget": "very_quick",
         "must_answer": ["What evidence supports the answer?"],
+        "scope_boundaries": "One narrow public-source topic.",
+        "custom_notes": "Live canary only.",
+        "comparison_subjects": None,
+        "output_language": "en",
     }
 )
 _BRIEF = json.dumps(
     {
-        "schema_version": 1,
+        "schema_version": 2,
         "brief_summary": "A bounded live canary research brief.",
         "depth": "quick_overview",
         "audience": "domain_expert",
@@ -111,6 +119,10 @@ _BRIEF = json.dumps(
         "must_answer": ["What evidence supports the answer?"],
         "scope_boundaries": "One narrow public-source topic.",
         "custom_notes": "Live canary only.",
+        "comparison_required": False,
+        "comparison_subjects": None,
+        "request_language": "en",
+        "output_language": "en",
     }
 )
 _PLAN = json.dumps(
@@ -1048,6 +1060,7 @@ async def _start_focused_bundle(envelope: Any) -> RunBundleRef:
     return await BundleLifecycle(workspace_host_path=envelope.workspace_host_path).start(
         scope=(envelope.effective_user_id, envelope.outer_thread_id),
         request_text="Run a focused live canary research phase.",
+        implementation_mode="all_real",
     )
 
 

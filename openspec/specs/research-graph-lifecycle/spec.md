@@ -4,7 +4,7 @@
 
 ## Purpose
 The stable Deep Research graph topology, deterministic implementation selection,
-full-fake routing and fan-in, graph-owned HITL lifecycle, and durable checkpoint
+fixture-graph routing and fan-in, graph-owned HITL lifecycle, and durable checkpoint
 semantics that later changes replace node by node without redefining control flow.
 ## Requirements
 ### Requirement: One explicit topology and implementation map own every phase
@@ -23,8 +23,7 @@ SHALL fail closed for an omitted, empty, incomplete, unknown, or unavailable ada
 or a missing, unknown, extraneous, or adapter-mismatched gate definition, before graph
 compilation or invocation and SHALL NOT silently select a fixture. The named all-real recipe
 factory is the only
-production-owned construction path and supplies its fixed real selection itself; its internal
-compatibility alias accepts no selection or mode argument. Node packages SHALL use one canonical
+production-owned construction path and supplies its fixed real selection itself. Node packages SHALL use one canonical
 pure unavailable-real sentinel rather than divergent placeholder behavior.
 
 Real HITL1 SHALL add exactly two HITL1 route labels to the normalized topology:
@@ -67,7 +66,7 @@ phase or alternate bypass around synthesis is introduced.
   checkpoint, model, sandbox tool, or node is invoked
 
 #### Scenario: Fixed production factory cannot become a mode selector
-- **WHEN** internal code uses the named all-real factory or its compatibility alias
+- **WHEN** internal code uses the named all-real factory
 - **THEN** it supplies the fixed all-real selection, accepts no adapter-selection or mode input,
   and cannot import or select fixture adapters
 
@@ -200,9 +199,9 @@ logical phases.
 - **WHEN** the fake graph runs with fixture gate definitions encoding the same sequences as the prior `fixture_plan`
 - **THEN** every top-level phase transition follows the same path and every E2E lifecycle test (happy completion, repair, rerun, stop, cancel, stale-response denial) passes while Wave0/Wave1 exercise validated work-unit submission
 
-#### Scenario: Full-fake HITL1 remains unchanged
-- **WHEN** the full-fake graph reaches HITL1
-- **THEN** fake HITL1 presents its hardcoded fixture prompt, accepts the matching response once, routes `accepted`, and does not call a model, request-bundle writer, or real-HITL1 follow-up route
+#### Scenario: Fixture-graph HITL1 remains deterministic
+- **WHEN** the explicit fixture graph reaches HITL1
+- **THEN** fixture HITL1 presents its hardcoded fixture prompt, accepts the matching response once, routes `accepted`, and does not call a model, request-bundle writer, or real-HITL1 follow-up route
 
 #### Scenario: Real HITL1 follow-up does not affect gated phase routing
 - **WHEN** real HITL1 routes `needs_followup` or `exhausted`
@@ -751,3 +750,32 @@ or authorize the transition.
 #### Scenario: Coordinator cancellation and root loss release without a write
 - **WHEN** a contender is cancelled while waiting for the selected Bundle coordinator, or the selected Bundle is removed or replaced after coordination is acquired
 - **THEN** it releases its transient exclusion, performs no State/checkpoint/graph invocation write, and returns cancellation or the typed unavailable outcome without recreating the Bundle
+
+### Requirement: Persisted composition truth is explicit and closed
+
+Every accepted Bundle-local Research State SHALL carry an explicit composition mode
+derived from its selected graph recipe and executor. The supported closed set is
+`fixture`, `mixed`, and `all_real`. A missing, `full_fake`, unknown, incompatible, or
+otherwise unregistered mode/schema input SHALL fail before lifecycle projection, graph
+invocation, State mutation, or a quality/completion claim; it SHALL not default,
+backfill, auto-migrate, or strengthen provenance. The fixed production factory remains
+all-real and generic test/demo composition remains explicit; no compatibility factory,
+no-graph execution path, or caller-selected production mode is retained. (`REG-004`,
+`REG-005`, `REG-006`, `REG-011`, `REG-019`)
+
+#### Scenario: Missing mode is rejected without a State write
+- **WHEN** a lifecycle reader receives a Bundle State mapping with no explicit
+  composition mode
+- **THEN** it returns the existing bounded invalid/unsupported State outcome before a
+  graph node, State reducer, or lifecycle projection runs and leaves the payload
+  unchanged
+
+#### Scenario: Removed full-fake provenance cannot be upgraded
+- **WHEN** a State mapping names `full_fake` or an unknown composition mode
+- **THEN** the reader rejects it without interpreting it as `all_real`, producing a
+  completion claim, or rewriting the mapping
+
+#### Scenario: Trusted executor supplies the initial mode
+- **WHEN** a supported graph-backed start publishes a new Bundle
+- **THEN** its State receives exactly the selected recipe's explicit mode and no caller
+  may replace that fact through a lifecycle action

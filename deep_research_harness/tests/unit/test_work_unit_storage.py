@@ -8,6 +8,7 @@ import pytest
 from deerflow.sandbox.local.local_sandbox import LocalSandbox, PathMapping
 
 from deerflow_deep_research.domain.bundle import BundleId, RunBundleRef, bundle_host_relative_root
+from deerflow_deep_research.domain.state import BundleLocalState
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
 from deerflow_deep_research.runtime.work_unit_storage import (
     check_prelaunch_work_unit_storage,
@@ -23,7 +24,9 @@ BUNDLE = RunBundleRef(
 
 
 def _publish_bundle(workspace: Path) -> None:
-    BundleLifecycle(workspace_host_path=workspace)._publish_sync(BUNDLE)
+    BundleLifecycle(workspace_host_path=workspace)._publish_sync(
+        BUNDLE, BundleLocalState(bundle_id=BUNDLE.bundle_id, implementation_mode="all_real")
+    )
 
 
 def _config(use: str, *, provisioner_url: str | None = None) -> SimpleNamespace:

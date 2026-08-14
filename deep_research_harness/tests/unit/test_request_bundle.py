@@ -27,6 +27,7 @@ from deerflow_deep_research.domain.profile import (
     canonical_profile_bytes,
     compute_profile_content_hash,
 )
+from deerflow_deep_research.domain.state import BundleLocalState
 from deerflow_deep_research.runtime import request_bundle as request_bundle_module
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycleError
 from deerflow_deep_research.runtime.request_bundle import MAX_PROFILE_BYTES, RequestBundleStore
@@ -56,6 +57,7 @@ async def _store(workspace: Path, **hooks: object) -> RequestBundleStore:
 
 def _profile(**overrides: object) -> ResearchProfile:
     payload: dict[str, object] = {
+        "schema_version": 2,
         "depth": "standard",
         "audience": "practitioner",
         "format": "detailed_report",
@@ -64,6 +66,11 @@ def _profile(**overrides: object) -> ResearchProfile:
         "must_answer": ("Q1",),
         "scope_boundaries": "Grid scale only.",
         "custom_notes": "Prefer recent sources.",
+        "comparison_required": False,
+        "comparison_subjects": None,
+        "request_language": "en",
+        "output_language": "en",
+        "degraded_profile": False,
     }
     payload.update(overrides)
     return ResearchProfile(**payload)
@@ -74,7 +81,9 @@ async def _published_bundle(workspace: Path) -> None:
 
     root = workspace / bundle_host_relative_root(BUNDLE)
     if not root.exists():
-        BundleLifecycle(workspace_host_path=workspace)._publish_sync(BUNDLE)
+        BundleLifecycle(workspace_host_path=workspace)._publish_sync(
+            BUNDLE, BundleLocalState(bundle_id=BUNDLE.bundle_id, implementation_mode="all_real")
+        )
 
 
 def _profile_file(workspace: Path, bundle: RunBundleRef = BUNDLE) -> Path:

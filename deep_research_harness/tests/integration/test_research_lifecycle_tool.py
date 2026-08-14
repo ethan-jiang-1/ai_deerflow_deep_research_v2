@@ -20,8 +20,11 @@ from __future__ import annotations
 
 import json
 import os
+import secrets
 import shutil
+import time
 from dataclasses import replace
+from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -38,7 +41,9 @@ from deerflow_deep_research.domain.lifecycle import (
     RefinementInput,
     ResponseKind,
 )
+from deerflow_deep_research.domain.state import BundleLocalState
 from deerflow_deep_research.runtime.bundle_control import BundleControl
+from deerflow_deep_research.runtime.bundle_graph import BundleGraphExecutor
 from deerflow_deep_research.runtime.bundle_lifecycle import (
     BundleAlreadyActive,
     BundleLifecycle,
@@ -56,7 +61,9 @@ from deerflow_deep_research.runtime.evaluation import (
     SubjectExecution,
 )
 from deerflow_deep_research.runtime.runtime_adapter import TrustedRuntimeEnvelope
+from deerflow_deep_research.runtime.work_unit_store import WorkUnitStore
 from deerflow_deep_research.tool import DeepResearchArgs, run_deep_research
+from tests.fixtures.recipes import fixture_recipe
 
 
 class FakeAppConfig:
@@ -64,12 +71,39 @@ class FakeAppConfig:
     database = None
 
 
+async def _start(lifecycle: BundleLifecycle, *, scope: tuple[str, str], request_text: str) -> RunBundleRef:
+    return await lifecycle.start(
+        scope=scope,
+        request_text=request_text,
+        implementation_mode="all_real",
+    )
+
+
+def _fixture_executor() -> BundleGraphExecutor:
+    async def create(envelope: Any, *, bundle: RunBundleRef, **_kwargs: Any) -> WorkUnitStore:
+        return WorkUnitStore(
+            workspace_host_path=envelope.workspace_host_path,
+            bundle=bundle,
+            clock=lambda: datetime(2026, 8, 7, tzinfo=UTC),
+            monotonic=time.monotonic,
+            lock_sleep=time.sleep,
+            token_factory=lambda: secrets.token_hex(16),
+            fault_hook=None,
+        )
+
+    return BundleGraphExecutor(recipe=fixture_recipe(work_unit_store_factory=create))
+
+
+async def _fixture_run(**kwargs: Any) -> Any:
+    return await run_deep_research(bundle_graph_executor_factory=_fixture_executor, **kwargs)
+
+
 @pytest.mark.asyncio
 async def test_bundle_handle_and_absent_handle_resolve_only_one_active_bundle(tmp_path: Path) -> None:
     """DRH-003/004: Handle continuation and scoped fallback have no session authority."""
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
     scope = ("alice", "thread-1")
-    bundle = await lifecycle.start(scope=scope, request_text="Research batteries")
+    bundle = await _start(lifecycle, scope=scope, request_text="Research batteries")
 
     assert await lifecycle.resolve_active(scope=scope, handle=CurrentBundleHandle(bundle.bundle_id)) == bundle
     assert await lifecycle.resolve_active(scope=scope, handle=None) == bundle
@@ -86,14 +120,14 @@ async def test_start_admission_blocks_only_an_active_bundle_and_ended_bundle_all
     """DRH-004: no durable active pointer is needed for one-active admission."""
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
     scope = ("alice", "thread-1")
-    first = await lifecycle.start(scope=scope, request_text="First question")
+    first = await _start(lifecycle, scope=scope, request_text="First question")
 
     with pytest.raises(BundleAlreadyActive) as error:
-        await lifecycle.start(scope=scope, request_text="Second question")
+        await _start(lifecycle, scope=scope, request_text="Second question")
     assert error.value.bundle == first
 
     await lifecycle.end(bundle=first)
-    second = await lifecycle.start(scope=scope, request_text="Second question")
+    second = await _start(lifecycle, scope=scope, request_text="Second question")
     assert second.bundle_id != first.bundle_id
 
 
@@ -102,7 +136,7 @@ async def test_malformed_foreign_and_ambiguous_candidates_fail_closed(tmp_path: 
     """DRH-003: discovery never guesses through malformed or competing candidates."""
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
     scope = ("alice", "thread-1")
-    first = await lifecycle.start(scope=scope, request_text="First question")
+    first = await _start(lifecycle, scope=scope, request_text="First question")
 
     with pytest.raises(ValueError, match="bundle_id_invalid"):
         CurrentBundleHandle.from_value("r_" + "A" * 43)
@@ -111,7 +145,7 @@ async def test_malformed_foreign_and_ambiguous_candidates_fail_closed(tmp_path: 
 
     bucket = scope_bucket(effective_user_id="alice", outer_thread_id="thread-1")
     second = RunBundleRef(bundle_id=new_bundle_id(), scope_bucket=bucket)
-    lifecycle._publish_sync(second)
+    lifecycle._publish_sync(second, BundleLocalState(bundle_id=second.bundle_id, implementation_mode="all_real"))
     with pytest.raises(BundleLifecycleError, match="bundle_discovery_ambiguous"):
         await lifecycle.resolve_active(scope=scope, handle=None)
 
@@ -121,7 +155,7 @@ async def test_refine_preserves_the_pending_response_and_resume_requires_its_cor
     """DRH-005: Run refinement is not an answer to a pending interaction."""
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
     scope = ("alice", "thread-1")
-    bundle = await lifecycle.start(scope=scope, request_text="Question")
+    bundle = await _start(lifecycle, scope=scope, request_text="Question")
     await lifecycle.set_pending_request(bundle=bundle, request_id="hitl-1")
 
     refined = (
@@ -165,7 +199,7 @@ async def test_refine_without_explicit_id_never_reactivates_an_ended_handle(tmp_
     """DRH-005: an ended Handle cannot guess a later refinement round."""
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
     scope = ("alice", "thread-1")
-    bundle = await lifecycle.start(scope=scope, request_text="Question")
+    bundle = await _start(lifecycle, scope=scope, request_text="Question")
     await lifecycle.end(bundle=bundle)
 
     with pytest.raises(BundleLifecycleError, match="explicit_bundle_id_required"):
@@ -184,7 +218,7 @@ async def test_explicit_refinement_queues_an_ended_bundle_only_without_another_a
     """DRH-005: Phase 1 admits an ended-Bundle direction without graph activation."""
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
     scope = ("alice", "thread-1")
-    ended = await lifecycle.start(scope=scope, request_text="Original question")
+    ended = await _start(lifecycle, scope=scope, request_text="Original question")
     await lifecycle.end(bundle=ended)
 
     admitted = (
@@ -199,7 +233,7 @@ async def test_explicit_refinement_queues_an_ended_bundle_only_without_another_a
     assert admitted.refinement_round == 0
     assert admitted.admitted_refinement is not None
 
-    active = await lifecycle.start(scope=scope, request_text="Different question")
+    active = await _start(lifecycle, scope=scope, request_text="Different question")
     with pytest.raises(BundleLifecycleError, match="active_bundle_exists"):
         await lifecycle.admit_refinement(
             scope=scope,
@@ -215,7 +249,7 @@ async def test_deleted_bundle_is_unavailable_without_checkpoint_or_replacement_r
     """DRH-006: a missing Bundle is permanent even if observations remain elsewhere."""
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
     scope = ("alice", "thread-1")
-    bundle = await lifecycle.start(scope=scope, request_text="Question")
+    bundle = await _start(lifecycle, scope=scope, request_text="Question")
     root = lifecycle.private_root(bundle)
     legacy_observation = {"checkpoint": "still-present", "binding": "still-present", "session": "still-present"}
 
@@ -225,7 +259,7 @@ async def test_deleted_bundle_is_unavailable_without_checkpoint_or_replacement_r
     assert not root.exists()
     assert legacy_observation == {"checkpoint": "still-present", "binding": "still-present", "session": "still-present"}
 
-    fresh = await lifecycle.start(scope=scope, request_text="Independent question")
+    fresh = await _start(lifecycle, scope=scope, request_text="Independent question")
     assert fresh.bundle_id != bundle.bundle_id
 
 
@@ -234,7 +268,7 @@ async def test_evaluation_bundle_cannot_restore_or_join_deep_research_discovery(
     """DRH-007/CES-008: Evaluation Bundles are a separate non-recovery domain."""
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
     scope = ("alice", "thread-1")
-    lost = await lifecycle.start(scope=scope, request_text="Question")
+    lost = await _start(lifecycle, scope=scope, request_text="Question")
     shutil.rmtree(lifecycle.private_root(lost))
 
     async def evaluation_subject(context: Any) -> SubjectExecution:
@@ -265,7 +299,7 @@ async def test_evaluation_bundle_cannot_restore_or_join_deep_research_discovery(
     assert (await lifecycle.status(scope=scope, bundle_id=lost.bundle_id)).code == "unavailable"
     assert await lifecycle.discover_active(scope=scope) is None
 
-    fresh = await lifecycle.start(scope=scope, request_text="Independent question")
+    fresh = await _start(lifecycle, scope=scope, request_text="Independent question")
     assert fresh.bundle_id != lost.bundle_id
 
 
@@ -276,7 +310,7 @@ async def test_control_returns_unavailable_when_bundle_is_deleted_during_state_p
 ) -> None:
     """DRH-006: a deletion race never leaks a filesystem exception through control."""
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
-    bundle = await lifecycle.start(scope=("alice", "thread-1"), request_text="Question")
+    bundle = await _start(lifecycle, scope=("alice", "thread-1"), request_text="Question")
     root = lifecycle.private_root(bundle)
     original_replace = os.replace
 
@@ -409,7 +443,7 @@ async def test_foreign_bundle_id_is_rejected_before_graph_or_checkpoint_access(t
         def is_registered(self, _action: str) -> bool:
             raise AssertionError("lifecycle actions must not use GraphHost")
 
-    result = await run_deep_research(
+    result = await _fixture_run(
         action="status",
         probe_id=None,
         bundle_id="b_" + "Z" * 43,
@@ -431,7 +465,7 @@ async def test_public_bundle_lifecycle_completes_after_one_correlated_resume(tmp
     adapter = FakeAdapter(_envelope(tmp_path))
     start_user = HumanMessage(content="research question", id="human-start")
     start_ai = _call("start", "call-start")
-    started = await run_deep_research(
+    started = await _fixture_run(
         action="start",
         probe_id=None,
         runtime=_runtime([start_user, start_ai], "call-start"),
@@ -443,12 +477,12 @@ async def test_public_bundle_lifecycle_completes_after_one_correlated_resume(tmp
     assert start_result["code"] == "suspended"
     assert start_result["status"] == "suspended"
     assert start_result["availability"] == "available"
-    assert start_result["implementation_mode"] == "all_real"
+    assert start_result["implementation_mode"] == "fixture"
     assert start_result["legal_next_action"] == "resume"
     assert start_result["bundle_id"] == bundle_id
 
     response = _response(str(hitl1["request_id"]))
-    resumed = await run_deep_research(
+    resumed = await _fixture_run(
         action="resume",
         probe_id=None,
         bundle_id=bundle_id,
@@ -463,7 +497,7 @@ async def test_public_bundle_lifecycle_completes_after_one_correlated_resume(tmp
     assert resumed["bundle_id"] == bundle_id
     assert resumed["legal_next_action"] == "refine"
 
-    status = await run_deep_research(
+    status = await _fixture_run(
         action="status",
         probe_id=None,
         bundle_id=bundle_id,
@@ -481,7 +515,7 @@ async def test_infra_probe_checkpoint_remains_isolated_from_bundle_lifecycle(tmp
     assert not any(host.is_registered(action) for action in ("start", "resume", "status", "cancel", "refine"))
     adapter = FakeAdapter(_envelope(tmp_path))
     probe_runtime = _runtime([], "probe-call")
-    before = await run_deep_research(
+    before = await _fixture_run(
         action="infra_probe",
         probe_id="p1",
         runtime=probe_runtime,
@@ -489,14 +523,14 @@ async def test_infra_probe_checkpoint_remains_isolated_from_bundle_lifecycle(tmp
         host_factory=lambda: host,
     )
     user = HumanMessage(content="research question", id="human-start")
-    started = await run_deep_research(
+    started = await _fixture_run(
         action="start",
         probe_id=None,
         runtime=_runtime([user, _call("start", "call-start")], "call-start"),
         adapter=adapter,
         host_factory=lambda: host,
     )
-    after = await run_deep_research(
+    after = await _fixture_run(
         action="infra_probe",
         probe_id="p1",
         runtime=probe_runtime,
@@ -521,7 +555,7 @@ async def test_early_dispatch_refusals_do_not_mutate_lifecycle(tmp_path: Path) -
             {"name": "other", "args": {}, "id": "other-call"},
         ],
     )
-    denied = await run_deep_research(
+    denied = await _fixture_run(
         action="start",
         probe_id=None,
         runtime=_runtime([user, sibling_ai], "call-start"),
@@ -531,7 +565,7 @@ async def test_early_dispatch_refusals_do_not_mutate_lifecycle(tmp_path: Path) -
     assert adapter.adapted == 0
 
     normal_ai = _call("start", "call-start")
-    noninteractive = await run_deep_research(
+    noninteractive = await _fixture_run(
         action="start",
         probe_id=None,
         runtime=_runtime([user, normal_ai], "call-start", context={"non_interactive": True}),
@@ -539,7 +573,7 @@ async def test_early_dispatch_refusals_do_not_mutate_lifecycle(tmp_path: Path) -
     )
     assert noninteractive["code"] == "interactive_required"
 
-    im_denied = await run_deep_research(
+    im_denied = await _fixture_run(
         action="start",
         probe_id=None,
         runtime=_runtime([user, normal_ai], "call-start", context={"channel_user_id": "secret-channel-user"}),
@@ -553,7 +587,7 @@ async def test_early_dispatch_refusals_do_not_mutate_lifecycle(tmp_path: Path) -
 async def test_interaction_refusals_preserve_explicit_status_and_cancel_controls(tmp_path: Path) -> None:
     adapter = FakeAdapter(_envelope(tmp_path))
     user = HumanMessage(content="question", id="human-start")
-    started = await run_deep_research(
+    started = await _fixture_run(
         action="start",
         probe_id=None,
         runtime=_runtime([user, _call("start", "call-start")], "call-start"),
@@ -566,7 +600,7 @@ async def test_interaction_refusals_preserve_explicit_status_and_cancel_controls
         ({"non_interactive": True}, "interactive_required"),
         ({"channel_name": "known-im"}, "human_input_transport_unavailable"),
     ):
-        denied = await run_deep_research(
+        denied = await _fixture_run(
             action="resume",
             probe_id=None,
             bundle_id=bundle_id,
@@ -579,7 +613,7 @@ async def test_interaction_refusals_preserve_explicit_status_and_cancel_controls
         )
         assert denied["code"] == expected
 
-        status = await run_deep_research(
+        status = await _fixture_run(
             action="status",
             probe_id=None,
             bundle_id=bundle_id,
@@ -593,7 +627,7 @@ async def test_interaction_refusals_preserve_explicit_status_and_cancel_controls
         assert status["code"] == "suspended"
         assert status["status"] == "suspended"
 
-    cancelled = await run_deep_research(
+    cancelled = await _fixture_run(
         action="cancel",
         probe_id=None,
         bundle_id=bundle_id,
@@ -614,13 +648,13 @@ async def test_distinct_trusted_scopes_receive_independent_bundle_ids(tmp_path: 
     second_adapter = FakeAdapter(_envelope(tmp_path, thread="thread-2"))
     first_user = HumanMessage(content="first question", id="human-first")
     second_user = HumanMessage(content="second question", id="human-second")
-    first = await run_deep_research(
+    first = await _fixture_run(
         action="start",
         probe_id=None,
         runtime=_runtime([first_user, _call("start", "call-first")], "call-first"),
         adapter=first_adapter,
     )
-    second = await run_deep_research(
+    second = await _fixture_run(
         action="start",
         probe_id=None,
         runtime=_runtime([second_user, _call("start", "call-second")], "call-second"),
@@ -635,14 +669,14 @@ async def test_distinct_trusted_scopes_receive_independent_bundle_ids(tmp_path: 
 async def test_same_start_reprojects_and_different_message_conflicts(tmp_path: Path) -> None:
     adapter = FakeAdapter(_envelope(tmp_path))
     user = HumanMessage(content="question", id="human-start")
-    first = await run_deep_research(
+    first = await _fixture_run(
         action="start",
         probe_id=None,
         runtime=_runtime([user, _call("start", "call-1")], "call-1"),
         adapter=adapter,
     )
     first_result, first_request = _command_payload(first)
-    retry = await run_deep_research(
+    retry = await _fixture_run(
         action="start",
         probe_id=None,
         runtime=_runtime([user, _call("start", "call-2")], "call-2"),
@@ -654,7 +688,7 @@ async def test_same_start_reprojects_and_different_message_conflicts(tmp_path: P
     assert retry.update["messages"][0].tool_call_id == "call-2"
 
     another = HumanMessage(content="another question", id="human-new")
-    conflict = await run_deep_research(
+    conflict = await _fixture_run(
         action="start",
         probe_id=None,
         runtime=_runtime([another, _call("start", "call-3")], "call-3"),
@@ -669,7 +703,7 @@ async def test_completed_resume_and_cancel_replay_the_terminal_bundle_projection
     adapter = FakeAdapter(_envelope(tmp_path))
     user = HumanMessage(content="question", id="human-start")
     start_ai = _call("start", "call-start")
-    started = await run_deep_research(
+    started = await _fixture_run(
         action="start",
         probe_id=None,
         runtime=_runtime([user, start_ai], "call-start"),
@@ -678,7 +712,7 @@ async def test_completed_resume_and_cancel_replay_the_terminal_bundle_projection
     started_result, hitl1 = _command_payload(started)
     bundle_id = str(started_result["bundle_id"])
     response = _response(str(hitl1["request_id"]))
-    resumed = await run_deep_research(
+    resumed = await _fixture_run(
         action="resume",
         probe_id=None,
         bundle_id=bundle_id,
@@ -689,7 +723,7 @@ async def test_completed_resume_and_cancel_replay_the_terminal_bundle_projection
         adapter=adapter,
     )
     assert resumed["code"] == "completed"
-    replay = await run_deep_research(
+    replay = await _fixture_run(
         action="resume",
         probe_id=None,
         bundle_id=bundle_id,
@@ -701,7 +735,7 @@ async def test_completed_resume_and_cancel_replay_the_terminal_bundle_projection
     )
     assert replay["code"] == "completed"
 
-    cancelled = await run_deep_research(
+    cancelled = await _fixture_run(
         action="cancel",
         probe_id=None,
         bundle_id=bundle_id,
@@ -722,7 +756,7 @@ async def test_refine_is_not_resume_and_ended_handle_requires_an_explicit_target
 
     user = HumanMessage(content="question", id="human-start")
     start_ai = _call("start", "call-start")
-    started = await run_deep_research(
+    started = await _fixture_run(
         action="start",
         probe_id=None,
         runtime=_runtime([user, start_ai], "call-start"),
@@ -745,7 +779,7 @@ async def test_refine_is_not_resume_and_ended_handle_requires_an_explicit_target
     assert adapter.initialize_values == [True, False]
 
     response = _response(str(hitl1["request_id"]))
-    completed = await run_deep_research(
+    completed = await _fixture_run(
         action="resume",
         probe_id=None,
         bundle_id=bundle_id,
@@ -758,7 +792,7 @@ async def test_refine_is_not_resume_and_ended_handle_requires_an_explicit_target
     assert completed["status"] == "completed"
 
     ended_handle = CurrentBundleHandle.from_value(bundle_id)
-    implicit = await run_deep_research(
+    implicit = await _fixture_run(
         action="refine",
         probe_id=None,
         refinement="Reopen this research",
@@ -772,7 +806,7 @@ async def test_refine_is_not_resume_and_ended_handle_requires_an_explicit_target
     assert implicit["code"] == "explicit_bundle_id_required"
     assert implicit["availability"] == "unavailable"
 
-    reopened = await run_deep_research(
+    reopened = await _fixture_run(
         action="refine",
         probe_id=None,
         bundle_id=bundle_id,
@@ -781,16 +815,16 @@ async def test_refine_is_not_resume_and_ended_handle_requires_an_explicit_target
         adapter=adapter,
     )
     assert reopened["bundle_id"] == bundle_id
-    assert reopened["code"] == "refinement_conflict"
+    assert reopened["code"] == "refinement_applied"
     assert reopened["status"] == "completed"
-    assert reopened["legal_next_action"] == "refine"
+    assert reopened["legal_next_action"] == "start"
 
 
 @pytest.mark.asyncio
 async def test_wrong_scope_is_indistinguishable_from_absence(tmp_path: Path) -> None:
     original_adapter = FakeAdapter(_envelope(tmp_path))
     user = HumanMessage(content="question", id="human-start")
-    started = await run_deep_research(
+    started = await _fixture_run(
         action="start",
         probe_id=None,
         runtime=_runtime([user, _call("start", "call-start")], "call-start"),
@@ -799,14 +833,14 @@ async def test_wrong_scope_is_indistinguishable_from_absence(tmp_path: Path) -> 
     result, _ = _command_payload(started)
     bundle_id = str(result["bundle_id"])
     wrong_adapter = FakeAdapter(_envelope(tmp_path, thread="other-thread"))
-    wrong = await run_deep_research(
+    wrong = await _fixture_run(
         action="status",
         probe_id=None,
         bundle_id=bundle_id,
         runtime=_runtime([_call("status", "call-wrong", bundle_id=bundle_id)], "call-wrong"),
         adapter=wrong_adapter,
     )
-    absent = await run_deep_research(
+    absent = await _fixture_run(
         action="status",
         probe_id=None,
         bundle_id="b_" + "Z" * 43,

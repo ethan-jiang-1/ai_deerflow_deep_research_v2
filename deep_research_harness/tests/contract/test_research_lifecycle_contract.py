@@ -40,6 +40,10 @@ _BUNDLE = RunBundleRef(
 _POLICY = FullRerunPolicy(max_rerun_generations=2)
 
 
+def _state(**overrides: object) -> BundleLocalState:
+    return BundleLocalState(bundle_id=_BUNDLE.bundle_id, implementation_mode="all_real", **overrides)
+
+
 def _operation(*, key: str, text: str) -> RefinementOperation:
     return RefinementOperation.from_text(operation_key=key, text=text)
 
@@ -69,10 +73,10 @@ def _result(
 
 
 def test_available_results_project_all_refinement_dispositions_without_private_direction_facts(tmp_path) -> None:
-    none = _terminal(BundleLocalState(bundle_id=_BUNDLE.bundle_id))
+    none = _terminal(_state())
     pending = _terminal(
         admit_bundle_refinement(
-            BundleLocalState(bundle_id=_BUNDLE.bundle_id),
+            _state(),
             _operation(key="operation-1", text="Preserve source quality"),
             policy=_POLICY,
         ).state
@@ -80,7 +84,7 @@ def test_available_results_project_all_refinement_dispositions_without_private_d
     applied = _terminal(
         consume_admitted_refinement(
             admit_bundle_refinement(
-                BundleLocalState(bundle_id=_BUNDLE.bundle_id),
+                _state(),
                 _operation(key="operation-1", text="Preserve source quality"),
                 policy=_POLICY,
             ).state,
@@ -125,7 +129,7 @@ def test_available_results_project_all_refinement_dispositions_without_private_d
 
 def test_submitted_operation_codes_remain_distinct_from_post_call_bundle_projection(tmp_path) -> None:
     pending = admit_bundle_refinement(
-        BundleLocalState(bundle_id=_BUNDLE.bundle_id),
+        _state(),
         _operation(key="operation-1", text="Preserve source quality"),
         policy=_POLICY,
     ).state
@@ -163,7 +167,7 @@ def test_submitted_operation_codes_remain_distinct_from_post_call_bundle_project
 
 def test_active_pending_direction_requires_resume_only_for_a_human_subject(tmp_path) -> None:
     pending = admit_bundle_refinement(
-        BundleLocalState(bundle_id=_BUNDLE.bundle_id),
+        _state(),
         _operation(key="operation-1", text="Preserve source quality"),
         policy=_POLICY,
     ).state
@@ -183,26 +187,25 @@ def test_active_pending_direction_requires_resume_only_for_a_human_subject(tmp_p
 @pytest.mark.parametrize(
     "state_builder",
     (
-        lambda: BundleLocalState(bundle_id=_BUNDLE.bundle_id, generation=1),
+        lambda: _state(generation=1),
         lambda: replace(
             consume_admitted_refinement(
                 admit_bundle_refinement(
-                    BundleLocalState(bundle_id=_BUNDLE.bundle_id),
+                    _state(),
                     _operation(key="operation-1", text="Applied direction"),
                     policy=_POLICY,
                 ).state,
                 policy=_POLICY,
             ),
         ),
-        lambda: BundleLocalState(
-            bundle_id=_BUNDLE.bundle_id,
+        lambda: _state(
             generation=1,
             admitted_refinement=_operation(key="operation-1", text="Pending direction"),
         ),
         lambda: replace(
             consume_admitted_refinement(
                 admit_bundle_refinement(
-                    BundleLocalState(bundle_id=_BUNDLE.bundle_id),
+                    _state(),
                     _operation(key="operation-1", text="Applied direction"),
                     policy=_POLICY,
                 ).state,
@@ -225,7 +228,7 @@ def test_exhausted_terminal_projects_fresh_start_for_every_refinement_dispositio
 
 def test_result_rejects_applied_code_for_a_bundle_without_a_committed_current_round(tmp_path) -> None:
     pending = admit_bundle_refinement(
-        BundleLocalState(bundle_id=_BUNDLE.bundle_id),
+        _state(),
         _operation(key="operation-1", text="Preserve source quality"),
         policy=_POLICY,
     ).state
@@ -281,7 +284,7 @@ async def _commit_current_round(
 async def test_bundle_control_distinguishes_new_pending_direction_from_current_or_retained_replay(tmp_path) -> None:
     scope = ("alice", "result-contract")
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path, rerun_policy=_POLICY)
-    bundle = await lifecycle.start(scope=scope, request_text="Question")
+    bundle = await lifecycle.start(scope=scope, request_text="Question", implementation_mode="all_real")
     first_current = await _commit_current_round(
         lifecycle,
         scope=scope,

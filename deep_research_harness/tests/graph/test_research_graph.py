@@ -24,6 +24,7 @@ from deerflow_deep_research.domain.context import GraphContextView, NodeAgentCon
 from deerflow_deep_research.domain.invocation import GraphInvocationContext, WorkUnitControllerDependencies
 from deerflow_deep_research.domain.lifecycle import AcceptedHumanResponse, ResponseKind
 from deerflow_deep_research.domain.node_spec import NodeBuildDependencies
+from deerflow_deep_research.domain.state import BundleLocalState
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
 from deerflow_deep_research.runtime.projection import RuntimeWorkUnitDependencyResolver
 from deerflow_deep_research.runtime.work_unit_store import WorkUnitStore
@@ -81,7 +82,9 @@ def _context() -> tuple[GraphInvocationContext, Resolver]:
     )
     resolver = Resolver(graph)
     assert _WORKSPACE is not None
-    BundleLifecycle(workspace_host_path=_WORKSPACE)._publish_sync(BUNDLE)
+    BundleLifecycle(workspace_host_path=_WORKSPACE)._publish_sync(
+        BUNDLE, BundleLocalState(bundle_id=BUNDLE.bundle_id, implementation_mode="all_real")
+    )
     store = WorkUnitStore(
         workspace_host_path=_WORKSPACE,
         bundle=BUNDLE,

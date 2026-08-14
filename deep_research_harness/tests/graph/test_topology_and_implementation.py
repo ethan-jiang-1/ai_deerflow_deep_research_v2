@@ -298,13 +298,13 @@ def test_generic_recipe_composition_validates_gate_selection_before_dependency_c
 
 
 def test_fixed_all_real_factories_accept_no_mode_or_selection_authority() -> None:
-    for factory in (ResearchGraphRecipe.all_real, ResearchGraphRecipe.create):
-        parameters = inspect.signature(factory).parameters
-        assert "adapters" not in parameters
-        assert "implementations" not in parameters
-        assert "implementation_modes" not in parameters
-        with pytest.raises(TypeError):
-            factory(implementation_modes={})
+    assert not hasattr(ResearchGraphRecipe, "create")
+    parameters = inspect.signature(ResearchGraphRecipe.all_real).parameters
+    assert "adapters" not in parameters
+    assert "implementations" not in parameters
+    assert "implementation_modes" not in parameters
+    with pytest.raises(TypeError):
+        ResearchGraphRecipe.all_real(implementation_modes={})
 
 
 def test_real_adapter_selection_is_registered_and_gate_annotated() -> None:

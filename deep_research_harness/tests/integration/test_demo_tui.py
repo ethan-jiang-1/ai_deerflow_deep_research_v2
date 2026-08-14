@@ -48,7 +48,7 @@ import demo_tui  # noqa: E402, I001
 from demo_tui import DeepResearchDemoTUI  # noqa: E402
 
 
-def _ready_report(mode: str = "fake") -> ReadinessReport:
+def _ready_report(mode: str = "fixture") -> ReadinessReport:
     return ReadinessReport(
         mode=mode,
         ready=True,
@@ -154,11 +154,11 @@ def _install_scripted(
 
 
 @pytest.mark.asyncio
-async def test_tui_fake_route_completes_through_shared_experience() -> None:
-    app = DeepResearchDemoTUI(mode="fake")
+async def test_tui_fixture_route_completes_through_shared_experience() -> None:
+    app = DeepResearchDemoTUI(mode="fixture")
     async with app.run_test() as pilot:
         await _wait_for(app, pilot, demo_tui.Ready)
-        assert "full-fake" in app.query_one("#banner").render().plain
+        assert "fixture-graph" in app.query_one("#banner").render().plain
         await pilot.press("enter")
         await _wait_for(app, pilot, AwaitingInput)
         assert app.last_update.prompt.phase == "hitl1"
@@ -176,7 +176,7 @@ async def test_tui_forwards_unadvertised_choice_to_graph_owned_validation(monkey
         report=_ready_report(),
         updates=[run_updates.awaiting_hitl2(), run_updates.provider_fault()],
     )
-    app = DeepResearchDemoTUI(mode="fake")
+    app = DeepResearchDemoTUI(mode="fixture")
     async with app.run_test() as pilot:
         await _wait_for(app, pilot, demo_tui.Ready)
         await pilot.press("enter")
@@ -207,7 +207,7 @@ async def test_tui_selects_visible_control_and_keeps_natural_text_as_text(monkey
             run_updates.completed(),
         ],
     )
-    app = DeepResearchDemoTUI(mode="fake")
+    app = DeepResearchDemoTUI(mode="fixture")
     async with app.run_test() as pilot:
         await _wait_for(app, pilot, demo_tui.Ready)
         await pilot.press("enter")
@@ -224,7 +224,7 @@ async def test_tui_selects_visible_control_and_keeps_natural_text_as_text(monkey
         report=_ready_report(),
         updates=[run_updates.awaiting_hitl1(), run_updates.completed()],
     )
-    app = DeepResearchDemoTUI(mode="fake")
+    app = DeepResearchDemoTUI(mode="fixture")
     async with app.run_test() as pilot:
         await _wait_for(app, pilot, demo_tui.Ready)
         await pilot.press("enter")
@@ -238,7 +238,7 @@ async def test_tui_selects_visible_control_and_keeps_natural_text_as_text(monkey
 
 @pytest.mark.asyncio
 async def test_tui_explicit_cancel_uses_shared_cancel_intent() -> None:
-    app = DeepResearchDemoTUI(mode="fake")
+    app = DeepResearchDemoTUI(mode="fixture")
     async with app.run_test() as pilot:
         await _wait_for(app, pilot, demo_tui.Ready)
         await pilot.press("enter")
@@ -273,7 +273,7 @@ async def test_tui_real_route_obtains_the_fixed_all_real_runtime(monkeypatch: py
 
 
 @pytest.mark.asyncio
-async def test_tui_runtime_construction_fault_cannot_present_full_fake_completion(
+async def test_tui_runtime_construction_fault_cannot_present_fixture_completion(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _install_scripted(monkeypatch, report=_ready_report("real"), updates=[run_updates.completed()])
@@ -292,14 +292,14 @@ async def test_tui_runtime_construction_fault_cannot_present_full_fake_completio
 
 
 @pytest.mark.asyncio
-async def test_tui_fake_route_remains_outside_the_graph_runtime_factory(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_tui_fixture_route_uses_the_graph_runtime_factory(monkeypatch: pytest.MonkeyPatch) -> None:
     runtime_modes = _install_scripted(monkeypatch, report=_ready_report(), updates=[run_updates.awaiting_hitl1()])
-    app = DeepResearchDemoTUI(mode="fake")
+    app = DeepResearchDemoTUI(mode="fixture")
 
     async with app.run_test() as pilot:
         await _wait_for(app, pilot, demo_tui.Ready)
 
-    assert runtime_modes == []
+    assert runtime_modes == ["fixture_graph"]
 
 
 @pytest.mark.asyncio
@@ -307,7 +307,7 @@ async def test_tui_working_state_shows_no_inferred_trace_progress(monkeypatch: p
     _install_scripted(monkeypatch, report=_ready_report(), updates=[run_updates.awaiting_hitl1()])
     _ScriptedExperience.wait_started = asyncio.Event()
     _ScriptedExperience.release = asyncio.Event()
-    app = DeepResearchDemoTUI(mode="fake")
+    app = DeepResearchDemoTUI(mode="fixture")
     async with app.run_test() as pilot:
         await _wait_for(app, pilot, demo_tui.Ready)
         await pilot.press("enter")
@@ -322,7 +322,7 @@ async def test_tui_working_state_shows_no_inferred_trace_progress(monkeypatch: p
 @pytest.mark.asyncio
 async def test_tui_owns_and_closes_one_adapter(monkeypatch: pytest.MonkeyPatch) -> None:
     _install_scripted(monkeypatch, report=_ready_report(), updates=[])
-    app = DeepResearchDemoTUI(mode="fake")
+    app = DeepResearchDemoTUI(mode="fixture")
     async with app.run_test() as pilot:
         await _wait_for(app, pilot, demo_tui.Ready)
 

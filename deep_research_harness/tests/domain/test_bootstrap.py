@@ -44,6 +44,7 @@ def _marker(
 def _bundle_state(**overrides: object) -> BundleLocalState:
     values: dict[str, object] = {
         "bundle_id": _BUNDLE.bundle_id,
+        "implementation_mode": "all_real",
         "start_message_id": _MID,
         "start_request_digest": _DIGEST,
         "schema_version": BUNDLE_STATE_SCHEMA_VERSION,

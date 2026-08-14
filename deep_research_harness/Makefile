@@ -1,4 +1,4 @@
-.PHONY: install entry-preflight governance verify lock-check format lint test test-fast test-integration test-workflow test-live test-unit test-contract test-viability test-durability test-blocking-io test-postgres test-assets test-req-coverage test-intake test-retained-observation test-work-unit test-strict-checkpoint test-duration-policy benchmark-fast prompt-dump prompt-dump-check profile-setup profile-preflight profiles profile-init profile-check profile-dev demo demo-scripted demo-fixture-graph demo-real demo-real-scripted demo-tui demo-tui-fake demo-sessions session-workbench
+.PHONY: install entry-preflight governance verify lock-check format lint test test-fast test-integration test-workflow test-live test-unit test-contract test-viability test-durability test-blocking-io test-postgres test-assets test-req-coverage test-intake test-retained-observation test-work-unit test-strict-checkpoint test-duration-policy benchmark-fast prompt-dump prompt-dump-check profile-setup profile-preflight profiles profile-init profile-check profile-dev demo demo-scripted demo-fixture-graph demo-real demo-real-scripted demo-tui demo-tui-fixture demo-sessions session-workbench
 
 DEMO_ARGS ?=
 LOCAL_ENV_ARG := $(if $(wildcard .env),--env-file .env,)
@@ -46,7 +46,7 @@ governance:
 verify: export UV_NO_SYNC := 1
 verify: governance lock-check lint test-assets test-req-coverage test-fast test-integration test-workflow
 
-# Standalone fake lifecycle demo. Zero API, no Gateway, config.yaml,
+# Fixed fixture-graph lifecycle demo. Zero API, no Gateway, config.yaml,
 # model credentials, network access, or TUI installation needed.
 demo: entry-preflight
 	PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) --extra operations python scripts/demo.py $(DEMO_ARGS)
@@ -55,7 +55,7 @@ demo: entry-preflight
 demo-scripted: entry-preflight
 	PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) --extra operations python scripts/demo.py --scripted $(DEMO_ARGS)
 
-# Deterministic graph-composition verification. This is not a full-fake alias.
+# Explicit deterministic graph-composition verification.
 demo-fixture-graph: entry-preflight
 	PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) --extra operations python scripts/demo_fixture_graph.py $(DEMO_ARGS)
 
@@ -74,9 +74,9 @@ demo-real-scripted: entry-preflight
 demo-tui: entry-preflight
 	$(ENTRY_RUN) $(LOCAL_ENV_ARG) --extra operations --extra demo-real --extra demo-tui python scripts/demo_tui.py $(DEMO_ARGS)
 
-# Credential-free Textual route using the same lifecycle presentation shell.
-demo-tui-fake: entry-preflight
-	PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) --extra operations --extra demo-tui python scripts/demo_tui.py --fake $(DEMO_ARGS)
+# Credential-free Textual fixture-graph route using the same lifecycle presentation shell.
+demo-tui-fixture: entry-preflight
+	PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) --extra operations --extra demo-tui python scripts/demo_tui.py --fixture $(DEMO_ARGS)
 
 demo-sessions: entry-preflight
 	PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) --extra operations python scripts/demo_sessions.py $(DEMO_ARGS)

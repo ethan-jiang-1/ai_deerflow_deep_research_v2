@@ -29,7 +29,11 @@ BUNDLE_ID = "b_" + "A" * 43
 async def test_blocked_graph_incident_survives_bundle_state_sync_reload_and_projection(tmp_path) -> None:
     """REG-013: the shared lifecycle result exposes the bounded terminal cause."""
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
-    bundle = await lifecycle.start(scope=("alice", "thread-1"), request_text="Diagnose a blocked wave.")
+    bundle = await lifecycle.start(
+        scope=("alice", "thread-1"),
+        request_text="Diagnose a blocked wave.",
+        implementation_mode="all_real",
+    )
     incident = TerminalIncidentProjection(
         code=RunFailureCode.RESEARCH_BLOCKED,
         phase="wave1",
@@ -82,11 +86,16 @@ async def test_selected_implementation_mode_survives_bundle_reload_and_projectio
 
 
 def test_bundle_local_waiting_state_is_active_until_a_terminal_round_is_recorded() -> None:
-    waiting = BundleLocalState(bundle_id=BundleId("b_" + "A" * 43), waiting_for="hitl1")
+    waiting = BundleLocalState(
+        bundle_id=BundleId("b_" + "A" * 43),
+        implementation_mode="all_real",
+        waiting_for="hitl1",
+    )
     assert waiting.is_active
 
     terminal = BundleLocalState(
         bundle_id=BundleId("b_" + "A" * 43),
+        implementation_mode="all_real",
         phase_status="terminal",
         terminal_status="completed",
     )
@@ -96,7 +105,7 @@ def test_bundle_local_waiting_state_is_active_until_a_terminal_round_is_recorded
 async def test_bundle_state_store_rejects_a_stale_writer_without_overwriting_newer_state(tmp_path) -> None:
     """DRH-008: State publication is versioned and atomic."""
     store = BundleStateStore(root=tmp_path, bundle_id=BundleId("b_" + "A" * 43))
-    initial = BundleLocalState(bundle_id=BundleId("b_" + "A" * 43))
+    initial = BundleLocalState(bundle_id=BundleId("b_" + "A" * 43), implementation_mode="all_real")
     await store.initialize(initial)
     with pytest.raises(TypeError, match="bundle_transition_lease_required"):
         await store.write(initial, expected_revision=0, lease=None)  # type: ignore[arg-type]
@@ -110,7 +119,11 @@ async def test_bundle_state_store_rejects_a_stale_writer_without_overwriting_new
 async def test_bundle_graph_checkpoint_is_contained_and_cannot_reopen_after_bundle_loss(tmp_path) -> None:
     """REG-020: recoverable graph state has no external checkpoint fallback."""
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
-    bundle = await lifecycle.start(scope=("alice", "thread-1"), request_text="Question")
+    bundle = await lifecycle.start(
+        scope=("alice", "thread-1"),
+        request_text="Question",
+        implementation_mode="all_real",
+    )
     root = lifecycle.private_root(bundle)
     config = {"configurable": {"thread_id": bundle.bundle_id.value, "checkpoint_ns": ""}}
 

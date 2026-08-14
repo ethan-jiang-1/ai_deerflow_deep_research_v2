@@ -41,7 +41,7 @@ from deerflow_deep_research.domain.enums import NodeFinishReason
 from deerflow_deep_research.domain.invocation import WorkUnitControllerDependencies
 from deerflow_deep_research.domain.node_spec import NodeBuildDependencies
 from deerflow_deep_research.domain.profile import ResearchProfile, compute_profile_content_hash, profile_state_fields
-from deerflow_deep_research.domain.state import ContentRef
+from deerflow_deep_research.domain.state import BundleLocalState, ContentRef
 from deerflow_deep_research.domain.synthesis import SynthesisEvidence, SynthesisResult
 from deerflow_deep_research.graph.nodes.hitl1 import NODE_SPEC as HITL1_NODE_SPEC
 from deerflow_deep_research.graph.nodes.topic_planning import NODE_SPEC as TOPIC_PLANNING_NODE_SPEC
@@ -655,7 +655,7 @@ async def test_hitl1_case_uses_the_real_node_factory_bridge_and_parser_with_fake
                 finish_reason=NodeFinishReason.SUCCESS,
                 summary=json.dumps(
                     {
-                        "schema_version": 1,
+                        "schema_version": 2,
                         "brief_summary": "A bounded intake brief.",
                         "depth": "standard",
                         "audience": "practitioner",
@@ -665,6 +665,10 @@ async def test_hitl1_case_uses_the_real_node_factory_bridge_and_parser_with_fake
                         "must_answer": ["Q1"],
                         "scope_boundaries": "Only the requested comparison.",
                         "custom_notes": "",
+                        "comparison_required": False,
+                        "comparison_subjects": None,
+                        "request_language": "en",
+                        "output_language": "en",
                     }
                 ),
             )
@@ -672,7 +676,9 @@ async def test_hitl1_case_uses_the_real_node_factory_bridge_and_parser_with_fake
     identity = unique_run_identity()
     envelope = local_runtime_envelope(tmp_path, identity=identity)
     bundle = identity.bundle_ref
-    BundleLifecycle(workspace_host_path=envelope.workspace_host_path)._publish_sync(bundle)
+    BundleLifecycle(workspace_host_path=envelope.workspace_host_path)._publish_sync(
+        bundle, BundleLocalState(bundle_id=bundle.bundle_id, implementation_mode="all_real")
+    )
     graph = project_research_scope(envelope, bundle=bundle)
     selected_bundle = SelectedBundleContext(bundle=bundle)
 
@@ -735,7 +741,9 @@ async def test_wave0_case_uses_the_real_worker_bridge_policy_and_controller_with
     identity = unique_run_identity()
     envelope = local_runtime_envelope(tmp_path, identity=identity)
     bundle = identity.bundle_ref
-    BundleLifecycle(workspace_host_path=envelope.workspace_host_path)._publish_sync(bundle)
+    BundleLifecycle(workspace_host_path=envelope.workspace_host_path)._publish_sync(
+        bundle, BundleLocalState(bundle_id=bundle.bundle_id, implementation_mode="all_real")
+    )
     graph = project_research_scope(envelope, bundle=bundle)
     selected_bundle = SelectedBundleContext(bundle=bundle)
     bundle_id = bundle.bundle_id.value
@@ -1368,7 +1376,9 @@ async def test_wave2_cognitive_program_production_scenarios_record_only_declared
         identity = unique_run_identity()
         envelope = local_runtime_envelope(context.workspace / scenario_id, identity=identity)
         bundle = identity.bundle_ref
-        BundleLifecycle(workspace_host_path=envelope.workspace_host_path)._publish_sync(bundle)
+        BundleLifecycle(workspace_host_path=envelope.workspace_host_path)._publish_sync(
+            bundle, BundleLocalState(bundle_id=bundle.bundle_id, implementation_mode="all_real")
+        )
         selected_bundle = SelectedBundleContext(bundle=bundle)
         graph = project_research_scope(envelope, bundle=bundle)
         model = ScriptedChatModel(responses=[ai_message(response) for response in scripted_responses(scenario)])

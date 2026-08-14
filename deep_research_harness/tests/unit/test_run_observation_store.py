@@ -741,7 +741,11 @@ async def test_lifecycle_resolved_publisher_writes_only_the_selected_bundle_jour
     workspace = tmp_path / "workspace"
     lifecycle = BundleLifecycle(workspace_host_path=workspace)
     scope = ("journal-user", "journal-thread")
-    bundle = await lifecycle.start(scope=scope, request_text="Research journal lifetime.")
+    bundle = await lifecycle.start(
+        scope=scope,
+        request_text="Research journal lifetime.",
+        implementation_mode="all_real",
+    )
     publisher = BundleRunObservationPublisher(lifecycle=lifecycle, scope=scope)
     fact = _fact(bundle_id=bundle.bundle_id.value)
 

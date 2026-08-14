@@ -11,8 +11,7 @@ Production node packages expose real factories only. Deterministic fixture adapt
 the separate `src_fake/deerflow_deep_research_fixtures/` package, which is excluded from the
 production wheel and reflected runtime. Every graph receives an explicit recipe: the public
 host is fixed to `all_real`, an explicitly composed fixture demo or test recipe reports
-`fixture`, and an explicitly composed test mix reports `mixed`. `full_fake` is retained only
-as read-only metadata for retired records. These labels identify implementation composition,
+`fixture`, and an explicitly composed test mix reports `mixed`. These labels identify implementation composition,
 not provider success, evidence acceptance, or report quality.
 
 ## Entry Surfaces
@@ -21,9 +20,8 @@ not provider success, evidence acceptance, or report quality.
 | --- | --- | --- | --- | --- |
 | Dedicated Agent + reflected `deep_research` tool | Primary User | Current product route for a research question | The reflected public tool is fixed to all real; see [runtime architecture](docs/runtime-architecture.md) | Not an operator CLI or a fixture/demo route selector |
 | Standalone operator CLI | Contributor/operator | Local smoke, debugging, and scriptable operational work; see [local operations](docs/local-operations.md) for exact commands | The real CLI is a standalone all real presentation adapter over shared Run Bundle results | Not a versioned product CLI |
-| Demo TUI visualizer | Contributor/operator | Visualize the shared lifecycle in real or fake demo mode | `make demo-tui` is all real; `make demo-tui-fake` is full fake | Not a current Primary User TUI |
-| Full-fake demonstrations | Contributor/operator | Zero-credential lifecycle presentation; see [local operations](docs/local-operations.md) | `make demo`, `make demo-scripted`, and `make demo-tui-fake` use the retained full fake path | Presentation, not fixture-graph verification |
-| Fixture-graph verification | Contributor/maintainer | Provides deterministic graph-composition verification; see [testing and evaluation](docs/testing-and-evaluation.md) | `make demo-fixture-graph` executes a fixed fixture recipe and graph executor | Not a full-fake demonstration or a product result |
+| Demo TUI visualizer | Contributor/operator | Visualize the shared lifecycle in real or fixture-graph demo mode | `make demo-tui` is all real; `make demo-tui-fixture` is a fixed fixture graph | Not a current Primary User TUI |
+| Fixture-graph demonstrations | Contributor/maintainer | Zero-credential deterministic fixture-graph proof; see [local operations](docs/local-operations.md) and [testing and evaluation](docs/testing-and-evaluation.md) | `make demo`, `make demo-scripted`, and `make demo-tui-fixture` execute a fixed fixture recipe and graph executor | Not a product result or a mode selector |
 | Configured-fixture local workbench | Local operator | Inspect bounded Run Bundle projections; see [local operations](docs/local-operations.md) | `make session-workbench` uses the configured fixture demo profile | Not a generic product UI or recovery client |
 
 ## Reading Map
@@ -124,8 +122,7 @@ operations](docs/local-operations.md) own the operational detail.
 
 | Goal | Command |
 | --- | --- |
-| Walk the zero-credential full-fake lifecycle | `make demo` |
-| Verify deterministic fixture-graph composition | `make demo-fixture-graph` |
+| Run the zero-credential fixture-graph lifecycle | `make demo` |
 | Run the credentialed all-real demo with a question | `DEERFLOW_DEMO_MODEL=<profile> make demo-real DEMO_ARGS='--question "Compare battery storage costs"'` |
 | Run the prepared all-real research launcher | `bash run/real-research.sh` |
 | Run the deterministic project gate | `UV_OFFLINE=1 make verify` |

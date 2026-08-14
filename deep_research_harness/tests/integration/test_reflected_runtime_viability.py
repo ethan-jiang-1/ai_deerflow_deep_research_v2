@@ -24,7 +24,7 @@ from langgraph.prebuilt import ToolNode
 from langgraph.runtime import Runtime
 from langgraph.types import Command
 
-from deerflow_deep_research.domain.lifecycle import LifecycleStatus
+from deerflow_deep_research.domain.lifecycle import ImplementationMode, LifecycleStatus
 from deerflow_deep_research.domain.state import PhaseStatus
 from deerflow_deep_research.runtime.bundle_graph import BundleGraphExecutor
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
@@ -291,6 +291,7 @@ async def test_reflected_public_tool_uses_the_trusted_graph_factory_for_ended_re
     bundle = await lifecycle.start(
         scope=(envelope.effective_user_id, envelope.outer_thread_id),
         request_text="Fixture terminal question.",
+        implementation_mode=ImplementationMode.FIXTURE,
     )
     executor = _fixture_executor(tmp_path)
     await _stage_terminal_bundle(lifecycle=lifecycle, bundle=bundle, executor=executor)
@@ -371,6 +372,7 @@ async def test_reflected_public_tool_continues_only_the_selected_terminal_pendin
     bundle = await lifecycle.start(
         scope=(envelope.effective_user_id, envelope.outer_thread_id),
         request_text="Fixture terminal question.",
+        implementation_mode=ImplementationMode.FIXTURE,
     )
     executor = _fixture_executor(tmp_path)
     await _stage_terminal_bundle(lifecycle=lifecycle, bundle=bundle, executor=executor)
@@ -500,6 +502,7 @@ async def test_reflected_active_pending_refinement_does_not_construct_graph_depe
     bundle = await lifecycle.start(
         scope=(envelope.effective_user_id, envelope.outer_thread_id),
         request_text="Fixture active question.",
+        implementation_mode=ImplementationMode.FIXTURE,
     )
     adapter = _FixtureRuntimeAdapter(envelope)
 

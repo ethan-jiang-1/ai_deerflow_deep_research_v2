@@ -19,6 +19,7 @@ from deerflow_deep_research.domain.context import GraphContextView, NodeAgentCon
 from deerflow_deep_research.domain.gate import PhaseVerdict
 from deerflow_deep_research.domain.invocation import WorkUnitControllerDependencies
 from deerflow_deep_research.domain.node_spec import NodeBuildDependencies
+from deerflow_deep_research.domain.state import BundleLocalState
 from deerflow_deep_research.domain.work_units import WORK_UNIT_GATE_VIEW_KEY, Wave0SourceIntakeResult
 from deerflow_deep_research.engine.gate_kernel import evaluate_gate
 from deerflow_deep_research.engine.real_gates import build_wave0_real_gate_def
@@ -137,7 +138,9 @@ def _runtime(tmp_path: Path, *, tool: ScriptedTool, output: str):
     identity = unique_run_identity()
     envelope = local_runtime_envelope(tmp_path, identity=identity)
     bundle = identity.bundle_ref
-    BundleLifecycle(workspace_host_path=envelope.workspace_host_path)._publish_sync(bundle)
+    BundleLifecycle(workspace_host_path=envelope.workspace_host_path)._publish_sync(
+        bundle, BundleLocalState(bundle_id=bundle.bundle_id, implementation_mode="all_real")
+    )
     graph = project_research_scope(envelope, bundle=bundle)
     workspace = graph.workspace_root
     model = ScriptedChatModel(
@@ -347,7 +350,9 @@ async def test_path_traversal_is_denied_in_real_worker_before_tool_and_ledger(tm
     identity = unique_run_identity()
     envelope = local_runtime_envelope(tmp_path, identity=identity)
     bundle = identity.bundle_ref
-    BundleLifecycle(workspace_host_path=envelope.workspace_host_path)._publish_sync(bundle)
+    BundleLifecycle(workspace_host_path=envelope.workspace_host_path)._publish_sync(
+        bundle, BundleLocalState(bundle_id=bundle.bundle_id, implementation_mode="all_real")
+    )
     graph = project_research_scope(envelope, bundle=bundle)
     workspace = graph.workspace_root
     attempt_root = f"{workspace}/attempts"

@@ -26,7 +26,9 @@ def test_no_runtime_broker_or_historical_resolver_remains() -> None:
 @pytest.mark.asyncio
 async def test_only_scoped_bundle_state_can_authorize_a_local_operation(tmp_path: Path) -> None:
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
-    bundle = await lifecycle.start(scope=("alice", "thread-1"), request_text="research question")
+    bundle = await lifecycle.start(
+        scope=("alice", "thread-1"), request_text="research question", implementation_mode="all_real"
+    )
     owner = BundleWorkbench(lifecycle=lifecycle, scope=("alice", "thread-1"))
     foreign = BundleWorkbench(lifecycle=lifecycle, scope=("mallory", "thread-2"))
 

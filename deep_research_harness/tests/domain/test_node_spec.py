@@ -104,7 +104,7 @@ class TestBootstrapBundleCapability:
             async def read_marker(self) -> BootstrapMarker | None: ...
 
             async def read_bundle_state(self) -> BundleLocalState:
-                return BundleLocalState(bundle_id=BundleId("b_" + "a" * 43))
+                return BundleLocalState(bundle_id=BundleId("b_" + "a" * 43), implementation_mode="all_real")
 
         deps = replace(_deps(), bootstrap_bundle=_Store())
         assert isinstance(deps.bootstrap_bundle, BootstrapBundleStoreProtocol)
@@ -131,7 +131,7 @@ class TestRequestBundleCapability:
                 raise AssertionError("profile read is outside this dependency-slot test")
 
             async def read_bundle_state(self) -> BundleLocalState:
-                return BundleLocalState(bundle_id=BundleId("b_" + "a" * 43))
+                return BundleLocalState(bundle_id=BundleId("b_" + "a" * 43), implementation_mode="all_real")
 
             async def write_bundle_state(
                 self,

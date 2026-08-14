@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from deerflow_deep_research.domain.bundle import BundleId, RunBundleRef, bundle_host_relative_root, run_bundle_root
+from deerflow_deep_research.domain.state import BundleLocalState
 from deerflow_deep_research.domain.work_units import (
     CandidateResult,
     compute_candidate_hash,
@@ -86,7 +87,9 @@ def _submit_process(workspace: str, candidate_payload: dict, start, results) -> 
 
 
 def _race(tmp_path: Path, candidates: tuple[CandidateResult, CandidateResult]) -> list[tuple[str, str, str]]:
-    BundleLifecycle(workspace_host_path=tmp_path)._publish_sync(BUNDLE)
+    BundleLifecycle(workspace_host_path=tmp_path)._publish_sync(
+        BUNDLE, BundleLocalState(bundle_id=BUNDLE.bundle_id, implementation_mode="all_real")
+    )
     context = multiprocessing.get_context("spawn")
     start = context.Event()
     results = context.Queue()

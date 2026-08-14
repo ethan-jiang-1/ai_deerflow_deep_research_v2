@@ -158,12 +158,12 @@ def validate_real_demo_prerequisites(environ: Mapping[str, str] | None = None) -
 
 def demo_readiness_report(*, mode: str, environ: Mapping[str, str] | None = None) -> ReadinessReport:
     """Build a safe, non-network readiness report for a standalone demo."""
-    if mode == "fake":
+    if mode == "fixture":
         return ReadinessReport(
-            mode="fake",
+            mode="fixture",
             ready=True,
-            summary="模拟模式已就绪，不会调用模型或网页工具。",
-            checks=(ReadinessCheck(name="mode", ready=True, detail="已选择无凭据模拟模式。"),),
+            summary="无凭据 fixture 图模式已就绪，不会调用模型或网页工具。",
+            checks=(ReadinessCheck(name="mode", ready=True, detail="已选择 fixture 图组合。"),),
             durability_note="返回带记录的结果后会保留可检查的本地 run bundle；检查不会继续执行。",
         )
     if mode != "real":
@@ -369,7 +369,8 @@ class DemoAdapter:
                 PathMapping(container_path="/mnt/user-data/outputs", local_path=str(outputs)),
             ],
         )
-        profile_key = hashlib.sha256(str(root.resolve()).encode("utf-8")).hexdigest()[:16]
+        profile_kind = "all-real" if model_profile is not None else "fixture-graph"
+        profile_key = hashlib.sha256(f"{root.resolve()}:{profile_kind}".encode()).hexdigest()[:16]
         self._bundle_lifecycle = BundleLifecycle(workspace_host_path=workspace)
         self._envelope = TrustedRuntimeEnvelope(
             effective_user_id="demo-user",
@@ -520,13 +521,6 @@ class DemoLifecycleTransport:
         self._adapter = runtime.adapter
         self._graph_executor = runtime.executor
         self._graph_backed = True
-
-    def bind_full_fake(self, *, adapter: DemoAdapter) -> None:
-        """Bind the retained full-fake lifecycle without a graph executor."""
-
-        if self._adapter is not None:
-            raise RuntimeError("demo_transport_already_bound")
-        self._adapter = adapter
 
     async def dispatch(
         self,

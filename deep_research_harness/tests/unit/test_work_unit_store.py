@@ -28,6 +28,7 @@ from deerflow_deep_research.domain.bundle import (
     run_bundle_root,
 )
 from deerflow_deep_research.domain.lifecycle import WorkUnitStorageReason
+from deerflow_deep_research.domain.state import BundleLocalState
 from deerflow_deep_research.domain.work_units import (
     Attempt,
     CandidateResult,
@@ -71,7 +72,9 @@ def _host_bundle_root(workspace: Path) -> Path:
 async def _published_bundle(workspace: Path) -> None:
     root = _host_bundle_root(workspace)
     if not root.exists():
-        BundleLifecycle(workspace_host_path=workspace)._publish_sync(BUNDLE)
+        BundleLifecycle(workspace_host_path=workspace)._publish_sync(
+            BUNDLE, BundleLocalState(bundle_id=BUNDLE.bundle_id, implementation_mode="all_real")
+        )
 
 
 def _content_hash(content: bytes) -> str:

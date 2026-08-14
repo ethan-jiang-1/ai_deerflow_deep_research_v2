@@ -574,12 +574,12 @@ def test_live_model_config_constructs_with_one_retry_authority() -> None:
 
 
 def test_live_canary_setup_payloads_satisfy_real_node_parsers() -> None:
-    from deerflow_deep_research.domain.profile import parse_profile_response
+    from deerflow_deep_research.domain.profile import parse_profile_input
     from deerflow_deep_research.graph.nodes.hitl1.prompts import parse_brief_output
     from deerflow_deep_research.graph.nodes.topic_planning.prompts import parse_plan_output
 
     assert parse_brief_output(_BRIEF).time_budget.value == "very_quick"
-    assert parse_profile_response(_PROFILE).time_budget.value == "very_quick"
+    assert parse_profile_input(_PROFILE).partial.time_budget.value == "very_quick"
     assert len(parse_plan_output(_PLAN).topics) == 1
 
 

@@ -18,7 +18,7 @@ import pytest
 from langchain_core.messages import AIMessage
 
 from deerflow_deep_research.agents.capabilities import load_node_agent_capability
-from deerflow_deep_research.domain.lifecycle import LifecycleStatus
+from deerflow_deep_research.domain.lifecycle import ImplementationMode, LifecycleStatus
 from deerflow_deep_research.domain.profile import ResearchProfile, profile_state_fields
 from deerflow_deep_research.domain.state import PhaseStatus
 from deerflow_deep_research.graph.nodes.topic_planning.capabilities import TOPIC_PLANNING_PROFILE_DECOMPOSITION
@@ -168,7 +168,11 @@ async def test_public_refine_applies_one_direction_to_canonical_profile_topic_pl
     envelope = local_runtime_envelope(tmp_path)
     lifecycle = BundleLifecycle(workspace_host_path=envelope.workspace_host_path)
     scope = (envelope.effective_user_id, envelope.outer_thread_id)
-    bundle = await lifecycle.start(scope=scope, request_text="Research grid-scale storage safety.")
+    bundle = await lifecycle.start(
+        scope=scope,
+        request_text="Research grid-scale storage safety.",
+        implementation_mode=ImplementationMode.MIXED,
+    )
     profile = _profile()
     request_store = await RequestBundleStore.create(envelope, bundle=bundle, storage_verifier=_storage_ready)
     profile_ref = await request_store.write_profile(profile)
