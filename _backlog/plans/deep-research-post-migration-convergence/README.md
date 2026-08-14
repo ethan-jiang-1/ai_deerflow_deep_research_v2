@@ -1,7 +1,7 @@
 # Deep Research 迁移后收敛：总导航
 
 > 类型: 架构健康审计 / 迁移收口 / 删除计划
-> 审计状态: 当前基线审计完成；54 个最终 Candidate 已取证；implementation 未开始
+> 审计状态: 当前基线审计完成；54 个最终 Candidate 已取证；00 governance bootstrap 已 archive；Candidate-bearing implementation 尚未开始
 > 产品范围: `deep_research_harness/`
 > 变更治理: `openspec/`
 > 当前 active OpenSpec changes: 0
@@ -39,10 +39,11 @@
 | `5bb41c16a45ff3caae6e5b1e900610c91bf68336` | 应用与 current main-spec 取证基线 | `70-78` 的代码/spec/test结论以此为准 |
 | `811203726cfa6478ceebdabc378daabce1b6758b` | 完整审计综合 revision | `70-78`、54个最终Candidate与原26-change映射完成 |
 | `91709e740fdafcb8275c2a182a61554342e2bd08` | 8-change program执行编排 revision | 引入bounded program/workstream治理前置，把26个change收敛为8个；未改应用、tests或main specs |
+| `8661693` | 00 governance bootstrap archive | 新增bounded program/workstream admission route及其guards，已同步main spec；未实施54个Candidate |
 
-`5bb41c1 -> 91709e7` 没有产品代码或 current spec变化，因此现有 findings仍对应当前应用事实。实施任何
-Candidate前仍须在当时 HEAD做 focused revalidation；若产品事实已变，先更新对应 findings，不整库重做
-没有受影响的审计。
+`5bb41c1 -> 91709e7` 没有产品代码或 current spec变化；`8661693` 只改变OpenSpec admission governance，
+未实施Candidate，因此现有 findings仍对应当前应用事实。实施任何Candidate前仍须在当时 HEAD做 focused
+revalidation；若产品事实已变，先更新对应 findings，不整库重做没有受影响的审计。
 
 ## 审计目的与边界
 

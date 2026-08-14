@@ -3,7 +3,7 @@
 > 导航: [执行层索引](README.md) | [Candidate Register](candidate-register.md) | [根总导航](../README.md)
 > 角色: 最终逐步执行总计划
 > 输入: [70-78 findings](../02-audit-findings/) 的54个最终Candidate；change映射以 [80 - Remediation Change Map](80-remediation-change-map.md) 为准
-> 状态: 00 已完成 propose 和 polish，待 apply；全局预算8个change（00-07）；checkbox只记录change closure，不替代active change的 `tasks.md`
+> 状态: 00 已于 2026-08-14 archive 并同步 main spec（commit `8661693`）；01 仍受 OR-C02 owner decision gate 限制；全局预算8个change（00-07）；checkbox只记录change closure，不替代active change的 `tasks.md`
 
 ## Propose 后强制 Polish
 
@@ -53,7 +53,7 @@
 
 ## Phase A - 合法引入program change
 
-- [ ] **00 `admit-bounded-program-change-workstreams`**: governance bootstrap，不实施54个Candidate。
+- [x] **00 `admit-bounded-program-change-workstreams`**: governance bootstrap，不实施54个Candidate。
 
 以OpenSpec change-admission governance为唯一primary owner，更新`openspec/config.yaml`、local-context policy、
 应用Focus Gate、`check_agent_charter.py`及其contract tests。普通proposal仍须恰有一个`## Change Focus`；program
@@ -63,7 +63,8 @@ Card全部字段、Candidate/obligation IDs与独立policy routing。checker至�
 `program`只拥有planning/closure，不成为runtime authority或workstream之间的共享writer。
 
 **Gate A:** 00已archive；ordinary route没有变宽；program route的positive/negative fixtures和strict validation
-通过。Gate A前不得创建任何多owner change，也不得直接用01的program形态修改repository。
+通过。归档证据：`openspec/changes/archive/2026-08-14-admit-bounded-program-change-workstreams/`，main spec
+已同步，commit `8661693`。Gate A前不得创建任何多owner change，也不得直接用01的program形态修改repository。
 
 ## Phase B - 恢复交付并清除已取证死资产
 
@@ -83,6 +84,12 @@ workstream按上列顺序分别留evidence；后四项失败不得无理由回�
 
 **Gate B:** clean clone获得可复现CI/OpenSpec workflow；无orphan marker/scaffold/selector/registry/export；
 TA-C03/C04/C06/C07、EC-C01/C03、RC-C07 guards和deterministic/manual-live/suspended lane语义仍可证伪。
+
+**当前 HEAD preflight（2026-08-14）:** 隔离 clean clone没有tracked `.github/`、`.agents/` 或
+`.openspec-target`；`agent-tests.yml`和`polish-openspec-change`均缺失，
+`tests/contract/test_agent_pr_workflow.py`因此以缺少workflow文件失败。仓库尚未记录versioned external
+installer/source，故01在Repository Governance Owner选择repository-tracked或versioned external delivery前
+保持`not ready`，不得创建proposal。
 
 ## Phase C - Evaluation boundary收敛
 
