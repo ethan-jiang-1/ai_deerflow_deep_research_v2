@@ -85,7 +85,7 @@ class _ForbiddenModelCapability:
 def _brief() -> str:
     return json.dumps(
         {
-            "schema_version": 1,
+            "schema_version": 2,
             "brief_summary": "A bounded research brief.",
             "depth": "standard",
             "audience": "practitioner",
@@ -95,6 +95,10 @@ def _brief() -> str:
             "must_answer": ["Q1"],
             "scope_boundaries": "",
             "custom_notes": "",
+            "comparison_required": False,
+            "comparison_subjects": None,
+            "request_language": "en",
+            "output_language": "en",
         }
     )
 

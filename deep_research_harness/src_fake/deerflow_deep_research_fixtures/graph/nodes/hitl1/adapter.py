@@ -18,7 +18,7 @@ from deerflow_deep_research.domain.state import PhaseStatus, node_state_update
 def build_fixture(_dependencies: NodeBuildDependencies):
     async def run(state):
         request_id = make_hitl_request_id(
-            # Full-fake remains isolated from the real selected-Bundle capability.
+            # The fixture adapter remains isolated from the real selected-Bundle capability.
             # Its synthetic identity is only a deterministic fixture correlation.
             bundle_id=str(state.get("bundle_id") or state["bundle_id"]),
             phase="hitl1",

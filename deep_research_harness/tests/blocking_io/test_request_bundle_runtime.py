@@ -12,7 +12,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from deerflow_deep_research.domain.bundle import BundleId, RunBundleRef, bundle_host_relative_root
-from deerflow_deep_research.domain.profile import ResearchProfile
+from deerflow_deep_research.domain.profile import ResearchProfile, SupportedLanguage
 from deerflow_deep_research.domain.state import BundleLocalState
 from deerflow_deep_research.runtime import request_bundle as request_bundle_module
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
@@ -36,6 +36,7 @@ def _profile() -> ResearchProfile:
         must_answer=("Q1",),
         scope_boundaries="Grid scale only.",
         custom_notes="Prefer recent sources.",
+        output_language=SupportedLanguage.EN,
     )
 
 

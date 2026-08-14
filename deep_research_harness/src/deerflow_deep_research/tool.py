@@ -195,11 +195,7 @@ async def run_deep_research(
     controller = BundleControl(
         lifecycle=lifecycle,
         graph_executor=bundle_graph_executor,
-        graph_executor_factory=(
-            None
-            if bundle_graph_executor is not None
-            else (bundle_graph_executor_factory or _production_bundle_graph_executor)
-        ),
+        graph_executor_factory=None if bundle_graph_executor is not None else bundle_graph_executor_factory,
     )
     return await controller.dispatch(
         action=lifecycle_action,

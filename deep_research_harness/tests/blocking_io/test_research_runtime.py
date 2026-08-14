@@ -263,5 +263,8 @@ async def test_noninteractive_policy_does_not_compose_graph_work_without_an_exec
         adapter=Adapter(envelope),
     )
 
-    assert isinstance(started, Command)
+    assert isinstance(started, dict)
+    assert started["availability"] == "unavailable"
+    assert started["code"] == "unavailable"
     assert not list(workspace.rglob("graph.sqlite"))
+    assert not list(workspace.rglob("state.json"))

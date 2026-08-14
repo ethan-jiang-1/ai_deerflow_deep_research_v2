@@ -19,7 +19,7 @@
         {
           "name": "tool_schema_digest",
           "source_path": "src/deerflow_deep_research/tool.py",
-          "digest": "215faf230669c08bd801dfb5be98c230417baf27fa2b3100a62ef7dfcb8806d1"
+          "digest": "3486467fd3b97302290604e21c5ba99e3aa43a967daf9a6c9856866dacd81d97"
         }
       ],
       "required_resource_fields": [
