@@ -5,7 +5,7 @@
 > 应用/spec 取证基线: `5bb41c16a45ff3caae6e5b1e900610c91bf68336`
 > 审计综合 revision: `811203726cfa6478ceebdabc378daabce1b6758b`
 > 执行编排 revision: `91709e740fdafcb8275c2a182a61554342e2bd08`；8-change program budget
-> 状态: 本基线审计完成；54 个最终 Candidate；00–07 均已 archive 并同步 main spec，07 的 retained-data closeout 为`a8293b6`；全部 Candidate 已具 archive 或 retained-guard disposition；0 active OpenSpec changes，下一步为 Phase I 最终复审
+> 状态: Phase I已于2026-08-15关闭；54 个最终 Candidate全有最终disposition，00–07均已 archive 并同步 main spec，07 的 retained-data closeout 为`a8293b6`；0 active OpenSpec changes。最终审计结论见[04 - Final Closeout](../04-final-closeout.md)
 
 ## 使用规则
 
@@ -145,11 +145,11 @@
 
 ## Register Closure
 
-The register closes only when every `ready` row is archived with evidence, every `blocked` row has an authorized
-decision and data/consumer closure or an explicit retained-support disposition, and every non-regression row has been
-rechecked against the final residual scan. Implementation order and blockers live in
-[80 - Remediation Change Map](80-remediation-change-map.md); stepwise gates live in
-[99 - Progressive Execution](99-progressive-execution.md).
+Closed 2026-08-15. All 54 rows have final evidence: 40 are terminally archived, retired, migrated, renamed,
+repaired, or rejected by their owning change; 14 are intentional current guards or historical records. There are no
+current `ready`, `blocked`, or unknown rows. Audit-era `ready` and `blocked` references above describe the admission
+history only. The residual review, retained-guard authority, verification limits, and archive decision are recorded
+in [04 - Final Closeout](../04-final-closeout.md).
 
 ## 01 Closure
 

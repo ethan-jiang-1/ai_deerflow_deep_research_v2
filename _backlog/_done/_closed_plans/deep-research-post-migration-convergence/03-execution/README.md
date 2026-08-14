@@ -1,6 +1,6 @@
 # 03 - Execution：执行收敛
 
-> 这一层把 9 份 findings 的 54 个 Candidate 变成可逐项实施、验证和归档的 OpenSpec changes。
+> 这一层已完成：9 份 findings 的 54 个 Candidate 已通过 00--07 OpenSpec changes逐项实施、验证和归档。最终状态见[04 - Final Closeout](../04-final-closeout.md)。
 
 ## 默认阅读顺序
 
@@ -22,7 +22,7 @@ finding 尾部 Candidate
   -> openspec/changes/<admitted-change>/（真正的实施任务）
 ```
 
-因此 `80` 和 `99` 不是两个竞争的总计划：`80` 管映射，`99` 管推进。日常继续本计划时，从 `99` 开始。
+因此 `80` 和 `99` 不是两个竞争的总计划：`80` 管映射，`99` 管推进。两者现作为已完成计划的执行证据保留。
 8是引入owner-scoped program workstream后的全局上限：00支付一次治理成本，01-07承接全部Candidate；内部
 workstream/stage不得再裂变，第9项需要计划层明确批准。
 

@@ -1,6 +1,6 @@
 # Plans — plan/分析文档索引
 
-> 最后更新: 2026-08-14 | `_backlog/plans/` — 活跃 plan 在此，完成的普通 plan 移入 [`../_done/_closed_plans/`](../_done/_closed_plans/)。
+> 最后更新: 2026-08-15 | `_backlog/plans/` — 活跃 plan 在此，完成的普通 plan 移入 [`../_done/_closed_plans/`](../_done/_closed_plans/)。
 >
 > **plan 没有编号，文件名即标识。完成后文件名不变，位置即状态。**
 
@@ -17,13 +17,11 @@
 
 ## 活跃列表
 
-| Plan | 说明 |
-|------|------|
-| [deep-research-post-migration-convergence/](deep-research-post-migration-convergence/) | 当前基线审计已形成9份findings/54个最终Candidate；目录按审计规则、审计结果、执行收敛三层组织，并以15个OpenSpec change为全局预算；[`99`是默认执行入口](deep-research-post-migration-convergence/03-execution/99-progressive-execution.md)。 |
+当前无 active plan。
 
 新的分析或设计应在此创建，完成后再移入归档。
 
-**Next available plan ID: CLS-038**（移入 `_closed_plans/` 时分配）
+**Next available plan ID: CLS-039**（移入 `_closed_plans/` 时分配）
 
 ## 已归档（移至 `_done/_closed_plans/`）
 

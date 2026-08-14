@@ -346,19 +346,25 @@ credentialed/live、external deployment/data 或 Python consumer 作通过或 su
 
 ## Phase I - 最终全量复审与关闭
 
-- [ ] 逐条检查Candidate Register全部54项，写最终disposition、change/archive evidence或approved retain decision。
-- [ ] 重跑01中的tracked/current-term/legacy/compat/entry/config/serializer/export/spec/requirement/test-registry扫描。
-- [ ] residual current matches逐条落入current behavior、approved old-input、negative guard或historical；建立小且有owner的allowlist。
-- [ ] 第二次核对entry/public/persisted/AI-facing surfaces，不允许双writer、双entry、双authority或无期限compat reader。
-- [ ] 检查每个retained guard的known/planted violation与scope escape；quiet不等于dead。
-- [ ] 检查main specs、retired IDs、requirement/structure/evidence registries、CONTEXT、ADR status与current docs routes。
-- [ ] 记录净删除files/LOC/tests/requirements与净新增concept；数字只描述结果，不作为成功理由。
-- [ ] 记录未运行live/release/Postgres/real-Gateway、外部deployment/data/Python consumer evidence及接受风险。
-- [ ] 更新[根 README](../README.md)的revision/status与审计结论，形成closeout，然后按backlog lifecycle归档整个plan目录。
+- [x] 逐条检查Candidate Register全部54项，写最终disposition、change/archive evidence或approved retain decision。
+- [x] 重跑01中的tracked/current-term/legacy/compat/entry/config/serializer/export/spec/requirement/test-registry扫描。
+- [x] residual current matches逐条落入current behavior、approved old-input、negative guard或historical；建立小且有owner的allowlist。
+- [x] 第二次核对entry/public/persisted/AI-facing surfaces，不允许双writer、双entry、双authority或无期限compat reader。
+- [x] 检查每个retained guard的known/planted violation与scope escape；quiet不等于dead。
+- [x] 检查main specs、retired IDs、requirement/structure/evidence registries、CONTEXT、ADR status与current docs routes。
+- [x] 记录净删除files/LOC/tests/requirements与净新增concept；数字只描述结果，不作为成功理由。
+- [x] 记录未运行live/release/Postgres/real-Gateway、外部deployment/data/Python consumer evidence及接受风险。
+- [x] 更新[根 README](../README.md)的revision/status与审计结论，形成closeout，然后按backlog lifecycle归档整个plan目录。
 
-**Final Gate:** [根 README](../README.md)完成定义全部满足；Candidate Register无`ready/blocked/unknown`；任何保留
-compatibility都有decision authority、owner、review/removal trigger和failure behavior；00引入的program route
-仍能机械拒绝缺owner、Candidate budget不闭合与未登记workstream，apply/archive review没有未解释scope drift。
+**Phase I closeout（2026-08-15）:** [04 - Final Closeout](../04-final-closeout.md) records the 54-row
+closure, residual allowlist, authority/surface/recovery/guard review, accounting, verification, and explicit
+evidence limits. It confirms zero active changes and no unresolved Candidate; the known selector/digest baselines
+and unrun live/external lanes are limitations, not fabricated passing evidence.
+
+**Final Gate:** satisfied with the evidence limits recorded in the closeout. Candidate Register has no current
+`ready`, `blocked`, or unknown row; every retained compatibility has an authority, owner, trigger, and fail-closed
+behavior. The `00` program route still mechanically rejects missing owners, open Candidate budgets, and unregistered
+workstreams, and the eight apply/archive reviews record no unexplained scope drift.
 
 ## 每个change的最低验证
 
