@@ -124,12 +124,14 @@ async def test_refine_preserves_the_pending_response_and_resume_requires_its_cor
     bundle = await lifecycle.start(scope=scope, request_text="Question")
     await lifecycle.set_pending_request(bundle=bundle, request_id="hitl-1")
 
-    refined = await lifecycle.refine(
-        scope=scope,
-        text="Focus on cost",
-        operation_key="operation-refine",
-        bundle_id=bundle.bundle_id,
-    )
+    refined = (
+        await lifecycle.admit_refinement(
+            scope=scope,
+            text="Focus on cost",
+            operation_key="operation-refine",
+            bundle_id=bundle.bundle_id,
+        )
+    ).state
     assert refined.admitted_refinement is not None
     assert refined.pending_request_id == "hitl-1"
 
@@ -167,7 +169,7 @@ async def test_refine_without_explicit_id_never_reactivates_an_ended_handle(tmp_
     await lifecycle.end(bundle=bundle)
 
     with pytest.raises(BundleLifecycleError, match="explicit_bundle_id_required"):
-        await lifecycle.refine(
+        await lifecycle.admit_refinement(
             scope=scope,
             text=RefinementInput(text="Reopen with new evidence").text,
             operation_key="operation-ended-handle",
@@ -185,19 +187,21 @@ async def test_explicit_refinement_queues_an_ended_bundle_only_without_another_a
     ended = await lifecycle.start(scope=scope, request_text="Original question")
     await lifecycle.end(bundle=ended)
 
-    admitted = await lifecycle.refine(
-        scope=scope,
-        text="Add a comparison",
-        operation_key="operation-ended",
-        bundle_id=ended.bundle_id,
-    )
+    admitted = (
+        await lifecycle.admit_refinement(
+            scope=scope,
+            text="Add a comparison",
+            operation_key="operation-ended",
+            bundle_id=ended.bundle_id,
+        )
+    ).state
     assert not admitted.is_active
     assert admitted.refinement_round == 0
     assert admitted.admitted_refinement is not None
 
     active = await lifecycle.start(scope=scope, request_text="Different question")
     with pytest.raises(BundleLifecycleError, match="active_bundle_exists"):
-        await lifecycle.refine(
+        await lifecycle.admit_refinement(
             scope=scope,
             text="Try again",
             operation_key="operation-competing",

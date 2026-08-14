@@ -333,7 +333,7 @@ class BundleControl:
                 handle=handle,
             )
             # Resolve only after refinement admission.  In particular, an ended
-            # Handle must reach ``BundleLifecycle.refine`` so it can return the
+            # Handle must reach ``BundleLifecycle.admit_refinement`` so it can return the
             # explicit-target requirement instead of being misreported as generic
             # unavailability before the lifecycle rule is evaluated.
             bundle = await self._lifecycle.resolve(scope=scope, bundle_id=bundle_id, handle=handle)

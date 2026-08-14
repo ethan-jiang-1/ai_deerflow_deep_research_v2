@@ -573,27 +573,6 @@ class BundleLifecycle:
             return await self._select_terminal_pending_refinement(bundle)
         return await self._admit_state_refinement(scope=scope, bundle=bundle, refinement=refinement)
 
-    async def refine(
-        self,
-        *,
-        scope: tuple[str, str],
-        text: str,
-        operation_key: str,
-        bundle_id: BundleId | None = None,
-        handle: CurrentBundleHandle | None = None,
-    ) -> BundleLocalState:
-        """Compatibility state-returning wrapper for trusted text-bearing admission."""
-
-        return (
-            await self.admit_refinement(
-                scope=scope,
-                text=text,
-                operation_key=operation_key,
-                bundle_id=bundle_id,
-                handle=handle,
-            )
-        ).state
-
     async def end(
         self,
         *,

@@ -200,13 +200,17 @@ class BundleWorkbench:
         if bundle is None or self._lifecycle is None or self._scope is None:
             return _unavailable_result(LifecycleAction.REFINE)
         try:
-            state = await self._lifecycle.refine(
+            admission = await self._lifecycle.admit_refinement(
                 scope=self._scope,
                 bundle_id=bundle.bundle_id,
                 text=text,
                 operation_key=operation_key,
             )
-            return self._lifecycle.result_for_state(action=LifecycleAction.REFINE, bundle=bundle, state=state)
+            return self._lifecycle.result_for_state(
+                action=LifecycleAction.REFINE,
+                bundle=bundle,
+                state=admission.state,
+            )
         except BundleAlreadyActive as exc:
             try:
                 state = await self._lifecycle.read_state(exc.bundle)

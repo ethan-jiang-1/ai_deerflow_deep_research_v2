@@ -83,6 +83,65 @@ async def test_refine_preserves_pending_response_and_foreign_scope_fails_closed(
 
 
 @pytest.mark.asyncio
+async def test_workbench_refinement_uses_admission_not_the_state_wrapper(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    workbench, lifecycle, bundle = await _workbench(tmp_path)
+
+    async def legacy_state_wrapper(**_kwargs: object) -> object:
+        raise AssertionError("workbench_called_removed_state_wrapper")
+
+    monkeypatch.setattr(lifecycle, "refine", legacy_state_wrapper, raising=False)
+
+    first = await workbench.refine(
+        bundle_id=bundle.bundle_id.value,
+        text="add regulatory scope",
+        operation_key="workbench-refine-1",
+    )
+    replay = await workbench.refine(
+        bundle_id=bundle.bundle_id.value,
+        text="add regulatory scope",
+        operation_key="workbench-refine-1",
+    )
+    conflict = await workbench.refine(
+        bundle_id=bundle.bundle_id.value,
+        text="different direction",
+        operation_key="workbench-refine-2",
+    )
+    foreign = await BundleWorkbench(lifecycle=lifecycle, scope=("mallory", "thread-2")).refine(
+        bundle_id=bundle.bundle_id.value,
+        text="foreign direction",
+        operation_key="foreign-refine-1",
+    )
+    state = await lifecycle.read_state(bundle)
+
+    assert (first.code, replay.code, conflict.code) == (ResultCode.SUSPENDED,) * 3
+    assert first.legal_next_action.value == "resume"
+    assert replay == first
+    assert conflict.refinement == first.refinement
+    assert state.pending_request_id == "drh_pending"
+    assert state.admitted_refinement is not None
+    assert state.admitted_refinement.operation_key == "workbench-refine-1"
+    assert foreign.availability is BundleAvailability.UNAVAILABLE
+    assert foreign.bundle_id is None
+
+    shutil.rmtree(lifecycle.private_root(bundle))
+    unavailable = await workbench.refine(
+        bundle_id=bundle.bundle_id.value,
+        text="lost bundle direction",
+        operation_key="lost-refine-1",
+    )
+
+    assert unavailable.availability is BundleAvailability.UNAVAILABLE
+    assert unavailable.bundle_id is None
+
+
+def test_lifecycle_has_no_state_only_refinement_wrapper() -> None:
+    assert not hasattr(BundleLifecycle, "refine")
+
+
+@pytest.mark.asyncio
 async def test_deleted_bundle_is_unavailable_and_fresh_start_is_independent(tmp_path: Path) -> None:
     workbench, lifecycle, bundle = await _workbench(tmp_path)
     root = lifecycle.private_root(bundle)

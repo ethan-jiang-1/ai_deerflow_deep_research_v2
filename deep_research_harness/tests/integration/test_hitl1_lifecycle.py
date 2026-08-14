@@ -72,12 +72,14 @@ async def test_refinement_preserves_pending_response_and_correlated_resume_is_id
     bundle = await lifecycle.start(scope=scope, request_text="Research storage options")
     waiting = await lifecycle.set_pending_request(bundle=bundle, request_id="hitl-1")
 
-    refined = await lifecycle.refine(
-        scope=scope,
-        text="Prioritize primary sources",
-        operation_key="operation-refine",
-        bundle_id=bundle.bundle_id,
-    )
+    refined = (
+        await lifecycle.admit_refinement(
+            scope=scope,
+            text="Prioritize primary sources",
+            operation_key="operation-refine",
+            bundle_id=bundle.bundle_id,
+        )
+    ).state
     assert refined.pending_request_id == "hitl-1"
     assert refined.admitted_refinement is not None
     assert refined.admitted_refinement.text == "Prioritize primary sources"
@@ -107,19 +109,21 @@ async def test_refinement_of_an_ended_bundle_requires_explicit_target_and_reopen
     await lifecycle.end(bundle=ended)
 
     with pytest.raises(BundleLifecycleError, match="explicit_bundle_id_required"):
-        await lifecycle.refine(
+        await lifecycle.admit_refinement(
             scope=scope,
             text="Add a comparison",
             operation_key="operation-ended-handle",
             handle=CurrentBundleHandle(ended.bundle_id),
         )
 
-    admitted = await lifecycle.refine(
-        scope=scope,
-        text="Add a comparison",
-        operation_key="operation-ended",
-        bundle_id=ended.bundle_id,
-    )
+    admitted = (
+        await lifecycle.admit_refinement(
+            scope=scope,
+            text="Add a comparison",
+            operation_key="operation-ended",
+            bundle_id=ended.bundle_id,
+        )
+    ).state
     assert not admitted.is_active
     assert admitted.refinement_round == 0
     assert admitted.admitted_refinement is not None
@@ -139,7 +143,7 @@ async def test_lost_bundle_cannot_supply_pending_input_or_be_reactivated(tmp_pat
     assert status.code == "unavailable"
     assert status.availability == "unavailable"
     with pytest.raises(BundleLifecycleError, match="bundle_unavailable"):
-        await lifecycle.refine(
+        await lifecycle.admit_refinement(
             scope=scope,
             text="Recover it",
             operation_key="operation-lost",

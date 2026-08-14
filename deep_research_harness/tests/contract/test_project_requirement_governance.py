@@ -92,3 +92,29 @@ def test_active_delta_cannot_reuse_a_retired_requirement(tmp_path: Path) -> None
     assert result.returncode == 1
     assert "Reused retired IDs" in result.stderr
     assert "ABC-001" in result.stderr
+
+
+def test_duplicate_main_spec_owner_is_rejected(tmp_path: Path) -> None:
+    _registry(tmp_path, "ABC-001: example — accepted\n")
+    _main_spec(tmp_path, "example", "ABC-001")
+    _main_spec(tmp_path, "duplicate", "ABC-001")
+
+    result = _run(tmp_path)
+
+    assert result.returncode == 1
+    assert "Duplicate IDs" in result.stderr
+    assert "ABC-001" in result.stderr
+
+
+def test_orphan_registry_requirement_is_rejected(tmp_path: Path) -> None:
+    _registry(
+        tmp_path,
+        "ABC-001: example — accepted\nABC-002: example — orphaned\n",
+    )
+    _main_spec(tmp_path, "example", "ABC-001")
+
+    result = _run(tmp_path)
+
+    assert result.returncode == 1
+    assert "Orphan IDs" in result.stderr
+    assert "ABC-002" in result.stderr
