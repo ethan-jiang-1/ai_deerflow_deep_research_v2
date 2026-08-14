@@ -108,6 +108,13 @@ tree内没有可盘点的 retained `evals/runs` records，不能推断 private/e
 Evaluation Owner必须先提供 supported Python import route决定与 retained-record inventory/retention cutover；在此之前
 02保持`not ready`，不创建 change。
 
+**02 post-04 recheck（2026-08-14，`30edb6e`）:** 文档只示例
+`deerflow_deep_research.runtime.evaluation` facade，根包仍只导出 host-facing tool；runtime 内部 modules经
+`.contracts` 使用 domain contract，不能据此把其 module-private route宣布为外部 support。建议 Evaluation Owner
+选择现有 facade 为唯一 supported import route，但该建议不是授权决定。`evals/runs/` 继续被忽略且本机目录不存在；
+focused Evaluation Bundle/live-boundary suite通过（105 passed）。这关闭了仓内枚举，不关闭未盘点的 private/external
+Bundle、Review Record 或 retention/cutover。
+
 ## Phase D - Node language与产品记录归位
 
 - [x] **03 `converge-node-language-and-product-records`**: NC-C01/C02/C03、EC-C02、OR-C03/C05。已 archive 并同步 main spec（`84d533a`）。
@@ -178,6 +185,12 @@ workstream用一张schema matrix收敛profile/proposal readers、evaluation cons
 **Gate F:** no-graph execution不再写成`all_real`/research-completed truth；supported State显式携带诚实mode；
 profile/proposal旧输入要么已迁移/拒绝，要么有批准的bounded support；FM-C03、PC-C05与RC-C05保持current。
 
+**05 post-04 recheck（2026-08-14，`30edb6e`）:** no-graph `bind_full_fake()` route和其`all_real`
+State writer仍存在；`ResearchGraphRecipe.create()`与`parse_profile_response()`仍是 Python export surfaces，而 profile/
+proposal/checkpoint producers不可由仓内样本穷举。Product Owner的 zero-credential UX 选择、Python support boundary、
+以及 supported Bundle mode/profile/proposal/checkpoint producer inventories仍未提供。相关组合 baseline command通过
+（149 passed）；不得因此把05 proposal的 product/data gates视为关闭。
+
 ## Phase G - Runtime host input compatibility
 
 创建06前一次关闭host trusted-context producer、supported deployment config/provider和AppConfig version inventories。
@@ -190,6 +203,12 @@ rollback。`deployment-config` workstream分别决定checkpointer precedence与e
 
 **Gate G:** marker/config输入要么迁移删除，要么有批准的bounded support owner；unsupported、conflicting、stale
 input继续fail closed；old-root、mount/config drift guards仍可证伪。
+
+**06 post-04 recheck（2026-08-14，`30edb6e`）:** `disable_clarification` alias与 legacy `checkpointer`
+precedence仍是当前受测行为，endpoint alias reader仍接收 external AppConfig shape。仓内 tests只能证明当前 canonical
+writer、conflict与fail-closed behavior，不能枚举 trusted-context producer、supported deployment provider或 AppConfig
+versions。Runtime/Deployment Owner仍须分别决定 marker support window、checkpointer precedence和 endpoint alias
+support，再提供 notice、denial与 rollback route；focused baseline tests已通过（149 passed），不构成这些决定。
 
 ## Phase H - Retained run data compatibility
 
@@ -205,6 +224,13 @@ diagnostic-location results；不得把absence伪造成Journal publication或把
 
 **Gate H:** supported persisted records处于批准schema、明确rejection或有时限retained support；无silent
 authenticity upgrade、failure-to-success mapping或无期限reader；summary v2、RS-C05和EV-C05 guards保持不变。
+
+**07 post-04 recheck（2026-08-14，`30edb6e`）:** 04 archive 已满足唯一 ordering prerequisite。ignored local
+Bundle 样本仅作风险下界：358 份`state.json`中298份显式 mode、60份缺 mode、0份为`full_fake`；201份 Journal
+manifest中56份为v2、145份为v3，另有201份 current `run-summary.json`。这些计数不读取 payload，也不能证明
+external checkpoint/Bundle/Journal/public Run result支持范围为空。Checkpoint、Bundle terminal、Journal和 diagnostic
+result inventories，以及 dry-run、old/new reader-writer、restart/replay、rollback matrices仍是 proposal 前置条件；
+focused state/Journal baseline tests通过（149 passed）。
 
 ## Phase I - 最终全量复审与关闭
 
