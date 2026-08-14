@@ -21,6 +21,20 @@ admit another module into scope. When local evidence exposes a genuinely necessa
 new contract, revise the Focus Card before expanding; when it exposes ambiguous
 ownership, clarify that owner instead of using a wider host scan to guess.
 
+## Bounded Program Admission
+
+Program form: `## Program Focus` with at least two registered
+`### Workstream Focus: <stable-id>` records replaces the ordinary card for a frozen,
+multi-owner change. Freeze its Candidate / obligation budget, declared order, shared
+archive invariant, and recovery rule. Each workstream retains its own Focus fields,
+decision authority, target/retirement, surface grade, negative path, evidence, and
+selected-policy review records. Program authority decides only scope, order, and
+whole-program archive closure; it never grants runtime authority, shared writer
+rights, or a substitute semantic owner. The checker admits grammar only. Apply and
+archive review compare the approved program scope to tasks, diff, dependencies, and
+evidence; unresolved work remains active for repair, rollback, or plan-level re-scope,
+never partial archive.
+
 ## Decide The Right Home
 
 Use this order:

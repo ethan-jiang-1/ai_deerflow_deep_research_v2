@@ -31,6 +31,18 @@ For an ordinary change, read only:
 Expand further only through the Context Expansion Gate below. Do not use "understand
 the repository" as a reason to read unrelated host code.
 
+## Bounded Program Context
+
+Program form: `## Program Focus` with at least two registered
+`### Workstream Focus: <stable-id>` records is only for a declared, frozen set of
+owners. Read the declared budget, order, archive invariant, and recovery rule, then
+read each workstream through its own owner, contracts, evidence seam, and selected
+policy reviews. The program decision authority approves scope, order, and archive
+closure only; it never owns runtime facts, writes, or a workstream's semantic choice.
+Apply/archive review compares the approved program scope with actual tasks, diff, and
+evidence. A workstream that cannot close remains active for approved repair, rollback,
+or plan-level re-scope; it cannot archive independently.
+
 ## Context Expansion Gate
 
 Before opening an adjacent module, upstream source, or reference document, name the

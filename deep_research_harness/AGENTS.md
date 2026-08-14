@@ -24,6 +24,16 @@ Record every selected canonical policy as comma-separated `Triggered review poli
 on that card, then add only the conditional review records those selected policy routes
 require.
 
+Program form: `## Program Focus` with at least two registered
+`### Workstream Focus: <stable-id>` records replaces that ordinary card only for a
+frozen multi-owner change. Read the declared budget, order, archive invariant, and
+recovery rule, then each workstream's own owner, contracts, proof seam, and selected
+level-four reviews. Program authority approves scope, order, and whole-program archive
+closure only; it never owns runtime facts, writes, or a workstream decision. Apply and
+archive review compare the approved scope with tasks, diff, dependencies, and evidence;
+failed work stays active for repair, rollback, or plan-level re-scope, never partial
+archive.
+
 For an LLM-Bearing Node behavior symptom, classify the seam first: capability Markdown,
 prompt builder, and feedback are the first modification seam; a parser, gate, route, or
 bridge edit is a guardrail, not a substitute. Declare `Seam classification` on the Focus

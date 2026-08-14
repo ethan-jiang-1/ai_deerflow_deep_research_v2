@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import subprocess
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -39,6 +40,7 @@ FOCUS_BEGIN = "<!-- BEGIN: DEEP-RESEARCH-FOCUS-GATE -->"
 FOCUS_END = "<!-- END: DEEP-RESEARCH-FOCUS-GATE -->"
 CONTEXT_EXPANSION_HEADING = "## Context Expansion Gate"
 CONTEXT_EXPANSION_SENTENCE = "A possible future use is not enough to expand scope."
+PROGRAM_ROUTE_ANCHOR = "Program form: `## Program Focus` with at least two"
 CLAUDE_IMPORT = "@AGENTS.md"
 FOCUS_FIELDS = (
     "Primary module / causal owner",
@@ -48,6 +50,26 @@ FOCUS_FIELDS = (
     "Evidence seam",
     "Not in scope",
     "Triggered review policies",
+)
+PROGRAM_FOCUS_HEADING = "## Program Focus"
+PROGRAM_FOCUS_FIELDS = (
+    "Program outcome",
+    "Candidate / obligation budget",
+    "Declared workstream order",
+    "Program decision authority",
+    "Shared archive invariant",
+    "Program failure / recovery",
+    "Split / expansion rule",
+    "Not in scope",
+)
+WORKSTREAM_FOCUS_PREFIX = "### Workstream Focus: "
+WORKSTREAM_FIELDS = (
+    *FOCUS_FIELDS,
+    "Candidate / obligation IDs",
+    "Target / retirement",
+    "Surface grade",
+    "Decision authority",
+    "Negative path / recovery",
 )
 SEAM_CLASSIFICATION_FIELD = "Seam classification"
 SEAM_CLASSIFICATIONS = (
@@ -170,6 +192,30 @@ def _control_placement_review_record(*, posture: str = "advisory") -> str:
     )
 
 
+def _workstream_control_placement_review_record(*, posture: str = "advisory") -> str:
+    return _control_placement_review_record(posture=posture).replace(
+        CONTROL_PLACEMENT_REVIEW_HEADING,
+        "#### Control Placement Review",
+        1,
+    )
+
+
+def _workstream_workflow_outcome_review_record() -> str:
+    return _workflow_outcome_review_record().replace(
+        WORKFLOW_OUTCOME_REVIEW_HEADING,
+        "#### Workflow Outcome Review",
+        1,
+    )
+
+
+def _workstream_node_agent_review_record(*, classification: str = "node-agent") -> str:
+    return _node_agent_review_record(classification=classification).replace(
+        NODE_AGENT_REVIEW_HEADING,
+        "#### Node Agent Review",
+        1,
+    )
+
+
 def _focus_card(
     *,
     triggered_policies: str = "none: fixture documentation rationale",
@@ -194,6 +240,39 @@ def _focus_card(
     return f"## Change Focus\n\n{fields}\n\n{reviews}"
 
 
+def _program_focus(
+    *,
+    budget: str = "OR-C01, TA-C01",
+    declared_workstream_order: str = "alpha, beta",
+    workstreams: tuple[tuple[str, str, str], ...] = (
+        ("alpha", "owner-alpha", "OR-C01"),
+        ("beta", "owner-beta", "TA-C01"),
+    ),
+    policies_by_workstream: dict[str, str] | None = None,
+    reviews_by_workstream: dict[str, str] | None = None,
+) -> str:
+    program_values = {field: "fixture" for field in PROGRAM_FOCUS_FIELDS}
+    program_values["Candidate / obligation budget"] = budget
+    program_values["Declared workstream order"] = declared_workstream_order
+    program_fields = "\n".join(f"- **{field}:** {program_values[field]}" for field in PROGRAM_FOCUS_FIELDS)
+    workstream_sections = []
+    policies_by_workstream = policies_by_workstream or {}
+    reviews_by_workstream = reviews_by_workstream or {}
+    for stable_id, owner, candidate_ids in workstreams:
+        values = {field: "fixture" for field in WORKSTREAM_FIELDS}
+        values["Primary module / causal owner"] = owner
+        values[SEAM_CLASSIFICATION_FIELD] = "deterministic-guardrail — fixture rationale"
+        values[TRIGGERED_POLICIES_FIELD] = policies_by_workstream.get(
+            stable_id,
+            "none: fixture documentation rationale",
+        )
+        values["Candidate / obligation IDs"] = candidate_ids
+        fields = "\n".join(f"- **{field}:** {values[field]}" for field in WORKSTREAM_FIELDS)
+        review = reviews_by_workstream.get(stable_id, "")
+        workstream_sections.append(f"{WORKSTREAM_FOCUS_PREFIX}{stable_id}\n\n{fields}\n\n{review}".rstrip())
+    return f"{PROGRAM_FOCUS_HEADING}\n\n{program_fields}\n\n" + "\n\n".join(workstream_sections) + "\n"
+
+
 def _project(root: Path) -> None:
     links = "\n".join(f"- [policy](../policies/{name}.md)" for name in POLICY_NAMES)
     _write(
@@ -213,7 +292,12 @@ def _project(root: Path) -> None:
     for name in POLICY_NAMES:
         extra = ""
         if name == "local-context":
-            extra = f"\n{CONTEXT_EXPANSION_HEADING}\n{CONTEXT_EXPANSION_SENTENCE}\n"
+            extra = (
+                f"\n{CONTEXT_EXPANSION_HEADING}\n{CONTEXT_EXPANSION_SENTENCE}\n"
+                f"\n{PROGRAM_ROUTE_ANCHOR} registered Workstream Focus records.\n"
+            )
+        if name == "change-admission":
+            extra = f"\n{PROGRAM_ROUTE_ANCHOR} registered Workstream Focus records.\n"
         if name == "agent-information-map":
             extra = (
                 "\n## Reader Roles\n"
@@ -244,6 +328,7 @@ def _project(root: Path) -> None:
         "Read `../openspec/agent-charter/README.md`.\n"
         "Choose one primary module and record `## Change Focus`.\n\n"
         f"{CONTEXT_EXPANSION_SENTENCE}\n\n"
+        f"{PROGRAM_ROUTE_ANCHOR} registered Workstream Focus records.\n\n"
         "| Central question | Primary owner to inspect first |\n"
         "| --- | --- |\n"
         "| Fixture | `domain/` |\n"
@@ -269,6 +354,7 @@ def _project(root: Path) -> None:
         '    - "Use openspec/agent-charter/README.md and `## Change Focus` '
         "with Primary module / causal owner and Triggered review policies. "
         f'{CONTEXT_EXPANSION_SENTENCE}"\n'
+        f'    - "{PROGRAM_ROUTE_ANCHOR} registered Workstream Focus records."\n'
         '    - "control-placement requires `## Control Placement Review`."\n'
         '    - "workflow-outcome-review requires `## Workflow Outcome Review`."\n'
         '    - "node-agent-workflow-integrity requires `## Node Agent Review` and only routes admission."\n'
@@ -324,6 +410,286 @@ def test_complete_charter_and_focus_card_pass(tmp_path: Path) -> None:
 
     assert result.returncode == 0, result.stderr
     assert "agent charter governance passed" in result.stdout.lower()
+
+
+def test_complete_program_focus_with_registered_workstreams_passes(tmp_path: Path) -> None:
+    _project(tmp_path)
+    _write(tmp_path, "openspec/changes/change-one/proposal.md", _program_focus())
+
+    result = _run(tmp_path)
+
+    assert result.returncode == 0, result.stderr
+
+
+def test_mixed_ordinary_and_program_focus_fails_closed(tmp_path: Path) -> None:
+    _project(tmp_path)
+    _write(
+        tmp_path,
+        "openspec/changes/change-one/proposal.md",
+        _program_focus() + "\n" + _focus_card(),
+    )
+
+    _assert_error(tmp_path, "program.mode_invalid")
+
+
+@pytest.mark.parametrize(
+    "field",
+    PROGRAM_FOCUS_FIELDS,
+)
+def test_program_focus_requires_each_field(tmp_path: Path, field: str) -> None:
+    _project(tmp_path)
+    proposal = _program_focus()
+    value = "fixture"
+    if field == "Candidate / obligation budget":
+        value = "OR-C01, TA-C01"
+    elif field == "Declared workstream order":
+        value = "alpha, beta"
+    _write(
+        tmp_path,
+        "openspec/changes/change-one/proposal.md",
+        proposal.replace(f"- **{field}:** {value}\n", "", 1),
+    )
+
+    _assert_error(tmp_path, "program.field_missing")
+
+
+@pytest.mark.parametrize(
+    "field",
+    WORKSTREAM_FIELDS,
+)
+def test_workstream_focus_requires_each_field(tmp_path: Path, field: str) -> None:
+    _project(tmp_path)
+    proposal = _program_focus()
+    value = "fixture"
+    if field == "Primary module / causal owner":
+        value = "owner-alpha"
+    elif field == SEAM_CLASSIFICATION_FIELD:
+        value = "deterministic-guardrail — fixture rationale"
+    elif field == TRIGGERED_POLICIES_FIELD:
+        value = "none: fixture documentation rationale"
+    elif field == "Candidate / obligation IDs":
+        value = "OR-C01"
+    workstream_start = proposal.index(f"{WORKSTREAM_FOCUS_PREFIX}alpha")
+    _write(
+        tmp_path,
+        "openspec/changes/change-one/proposal.md",
+        proposal[:workstream_start] + proposal[workstream_start:].replace(f"- **{field}:** {value}\n", "", 1),
+    )
+
+    _assert_error(tmp_path, "program.workstream_field_missing")
+
+
+@pytest.mark.parametrize(
+    ("replacement", "code"),
+    (
+        ("Alpha", "program.workstream_id_invalid"),
+        ("alpha_beta", "program.workstream_id_invalid"),
+    ),
+)
+def test_program_focus_rejects_invalid_workstream_ids(
+    tmp_path: Path,
+    replacement: str,
+    code: str,
+) -> None:
+    _project(tmp_path)
+    proposal = _program_focus().replace(f"{WORKSTREAM_FOCUS_PREFIX}alpha", f"{WORKSTREAM_FOCUS_PREFIX}{replacement}")
+    _write(tmp_path, "openspec/changes/change-one/proposal.md", proposal)
+
+    _assert_error(tmp_path, code)
+
+
+def test_program_focus_accepts_the_declared_stable_id_pattern(tmp_path: Path) -> None:
+    _project(tmp_path)
+    _write(
+        tmp_path,
+        "openspec/changes/change-one/proposal.md",
+        _program_focus(
+            declared_workstream_order="alpha-, beta",
+            workstreams=(
+                ("alpha-", "owner-alpha", "OR-C01"),
+                ("beta", "owner-beta", "TA-C01"),
+            ),
+        ),
+    )
+
+    result = _run(tmp_path)
+
+    assert result.returncode == 0, result.stderr
+
+
+def test_program_focus_rejects_duplicate_workstream_id(tmp_path: Path) -> None:
+    _project(tmp_path)
+    proposal = _program_focus().replace(f"{WORKSTREAM_FOCUS_PREFIX}beta", f"{WORKSTREAM_FOCUS_PREFIX}alpha")
+    _write(tmp_path, "openspec/changes/change-one/proposal.md", proposal)
+
+    _assert_error(tmp_path, "program.workstream_id_duplicate")
+
+
+def test_program_focus_rejects_duplicate_workstream_owner(tmp_path: Path) -> None:
+    _project(tmp_path)
+    proposal = _program_focus().replace("owner-beta", "owner-alpha")
+    _write(tmp_path, "openspec/changes/change-one/proposal.md", proposal)
+
+    _assert_error(tmp_path, "program.workstream_owner_duplicate")
+
+
+def test_program_focus_requires_at_least_two_workstreams(tmp_path: Path) -> None:
+    _project(tmp_path)
+    _write(
+        tmp_path,
+        "openspec/changes/change-one/proposal.md",
+        _program_focus(
+            budget="OR-C01",
+            declared_workstream_order="alpha",
+            workstreams=(("alpha", "owner-alpha", "OR-C01"),),
+        ),
+    )
+
+    _assert_error(tmp_path, "program.workstream_count_invalid")
+
+
+@pytest.mark.parametrize(
+    "declared_workstream_order",
+    ("alpha", "alpha, missing"),
+)
+def test_program_focus_requires_exact_workstream_registration(
+    tmp_path: Path,
+    declared_workstream_order: str,
+) -> None:
+    _project(tmp_path)
+    _write(
+        tmp_path,
+        "openspec/changes/change-one/proposal.md",
+        _program_focus(declared_workstream_order=declared_workstream_order),
+    )
+
+    _assert_error(tmp_path, "program.workstream_registration_mismatch")
+
+
+def test_program_focus_rejects_duplicate_candidate_or_obligation_id(tmp_path: Path) -> None:
+    _project(tmp_path)
+    _write(
+        tmp_path,
+        "openspec/changes/change-one/proposal.md",
+        _program_focus(
+            workstreams=(
+                ("alpha", "owner-alpha", "OR-C01"),
+                ("beta", "owner-beta", "OR-C01"),
+            )
+        ),
+    )
+
+    _assert_error(tmp_path, "program.candidate_id_duplicate")
+
+
+@pytest.mark.parametrize(
+    "budget",
+    ("OR-C01", "OR-C01, TA-C01, EC-C01"),
+)
+def test_program_focus_requires_budget_to_match_workstream_union(tmp_path: Path, budget: str) -> None:
+    _project(tmp_path)
+    _write(tmp_path, "openspec/changes/change-one/proposal.md", _program_focus(budget=budget))
+
+    _assert_error(tmp_path, "program.candidate_budget_mismatch")
+
+
+@pytest.mark.parametrize(
+    ("budget", "declared_workstream_order", "code"),
+    (
+        ("OR-C01, OR-C01", "alpha, beta", "program.candidate_budget_duplicate"),
+        ("OR-C01, TA-C01", "alpha, alpha", "program.workstream_order_duplicate"),
+    ),
+)
+def test_program_focus_requires_unique_budget_and_order_entries(
+    tmp_path: Path,
+    budget: str,
+    declared_workstream_order: str,
+    code: str,
+) -> None:
+    _project(tmp_path)
+    _write(
+        tmp_path,
+        "openspec/changes/change-one/proposal.md",
+        _program_focus(
+            budget=budget,
+            declared_workstream_order=declared_workstream_order,
+        ),
+    )
+
+    _assert_error(tmp_path, code)
+
+
+@pytest.mark.parametrize(
+    ("policy_name", "workstream_review"),
+    (
+        (CONTROL_PLACEMENT_POLICY, _workstream_control_placement_review_record),
+        (WORKFLOW_OUTCOME_POLICY, _workstream_workflow_outcome_review_record),
+        (NODE_AGENT_WORKFLOW_INTEGRITY_POLICY, _workstream_node_agent_review_record),
+    ),
+)
+def test_program_workstream_accepts_its_own_selected_policy_review(
+    tmp_path: Path,
+    policy_name: str,
+    workstream_review: Callable[[], str],
+) -> None:
+    _project(tmp_path)
+    _write(
+        tmp_path,
+        "openspec/changes/change-one/proposal.md",
+        _program_focus(
+            policies_by_workstream={"alpha": policy_name},
+            reviews_by_workstream={"alpha": workstream_review()},
+        ),
+    )
+
+    result = _run(tmp_path)
+
+    assert result.returncode == 0, result.stderr
+
+
+@pytest.mark.parametrize(
+    ("policy_name", "workstream_review", "program_review", "code"),
+    (
+        (
+            CONTROL_PLACEMENT_POLICY,
+            _workstream_control_placement_review_record,
+            _control_placement_review_record,
+            "program.workstream_control_placement_review_missing",
+        ),
+        (
+            WORKFLOW_OUTCOME_POLICY,
+            _workstream_workflow_outcome_review_record,
+            _workflow_outcome_review_record,
+            "program.workstream_workflow_outcome_review_missing",
+        ),
+        (
+            NODE_AGENT_WORKFLOW_INTEGRITY_POLICY,
+            _workstream_node_agent_review_record,
+            _node_agent_review_record,
+            "program.workstream_node_agent_review_missing",
+        ),
+    ),
+)
+@pytest.mark.parametrize("borrowed_review", ("program", "sibling"))
+def test_program_workstream_cannot_borrow_a_selected_policy_review(
+    tmp_path: Path,
+    borrowed_review: str,
+    policy_name: str,
+    workstream_review: Callable[[], str],
+    program_review: Callable[[], str],
+    code: str,
+) -> None:
+    _project(tmp_path)
+    reviews = {"beta": workstream_review()}
+    proposal = _program_focus(
+        policies_by_workstream={"alpha": policy_name},
+        reviews_by_workstream=reviews if borrowed_review == "sibling" else {},
+    )
+    if borrowed_review == "program":
+        proposal += "\n" + program_review()
+    _write(tmp_path, "openspec/changes/change-one/proposal.md", proposal)
+
+    _assert_error(tmp_path, code)
 
 
 @pytest.mark.parametrize("policy_name", POLICY_NAMES)
@@ -383,6 +749,26 @@ def test_missing_focus_gate_fails(tmp_path: Path) -> None:
     _replace(tmp_path, "deep_research_harness/AGENTS.md", FOCUS_BEGIN, "")
 
     _assert_error(tmp_path, "guide.focus_gate_missing")
+
+
+@pytest.mark.parametrize(
+    ("relative_path", "code"),
+    (
+        (Path("openspec/config.yaml"), "config.program_route_missing"),
+        (POLICY_PATHS["local-context"], "charter.program_route_local_context_missing"),
+        (POLICY_PATHS["change-admission"], "charter.program_route_change_admission_missing"),
+        (Path("deep_research_harness/AGENTS.md"), "guide.program_route_missing"),
+    ),
+)
+def test_program_route_requires_each_authoring_anchor(
+    tmp_path: Path,
+    relative_path: Path,
+    code: str,
+) -> None:
+    _project(tmp_path)
+    _replace(tmp_path, relative_path, PROGRAM_ROUTE_ANCHOR, "missing-program-route")
+
+    _assert_error(tmp_path, code)
 
 
 def test_missing_context_expansion_policy_anchor_fails(tmp_path: Path) -> None:

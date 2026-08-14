@@ -41,6 +41,7 @@ FOCUS_END = "<!-- END: DEEP-RESEARCH-FOCUS-GATE -->"
 GENERATED_BEGIN = "<!-- BEGIN GENERATED: PROJECT-STRUCTURE -->"
 CONTEXT_EXPANSION_HEADING = "## Context Expansion Gate"
 CONTEXT_EXPANSION_SENTENCE = "A possible future use is not enough to expand scope."
+PROGRAM_ROUTE_ANCHOR = "Program form: `## Program Focus` with at least two"
 FOCUS_HEADING = "## Change Focus"
 FOCUS_FIELDS = (
     "Primary module / causal owner",
@@ -51,6 +52,27 @@ FOCUS_FIELDS = (
     "Not in scope",
     "Triggered review policies",
 )
+PROGRAM_FOCUS_HEADING = "## Program Focus"
+PROGRAM_FOCUS_FIELDS = (
+    "Program outcome",
+    "Candidate / obligation budget",
+    "Declared workstream order",
+    "Program decision authority",
+    "Shared archive invariant",
+    "Program failure / recovery",
+    "Split / expansion rule",
+    "Not in scope",
+)
+WORKSTREAM_FOCUS_PREFIX = "### Workstream Focus: "
+WORKSTREAM_FIELDS = (
+    *FOCUS_FIELDS,
+    "Candidate / obligation IDs",
+    "Target / retirement",
+    "Surface grade",
+    "Decision authority",
+    "Negative path / recovery",
+)
+WORKSTREAM_ID_PATTERN = re.compile(r"[a-z][a-z0-9-]*")
 SEAM_CLASSIFICATION_FIELD = "Seam classification"
 SEAM_CLASSIFICATIONS = frozenset(
     {"cognitive-program", "human-decision", "deterministic-guardrail", "wiring"}
@@ -107,6 +129,14 @@ class PolicyDocument:
 
     path: Path
     index_link: str
+
+
+@dataclass(frozen=True)
+class WorkstreamFocus:
+    """A workstream section within an active bounded program proposal."""
+
+    stable_id: str
+    section: str
 
 
 def _policy_document(name: str) -> PolicyDocument:
@@ -262,6 +292,20 @@ def _validate_charter_tree(root: Path) -> None:
         code="charter.context_expansion_policy_missing",
         detail=f"local-context policy lacks its context-expansion gate: {local_context_path.as_posix()}",
     )
+    _require_fragment(
+        local_context,
+        PROGRAM_ROUTE_ANCHOR,
+        code="charter.program_route_local_context_missing",
+        detail=f"local-context policy lacks the bounded-program route: {local_context_path.as_posix()}",
+    )
+    change_admission_path = POLICY_ROOT / "change-admission.md"
+    change_admission = _read_file(root, change_admission_path, code="charter.path_missing")
+    _require_fragment(
+        change_admission,
+        PROGRAM_ROUTE_ANCHOR,
+        code="charter.program_route_change_admission_missing",
+        detail=f"change-admission policy lacks the bounded-program route: {change_admission_path.as_posix()}",
+    )
 
 
 def _validate_focus_gate(root: Path) -> None:
@@ -306,6 +350,12 @@ def _validate_focus_gate(root: Path) -> None:
         CONTEXT_EXPANSION_SENTENCE,
         code="guide.context_expansion_rule_missing",
         detail=f"focus gate lacks its context-expansion rule: {GUIDE_PATH.as_posix()}",
+    )
+    _require_fragment(
+        focus_gate,
+        PROGRAM_ROUTE_ANCHOR,
+        code="guide.program_route_missing",
+        detail=f"focus gate lacks the bounded-program route: {GUIDE_PATH.as_posix()}",
     )
 
 
@@ -431,6 +481,12 @@ def _validate_authoring_pointer(root: Path) -> None:
         code="config.context_expansion_rule_missing",
         detail=f"OpenSpec configuration lacks its context-expansion rule: {CONFIG_PATH.as_posix()}",
     )
+    _require_fragment(
+        config,
+        PROGRAM_ROUTE_ANCHOR,
+        code="config.program_route_missing",
+        detail=f"OpenSpec configuration lacks the bounded-program route: {CONFIG_PATH.as_posix()}",
+    )
 
 
 def _line_count(text: str) -> int:
@@ -526,153 +582,169 @@ def _validate_information_map(root: Path) -> list[str]:
     return warnings
 
 
-def _focus_section(proposal: str, proposal_path: Path) -> str:
-    matches = list(re.finditer(r"^## Change Focus\s*$", proposal, flags=re.MULTILINE))
-    if len(matches) != 1:
-        raise ContractViolation(
-            "focus.heading_missing",
-            f"proposal must contain exactly one {FOCUS_HEADING!r}: {proposal_path.as_posix()}",
-        )
-    start = matches[0].end()
-    next_heading = re.search(r"^## (?!#)", proposal[start:], flags=re.MULTILINE)
+def _section_after_heading(proposal: str, match: re.Match[str], *, maximum_level: int) -> str:
+    start = match.end()
+    next_heading = re.search(rf"^#{{1,{maximum_level}}} (?!#)", proposal[start:], flags=re.MULTILINE)
     end = start + next_heading.start() if next_heading else len(proposal)
     return proposal[start:end]
 
 
-def _validate_focus_card(proposal: str, proposal_path: Path) -> str:
-    section = _focus_section(proposal, proposal_path)
-    legacy_pattern = re.compile(
-        rf"^- \*\*{re.escape(LEGACY_TRIGGERED_POLICIES_FIELD)}:\*\*", re.MULTILINE
-    )
-    if legacy_pattern.search(section):
-        raise ContractViolation(
-            "focus.legacy_triggered_policies_field_present",
-            f"Focus Card uses the retired field {LEGACY_TRIGGERED_POLICIES_FIELD!r}: "
-            f"{proposal_path.as_posix()}",
-        )
-    for field in FOCUS_FIELDS:
-        pattern = re.compile(rf"^- \*\*{re.escape(field)}:\*\*[ \t]*\S", re.MULTILINE)
-        if not pattern.search(section):
-            raise ContractViolation(
-                "focus.field_missing",
-                f"Focus Card field {field!r} is missing or empty: {proposal_path.as_posix()}",
-            )
-    seam_pattern = re.compile(
-        rf"^- \*\*{re.escape(SEAM_CLASSIFICATION_FIELD)}:\*\*[ \t]*(?P<value>\S+)(?P<rest>[^\n]*)$",
+def _field_value(section: str, field: str) -> str | None:
+    pattern = re.compile(
+        rf"^- \*\*{re.escape(field)}:\*\*[ \t]*(?P<value>\S[^\n]*)$",
         re.MULTILINE,
     )
-    seam_match = seam_pattern.search(section)
-    if seam_match is None:
+    match = pattern.search(section)
+    return match.group("value").strip() if match else None
+
+
+def _scoped_code(code_prefix: str, suffix: str) -> str:
+    if code_prefix == "program.workstream":
+        return f"program.workstream_{suffix}"
+    return f"{code_prefix}.{suffix}"
+
+
+def _validate_required_fields(
+    section: str,
+    fields: tuple[str, ...],
+    *,
+    code: str,
+    record_name: str,
+    proposal_path: Path,
+) -> None:
+    for field in fields:
+        if _field_value(section, field) is None:
+            raise ContractViolation(
+                code,
+                f"{record_name} field {field!r} is missing or empty: {proposal_path.as_posix()}",
+            )
+
+
+def _validate_legacy_triggered_policies_field(
+    section: str,
+    *,
+    code: str,
+    record_name: str,
+    proposal_path: Path,
+) -> None:
+    pattern = re.compile(rf"^- \*\*{re.escape(LEGACY_TRIGGERED_POLICIES_FIELD)}:\*\*", re.MULTILINE)
+    if pattern.search(section):
         raise ContractViolation(
-            "focus.field_missing",
-            f"Focus Card field {SEAM_CLASSIFICATION_FIELD!r} is missing or empty: {proposal_path.as_posix()}",
+            code,
+            f"{record_name} uses the retired field {LEGACY_TRIGGERED_POLICIES_FIELD!r}: "
+            f"{proposal_path.as_posix()}",
         )
-    seam_value = seam_match.group("value")
-    if seam_value not in SEAM_CLASSIFICATIONS:
+
+
+def _validate_seam_classification(
+    section: str,
+    *,
+    code_prefix: str,
+    record_name: str,
+    proposal_path: Path,
+) -> None:
+    seam_value = _field_value(section, SEAM_CLASSIFICATION_FIELD)
+    if seam_value is None:
         raise ContractViolation(
-            "focus.seam_classification_invalid",
+            _scoped_code(code_prefix, "field_missing"),
+            f"{record_name} field {SEAM_CLASSIFICATION_FIELD!r} is missing or empty: "
+            f"{proposal_path.as_posix()}",
+        )
+    value, _, rationale = seam_value.partition(" ")
+    if value not in SEAM_CLASSIFICATIONS:
+        raise ContractViolation(
+            _scoped_code(code_prefix, "seam_classification_invalid"),
             f"{SEAM_CLASSIFICATION_FIELD!r} must be exactly one of "
             f"{', '.join(sorted(SEAM_CLASSIFICATIONS))}, written bare: {proposal_path.as_posix()}",
         )
-    if not seam_match.group("rest").strip():
+    if not rationale.strip():
         raise ContractViolation(
-            "focus.seam_classification_rationale_missing",
+            _scoped_code(code_prefix, "seam_classification_rationale_missing"),
             f"{SEAM_CLASSIFICATION_FIELD!r} must give a short rationale after the value: "
             f"{proposal_path.as_posix()}",
         )
-    return section
 
 
-def _triggered_policies(root: Path, focus_section: str, proposal_path: Path) -> tuple[str, ...]:
-    pattern = re.compile(
+def _triggered_policies(
+    root: Path,
+    focus_section: str,
+    proposal_path: Path,
+    *,
+    code_prefix: str = "focus",
+    record_name: str = "Focus Card",
+) -> tuple[str, ...]:
+    value = _field_value(focus_section, TRIGGERED_POLICIES_FIELD)
+    if value is None:
+        raise ContractViolation(
+            _scoped_code(code_prefix, "field_missing"),
+            f"{record_name} field {TRIGGERED_POLICIES_FIELD!r} is missing or empty: {proposal_path.as_posix()}",
+        )
+
+    field_pattern = re.compile(
         rf"^- \*\*{re.escape(TRIGGERED_POLICIES_FIELD)}:\*\*[ \t]*(?P<value>\S[^\n]*)$",
         re.MULTILINE,
     )
-    match = pattern.search(focus_section)
-    if match is None:
-        raise ContractViolation(
-            "focus.field_missing",
-            f"Focus Card field {TRIGGERED_POLICIES_FIELD!r} is missing or empty: {proposal_path.as_posix()}",
-        )
-
+    match = field_pattern.search(focus_section)
+    assert match is not None
     following_line = next(
         (line for line in focus_section[match.end() :].splitlines() if line.strip()),
         "",
     )
     if following_line and following_line[0].isspace():
         raise ContractViolation(
-            "focus.triggered_policies_continuation_invalid",
+            _scoped_code(code_prefix, "triggered_policies_continuation_invalid"),
             f"{TRIGGERED_POLICIES_FIELD!r} must be a single-line comma-separated list: "
             f"{proposal_path.as_posix()}",
         )
 
-    value = match.group("value").strip()
     if value == "none":
         raise ContractViolation(
-            "focus.triggered_policies_rationale_missing",
+            _scoped_code(code_prefix, "triggered_policies_rationale_missing"),
             f"{TRIGGERED_POLICIES_FIELD!r} must give a short rationale after 'none:': {proposal_path.as_posix()}",
         )
     if value.startswith("none:"):
         if not value.removeprefix("none:").strip():
             raise ContractViolation(
-                "focus.triggered_policies_rationale_missing",
-                f"{TRIGGERED_POLICIES_FIELD!r} must give a short rationale after 'none:': {proposal_path.as_posix()}",
+                _scoped_code(code_prefix, "triggered_policies_rationale_missing"),
+                f"{TRIGGERED_POLICIES_FIELD!r} must give a short rationale after 'none:': "
+                f"{proposal_path.as_posix()}",
             )
         return ()
 
     policies = tuple(policy.strip() for policy in value.split(","))
     if not policies or any(not policy or policy not in POLICY_REGISTRY for policy in policies):
         raise ContractViolation(
-            "focus.triggered_policy_unknown",
+            _scoped_code(code_prefix, "triggered_policy_unknown"),
             f"{TRIGGERED_POLICIES_FIELD!r} must list canonical policy names or 'none: <rationale>': "
             f"{proposal_path.as_posix()}",
         )
     for policy in policies:
         document = POLICY_REGISTRY[policy]
-        _read_file(root, document.path, code="focus.triggered_policy_document_missing")
+        _read_file(
+            root,
+            document.path,
+            code=_scoped_code(code_prefix, "triggered_policy_document_missing"),
+        )
     return policies
 
 
-def _workflow_outcome_review_section(proposal: str, proposal_path: Path) -> str:
-    matches = list(re.finditer(r"^## Workflow Outcome Review\s*$", proposal, flags=re.MULTILINE))
+def _review_section(
+    container: str,
+    *,
+    heading: str,
+    level: int,
+    code: str,
+    proposal_path: Path,
+) -> str:
+    expected_heading = f"{'#' * level} {heading}"
+    matches = list(re.finditer(rf"^{re.escape(expected_heading)}\s*$", container, flags=re.MULTILINE))
     if len(matches) != 1:
         raise ContractViolation(
-            "focus.workflow_outcome_review_missing",
-            f"proposal selecting {WORKFLOW_OUTCOME_REVIEW_POLICY!r} must contain exactly one "
-            f"{WORKFLOW_OUTCOME_REVIEW_HEADING!r}: {proposal_path.as_posix()}",
+            code,
+            f"proposal selecting {heading!r} must contain exactly one {expected_heading!r}: "
+            f"{proposal_path.as_posix()}",
         )
-    start = matches[0].end()
-    next_heading = re.search(r"^## (?!#)", proposal[start:], flags=re.MULTILINE)
-    end = start + next_heading.start() if next_heading else len(proposal)
-    return proposal[start:end]
-
-
-def _node_agent_review_section(proposal: str, proposal_path: Path) -> str:
-    matches = list(re.finditer(r"^## Node Agent Review\s*$", proposal, flags=re.MULTILINE))
-    if len(matches) != 1:
-        raise ContractViolation(
-            "focus.node_agent_review_missing",
-            f"proposal selecting {NODE_AGENT_WORKFLOW_INTEGRITY_POLICY!r} must contain exactly one "
-            f"{NODE_AGENT_REVIEW_HEADING!r}: {proposal_path.as_posix()}",
-        )
-    start = matches[0].end()
-    next_heading = re.search(r"^## (?!#)", proposal[start:], flags=re.MULTILINE)
-    end = start + next_heading.start() if next_heading else len(proposal)
-    return proposal[start:end]
-
-
-def _control_placement_review_section(proposal: str, proposal_path: Path) -> str:
-    matches = list(re.finditer(r"^## Control Placement Review\s*$", proposal, flags=re.MULTILINE))
-    if len(matches) != 1:
-        raise ContractViolation(
-            "focus.control_placement_review_missing",
-            f"proposal selecting {CONTROL_PLACEMENT_POLICY!r} must contain exactly one "
-            f"{CONTROL_PLACEMENT_REVIEW_HEADING!r}: {proposal_path.as_posix()}",
-        )
-    start = matches[0].end()
-    next_heading = re.search(r"^## (?!#)", proposal[start:], flags=re.MULTILINE)
-    end = start + next_heading.start() if next_heading else len(proposal)
-    return proposal[start:end]
+    return _section_after_heading(container, matches[0], maximum_level=level)
 
 
 def _table_cells(line: str) -> tuple[str, ...] | None:
@@ -688,12 +760,16 @@ def _is_markdown_separator(cells: tuple[str, ...], columns: tuple[str, ...]) -> 
     )
 
 
-def _validate_workflow_outcome_review(proposal: str, proposal_path: Path) -> None:
-    section = _workflow_outcome_review_section(proposal, proposal_path)
+def _validate_workflow_outcome_review(
+    section: str,
+    proposal_path: Path,
+    *,
+    code_prefix: str,
+) -> None:
     table_lines = [line for line in section.splitlines() if _table_cells(line) is not None]
     if len(table_lines) < 3:
         raise ContractViolation(
-            "focus.workflow_outcome_review_shape_invalid",
+            _scoped_code(code_prefix, "workflow_outcome_review_shape_invalid"),
             f"{WORKFLOW_OUTCOME_REVIEW_HEADING!r} needs a header, separator, and at least one row: "
             f"{proposal_path.as_posix()}",
         )
@@ -704,7 +780,7 @@ def _validate_workflow_outcome_review(proposal: str, proposal_path: Path) -> Non
         separator, WORKFLOW_OUTCOME_REVIEW_COLUMNS
     ):
         raise ContractViolation(
-            "focus.workflow_outcome_review_shape_invalid",
+            _scoped_code(code_prefix, "workflow_outcome_review_shape_invalid"),
             f"{WORKFLOW_OUTCOME_REVIEW_HEADING!r} has an invalid table header: {proposal_path.as_posix()}",
         )
     for line in table_lines[2:]:
@@ -712,7 +788,7 @@ def _validate_workflow_outcome_review(proposal: str, proposal_path: Path) -> Non
         assert cells is not None
         if len(cells) != len(WORKFLOW_OUTCOME_REVIEW_COLUMNS) or any(not cell for cell in cells):
             raise ContractViolation(
-                "focus.workflow_outcome_review_shape_invalid",
+                _scoped_code(code_prefix, "workflow_outcome_review_shape_invalid"),
                 f"{WORKFLOW_OUTCOME_REVIEW_HEADING!r} has an incomplete table row: {proposal_path.as_posix()}",
             )
 
@@ -733,13 +809,16 @@ def _single_markdown_table_lines(section: str) -> list[str] | None:
 
 
 def _validate_control_placement_review(
-    proposal: str, proposal_path: Path, triggered_policies: tuple[str, ...]
+    section: str,
+    proposal_path: Path,
+    triggered_policies: tuple[str, ...],
+    *,
+    code_prefix: str,
 ) -> None:
-    section = _control_placement_review_section(proposal, proposal_path)
     table_lines = _single_markdown_table_lines(section)
     if table_lines is None or len(table_lines) < 3:
         raise ContractViolation(
-            "focus.control_placement_review_shape_invalid",
+            _scoped_code(code_prefix, "control_placement_review_shape_invalid"),
             f"{CONTROL_PLACEMENT_REVIEW_HEADING!r} needs exactly one header, separator, and at least one row: "
             f"{proposal_path.as_posix()}",
         )
@@ -750,7 +829,7 @@ def _validate_control_placement_review(
         separator, CONTROL_PLACEMENT_REVIEW_COLUMNS
     ):
         raise ContractViolation(
-            "focus.control_placement_review_shape_invalid",
+            _scoped_code(code_prefix, "control_placement_review_shape_invalid"),
             f"{CONTROL_PLACEMENT_REVIEW_HEADING!r} has an invalid table header: {proposal_path.as_posix()}",
         )
 
@@ -765,13 +844,13 @@ def _validate_control_placement_review(
             or _is_markdown_separator(cells, CONTROL_PLACEMENT_REVIEW_COLUMNS)
         ):
             raise ContractViolation(
-                "focus.control_placement_review_shape_invalid",
+                _scoped_code(code_prefix, "control_placement_review_shape_invalid"),
                 f"{CONTROL_PLACEMENT_REVIEW_HEADING!r} has an incomplete or duplicate table row: "
                 f"{proposal_path.as_posix()}",
             )
         if cells[3] not in CONTROL_PLACEMENT_POSTURES:
             raise ContractViolation(
-                "focus.control_placement_review_posture_invalid",
+                _scoped_code(code_prefix, "control_placement_review_posture_invalid"),
                 f"{CONTROL_PLACEMENT_REVIEW_HEADING!r} uses an unsupported design posture {cells[3]!r}: "
                 f"{proposal_path.as_posix()}",
             )
@@ -779,18 +858,17 @@ def _validate_control_placement_review(
 
     if has_human_decision and "human-interaction-integrity" not in triggered_policies:
         raise ContractViolation(
-            "focus.control_placement_human_interaction_policy_missing",
+            _scoped_code(code_prefix, "control_placement_human_interaction_policy_missing"),
             f"{CONTROL_PLACEMENT_REVIEW_HEADING!r} with a human-decision row also requires "
             f"'human-interaction-integrity': {proposal_path.as_posix()}",
         )
 
 
-def _validate_node_agent_review(proposal: str, proposal_path: Path) -> None:
-    section = _node_agent_review_section(proposal, proposal_path)
+def _validate_node_agent_review(section: str, proposal_path: Path, *, code_prefix: str) -> None:
     table_lines = _single_markdown_table_lines(section)
     if table_lines is None or len(table_lines) < 3:
         raise ContractViolation(
-            "focus.node_agent_review_shape_invalid",
+            _scoped_code(code_prefix, "node_agent_review_shape_invalid"),
             f"{NODE_AGENT_REVIEW_HEADING!r} needs exactly one header, separator, and at least one row: "
             f"{proposal_path.as_posix()}",
         )
@@ -799,7 +877,7 @@ def _validate_node_agent_review(proposal: str, proposal_path: Path) -> None:
     assert header is not None and separator is not None
     if header != NODE_AGENT_REVIEW_COLUMNS or not _is_markdown_separator(separator, NODE_AGENT_REVIEW_COLUMNS):
         raise ContractViolation(
-            "focus.node_agent_review_shape_invalid",
+            _scoped_code(code_prefix, "node_agent_review_shape_invalid"),
             f"{NODE_AGENT_REVIEW_HEADING!r} has an invalid table header: {proposal_path.as_posix()}",
         )
     for line in table_lines[2:]:
@@ -807,15 +885,264 @@ def _validate_node_agent_review(proposal: str, proposal_path: Path) -> None:
         assert cells is not None
         if len(cells) != len(NODE_AGENT_REVIEW_COLUMNS) or any(not cell for cell in cells):
             raise ContractViolation(
-                "focus.node_agent_review_shape_invalid",
+                _scoped_code(code_prefix, "node_agent_review_shape_invalid"),
                 f"{NODE_AGENT_REVIEW_HEADING!r} has an incomplete table row: {proposal_path.as_posix()}",
             )
         if cells[1] not in NODE_AGENT_CLASSIFICATIONS:
             raise ContractViolation(
-                "focus.node_agent_review_classification_invalid",
+                _scoped_code(code_prefix, "node_agent_review_classification_invalid"),
                 f"{NODE_AGENT_REVIEW_HEADING!r} uses an unsupported classification {cells[1]!r}: "
                 f"{proposal_path.as_posix()}",
             )
+
+
+def _validate_selected_policy_reviews(
+    review_container: str,
+    triggered_policies: tuple[str, ...],
+    proposal_path: Path,
+    *,
+    review_level: int,
+    code_prefix: str,
+) -> None:
+    if CONTROL_PLACEMENT_POLICY in triggered_policies:
+        section = _review_section(
+            review_container,
+            heading="Control Placement Review",
+            level=review_level,
+            code=_scoped_code(code_prefix, "control_placement_review_missing"),
+            proposal_path=proposal_path,
+        )
+        _validate_control_placement_review(
+            section,
+            proposal_path,
+            triggered_policies,
+            code_prefix=code_prefix,
+        )
+    if NODE_AGENT_WORKFLOW_INTEGRITY_POLICY in triggered_policies:
+        section = _review_section(
+            review_container,
+            heading="Node Agent Review",
+            level=review_level,
+            code=_scoped_code(code_prefix, "node_agent_review_missing"),
+            proposal_path=proposal_path,
+        )
+        _validate_node_agent_review(section, proposal_path, code_prefix=code_prefix)
+    if WORKFLOW_OUTCOME_REVIEW_POLICY in triggered_policies:
+        section = _review_section(
+            review_container,
+            heading="Workflow Outcome Review",
+            level=review_level,
+            code=_scoped_code(code_prefix, "workflow_outcome_review_missing"),
+            proposal_path=proposal_path,
+        )
+        _validate_workflow_outcome_review(section, proposal_path, code_prefix=code_prefix)
+
+
+def _comma_separated_values(
+    value: str,
+    *,
+    invalid_code: str,
+    duplicate_code: str,
+    label: str,
+    proposal_path: Path,
+    validator: re.Pattern[str] | None = None,
+) -> tuple[str, ...]:
+    values = tuple(item.strip() for item in value.split(","))
+    if not values or any(not item or (validator is not None and validator.fullmatch(item) is None) for item in values):
+        raise ContractViolation(
+            invalid_code,
+            f"{label} must be a non-empty comma-separated list: {proposal_path.as_posix()}",
+        )
+    if len(values) != len(set(values)):
+        raise ContractViolation(
+            duplicate_code,
+            f"{label} must not repeat an identifier: {proposal_path.as_posix()}",
+        )
+    return values
+
+
+def _workstream_sections(proposal: str, program_match: re.Match[str], proposal_path: Path) -> tuple[WorkstreamFocus, ...]:
+    matches = list(re.finditer(r"^### Workstream Focus:(?P<stable_id>[^\n]*)$", proposal, flags=re.MULTILINE))
+    if len(matches) < 2:
+        raise ContractViolation(
+            "program.workstream_count_invalid",
+            f"Program Focus needs at least two Workstream Focus records: {proposal_path.as_posix()}",
+        )
+    if any(match.start() < program_match.end() for match in matches):
+        raise ContractViolation(
+            "program.mode_invalid",
+            f"Workstream Focus records must follow {PROGRAM_FOCUS_HEADING!r}: {proposal_path.as_posix()}",
+        )
+
+    workstreams: list[WorkstreamFocus] = []
+    stable_ids: set[str] = set()
+    for match in matches:
+        raw_stable_id = match.group("stable_id")
+        stable_id = raw_stable_id.strip()
+        if not raw_stable_id.startswith(" ") or WORKSTREAM_ID_PATTERN.fullmatch(stable_id) is None:
+            raise ContractViolation(
+                "program.workstream_id_invalid",
+                f"Workstream Focus has an invalid stable ID {stable_id!r}: {proposal_path.as_posix()}",
+            )
+        if stable_id in stable_ids:
+            raise ContractViolation(
+                "program.workstream_id_duplicate",
+                f"Workstream Focus repeats stable ID {stable_id!r}: {proposal_path.as_posix()}",
+            )
+        stable_ids.add(stable_id)
+        workstreams.append(
+            WorkstreamFocus(
+                stable_id=stable_id,
+                section=_section_after_heading(proposal, match, maximum_level=3),
+            )
+        )
+    return tuple(workstreams)
+
+
+def _validate_program_proposal(root: Path, proposal: str, proposal_path: Path) -> None:
+    program_matches = list(re.finditer(r"^## Program Focus\s*$", proposal, flags=re.MULTILINE))
+    if len(program_matches) != 1:
+        raise ContractViolation(
+            "program.mode_invalid",
+            f"program proposal must contain exactly one {PROGRAM_FOCUS_HEADING!r}: {proposal_path.as_posix()}",
+        )
+    program_section = _section_after_heading(proposal, program_matches[0], maximum_level=3)
+    _validate_required_fields(
+        program_section,
+        PROGRAM_FOCUS_FIELDS,
+        code="program.field_missing",
+        record_name="Program Focus",
+        proposal_path=proposal_path,
+    )
+    program_values = {
+        field: _field_value(program_section, field)
+        for field in PROGRAM_FOCUS_FIELDS
+    }
+    assert all(value is not None for value in program_values.values())
+    budget = _comma_separated_values(
+        program_values["Candidate / obligation budget"] or "",
+        invalid_code="program.candidate_budget_invalid",
+        duplicate_code="program.candidate_budget_duplicate",
+        label="Candidate / obligation budget",
+        proposal_path=proposal_path,
+    )
+    declared_order = _comma_separated_values(
+        program_values["Declared workstream order"] or "",
+        invalid_code="program.workstream_order_invalid",
+        duplicate_code="program.workstream_order_duplicate",
+        label="Declared workstream order",
+        proposal_path=proposal_path,
+        validator=WORKSTREAM_ID_PATTERN,
+    )
+
+    workstreams = _workstream_sections(proposal, program_matches[0], proposal_path)
+    workstream_ids = tuple(workstream.stable_id for workstream in workstreams)
+    if declared_order != workstream_ids:
+        raise ContractViolation(
+            "program.workstream_registration_mismatch",
+            f"Declared workstream order must exactly match Workstream Focus records: {proposal_path.as_posix()}",
+        )
+
+    owners: set[str] = set()
+    candidate_ids: list[str] = []
+    for workstream in workstreams:
+        _validate_legacy_triggered_policies_field(
+            workstream.section,
+            code="program.workstream_legacy_triggered_policies_field_present",
+            record_name=f"Workstream Focus {workstream.stable_id!r}",
+            proposal_path=proposal_path,
+        )
+        _validate_required_fields(
+            workstream.section,
+            WORKSTREAM_FIELDS,
+            code="program.workstream_field_missing",
+            record_name=f"Workstream Focus {workstream.stable_id!r}",
+            proposal_path=proposal_path,
+        )
+        _validate_seam_classification(
+            workstream.section,
+            code_prefix="program.workstream",
+            record_name=f"Workstream Focus {workstream.stable_id!r}",
+            proposal_path=proposal_path,
+        )
+        owner = _field_value(workstream.section, "Primary module / causal owner")
+        assert owner is not None
+        if owner in owners:
+            raise ContractViolation(
+                "program.workstream_owner_duplicate",
+                f"Workstream Focus repeats primary module / causal owner {owner!r}: {proposal_path.as_posix()}",
+            )
+        owners.add(owner)
+        workstream_candidate_ids = _comma_separated_values(
+            _field_value(workstream.section, "Candidate / obligation IDs") or "",
+            invalid_code="program.candidate_id_invalid",
+            duplicate_code="program.candidate_id_duplicate",
+            label=f"Workstream Focus {workstream.stable_id!r} Candidate / obligation IDs",
+            proposal_path=proposal_path,
+        )
+        if any(candidate_id in candidate_ids for candidate_id in workstream_candidate_ids):
+            raise ContractViolation(
+                "program.candidate_id_duplicate",
+                f"Candidate / obligation IDs must be unique across workstreams: {proposal_path.as_posix()}",
+            )
+        candidate_ids.extend(workstream_candidate_ids)
+        triggered_policies = _triggered_policies(
+            root,
+            workstream.section,
+            proposal_path,
+            code_prefix="program.workstream",
+            record_name=f"Workstream Focus {workstream.stable_id!r}",
+        )
+        _validate_selected_policy_reviews(
+            workstream.section,
+            triggered_policies,
+            proposal_path,
+            review_level=4,
+            code_prefix="program.workstream",
+        )
+
+    if set(budget) != set(candidate_ids):
+        raise ContractViolation(
+            "program.candidate_budget_mismatch",
+            f"Candidate / obligation budget must exactly match the workstream union: {proposal_path.as_posix()}",
+        )
+
+
+def _validate_ordinary_proposal(root: Path, proposal: str, proposal_path: Path) -> None:
+    matches = list(re.finditer(r"^## Change Focus\s*$", proposal, flags=re.MULTILINE))
+    if len(matches) != 1:
+        raise ContractViolation(
+            "focus.heading_missing",
+            f"proposal must contain exactly one {FOCUS_HEADING!r}: {proposal_path.as_posix()}",
+        )
+    focus_section = _section_after_heading(proposal, matches[0], maximum_level=2)
+    _validate_legacy_triggered_policies_field(
+        focus_section,
+        code="focus.legacy_triggered_policies_field_present",
+        record_name="Focus Card",
+        proposal_path=proposal_path,
+    )
+    _validate_required_fields(
+        focus_section,
+        FOCUS_FIELDS,
+        code="focus.field_missing",
+        record_name="Focus Card",
+        proposal_path=proposal_path,
+    )
+    _validate_seam_classification(
+        focus_section,
+        code_prefix="focus",
+        record_name="Focus Card",
+        proposal_path=proposal_path,
+    )
+    triggered_policies = _triggered_policies(root, focus_section, proposal_path)
+    _validate_selected_policy_reviews(
+        proposal,
+        triggered_policies,
+        proposal_path,
+        review_level=2,
+        code_prefix="focus",
+    )
 
 
 def _validate_active_changes(root: Path) -> None:
@@ -848,14 +1175,18 @@ def _validate_active_changes(root: Path) -> None:
                 f"cannot read active proposal {proposal_path.relative_to(root).as_posix()}: {exc}",
             ) from exc
         relative_proposal_path = proposal_path.relative_to(root)
-        focus_section = _validate_focus_card(proposal, relative_proposal_path)
-        triggered_policies = _triggered_policies(root, focus_section, relative_proposal_path)
-        if CONTROL_PLACEMENT_POLICY in triggered_policies:
-            _validate_control_placement_review(proposal, relative_proposal_path, triggered_policies)
-        if NODE_AGENT_WORKFLOW_INTEGRITY_POLICY in triggered_policies:
-            _validate_node_agent_review(proposal, relative_proposal_path)
-        if WORKFLOW_OUTCOME_REVIEW_POLICY in triggered_policies:
-            _validate_workflow_outcome_review(proposal, relative_proposal_path)
+        program_count = len(re.findall(r"^## Program Focus\s*$", proposal, flags=re.MULTILINE))
+        workstream_count = len(re.findall(r"^### Workstream Focus:", proposal, flags=re.MULTILINE))
+        if program_count or workstream_count:
+            if program_count != 1 or re.search(r"^## Change Focus\s*$", proposal, flags=re.MULTILINE):
+                raise ContractViolation(
+                    "program.mode_invalid",
+                    "ordinary and program proposal forms are exclusive: "
+                    f"{relative_proposal_path.as_posix()}",
+                )
+            _validate_program_proposal(root, proposal, relative_proposal_path)
+        else:
+            _validate_ordinary_proposal(root, proposal, relative_proposal_path)
 
 
 def validate(root: Path) -> list[str]:

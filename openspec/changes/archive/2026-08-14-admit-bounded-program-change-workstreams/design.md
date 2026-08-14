@@ -92,6 +92,11 @@ or workstream fields, invalid/duplicate IDs or owners, unregistered workstreams,
 budget-union mismatch. It will not evaluate prose, remediation-map semantics,
 runtime authority, or implementation diff scope.
 
+The same checker will retain concise program-route anchors in the authoring sources
+it already governs: `openspec/config.yaml`, local-context, change-admission, and the
+application Focus Gate. Their fixtures will prove that a missing anchor fails, while
+the checker continues to avoid judging the semantic truth of program prose.
+
 ### Recovery and archive boundary
 
 `Program failure / recovery` records the only program-level control: an evidence or

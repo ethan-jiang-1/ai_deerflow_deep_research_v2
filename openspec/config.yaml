@@ -50,6 +50,11 @@ context: |
      policy name separated by commas on that single list item; do not use continuation
      lines. Use `none: <short rationale>` only when no policy applies.
 
+  Program form: `## Program Focus` with at least two registered `### Workstream Focus:
+  <stable-id>` records replaces (never supplements) Change Focus. Its decision
+  authority approves only frozen scope, order, and whole-program archive closure;
+  it is never a runtime fact authority, writer, or shared implementation owner.
+
   An adjacent module or public DeerFlow interface enters scope only when the proposal
   names the contract and the interface, authority, compatibility, or observed-failure
   question it must answer. A possible future use is not enough to expand scope. If
@@ -59,6 +64,7 @@ context: |
 rules:
   proposal:
     - "Every active Deep Research proposal MUST include a `## Change Focus` section with Primary module / causal owner, Seam classification (one of cognitive-program, human-decision, deterministic-guardrail, or wiring, written bare, with a short rationale), Question, Necessary adjacent/external contracts, Evidence seam, Not in scope, and Triggered review policies. The primary owner is the smallest module that owns the semantic decision; each non-none adjacent/external contract names the question it answers. Triggered review policies use canonical comma-separated names on one list item, or `none: <short rationale>` when no policy applies."
+    - "Program form: `## Program Focus` with at least two registered `### Workstream Focus: <stable-id>` records replaces Change Focus. Freeze the complete Candidate / obligation budget, declared order, shared archive invariant, and recovery rule; each workstream owns its decision, IDs, target/retirement, surface grade, negative path, policies, and level-four review records. The checker closes only grammar: apply/archive review compares the approved scope, actual tasks, diff, and evidence. A failed workstream stays active for approved repair, rollback, or plan-level re-scope; no workstream partially archives."
     - "When Triggered review policies selects `control-placement`, the proposal MUST include one `## Control Placement Review` table with Changed decision or fact, Cognitive candidate or human judgment, Direct fact and deterministic owner/evaluator, Design posture, Protected invariant or legal recovery, Reuse or complexity removed/avoided, and Deterministic evidence seam. The review guides design only; it creates no runtime authority."
     - "When Triggered review policies selects `workflow-outcome-review`, the proposal MUST include one `## Workflow Outcome Review` table with Failure class, Fact owner, Recovery owner and bound, Terminal disposition, Legal next action, and Deterministic evidence seam. This review record guides design and review only; it does not create runtime authority."
     - "When Triggered review policies selects `node-agent-workflow-integrity`, the proposal MUST include one `## Node Agent Review` table with Surface, Classification, Bounded cognitive question or no-agent rationale, Input authority boundary, Tool posture and runtime enforcer, Candidate result and deterministic admission owner, Failure owner and bound, and Deterministic evidence seam. This routes admission only: root `config.yaml`, `openspec/config.yaml`, the review record, and a prompt do not grant a node role, graph route, state write, model invocation, tool permission, or recovery behavior."
