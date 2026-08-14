@@ -19,7 +19,7 @@
 
 | Plan | 说明 |
 |------|------|
-| [deep-research-post-migration-convergence/](deep-research-post-migration-convergence/) | 当前基线审计已形成 9 份 findings / 54 个最终 Candidate；先恢复 clean-clone delivery，再按 `99` 一次一个 OpenSpec change 收敛迁移残留、重复术语、旧代码与过期测试证据。 |
+| [deep-research-post-migration-convergence/](deep-research-post-migration-convergence/) | 当前基线审计已形成 9 份 findings / 54 个最终 Candidate；目录按审计规则、审计结果、执行收敛三层组织，[`99` 是默认执行入口](deep-research-post-migration-convergence/03-execution/99-progressive-execution.md)。 |
 
 新的分析或设计应在此创建，完成后再移入归档。
 

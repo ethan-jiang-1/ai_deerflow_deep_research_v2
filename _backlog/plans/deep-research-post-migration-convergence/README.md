@@ -1,10 +1,33 @@
-# Deep Research 迁移后收敛：审计总索引
+# Deep Research 迁移后收敛：总导航
 
 > 类型: 架构健康审计 / 迁移收口 / 删除计划
 > 审计状态: 当前基线审计完成；54 个最终 Candidate 已取证；implementation 未开始
 > 产品范围: `deep_research_harness/`
 > 变更治理: `openspec/`
 > 当前 active OpenSpec changes: 0
+
+## 先看哪一层
+
+这套目录不是一条要求从 `00` 顺读到 `99` 的长计划。它把同一项工作拆成三种职责：
+
+```text
+01-audit-contracts/   怎么审：判定口径、删除门槛、证据规则
+        ↓
+02-audit-findings/    审出了什么：9 个领域的事实、风险与最终 Candidate
+        ↓
+03-execution/         接下来怎么做：Candidate 总账、change 映射、逐步执行顺序
+```
+
+| 你现在要回答的问题 | 直接入口 | 是否需要继续读别层 |
+| --- | --- | --- |
+| “审计最后发现了什么？” | [02 - Audit Findings](02-audit-findings/) | 从该层索引选择领域；不必先读 `00-50` |
+| “下一步到底做什么？” | [99 - Progressive Execution](03-execution/99-progressive-execution.md) | 默认执行入口；遇到 Candidate 或 gate 再查同层另外两份文件 |
+| “某个 Candidate 的证据和状态在哪里？” | [Candidate Register](03-execution/candidate-register.md) | 沿链接回到对应 finding 尾部 |
+| “为什么这样判定删除、迁移或保留？” | [01 - Audit Contracts](01-audit-contracts/) | 只读与问题有关的合同，不必六份通读 |
+
+编号表示文档角色，不表示一条连续执行流水线：`00-50` 是六类审计合同，`70-78` 是九份实际审计
+结果，`80` 是 Candidate 到 change 的映射，`99` 才是最终逐步执行总计划。三个子目录各有自己的
+`README.md`，进入后会继续说明阅读顺序。
 
 ## Revision contract
 
@@ -37,18 +60,18 @@ consumer/data/support closure时，只能形成 decision/migration Candidate，�
 
 | Findings | 最终结论 | Candidate |
 | --- | --- | --- |
-| [70 - Node Cognition](70-node-cognition-findings.md) | 删除 legacy capability cohort/default；随后纵向统一 Node cognition language；glossary恢复纯词典职责 | NC-C01..C03 |
-| [71 - Run, Bundle, Session, Observation](71-run-session-and-observation-findings.md) | 退役 lifecycle-binding与混合 Run Session capability；保留 Local Session Workbench与防复活guards | RS-C01..C05 |
-| [72 - Fixture And Implementation Mode](72-fixture-mode-findings.md) | 保留 `src_fake`/explicit mixed；no-graph full-fake会写出不诚实 `all_real`，需产品决策；old/missing mode需数据迁移 | FM-C01..C04 |
-| [73 - Entry And Configuration](73-entry-and-configuration-findings.md) | 保留职责不同的entry；删除private demo helpers；constructor/marker/checkpointer按export/support边界处理 | EC-C01..C07 |
-| [74 - Tests And Evidence Assets](74-test-and-evidence-asset-findings.md) | 删除8个冗余 `.gitkeep`、空 `tests/e2e` 与superseded DPT报告；保留EVH-024、registries、dated evidence与regression policy | TA-C01..C07 |
-| [75 - Persisted Compatibility](75-persisted-compatibility-findings.md) | profile、checkpoint、terminal reason、Journal reader、checkpointer均需按各自persisted/deployment边界迁移；refinement facts保留 | PC-C01..C07 |
-| [76 - Evaluation Boundary](76-evaluation-boundary-findings.md) | Workspace/Bundle/Review/Node-or-Flow Run是不同概念；清理re-export与零行为shim前分别关闭import/data边界 | EV-C01..C06 |
-| [77 - OpenSpec And Records](77-openspec-and-record-findings.md) | clean clone已失去tracked CI与project OpenSpec skills；这是所有cleanup前的P0 blocker；current history/projections大多保留 | OR-C01..C08 |
-| [78 - Residual Compatibility Sweep](78-residual-compatibility-sweep-findings.md) | 补齐refinement/planner/profile-HITL/AppConfig/diagnostic-location；确认recipe fingerprint、mount alias probe与业务fallback不是残留 | RC-C01..C07 |
+| [70 - Node Cognition](02-audit-findings/70-node-cognition-findings.md) | 删除 legacy capability cohort/default；随后纵向统一 Node cognition language；glossary恢复纯词典职责 | NC-C01..C03 |
+| [71 - Run, Bundle, Session, Observation](02-audit-findings/71-run-session-and-observation-findings.md) | 退役 lifecycle-binding与混合 Run Session capability；保留 Local Session Workbench与防复活guards | RS-C01..C05 |
+| [72 - Fixture And Implementation Mode](02-audit-findings/72-fixture-mode-findings.md) | 保留 `src_fake`/explicit mixed；no-graph full-fake会写出不诚实 `all_real`，需产品决策；old/missing mode需数据迁移 | FM-C01..C04 |
+| [73 - Entry And Configuration](02-audit-findings/73-entry-and-configuration-findings.md) | 保留职责不同的entry；删除private demo helpers；constructor/marker/checkpointer按export/support边界处理 | EC-C01..C07 |
+| [74 - Tests And Evidence Assets](02-audit-findings/74-test-and-evidence-asset-findings.md) | 删除8个冗余 `.gitkeep`、空 `tests/e2e` 与superseded DPT报告；保留EVH-024、registries、dated evidence与regression policy | TA-C01..C07 |
+| [75 - Persisted Compatibility](02-audit-findings/75-persisted-compatibility-findings.md) | profile、checkpoint、terminal reason、Journal reader、checkpointer均需按各自persisted/deployment边界迁移；refinement facts保留 | PC-C01..C07 |
+| [76 - Evaluation Boundary](02-audit-findings/76-evaluation-boundary-findings.md) | Workspace/Bundle/Review/Node-or-Flow Run是不同概念；清理re-export与零行为shim前分别关闭import/data边界 | EV-C01..C06 |
+| [77 - OpenSpec And Records](02-audit-findings/77-openspec-and-record-findings.md) | clean clone已失去tracked CI与project OpenSpec skills；这是所有cleanup前的P0 blocker；current history/projections大多保留 | OR-C01..C08 |
+| [78 - Residual Compatibility Sweep](02-audit-findings/78-residual-compatibility-sweep-findings.md) | 补齐refinement/planner/profile-HITL/AppConfig/diagnostic-location；确认recipe fingerprint、mount alias probe与业务fallback不是残留 | RC-C01..C07 |
 
 共 54 个 Candidate。完整证据、current/target owner、迁移/删除条件与保留 guard在各 findings尾部；
-[Candidate Register](candidate-register.md) 是唯一导航总账，不复制或取代这些事实。
+[Candidate Register](03-execution/candidate-register.md) 是唯一导航总账，不复制或取代这些事实。
 
 ## 最高优先级 blocker
 
@@ -82,12 +105,12 @@ data/export/support gate；“本机零命中”不授权breaking deletion。
 
 | Audit contract | 已完成的结果落点 | 关闭状态 |
 | --- | --- | --- |
-| [00 - Baseline And Audit Contract](00-baseline-and-audit-contract.md) | `70-78`、Candidate Register、tracked/data snapshot | 当前基线高信号范围已关闭；外部unknown显式进入blocked Candidate |
-| [10 - Ubiquitous Language](10-ubiquitous-language.md) | `70`, `71`, `72`, `73`, `76`, `77`, `78` | 同义词与不同概念已分开；具体rename/keep见NC/RS/FM/EC/EV/RC Candidate |
-| [20 - Retirement And Cutover](20-retirement-and-cutover.md) | `70-73`, `75`, `76`, `78` | 每个可疑public/persisted/cross-boundary surface都有target、gate或retain理由 |
-| [30 - Code And Entry Surfaces](30-code-and-entry-surfaces.md) | `70-73`, `76`, `78` | production/helper/export/entry分类完成；无引用不再被误当删除授权 |
-| [40 - Tests And Evidence](40-tests-and-evidence.md) | `74` + 所有findings的“保留负向护栏” | orphan/scaffold、historical、suspended、registry与anti-resurrection处理已落Candidate |
-| [50 - OpenSpec And Records](50-openspec-and-records.md) | `71`, `74`, `77` + owner-local Candidate slices | capability/ID/registry/glossary/ADR/history/projection同步边界已关闭 |
+| [00 - Baseline And Audit Contract](01-audit-contracts/00-baseline-and-audit-contract.md) | `70-78`、Candidate Register、tracked/data snapshot | 当前基线高信号范围已关闭；外部unknown显式进入blocked Candidate |
+| [10 - Ubiquitous Language](01-audit-contracts/10-ubiquitous-language.md) | `70`, `71`, `72`, `73`, `76`, `77`, `78` | 同义词与不同概念已分开；具体rename/keep见NC/RS/FM/EC/EV/RC Candidate |
+| [20 - Retirement And Cutover](01-audit-contracts/20-retirement-and-cutover.md) | `70-73`, `75`, `76`, `78` | 每个可疑public/persisted/cross-boundary surface都有target、gate或retain理由 |
+| [30 - Code And Entry Surfaces](01-audit-contracts/30-code-and-entry-surfaces.md) | `70-73`, `76`, `78` | production/helper/export/entry分类完成；无引用不再被误当删除授权 |
+| [40 - Tests And Evidence](01-audit-contracts/40-tests-and-evidence.md) | `74` + 所有findings的“保留负向护栏” | orphan/scaffold、historical、suspended、registry与anti-resurrection处理已落Candidate |
+| [50 - OpenSpec And Records](01-audit-contracts/50-openspec-and-records.md) | `71`, `74`, `77` + owner-local Candidate slices | capability/ID/registry/glossary/ADR/history/projection同步边界已关闭 |
 
 ## 执行入口
 
@@ -95,9 +118,9 @@ data/export/support gate；“本机零命中”不授权breaking deletion。
 
 | 文档 | 角色 |
 | --- | --- |
-| [Candidate Register](candidate-register.md) | 54个最终 Candidate的disposition/admission导航 |
-| [80 - Remediation Change Map](80-remediation-change-map.md) | Candidate到00-25 change、decision/data gate和依赖的唯一映射 |
-| [99 - Progressive Execution](99-progressive-execution.md) | 从P0到final re-audit的逐步运行与验收顺序 |
+| [Candidate Register](03-execution/candidate-register.md) | 54个最终 Candidate的disposition/admission导航 |
+| [80 - Remediation Change Map](03-execution/80-remediation-change-map.md) | Candidate到00-25 change、decision/data gate和依赖的唯一映射 |
+| [99 - Progressive Execution](03-execution/99-progressive-execution.md) | 默认执行入口；从P0到final re-audit的逐步运行与验收顺序 |
 
 本目录不是 active change，也不建立第二个逐文件任务账本。每个 admitted batch用OpenSpec CLI创建自己的
 proposal/design/specs/tasks；一次只允许一个 active change，archive并更新Candidate disposition后再进入下一步。
