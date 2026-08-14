@@ -135,7 +135,7 @@ spec替代 main spec。tests还直接引用少数 `_done` / suspended diagnosis�
 - **迁移条件**: each change maps old requirements/IDs/consumers/evidence to one target owner。
 - **删除条件**: old capability directory无 current behavior/consumer；retired IDs保留占位且 never reused。
 - **保留负向护栏**: checker/coverage不缩 scope；anti-resurrection requirements归 target owner。
-- **OpenSpec change slice**: 不建 spec-cleanup mega-change；follow `80-remediation-change-map.md` owner slices。
+- **OpenSpec change slice**: 不建 spec-cleanup mega-change；follow [80 - Remediation Change Map](../03-execution/80-remediation-change-map.md) owner slices。
 
 ### OR-C04 - Correct the structural registry in both directions
 

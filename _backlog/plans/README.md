@@ -1,6 +1,6 @@
 # Plans — plan/分析文档索引
 
-> 最后更新: 2026-08-13 | `_backlog/plans/` — 活跃 plan 在此，完成的普通 plan 移入 [`../_done/_closed_plans/`](../_done/_closed_plans/)。
+> 最后更新: 2026-08-14 | `_backlog/plans/` — 活跃 plan 在此，完成的普通 plan 移入 [`../_done/_closed_plans/`](../_done/_closed_plans/)。
 >
 > **plan 没有编号，文件名即标识。完成后文件名不变，位置即状态。**
 
@@ -19,7 +19,7 @@
 
 | Plan | 说明 |
 |------|------|
-| [deep-research-post-migration-convergence/](deep-research-post-migration-convergence/) | 当前基线审计已形成 9 份 findings / 54 个最终 Candidate；目录按审计规则、审计结果、执行收敛三层组织，[`99` 是默认执行入口](deep-research-post-migration-convergence/03-execution/99-progressive-execution.md)。 |
+| [deep-research-post-migration-convergence/](deep-research-post-migration-convergence/) | 当前基线审计已形成9份findings/54个最终Candidate；目录按审计规则、审计结果、执行收敛三层组织，并以15个OpenSpec change为全局预算；[`99`是默认执行入口](deep-research-post-migration-convergence/03-execution/99-progressive-execution.md)。 |
 
 新的分析或设计应在此创建，完成后再移入归档。
 

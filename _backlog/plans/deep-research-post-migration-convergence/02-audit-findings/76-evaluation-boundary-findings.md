@@ -94,7 +94,7 @@ test成为旧 parser API consumer，却没有 evaluation-specific语义。迁到
 - **迁移条件**: inventory retained bundles/reviews；backfill explicit layer或批准 retention expiry；验证 hashes不变。
 - **删除条件**: supported records无 missing layer；writers/tests/specs都要求 explicit field。
 - **保留负向护栏**: missing/unknown永不提升为 credentialed live；review layer必须由 verified manifest派生。
-- **OpenSpec change slice**: `close-evaluation-evidence-layer-compatibility`。
+- **OpenSpec change slice**: `converge-evaluation-boundary-compatibility`。
 
 ### EV-C03 - Converge evaluation contract imports onto one supported route
 
@@ -105,7 +105,7 @@ test成为旧 parser API consumer，却没有 evaluation-specific语义。迁到
 - **迁移条件**: enumerate internal/package consumers；choose supported import route；avoid circular dependency。
 - **删除条件**: no imports of runtime contracts module；facade/export tests and evaluation lanes pass。
 - **保留负向护栏**: runtime不得复制 contract definitions；public import failure必须明确而非 silent duplicate type。
-- **OpenSpec change slice**: `converge-evaluation-contract-exports`。
+- **OpenSpec change slice**: `converge-evaluation-boundary-compatibility`。
 
 ### EV-C04 - Delete the unused `compute_metrics()` shim
 
@@ -116,7 +116,7 @@ test成为旧 parser API consumer，却没有 evaluation-specific语义。迁到
 - **迁移条件**: 无 caller migration；确认 no dynamic string import in test registry。
 - **删除条件**: function和 `__all__` entry同批删除；metric/live tests与 asset checker通过。
 - **保留负向护栏**: insufficient authority remains typed non-pass；hard invariants still fail independently of metrics。
-- **OpenSpec change slice**: `subtract-evaluation-test-compatibility`。
+- **OpenSpec change slice**: `converge-evaluation-boundary-compatibility` 的首个subtraction stage。
 
 ### EV-C05 - Retain live-report classification and fail-closed archive admission
 
@@ -139,4 +139,4 @@ test成为旧 parser API consumer，却没有 evaluation-specific语义。迁到
 - **迁移条件**: test asserts through `ProfileParseResult.partial` without changing fixed-profile semantics。
 - **删除条件**: evaluation tests no longer import wrapper；PC-C02 can close export。
 - **保留负向护栏**: fixed live profile still parses deterministic time budget and no credential/provider behavior changes。
-- **OpenSpec change slice**: part of `converge-profile-compatibility-readers`，not an evaluation mega-change。
+- **OpenSpec change slice**: part of `converge-profile-proposal-compatibility`，not an evaluation mega-change。

@@ -10,9 +10,9 @@
 
 | 文件 | 唯一职责 | 不承担什么 |
 | --- | --- | --- |
-| [99 - Progressive Execution](99-progressive-execution.md) | P0、Phase A-G、逐步顺序和阶段验收 | 不复制每个 Candidate 的完整证据 |
+| [99 - Progressive Execution](99-progressive-execution.md) | P0、Phase A-I、00-14逐步顺序和阶段验收 | 不复制每个 Candidate 的完整证据 |
 | [Candidate Register](candidate-register.md) | 54 个 Candidate 的 disposition/admission 总账，并链接回 finding | 不决定 change 的执行顺序 |
-| [80 - Remediation Change Map](80-remediation-change-map.md) | Candidate 到 00-25 changes 的唯一映射、依赖和 gate | 不是另一份逐步 checklist |
+| [80 - Remediation Change Map](80-remediation-change-map.md) | Candidate 到00-14共15个changes的唯一映射、依赖和gate | 不是另一份逐步 checklist |
 
 ```text
 finding 尾部 Candidate
@@ -23,5 +23,6 @@ finding 尾部 Candidate
 ```
 
 因此 `80` 和 `99` 不是两个竞争的总计划：`80` 管映射，`99` 管推进。日常继续本计划时，从 `99` 开始。
+15是遵守“一项change一个最小语义owner”后的全局上限；内部stage不得再裂变，第16项需要计划层明确批准。
 
 [返回总导航](../README.md) | [查看审计结果](../02-audit-findings/)

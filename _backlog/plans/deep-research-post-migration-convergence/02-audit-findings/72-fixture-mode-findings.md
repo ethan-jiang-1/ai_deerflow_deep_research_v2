@@ -127,7 +127,7 @@ mode selector、implicit fallback 和 production fixture package import。
   replacement/notice，且 retained Bundle inspection 不会误认 provenance。
 - **保留负向护栏**: graph-backed real/fixture route 缺 executor 必须 fail；real route 不得 fallback；
   presentation fault 不得显示 fake completion；fixture package 不得进入 production wheel。
-- **OpenSpec change slice**: `resolve-full-fake-demo-contract`，proposal 必须先记录产品选择。
+- **OpenSpec change slice**: `converge-implementation-mode-and-recipe-surface`，proposal 必须先记录产品选择。
 
 ### FM-C02 - Retire persisted `full_fake` mode only after support closure
 
@@ -143,7 +143,7 @@ mode selector、implicit fallback 和 production fixture package import。
   tests、specs 和 docs 删除该值；旧输入行为有测试。
 - **保留负向护栏**: unknown mode fail closed；production remains fixed all-real；fixture/mixed only from
   explicit recipes；provenance cannot default into a stronger authenticity claim。
-- **OpenSpec change slice**: `retire-full-fake-implementation-mode`，依赖 FM-C01 和 product/data decision。
+- **OpenSpec change slice**: `converge-implementation-mode-and-recipe-surface`，依赖 FM-C01 和 product/data decision。
 
 ### FM-C03 - Keep fixture source and explicit mixed composition
 
@@ -171,4 +171,4 @@ mode selector、implicit fallback 和 production fixture package import。
   已定义；missing-field negative test 取代静默 default test。
 - **保留负向护栏**: schema mismatch/unknown enum fail closed；迁移不能把未知 provenance 提升为
   all-real evidence。
-- **OpenSpec change slice**: `close-bundle-state-mode-compatibility`。
+- **OpenSpec change slice**: `converge-implementation-mode-and-recipe-surface`。

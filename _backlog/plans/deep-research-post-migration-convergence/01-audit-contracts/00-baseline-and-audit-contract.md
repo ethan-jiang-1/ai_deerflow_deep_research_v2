@@ -2,7 +2,7 @@
 
 > 角色: 可复跑的当前快照与审计口径
 > 快照: 2026-08-13 @ `a733d329902e779a108401f1305c937174f6e492`
-> 结果落点: 本合同已由 `70-78` findings、`candidate-register.md` 与 README 覆盖矩阵关闭
+> 结果落点: 本合同已由 [70-78 findings](../02-audit-findings/)、[Candidate Register](../03-execution/candidate-register.md) 与[根 README 覆盖矩阵](../README.md#原始审计合同到结果的覆盖)关闭
 
 ## 基线结论
 

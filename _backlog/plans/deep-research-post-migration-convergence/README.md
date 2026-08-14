@@ -31,15 +31,16 @@
 
 ## Revision contract
 
-本目录跨过三种 revision，不能只写一个“当前 commit”混淆事实：
+本目录跨过四种 revision，不能只写一个“当前 commit”混淆事实：
 
 | Revision | 角色 | 结论 |
 | --- | --- | --- |
 | `a733d329902e779a108401f1305c937174f6e492` | 原始 plan snapshot | 保存最初审计问题和口径，不是最终发现 |
 | `5bb41c16a45ff3caae6e5b1e900610c91bf68336` | 应用与 current main-spec 取证基线 | `70-78` 的代码/spec/test结论以此为准 |
-| `c92ed9d028ab6ac1bb144adba62c02ba94cc2f2b` + 本目录审计 worktree | 审计综合 revision | 只更新计划/发现；未改应用、tests或main specs |
+| `811203726cfa6478ceebdabc378daabce1b6758b` | 完整审计综合 revision | `70-78`、54个最终Candidate与原26-change映射完成 |
+| `ad1c8bfff1dcd084df47b75ee3b812ba48e34dc1` + 本目录当前worktree | 导航与执行编排 revision | 三层目录完成；按Focus Card owner把26个change收敛为15个；未改应用、tests或main specs |
 
-`5bb41c1 -> c92ed9d` 没有产品代码或 current spec变化，因此现有 findings仍对应当前应用事实。实施任何
+`5bb41c1 -> ad1c8bf` 没有产品代码或 current spec变化，因此现有 findings仍对应当前应用事实。实施任何
 Candidate前仍须在当时 HEAD做 focused revalidation；若产品事实已变，先更新对应 findings，不整库重做
 没有受影响的审计。
 
@@ -119,11 +120,12 @@ data/export/support gate；“本机零命中”不授权breaking deletion。
 | 文档 | 角色 |
 | --- | --- |
 | [Candidate Register](03-execution/candidate-register.md) | 54个最终 Candidate的disposition/admission导航 |
-| [80 - Remediation Change Map](03-execution/80-remediation-change-map.md) | Candidate到00-25 change、decision/data gate和依赖的唯一映射 |
+| [80 - Remediation Change Map](03-execution/80-remediation-change-map.md) | 54个Candidate到00-14共15个change、decision/data gate和依赖的唯一映射 |
 | [99 - Progressive Execution](03-execution/99-progressive-execution.md) | 默认执行入口；从P0到final re-audit的逐步运行与验收顺序 |
 
 本目录不是 active change，也不建立第二个逐文件任务账本。每个 admitted batch用OpenSpec CLI创建自己的
 proposal/design/specs/tasks；一次只允许一个 active change，archive并更新Candidate disposition后再进入下一步。
+全局change预算固定为15个；内部stage不另建change，第16个必须先经计划层明确批准并默认一进一出。
 
 ## 计划完成定义
 

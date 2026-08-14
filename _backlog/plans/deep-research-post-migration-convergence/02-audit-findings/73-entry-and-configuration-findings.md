@@ -228,7 +228,7 @@ canonical policy validation。不能把 alias 静默解释成 interactive reques
 - **删除条件**: 见 `75-persisted-compatibility-findings.md::PC-C07`。
 - **保留负向护栏**: doctor/GraphHost 必须同选一个 provider；不得静默选择错误 durability；DSN/secret
   不得进入 output；local profile isolation继续拒绝 legacy section。
-- **OpenSpec change slice**: `resolve-legacy-checkpointer-precedence`，在产品/support decision 后准入。
+- **OpenSpec change slice**: `converge-runtime-configuration-compatibility`，在产品/support decision 后准入。
 
 ### EC-C06 - Delete the `ResearchGraphRecipe.create()` constructor after export-scope closure
 
@@ -243,7 +243,7 @@ canonical policy validation。不能把 alias 静默解释成 interactive reques
 - **删除条件**: tracked consumers 为零；export/docs/spec 无 `create()` route；focused graph/runtime tests通过。
 - **保留负向护栏**: public runtime仍只能构造 all-real；caller不得通过 adapters、implementations或
   implementation_modes 改写 production composition。
-- **OpenSpec change slice**: `retire-recipe-constructor-alias`；因 surface grade不同，不与 private demo
+- **OpenSpec change slice**: `converge-implementation-mode-and-recipe-surface`；因 surface grade不同，不与 private demo
   helpers或 `disable_clarification` 决策捆绑。
 
 ### EC-C07 - Decide the `disable_clarification` trusted-context compatibility window

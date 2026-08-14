@@ -1,7 +1,7 @@
 # 20 - Retirement And Cutover
 
 > 角色: public、persisted、cross-boundary 表面的迁移与删除闭环
-> 结果落点: `70-73`、`75-76`、`78` 的最终 Candidate；具体 cutover gate 汇总于 `80`
+> 结果落点: `70-73`、`75-76`、`78` 的最终 Candidate；具体 cutover gate 汇总于 [80 - Remediation Change Map](../03-execution/80-remediation-change-map.md)
 
 ## 删除判定
 

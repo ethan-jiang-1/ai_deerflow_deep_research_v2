@@ -174,7 +174,7 @@ violation：临时创建同名 module 或向 Journal 增加 control method 必�
   lifecycle binding；所有 anti-recovery/import guards 在新 owner 下 collected；strict coverage 无 orphan。
 - **保留负向护栏**: binding/index/checkpoint 不得 select/reopen/recover Bundle；Journal 不得增加
   lifecycle control API；foreign/deleted Bundle 仍 indistinguishable/unavailable。
-- **OpenSpec change slice**: `retire-session-lifecycle-binding`。
+- **OpenSpec change slice**: `converge-run-bundle-observation-authority`。
 
 ### RS-C02 - Consolidate `research-run-session` into current Bundle/Journal owners
 
@@ -193,7 +193,7 @@ violation：临时创建同名 module 或向 Journal 增加 control method 必�
   不再被 current registry/docs/tests 当 authority；no requirement ID 被重用。
 - **保留负向护栏**: Bundle loss 后 Journal/diagnostic unavailable；inspection read-only；exact diagnostic
   reference publication、redaction、bounded retention、worker class 和 no external fallback 全部保留。
-- **OpenSpec change slice**: `consolidate-run-observation-ownership`，在 RS-C01 后实施。
+- **OpenSpec change slice**: `converge-run-bundle-observation-authority`，在 RS-C01 后实施。
 
 ### RS-C03 - Rename Bundle capabilities without changing semantics
 
@@ -208,7 +208,7 @@ violation：临时创建同名 module 或向 Journal 增加 control method 必�
   `session` residual 仅保留 Local Session Workbench 专名或 negative/historical context。
 - **保留负向护栏**: trusted-scope selection、foreign indistinguishability、no raw path/provider、
   fixed catalog、no recursive discovery、artifact/observation cannot control Run。
-- **OpenSpec change slice**: 与 `consolidate-run-observation-ownership` 同批，避免产生临时双 capability。
+- **OpenSpec change slice**: 与 `converge-run-bundle-observation-authority` 同批，避免产生临时双 capability。
 
 ### RS-C04 - Keep Local Session Workbench and move its registry to the actual owner
 
@@ -224,7 +224,7 @@ violation：临时创建同名 module 或向 Journal 增加 control method 必�
   docs 和 tests 不再宣称 broker 存在。
 - **保留负向护栏**: fixed trusted profile、no caller scope/path/provider、stale control rejection、
   pending-response/refinement separation、Bundle loss honesty、non-product boundary。
-- **OpenSpec change slice**: 纳入 `consolidate-run-observation-ownership` 的 RWB registry sync。
+- **OpenSpec change slice**: 纳入 `converge-run-bundle-observation-authority` 的 RWB registry sync。
 
 ### RS-C05 - Retain anti-resurrection tests under current evidence owners
 

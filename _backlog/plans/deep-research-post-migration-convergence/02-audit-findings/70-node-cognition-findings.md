@@ -153,7 +153,7 @@ composition、tool posture admission、20-row evidence、deterministic owner 和
   临时 legacy set 或 cohort 时态；focused tests、20-row joins、strict OpenSpec 和 governance 通过。
 - **保留负向护栏**: invalid/missing/package-mismatched capability 在 model/tool work 前失败；禁止
   capability inference、generic fallback、arbitrary system prompt override 和 capability-owned route/state。
-- **OpenSpec change slice**: `close-node-capability-migration`；须在 OR-C01/C02 的 repository-delivery
+- **OpenSpec change slice**: `converge-node-cognition-contract-and-language`；须在 OR-C01/C02 的 repository-delivery
   blocker关闭后，作为第一个产品 cleanup change。
 
 ### NC-C02 - Converge node cognition language vertically
@@ -171,8 +171,8 @@ composition、tool posture admission、20-row evidence、deterministic owner 和
   identity；residual 只允许 archive、明确的 retired-term guard 或逻辑 phase 的非 identity 用法。
 - **保留负向护栏**: full-takeover、no checkpointer、bounded budgets、closed tools、redaction、
   cancellation、no clarification、deterministic admission 与 graph-owned lifecycle 均保持原测试强度。
-- **OpenSpec change slice**: `converge-node-cognition-language`；应在 NC-C01 后独立实施，避免把
-  contract subtraction 与 AI-facing rename 混成一个不可诊断 change。
+- **OpenSpec change slice**: `converge-node-cognition-contract-and-language` 的第二个stage；须在NC-C01 stage
+  关闭后实施，并保留独立red/green证据，不能把contract subtraction与AI-facing rename混成一次无边界改写。
 
 ### NC-C03 - Restore CONTEXT to glossary-only ownership
 

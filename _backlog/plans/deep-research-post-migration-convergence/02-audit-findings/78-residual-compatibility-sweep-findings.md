@@ -150,7 +150,7 @@ attempt policy时，应在自己的 change中重新审计，而不是由本计�
   replay/recovery和workbench tests通过。
 - **保留负向护栏**: operation-key digest conflict、duplicate receipt、active-Bundle conflict、CAS/restart/replay、
   textless selection与Bundle loss behavior不变。
-- **OpenSpec change slice**: `converge-refinement-admission-api`，在 RS capability owner收敛后实施。
+- **OpenSpec change slice**: `converge-run-bundle-observation-authority`，在 RS capability owner收敛stage后实施。
 
 ### RC-C02 - Delete the legacy short-state planner helper
 
@@ -162,7 +162,7 @@ attempt policy时，应在自己的 change中重新审计，而不是由本计�
 - **迁移条件**: 确认 canonical tests覆盖 request fallback、profile dimensions、language、comparison与degraded flag。
 - **删除条件**: helper/export/test归零；topic-planning focused tests通过；production prompt behavior不变。
 - **保留负向护栏**: missing/invalid profile ref、projection mismatch、current refinement generation mismatch继续 fail closed。
-- **OpenSpec change slice**: `subtract-topic-planner-legacy-helper`，可与低风险 helper subtraction批次合并。
+- **OpenSpec change slice**: `subtract-topic-planner-legacy-helper`；保持topic-planner primary owner。
 
 ### RC-C03 - Resolve the joint profile and proposal input compatibility window
 
@@ -177,7 +177,7 @@ attempt policy时，应在自己的 change中重新审计，而不是由本计�
   只删单个 enum/default造成旧 payload被误解释。
 - **保留负向护栏**: unsupported schema/extra field fail closed；旧数据不制造 language/comparison/proposal事实；
   stale proposal correlation仍被拒绝。
-- **OpenSpec change slice**: 扩展 `converge-profile-compatibility-readers`，并在 PC-C03 checkpoint inventory后准入。
+- **OpenSpec change slice**: `converge-profile-proposal-compatibility`，并在joint schema/checkpoint inventory后准入。
 
 ### RC-C04 - Decide supported AppConfig endpoint aliases before reader subtraction
 
@@ -188,7 +188,7 @@ attempt policy时，应在自己的 change中重新审计，而不是由本计�
 - **迁移条件**: 枚举 supported host/AppConfig versions与producers；确定冲突、notice和rollback行为。
 - **删除条件**: stale producers迁移；reader/tests/docs/spec同步；unknown shape不得转向model-object reflection。
 - **保留负向护栏**: exact selected config only；conflict/malformed/userinfo fail closed；projection只含normalized origin。
-- **OpenSpec change slice**: `resolve-model-endpoint-config-aliases`，可与 PC-C07 deployment support调查共用inventory，
+- **OpenSpec change slice**: `converge-runtime-configuration-compatibility`，可与 PC-C07 deployment support调查共用inventory，
   但分别决策。
 
 ### RC-C05 - Retain composition and workspace-alias drift guards
@@ -213,7 +213,7 @@ attempt policy时，应在自己的 change中重新审计，而不是由本计�
 - **删除条件**: supported old terminals归零；positive compatibility requirement、reader与tests同批关闭。
 - **保留负向护栏**: absent old location不得伪造成Journal publication；provider terminal仍要求exact ref/location；
   secrets/raw exceptions不投影。
-- **OpenSpec change slice**: `close-run-failure-diagnostic-location-compatibility`，在 Run Experience data inventory后。
+- **OpenSpec change slice**: `converge-run-observation-result-compatibility`，在 Run Experience data inventory后。
 
 ### RC-C07 - Keep current normalization and bounded fallback behavior
 
