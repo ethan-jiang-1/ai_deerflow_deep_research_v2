@@ -3,7 +3,26 @@
 > 导航: [执行层索引](README.md) | [Candidate Register](candidate-register.md) | [根总导航](../README.md)
 > 角色: 最终逐步执行总计划
 > 输入: [70-78 findings](../02-audit-findings/) 的54个最终Candidate；change映射以 [80 - Remediation Change Map](80-remediation-change-map.md) 为准
-> 状态: 尚未开始；全局预算8个change（00-07）；checkbox只记录change closure，不替代active change的 `tasks.md`
+> 状态: 00 已完成 propose 和 polish，待 apply；全局预算8个change（00-07）；checkbox只记录change closure，不替代active change的 `tasks.md`
+
+## Propose 后强制 Polish
+
+每个 admitted change 在 `propose` 生成全部 apply-required artifacts 后，必须立即进入
+`$polish-openspec-change <change-name>`，再考虑 `apply`。这是 change lifecycle 的强制
+阶段，不是可选 review，也不占用额外 change budget：
+
+1. `openspec-propose` 自己完成后会按其边界停止；调度者必须把已生成的 active change 直接交给
+   `polish-openspec-change`，不得从 `propose` 跳到 `apply`；
+2. polish 至少完成一轮 whole-change coherence 和一轮最高风险的 risk-led pass，逐项把 proposal、
+   design、delta specs、tasks 与实际 owner/accepted spec/test seam 对齐；
+3. 由既有事实能确定的 stale reference、缺失 task、术语、验证或 scope 不一致，必须在同一次
+   polish 中修正所有受影响的 change artifacts；涉及新产品决定、外部 consumer/data、权限或冲突
+   authority 的问题必须报告 `not ready`，不得用假设进入 apply；
+4. 只有 polish 最终报告 `ready for apply`，且 strict OpenSpec、`git diff --check` 与该 change 已声明的
+   planning/governance checks 通过，才可开始 `tasks.md` 的实现。polish 不修改 target code、tests、
+   accepted specs、governance files 或 task completion state；
+5. apply/archive review 仍对实际 diff、workstream scope 与 evidence 负责。polish 证明 planning
+   artifacts 已准备好，不批准 runtime behavior、external closure 或 archive。
 
 ## 不可跳过的执行协议
 
@@ -12,17 +31,19 @@
 1. 在当前HEAD重验该步Candidate、consumer/data/export scope与前置gate；事实变化先修findings/register/map；
 2. 00必须先按现行单owner Focus Card完成并archive；之后ordinary change继续使用一个smallest primary causal
    owner，program change使用一个bounded program outcome和多个owner-scoped workstream；
-3. 只有change内全部decision/data/export gate关闭后才创建。program proposal一次冻结完整Candidate budget，
+3. 只有change内全部decision/data/export gate关闭后才创建并完成 `propose` artifacts。program proposal一次冻结完整Candidate budget，
    每个workstream明确owner、target、retirement、surface grade、decision authority、negative path、recovery、
    evidence与not-in-scope；
-4. `tasks.md` 按workstream/stage承担逐文件工作；每个stage先做red/known violation，再迁移owner/behavior/evidence，
+4. 每个 newly proposed change 按上节完成 `$polish-openspec-change` 并获得 `ready for apply`；任何 `not ready`
+   结论先在 planning 层关闭，禁止以“之后再 polish”或新增 implementation task 的方式绕过；
+5. `tasks.md` 按workstream/stage承担逐文件工作；每个stage先做red/known violation，再迁移owner/behavior/evidence，
    最后删除old surface；一个workstream不得修改另一个workstream未声明的contract；
-5. focused tests、相关lanes、full deterministic verify、governance与strict OpenSpec通过；
-6. ordinary change或program全部workstream完成后一次archive，记录未运行的live/external evidence，更新所有
+6. focused tests、相关lanes、full deterministic verify、governance与strict OpenSpec通过；
+7. ordinary change或program全部workstream完成后一次archive，记录未运行的live/external evidence，更新所有
    linked Candidate最终disposition；program workstream不能单独archive或把尾项静默defer；
-7. apply/archive review逐workstream把实际diff、tasks与evidence对回冻结scope；checker只证明结构和Candidate
+8. apply/archive review逐workstream把实际diff、tasks与evidence对回冻结scope；checker只证明结构和Candidate
    budget闭合，不代替语义scope review；
-8. 确认无active change和意外worktree变化，再进入下一步。
+9. 确认无active change和意外worktree变化，再进入下一步。
 
 若某项change仍缺任一产品决定、外部consumer或retained data，禁止先创建再等待。记录decision owner和缺失
 证据后，只能继续准备依赖独立的后续项；改变执行顺序或分组必须先同步`80`，不能在active change内临时处理。
