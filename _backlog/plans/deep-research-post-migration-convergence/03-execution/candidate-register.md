@@ -135,7 +135,7 @@
 
 | Candidate | Grounded disposition | Admission | Target / change |
 | --- | --- | --- | --- |
-| [RC-C01](../02-audit-findings/78-residual-compatibility-sweep-findings.md#rc-c01---migrate-consumers-and-delete-the-state-only-refinement-wrapper) | migrate consumers then delete wrapper | after RS-C02 + export scope | `RefinementAdmission` / `converge-run-bundle-observation-authority` |
+| [RC-C01](../02-audit-findings/78-residual-compatibility-sweep-findings.md#rc-c01---migrate-consumers-and-delete-the-state-only-refinement-wrapper) | migrate consumers then delete wrapper | 2026-08-14 admission recheck: direct wrapper consumers are one internal workbench projection and two internal integration suites; no root export or documented Python API | `RefinementAdmission` / `converge-run-bundle-observation-authority` |
 | [RC-C02](../02-audit-findings/78-residual-compatibility-sweep-findings.md#rc-c02---delete-the-legacy-short-state-planner-helper) | retired after canonical Bundle-profile transfer | archived 01; profile and negative projection tests pass | canonical profile reader |
 | [RC-C03](../02-audit-findings/78-residual-compatibility-sweep-findings.md#rc-c03---resolve-the-joint-profile-and-proposal-input-compatibility-window) | product/data decision; then migrate/retain | blocked: profile/checkpoint/producer matrix | versioned profile/proposal inputs / `converge-run-input-and-composition-contracts` |
 | [RC-C04](../02-audit-findings/78-residual-compatibility-sweep-findings.md#rc-c04---decide-supported-appconfig-endpoint-aliases-before-reader-subtraction) | product/support decision | blocked: supported AppConfig versions | approved endpoint field set / `converge-runtime-input-compatibility` |

@@ -3,7 +3,7 @@
 > 导航: [执行层索引](README.md) | [Candidate Register](candidate-register.md) | [根总导航](../README.md)
 > 角色: 最终逐步执行总计划
 > 输入: [70-78 findings](../02-audit-findings/) 的54个最终Candidate；change映射以 [80 - Remediation Change Map](80-remediation-change-map.md) 为准
-> 状态: 00 已于 2026-08-14 archive 并同步 main spec（commit `8661693`）；01 已于同日 archive 并同步 main spec（commit `47a3bb5`）；03 已于同日 archive 并同步 main spec（commit `84d533a`）；当前无 active change。02仍等待 Evaluation Owner 的 supported Python import 决定及 retained `evals/runs` inventory/retention cutover；04仍等待 refinement method 的 supported-consumer matrix。全局预算8个change（00-07）；checkbox只记录change closure，不替代active change的 `tasks.md`
+> 状态: 00 已于 2026-08-14 archive 并同步 main spec（commit `8661693`）；01 已于同日 archive 并同步 main spec（commit `47a3bb5`）；03 已于同日 archive 并同步 main spec（commit `84d533a`）；当前无 active change。02仍等待 Evaluation Owner 的 supported Python import 决定及 retained `evals/runs` inventory/retention cutover；04的 current-HEAD refinement consumer/export gate已关闭，可进入 propose 后强制 polish。全局预算8个change（00-07）；checkbox只记录change closure，不替代active change的 `tasks.md`
 
 ## Propose 后强制 Polish
 
@@ -144,6 +144,16 @@ live/external evidence，也未引入新的 compatibility obligation。
 
 **Gate E:** Bundle/Journal/operator boundaries各有唯一owner；Local Session Workbench仍可用但不宣传broker；
 binding/session store不能复活或在Bundle loss后recovery；PC-C05 refinement recovery语义与RS-C05 guards不变。
+
+**04 admission recheck（2026-08-14）:** `BundleLifecycle.refine()` 的 direct current callers恰为
+`runtime/session_workbench.py`、`tests/integration/test_research_lifecycle_tool.py`和
+`tests/integration/test_hitl1_lifecycle.py`；前者是待迁移的Local Session Workbench projection，后二者是
+application-internal test consumers。host-facing `deep_research_tool`只在内部构造 lifecycle，`BundleControl`
+已直接调用`admit_refinement()`；root `__all__`没有暴露 lifecycle/workbench，README/docs也没有 direct Python
+import route。因此`runtime.bundle_lifecycle`及state-only wrapper是application-internal contract，04不承诺新的
+public facade或compatibility window。workbench必须改为消费`RefinementAdmission`并保持自己的
+`BundleControlResult`投影；若发现外部 consumer，须在另一个 change明确支持边界或迁移。上述 focused lifecycle、
+workbench、admission、recovery与workflow suites在 current HEAD通过（60 passed），可创建04 proposal。
 
 ## Phase F - Run input与composition truth
 

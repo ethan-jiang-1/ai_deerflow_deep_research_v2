@@ -2,7 +2,7 @@
 
 > 导航: [执行层索引](README.md) | [默认执行入口](99-progressive-execution.md) | [Candidate Register](candidate-register.md)
 > 角色: 把 `70-78` 的 54 个最终 Candidate 映射成有界 OpenSpec changes、decision gates 与 non-regression obligations
-> 状态: 编排完成；00 governance bootstrap 已 archive（`8661693`）；01 已 archive 并同步 main spec（`47a3bb5`），其 16-ID budget 已关闭；03 已 archive 并同步 main spec（`84d533a`），其 9-ID budget 已关闭；02仍等待 Evaluation Owner 的 retained-record 与 Python support 结论；04仍等待 refinement method 的 supported-consumer matrix；change names 是建议的稳定 slug，创建前仍须以当时 HEAD 复核
+> 状态: 编排完成；00 governance bootstrap 已 archive（`8661693`）；01 已 archive 并同步 main spec（`47a3bb5`），其 16-ID budget 已关闭；03 已 archive 并同步 main spec（`84d533a`），其 9-ID budget 已关闭；02仍等待 Evaluation Owner 的 retained-record 与 Python support 结论；04已由current-HEAD refinement consumer/export matrix关闭application-internal import gate，可进入proposal + polish；change names 是建议的稳定 slug，创建前仍须以当时 HEAD 复核
 > 硬约束: 全局预算 8 个 change（00-07）；一次一个 active change；上一 change archive 后才创建下一项
 
 ## Admission semantics
@@ -59,7 +59,7 @@ partial archive。
 | 01 | program | `restore-delivery-and-subtract-dead-assets` | OR-C01, OR-C02, OR-C04; TA-C01, TA-C02, TA-C05; EC-C04; RC-C02 | OR-C06; TA-C03/C04/C06/C07; EC-C01/C03; RC-C07 | 已 archive（`47a3bb5`）：repository-tracked delivery恢复，五个 owner-local workstream关闭；manual-live 未运行且仍为手动 lane，current guards不变 |
 | 02 | ordinary | `converge-evaluation-boundary-compatibility` | EV-C02, EV-C03, EV-C04 | EV-C05, TA-C04 | 01；evaluation owner在consumer/data gates关闭后同批收敛metrics shim、import facade和persisted evidence layer |
 | 03 | program | `converge-node-language-and-product-records` | NC-C01, NC-C02, NC-C03; EC-C02; OR-C03, OR-C05 | EV-C01, OR-C07, OR-C08 | 已 archive（`84d533a`）：两个 owner-scoped workstream关闭；九项 Candidate/obligation 已进入 archive 或 retained guard/history disposition；未运行 live/external evidence 已记录 |
-| 04 | ordinary | `converge-run-bundle-observation-authority` | RS-C01..C04, RC-C01, OR-C03 | RS-C05, EC-C01, PC-C05, TA-C04 | 01；Bundle lifecycle为primary owner，先迁negative evidence，再收敛capabilities、workbench projection与refinement API |
+| 04 | ordinary | `converge-run-bundle-observation-authority` | RS-C01..C04, RC-C01, OR-C03 | RS-C05, EC-C01, PC-C05, TA-C04 | 01；current-HEAD matrix已确认state-only refinement wrapper只有一个production workbench projection与两个internal test consumers，且无public Python export；Bundle lifecycle为primary owner，先迁negative evidence，再收敛capabilities、workbench projection与refinement API |
 | 05 | program | `converge-run-input-and-composition-contracts` | FM-C01, FM-C02, FM-C04; EC-C06; PC-C01, PC-C02; RC-C03; EV-C06 | FM-C03, PC-C05, RC-C05, TA-C04 | 01；composition与profile/proposal两个workstream共享一个终态：admitted run input只产生显式、诚实、版本明确的composition truth |
 | 06 | program | `converge-runtime-input-compatibility` | EC-C05, EC-C07, PC-C07, RC-C04 | EC-C03, RC-C05 | 01；trusted-context与deployment-config两个workstream分别关闭producer/support matrix，使host输入的shape、precedence和failure明确 |
 | 07 | program | `converge-retained-run-data-compatibility` | PC-C03, PC-C04, PC-C06, RC-C06 | EV-C05, RS-C05 | 04；repair lifecycle与Run observation/result两个workstream完成dry-run、迁移/拒绝、rollback及old-reader closure；不伪造lifecycle或publication truth |
