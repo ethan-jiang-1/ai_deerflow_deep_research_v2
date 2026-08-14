@@ -3,7 +3,7 @@
 > 导航: [执行层索引](README.md) | [Candidate Register](candidate-register.md) | [根总导航](../README.md)
 > 角色: 最终逐步执行总计划
 > 输入: [70-78 findings](../02-audit-findings/) 的54个最终Candidate；change映射以 [80 - Remediation Change Map](80-remediation-change-map.md) 为准
-> 状态: 00 已于 2026-08-14 archive 并同步 main spec（commit `8661693`）；01 仍受 OR-C02 owner decision gate 限制；全局预算8个change（00-07）；checkbox只记录change closure，不替代active change的 `tasks.md`
+> 状态: 00 已于 2026-08-14 archive 并同步 main spec（commit `8661693`）；01 已于同日 archive 并同步 main spec（commit `47a3bb5`）；当前无 active change，下一步为02的current-HEAD consumer/data gate；全局预算8个change（00-07）；checkbox只记录change closure，不替代active change的 `tasks.md`
 
 ## Propose 后强制 Polish
 
@@ -68,28 +68,27 @@ Card全部字段、Candidate/obligation IDs与独立policy routing。checker至�
 
 ## Phase B - 恢复交付并清除已取证死资产
 
-- [ ] **01 `restore-delivery-and-subtract-dead-assets`**: OR-C01/C02/C04、TA-C01/C02/C05、EC-C04、RC-C02。
+- [x] **01 `restore-delivery-and-subtract-dead-assets`**: OR-C01/C02/C04、TA-C01/C02/C05、EC-C04、RC-C02。已 archive 并同步 main spec（`47a3bb5`）。
 
-创建前先取得OR-C02的repository-vs-versioned-external owner决定。proposal一次冻结五个workstream：
+OR-C02 选择的推荐 repository-tracked route已关闭，且未引入 versioned external installer。归档 program 曾冻结五个workstream：
 
-1. `delivery`: 恢复current CI workflows和可复现OpenSpec skill/install route，建立clean-clone trackedness guard；
+1. `delivery`: 恢复current CI workflows和可复现的 repository-tracked OpenSpec skill route，建立clean-clone trackedness guard；
 2. `test-structure`: 在delivery关闭后删除8个marker、空`tests/e2e`与精确registry row；
 3. `evidence-report`: 对照baseline/attestation/regression provenance后删除DPT report与shape-only test；
 4. `demo-adapter`: 把独有cases迁到canonical profile/preflight后删除private helpers；
 5. `topic-planner`: 由canonical Bundle-profile tests承接short-state behavior后删除legacy helper/export。
 
-workstream按上列顺序分别留evidence；后四项失败不得无理由回滚已验证的delivery，但整个program在全部完成前
-不archive。冻结scope内无法forward repair时，按Program Focus回滚失败workstream及其dependents；仍不能关闭
-则保持active并回到计划层批准整体rollback或一进一出重排，禁止partial archive。
+五个workstream都按上列顺序留下闭环证据，并在全部关闭后一次archive；没有 partial archive、scope drift或
+外部 installer。冻结scope的 forward-repair/rollback 规则未被触发。
 
 **Gate B:** clean clone获得可复现CI/OpenSpec workflow；无orphan marker/scaffold/selector/registry/export；
 TA-C03/C04/C06/C07、EC-C01/C03、RC-C07 guards和deterministic/manual-live/suspended lane语义仍可证伪。
 
-**当前 HEAD preflight（2026-08-14）:** 隔离 clean clone没有tracked `.github/`、`.agents/` 或
-`.openspec-target`；`agent-tests.yml`和`polish-openspec-change`均缺失，
-`tests/contract/test_agent_pr_workflow.py`因此以缺少workflow文件失败。仓库尚未记录versioned external
-installer/source，故01在Repository Governance Owner选择repository-tracked或versioned external delivery前
-保持`not ready`，不得创建proposal。
+**01 closeout（2026-08-14）:** `openspec/changes/archive/2026-08-14-restore-delivery-and-subtract-dead-assets/`
+保存 proposal、polish后计划、五个workstream evidence与 archive-closeout；主规格已同步，commit为`47a3bb5`。Git-index
+guard、bounded dedicated-index `--no-local` clean-clone preflight、focused tests、five governance checks、strict
+OpenSpec与`UV_OFFLINE=1 make verify`均通过。manual-live CI未运行，仍为`workflow_dispatch`；本 change未作
+live/release claim，也没有把该未运行证据当作已关闭风险。
 
 ## Phase C - Evaluation boundary收敛
 

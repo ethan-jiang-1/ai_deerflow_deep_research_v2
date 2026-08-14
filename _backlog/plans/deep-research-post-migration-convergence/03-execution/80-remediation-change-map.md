@@ -2,7 +2,7 @@
 
 > 导航: [执行层索引](README.md) | [默认执行入口](99-progressive-execution.md) | [Candidate Register](candidate-register.md)
 > 角色: 把 `70-78` 的 54 个最终 Candidate 映射成有界 OpenSpec changes、decision gates 与 non-regression obligations
-> 状态: 编排完成；00 governance bootstrap 已 archive（`8661693`）；01因OR-C02 repository-delivery owner decision保持not ready；Candidate-bearing implementation 尚未开始；change names 是建议的稳定 slug，创建前仍须以当时 HEAD 复核
+> 状态: 编排完成；00 governance bootstrap 已 archive（`8661693`）；01 已 archive 并同步 main spec（`47a3bb5`），其 16-ID budget 已关闭；下一项为 02 的 current-HEAD consumer/data gate；change names 是建议的稳定 slug，创建前仍须以当时 HEAD 复核
 > 硬约束: 全局预算 8 个 change（00-07）；一次一个 active change；上一 change archive 后才创建下一项
 
 ## Admission semantics
@@ -56,7 +56,7 @@ partial archive。
 | Order | Mode | Change | Primary Candidates | Attached obligations | Admission / terminal invariant |
 | --- | --- | --- | --- | --- | --- |
 | 00 | ordinary | `admit-bounded-program-change-workstreams` | none; governance bootstrap | current Focus Card、policy routing与checker guards | OpenSpec Governance Owner；在不放宽普通change的前提下，新增可机械校验的bounded program route；known-invalid proposal会失败 |
-| 01 | program | `restore-delivery-and-subtract-dead-assets` | OR-C01, OR-C02, OR-C04; TA-C01, TA-C02, TA-C05; EC-C04; RC-C02 | OR-C06; TA-C03/C04/C06/C07; EC-C01/C03; RC-C07 | 00；先恢复clean-clone delivery，再按五个owner-local workstream删除已取证的repository/test/private residue；current lanes与guards不变 |
+| 01 | program | `restore-delivery-and-subtract-dead-assets` | OR-C01, OR-C02, OR-C04; TA-C01, TA-C02, TA-C05; EC-C04; RC-C02 | OR-C06; TA-C03/C04/C06/C07; EC-C01/C03; RC-C07 | 已 archive（`47a3bb5`）：repository-tracked delivery恢复，五个 owner-local workstream关闭；manual-live 未运行且仍为手动 lane，current guards不变 |
 | 02 | ordinary | `converge-evaluation-boundary-compatibility` | EV-C02, EV-C03, EV-C04 | EV-C05, TA-C04 | 01；evaluation owner在consumer/data gates关闭后同批收敛metrics shim、import facade和persisted evidence layer |
 | 03 | program | `converge-node-language-and-product-records` | NC-C01, NC-C02, NC-C03; EC-C02; OR-C03, OR-C05 | EV-C01, OR-C07, OR-C08 | 01；先关闭Node request contract并批准term table，再把glossary/design/status记录归还各owner；ADR history不改写 |
 | 04 | ordinary | `converge-run-bundle-observation-authority` | RS-C01..C04, RC-C01, OR-C03 | RS-C05, EC-C01, PC-C05, TA-C04 | 01；Bundle lifecycle为primary owner，先迁negative evidence，再收敛capabilities、workbench projection与refinement API |
@@ -64,9 +64,9 @@ partial archive。
 | 06 | program | `converge-runtime-input-compatibility` | EC-C05, EC-C07, PC-C07, RC-C04 | EC-C03, RC-C05 | 01；trusted-context与deployment-config两个workstream分别关闭producer/support matrix，使host输入的shape、precedence和failure明确 |
 | 07 | program | `converge-retained-run-data-compatibility` | PC-C03, PC-C04, PC-C06, RC-C06 | EV-C05, RS-C05 | 04；repair lifecycle与Run observation/result两个workstream完成dry-run、迁移/拒绝、rollback及old-reader closure；不伪造lifecycle或publication truth |
 
-推荐 01 的delivery workstream恢复 repository-tracked workflows 与 project-owned OpenSpec skills。若 Governance
-Owner选择versioned external delivery，必须在同一个workstream提供clean-install route并同步所有正向承诺；
-delivery workstream关闭前不得进入01的四个subtraction workstream。
+Governance Owner 选择的推荐 repository-tracked route已随 01 关闭：tracked workflows 与 project-owned
+OpenSpec skills已恢复，且未引入 versioned external installer。bounded clean-clone preflight和Git-index guard
+提供 deterministic delivery evidence；manual-live 保持 `workflow_dispatch`，未运行且不构成 live/release claim。
 
 ## Program workstream map
 

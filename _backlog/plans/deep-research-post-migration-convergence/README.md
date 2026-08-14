@@ -1,7 +1,7 @@
 # Deep Research 迁移后收敛：总导航
 
 > 类型: 架构健康审计 / 迁移收口 / 删除计划
-> 审计状态: 当前基线审计完成；54 个最终 Candidate 已取证；00 governance bootstrap 已 archive；Candidate-bearing implementation 尚未开始
+> 审计状态: 当前基线审计完成；54 个最终 Candidate 已取证；00 governance bootstrap 与01 repository-delivery/subtraction program均已 archive；01 的16个冻结 Candidate已关闭；下一步为02 evaluation boundary的consumer/data gate
 > 产品范围: `deep_research_harness/`
 > 变更治理: `openspec/`
 > 当前 active OpenSpec changes: 0
@@ -84,8 +84,8 @@ tests仍正向依赖它们。因此：
 1. `00` 先按现行单owner规则引入bounded program/workstream治理，不实施cleanup Candidate；
 2. 首个Candidate-bearing change `01` 必须先关闭 OR-C01/OR-C02/OR-C04 的repository-delivery workstream；
 3. 在 clean clone可复现 CI/OpenSpec workflow前，不开始 `01` 后续subtraction workstream；
-4. 推荐恢复 repository-tracked owner；若 Governance Owner批准 external/versioned install，必须同批修正
-   所有正向承诺并证明 clean setup可复现。
+4. Governance Owner 选择的推荐 repository-tracked route已由01恢复并通过clean-clone guard；manual-live仍只可
+   手动触发且未在01中运行。02开始前必须重验其独立的evaluation consumer/data gate。
 
 ## Retained-data evidence
 

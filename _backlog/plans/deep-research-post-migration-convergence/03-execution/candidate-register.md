@@ -5,7 +5,7 @@
 > 应用/spec 取证基线: `5bb41c16a45ff3caae6e5b1e900610c91bf68336`
 > 审计综合 revision: `811203726cfa6478ceebdabc378daabce1b6758b`
 > 执行编排 revision: `91709e740fdafcb8275c2a182a61554342e2bd08`；8-change program budget
-> 状态: 本基线审计完成；54 个最终 Candidate；00 governance bootstrap 已 archive（`8661693`）；Candidate-bearing implementation 尚未开始；0 active OpenSpec changes
+> 状态: 本基线审计完成；54 个最终 Candidate；00 governance bootstrap 已 archive（`8661693`）；01 已 archive 并同步 main spec（`47a3bb5`）；其 16 个冻结 Candidate 已记录终态；0 active OpenSpec changes
 
 ## 使用规则
 
@@ -75,10 +75,10 @@
 
 | Candidate | Grounded disposition | Admission | Target / change |
 | --- | --- | --- | --- |
-| [EC-C01](../02-audit-findings/73-entry-and-configuration-findings.md#ec-c01---keep-distinct-current-entry-surfaces) | keep distinct entries | non-regression | product/operator/evaluation roles remain distinct |
+| [EC-C01](../02-audit-findings/73-entry-and-configuration-findings.md#ec-c01---keep-distinct-current-entry-surfaces) | guard-retained: distinct entries | archived 01; entry guard remains falsifiable | product/operator/evaluation roles remain distinct |
 | [EC-C02](../02-audit-findings/73-entry-and-configuration-findings.md#ec-c02---move-dormant-local-first-direction-out-of-current-language) | migrate history, delete dormant glossary term | ready | ADR history + current entry terms / `converge-node-language-and-product-records` |
-| [EC-C03](../02-audit-findings/73-entry-and-configuration-findings.md#ec-c03---retain-old-entry-rejection-guards) | retain guards | non-regression | deployment/structure admission |
-| [EC-C04](../02-audit-findings/73-entry-and-configuration-findings.md#ec-c04---delete-test-only-demo-compatibility-helpers) | delete helper/tests after behavior transfer | ready | canonical demo profile/preflight APIs / `restore-delivery-and-subtract-dead-assets` |
+| [EC-C03](../02-audit-findings/73-entry-and-configuration-findings.md#ec-c03---retain-old-entry-rejection-guards) | guard-retained: old-entry rejection | archived 01; entry guard remains falsifiable | deployment/structure admission |
+| [EC-C04](../02-audit-findings/73-entry-and-configuration-findings.md#ec-c04---delete-test-only-demo-compatibility-helpers) | retired after canonical profile/preflight transfer | archived 01; canonical pre-Adapter failure and redaction tests pass | canonical demo profile/preflight APIs |
 | [EC-C05](../02-audit-findings/73-entry-and-configuration-findings.md#ec-c05---decide-legacy-checkpointer-support-explicitly) | deployment decision | linked to PC-C07 | database-only or bounded legacy reader / `converge-runtime-input-compatibility` |
 | [EC-C06](../02-audit-findings/73-entry-and-configuration-findings.md#ec-c06---delete-the-researchgraphrecipecreate-constructor-after-export-scope-closure) | delete alias after support closure | blocked: Python export support | `all_real()` / `converge-run-input-and-composition-contracts` |
 | [EC-C07](../02-audit-findings/73-entry-and-configuration-findings.md#ec-c07---decide-the-disable_clarification-trusted-context-compatibility-window) | runtime/product decision | blocked: host producer inventory | `non_interactive` / `converge-runtime-input-compatibility` |
@@ -87,13 +87,13 @@
 
 | Candidate | Grounded disposition | Admission | Target / change |
 | --- | --- | --- | --- |
-| [TA-C01](../02-audit-findings/74-test-and-evidence-asset-findings.md#ta-c01---delete-eight-redundant-gitkeep-markers) | delete | ready | real tracked files / `restore-delivery-and-subtract-dead-assets` |
-| [TA-C02](../02-audit-findings/74-test-and-evidence-asset-findings.md#ta-c02---retire-the-empty-testse2e-scaffold-and-registry-entry) | delete scaffold + registry row | ready | actual test directories / `restore-delivery-and-subtract-dead-assets` |
-| [TA-C03](../02-audit-findings/74-test-and-evidence-asset-findings.md#ta-c03---retain-the-evh-024-suspension-boundary) | retain suspension guard | non-regression | evaluation-hardening owner |
-| [TA-C04](../02-audit-findings/74-test-and-evidence-asset-findings.md#ta-c04---keep-executable-evidence-registries-and-subtract-rows-only-with-their-owner) | keep mechanism; owner-local subtraction only | non-regression | existing executable joins |
-| [TA-C05](../02-audit-findings/74-test-and-evidence-asset-findings.md#ta-c05---delete-the-superseded-dpt-report-and-its-shape-only-test-after-evidence-comparison) | compare, then delete | ready | baseline + attestation + regression policy / `restore-delivery-and-subtract-dead-assets` |
-| [TA-C06](../02-audit-findings/74-test-and-evidence-asset-findings.md#ta-c06---preserve-dated-baseline-and-attestation-as-explicitly-historical-evidence) | historical keep | non-regression | frozen evidence epochs |
-| [TA-C07](../02-audit-findings/74-test-and-evidence-asset-findings.md#ta-c07---keep-regression-descent-as-current-evidence-policy) | keep | non-regression | test/evaluation governance |
+| [TA-C01](../02-audit-findings/74-test-and-evidence-asset-findings.md#ta-c01---delete-eight-redundant-gitkeep-markers) | retired: eight redundant markers | archived 01; retained roots and asset guard pass | real tracked files |
+| [TA-C02](../02-audit-findings/74-test-and-evidence-asset-findings.md#ta-c02---retire-the-empty-testse2e-scaffold-and-registry-entry) | retired: empty scaffold and exact registry row | archived 01; lane and structure guards pass | actual test directories |
+| [TA-C03](../02-audit-findings/74-test-and-evidence-asset-findings.md#ta-c03---retain-the-evh-024-suspension-boundary) | guard-retained: EVH-024 suspension | archived 01; selector remains suspended and uncollected | evaluation-hardening owner |
+| [TA-C04](../02-audit-findings/74-test-and-evidence-asset-findings.md#ta-c04---keep-executable-evidence-registries-and-subtract-rows-only-with-their-owner) | guard-retained: executable joins | archived 01; owner-local row subtraction only | existing executable joins |
+| [TA-C05](../02-audit-findings/74-test-and-evidence-asset-findings.md#ta-c05---delete-the-superseded-dpt-report-and-its-shape-only-test-after-evidence-comparison) | retired after provenance comparison | archived 01; retained provenance route contract passes | baseline + attestation + regression policy |
+| [TA-C06](../02-audit-findings/74-test-and-evidence-asset-findings.md#ta-c06---preserve-dated-baseline-and-attestation-as-explicitly-historical-evidence) | historical-retained | archived 01; dated epochs remain distinct | frozen evidence epochs |
+| [TA-C07](../02-audit-findings/74-test-and-evidence-asset-findings.md#ta-c07---keep-regression-descent-as-current-evidence-policy) | guard-retained: regression descent | archived 01; current policy route retained | test/evaluation governance |
 
 ## Persisted Compatibility
 
@@ -122,12 +122,12 @@
 
 | Candidate | Grounded disposition | Admission | Target / change |
 | --- | --- | --- | --- |
-| [OR-C01](../02-audit-findings/77-openspec-and-record-findings.md#or-c01---restore-tracked-ci-workflow-delivery-before-cleanup-implementation) | repair tracked delivery | P0 ready | tracked CI + trackedness guard / `restore-delivery-and-subtract-dead-assets` |
-| [OR-C02](../02-audit-findings/77-openspec-and-record-findings.md#or-c02---resolve-and-restore-reproducible-project-openspec-skill-delivery) | repair/decision | P0 blocked: repository-vs-external owner | reproducible skill delivery / `restore-delivery-and-subtract-dead-assets` |
+| [OR-C01](../02-audit-findings/77-openspec-and-record-findings.md#or-c01---restore-tracked-ci-workflow-delivery-before-cleanup-implementation) | repaired: tracked CI delivery | archived 01; Git-index guard and clean-clone preflight pass | tracked CI + trackedness guard |
+| [OR-C02](../02-audit-findings/77-openspec-and-record-findings.md#or-c02---resolve-and-restore-reproducible-project-openspec-skill-delivery) | repaired: repository-tracked skill delivery | archived 01; no external installer admitted | reproducible skill delivery |
 | [OR-C03](../02-audit-findings/77-openspec-and-record-findings.md#or-c03---converge-owner-drifted-capabilities-through-owner-local-changes) | owner-local migrate/rename/retire | umbrella | attached to changes 03-05; no spec-cleanup mega-change |
-| [OR-C04](../02-audit-findings/77-openspec-and-record-findings.md#or-c04---correct-the-structural-registry-in-both-directions) | migrate registry/guard | split delivery/test-structure workstreams | attached to change 01 only |
+| [OR-C04](../02-audit-findings/77-openspec-and-record-findings.md#or-c04---correct-the-structural-registry-in-both-directions) | repaired: delivery inventory and scaffold row | archived 01; structure and trackedness guards pass | completed delivery/test-structure workstreams |
 | [OR-C05](../02-audit-findings/77-openspec-and-record-findings.md#or-c05---restore-product-context-to-glossary-only-scope-without-rewriting-adr-history) | migrate/delete current glossary residue; keep ADRs | ready | glossary/ADR/spec roles / `converge-node-language-and-product-records` |
-| [OR-C06](../02-audit-findings/77-openspec-and-record-findings.md#or-c06---keep-current-indexes-and-historical-evidence-delete-only-the-grounded-dpt-duplicate) | keep routes/history; delete DPT duplicate | linked to TA-C05..C07 | current docs/evidence owners / `restore-delivery-and-subtract-dead-assets` |
+| [OR-C06](../02-audit-findings/77-openspec-and-record-findings.md#or-c06---keep-current-indexes-and-historical-evidence-delete-only-the-grounded-dpt-duplicate) | retired duplicate; retained current and historical routes | archived 01; provenance route contract passes | current docs/evidence owners |
 | [OR-C07](../02-audit-findings/77-openspec-and-record-findings.md#or-c07---retain-generated-projections-and-their-freshness-guards) | retain projections/guards | non-regression | generators + source authorities |
 | [OR-C08](../02-audit-findings/77-openspec-and-record-findings.md#or-c08---preserve-archive-and-completed-backlog-history-as-evidence-only) | historical keep | non-regression | archive/backlog lifecycle |
 
@@ -136,12 +136,12 @@
 | Candidate | Grounded disposition | Admission | Target / change |
 | --- | --- | --- | --- |
 | [RC-C01](../02-audit-findings/78-residual-compatibility-sweep-findings.md#rc-c01---migrate-consumers-and-delete-the-state-only-refinement-wrapper) | migrate consumers then delete wrapper | after RS-C02 + export scope | `RefinementAdmission` / `converge-run-bundle-observation-authority` |
-| [RC-C02](../02-audit-findings/78-residual-compatibility-sweep-findings.md#rc-c02---delete-the-legacy-short-state-planner-helper) | delete test-only helper/export | ready | canonical profile reader / `restore-delivery-and-subtract-dead-assets` |
+| [RC-C02](../02-audit-findings/78-residual-compatibility-sweep-findings.md#rc-c02---delete-the-legacy-short-state-planner-helper) | retired after canonical Bundle-profile transfer | archived 01; profile and negative projection tests pass | canonical profile reader |
 | [RC-C03](../02-audit-findings/78-residual-compatibility-sweep-findings.md#rc-c03---resolve-the-joint-profile-and-proposal-input-compatibility-window) | product/data decision; then migrate/retain | blocked: profile/checkpoint/producer matrix | versioned profile/proposal inputs / `converge-run-input-and-composition-contracts` |
 | [RC-C04](../02-audit-findings/78-residual-compatibility-sweep-findings.md#rc-c04---decide-supported-appconfig-endpoint-aliases-before-reader-subtraction) | product/support decision | blocked: supported AppConfig versions | approved endpoint field set / `converge-runtime-input-compatibility` |
 | [RC-C05](../02-audit-findings/78-residual-compatibility-sweep-findings.md#rc-c05---retain-composition-and-workspace-alias-drift-guards) | retain guards | non-regression | recipe identity + storage readiness |
 | [RC-C06](../02-audit-findings/78-residual-compatibility-sweep-findings.md#rc-c06---keep-legacy-diagnostic-location-compatibility-until-retained-results-close) | migrate/expire reader or bounded retain | blocked: retained Run results | exact diagnostic publication / `converge-retained-run-data-compatibility` |
-| [RC-C07](../02-audit-findings/78-residual-compatibility-sweep-findings.md#rc-c07---keep-current-normalization-and-bounded-fallback-behavior) | keep; rejected as cleanup | non-regression | existing behavior owners |
+| [RC-C07](../02-audit-findings/78-residual-compatibility-sweep-findings.md#rc-c07---keep-current-normalization-and-bounded-fallback-behavior) | guard-retained: normalization and bounded fallback | archived 01; projection and refinement negatives remain fail closed | existing behavior owners |
 
 ## Register Closure
 
@@ -150,3 +150,12 @@ decision and data/consumer closure or an explicit retained-support disposition, 
 rechecked against the final residual scan. Implementation order and blockers live in
 [80 - Remediation Change Map](80-remediation-change-map.md); stepwise gates live in
 [99 - Progressive Execution](99-progressive-execution.md).
+
+## 01 Closure
+
+`restore-delivery-and-subtract-dead-assets` archived at
+`openspec/changes/archive/2026-08-14-restore-delivery-and-subtract-dead-assets/` and
+was committed as `47a3bb5`. Its 16-ID budget is closed by the row-level dispositions
+above. Deterministic verification, the bounded clean-clone preflight, and the focused
+negative guards passed. Manual-live CI was not run; it remains `workflow_dispatch`
+only, makes no live or release claim here, and creates no newly accepted residual risk.
