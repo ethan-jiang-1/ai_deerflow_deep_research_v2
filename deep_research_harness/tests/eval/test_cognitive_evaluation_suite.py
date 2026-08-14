@@ -7,6 +7,7 @@
 @impl CES-005
 @impl CES-006
 @impl CES-007
+@impl CES-009
 @impl EVH-025
 @impl EVH-026
 @impl HIN-016
@@ -18,6 +19,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import importlib
 import json
 import time
 from copy import deepcopy
@@ -59,6 +61,7 @@ from deerflow_deep_research.runtime.evaluation import (
     EvidenceLayer,
     ExecutionBounds,
     ExecutionStatus,
+    ReviewRecord,
     ReviewResult,
     ReviewSubmission,
     SelectedLivePreflightError,
@@ -1634,9 +1637,11 @@ async def test_evidence_layer_is_manifest_derived_and_live_requires_selected_pre
     assert manifest["evidence_layer"] == EvidenceLayer.DETERMINISTIC_HANDOFF.value
     legacy_manifest = dict(manifest)
     legacy_manifest.pop("evidence_layer")
-    assert (
-        EvaluationBundleManifest.model_validate(legacy_manifest).evidence_layer is EvidenceLayer.DETERMINISTIC_HANDOFF
-    )
+    with pytest.raises(ValidationError):
+        EvaluationBundleManifest.model_validate(legacy_manifest)
+    with pytest.raises(ValidationError):
+        EvaluationBundleManifest.model_validate({**manifest, "evidence_layer": "unsupported_evidence_layer"})
+    assert EvaluationBundleManifest.model_validate(manifest).evidence_layer is EvidenceLayer.DETERMINISTIC_HANDOFF
 
     review = EvaluationReviewService(registry=runner.registry, runs_root=runner.runs_root)
     submission = ReviewSubmission(
@@ -1654,6 +1659,13 @@ async def test_evidence_layer_is_manifest_derived_and_live_requires_selected_pre
     assert record.evidence_layer is EvidenceLayer.DETERMINISTIC_HANDOFF
     payload = json.loads(record.path.read_text(encoding="utf-8"))
     assert payload["evidence_layer"] == EvidenceLayer.DETERMINISTIC_HANDOFF.value
+    record_payload = record.model_dump(mode="json")
+    missing_record_layer = dict(record_payload)
+    missing_record_layer.pop("evidence_layer")
+    with pytest.raises(ValidationError):
+        ReviewRecord.model_validate(missing_record_layer)
+    with pytest.raises(ValidationError):
+        ReviewRecord.model_validate({**record_payload, "evidence_layer": "unsupported_evidence_layer"})
 
     with pytest.raises(TypeError):
         await runner.run(  # type: ignore[call-arg]
@@ -1694,3 +1706,69 @@ async def test_evidence_layer_is_manifest_derived_and_live_requires_selected_pre
     )
     live_manifest = json.loads((live.bundle_path / "manifest.json").read_text(encoding="utf-8"))
     assert live_manifest["evidence_layer"] == EvidenceLayer.CREDENTIALED_LIVE_QUALITY.value
+    assert (
+        EvaluationBundleManifest.model_validate(live_manifest).evidence_layer is EvidenceLayer.CREDENTIALED_LIVE_QUALITY
+    )
+    assert (
+        ReviewRecord.model_validate(
+            {**record_payload, "evidence_layer": EvidenceLayer.CREDENTIALED_LIVE_QUALITY.value}
+        ).evidence_layer
+        is EvidenceLayer.CREDENTIALED_LIVE_QUALITY
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "invalid_layer",
+    (None, "unsupported_evidence_layer"),
+    ids=("missing", "unknown"),
+)
+async def test_invalid_manifest_evidence_layer_rejects_before_review_write(
+    tmp_path: Path, invalid_layer: str | None
+) -> None:
+    runner = CognitiveEvaluationRunner(
+        registry=CaseRegistry((_case(),)),
+        runs_root=tmp_path / "evals" / "runs",
+        subjects={"hitl1_brief": _successful_subject},
+    )
+    execution = await runner.run(case_id="hitl1-brief", version="v1")
+    manifest_path = execution.bundle_path / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if invalid_layer is None:
+        manifest.pop("evidence_layer")
+    else:
+        manifest["evidence_layer"] = invalid_layer
+    rejected_manifest_bytes = (
+        json.dumps(manifest, sort_keys=True, separators=(",", ":"), ensure_ascii=True) + "\n"
+    ).encode("utf-8")
+    manifest_path.write_bytes(rejected_manifest_bytes)
+
+    submission = ReviewSubmission(
+        bundle_path=execution.bundle_path,
+        evaluator="deterministic-reviewer",
+        result=ReviewResult.PASS,
+        evidence=("bounded deterministic handoff",),
+        confidence="high",
+        unknowns=(),
+        owning_seam="graph.nodes.hitl1",
+        follow_up="none",
+        controls=_case().controls,
+    )
+    review = EvaluationReviewService(registry=runner.registry, runs_root=runner.runs_root)
+    result = await EvaluationOperations(runner=runner, review=review).review(submission)
+
+    assert result.operation == "review"
+    assert result.diagnostic == "bundle_manifest_invalid"
+    assert result.reference is None
+    assert result.status is None
+    assert manifest_path.read_bytes() == rejected_manifest_bytes
+    assert not (execution.bundle_path.parent / "reviews").exists()
+
+
+def test_evaluation_runtime_facade_is_the_only_contract_import_surface() -> None:
+    from deerflow_deep_research.domain.evaluation import EvaluationBundleManifest as DomainManifest
+    from deerflow_deep_research.runtime.evaluation import EvaluationBundleManifest as FacadeManifest
+
+    assert FacadeManifest is DomainManifest
+    with pytest.raises(ModuleNotFoundError):
+        importlib.import_module("deerflow_deep_research.runtime.evaluation.contracts")

@@ -6,7 +6,8 @@ construct production dependencies, judge quality, or schedule work.
 
 from __future__ import annotations
 
-from .contracts import EvaluationOperationResult, ReviewSubmission
+from deerflow_deep_research.domain.evaluation import EvaluationOperationResult, ReviewSubmission
+
 from .review import EvaluationReviewService
 from .runner import BundleIntegrityError, CaseAdmissionError, CognitiveEvaluationRunner
 

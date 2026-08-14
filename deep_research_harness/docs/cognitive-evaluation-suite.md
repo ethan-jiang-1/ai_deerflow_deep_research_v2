@@ -82,7 +82,10 @@ Every manifest records an evidence layer. Ordinary `runner.run(...)` creates onl
 `deterministic_handoff`: it proves the declared resource, candidate, and admission
 handoff, not language quality. The review record derives that layer from the verified
 manifest; reviewers cannot supply a live layer or release claim.
-Legacy manifests without the field remain readable as `deterministic_handoff`.
+Manifests with a missing or unknown layer are unsupported and fail closed as
+`bundle_manifest_invalid` before a Review Record or quality claim is written. The
+reader does not default, backfill, or upgrade their provenance; explicit
+`deterministic_handoff` and `credentialed_live_quality` records remain distinct.
 
 `wave0-cognitive-program@v1` is a closed deterministic-only subject. Its five
 scenarios bind the two runtime-loaded Wave0 methods and worker schema to normal

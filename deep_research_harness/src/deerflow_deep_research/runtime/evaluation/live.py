@@ -9,7 +9,8 @@ from __future__ import annotations
 import os
 from collections.abc import Mapping
 
-from .contracts import ExecutionResult
+from deerflow_deep_research.domain.evaluation import ExecutionResult
+
 from .runner import CaseAdmissionError, CognitiveEvaluationRunner
 
 _V1_LIVE_CASES = frozenset(

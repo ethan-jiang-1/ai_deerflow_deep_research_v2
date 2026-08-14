@@ -22,7 +22,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
-from .contracts import (
+from deerflow_deep_research.domain.evaluation import (
     EvaluationBundleManifest,
     EvaluationCase,
     EvidenceLayer,

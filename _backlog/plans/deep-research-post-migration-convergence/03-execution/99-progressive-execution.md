@@ -3,7 +3,7 @@
 > 导航: [执行层索引](README.md) | [Candidate Register](candidate-register.md) | [根总导航](../README.md)
 > 角色: 最终逐步执行总计划
 > 输入: [70-78 findings](../02-audit-findings/) 的54个最终Candidate；change映射以 [80 - Remediation Change Map](80-remediation-change-map.md) 为准
-> 状态: 00 已于 2026-08-14 archive 并同步 main spec（commit `8661693`）；01 已于同日 archive 并同步 main spec（commit `47a3bb5`）；03 已于同日 archive 并同步 main spec（commit `84d533a`）；04 已于同日 archive 并同步 main spec（commits `4ef1d69`、`8a18dbd`）；当前无 active change。02 已获 User/Evaluation Owner 授权的 import/retention clean cutover，可创建 proposal；05、06、07 分别仍等待其列出的 input/support 或 retained-data inventory。全局预算8个change（00-07）；checkbox只记录change closure，不替代active change的 `tasks.md`
+> 状态: 00 已于 2026-08-14 archive 并同步 main spec（commit `8661693`）；01 已于同日 archive 并同步 main spec（commit `47a3bb5`）；03 已于同日 archive 并同步 main spec（commit `84d533a`）；04 已于同日 archive 并同步 main spec（commits `4ef1d69`、`8a18dbd`）；02 `converge-evaluation-boundary-compatibility` 是当前唯一 active change，proposal、delta specs、design 与 tasks 已完成，mandatory polish 已通过并为 `ready for apply`；实现必须依照其 `tasks.md` 逐项更新进度。05、06、07 分别仍等待其列出的 input/support 或 retained-data inventory。全局预算8个change（00-07）；checkbox只记录change closure，不替代active change的 `tasks.md`
 
 ## Propose 后强制 Polish
 
@@ -118,8 +118,8 @@ live/release claim，也没有把该未运行证据当作已关闭风险。
 先完成evaluation package consumer与retained Evaluation Bundle inventory，再创建02；零caller shim不另付一项
 change成本，而是同一owner的首个stage。
 
-- [ ] **02 `converge-evaluation-boundary-compatibility`**: EV-C02/C03/C04。Stage 1删除`compute_metrics()`
-  shim；Stage 2把imports迁到唯一supported facade；Stage 3迁移/过期missing-`evidence_layer` records后删除default reader。
+- [ ] **02 `converge-evaluation-boundary-compatibility`**: EV-C02/C03/C04。当前 active change，已完成 proposal artifacts 与 mandatory polish，`ready for apply`。Stage 1删除`compute_metrics()`
+  shim；Stage 2把imports收敛到唯一supported facade；Stage 3删除missing-`evidence_layer`的default reader，使未盘点的 private/external records在 Review/quality claim 前明确拒绝，不迁移、回填或改写其内容。
 
 **Gate C:** evaluation domain authority与supported import route唯一；missing layer不升级为live；EV-C05 fail-closed
 archive admission和TA-C04 evidence joins保持不变。

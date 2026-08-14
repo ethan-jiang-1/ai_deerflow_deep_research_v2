@@ -1,6 +1,9 @@
-"""Local-first cognitive evaluation contracts and one-shot operations."""
+"""Local-first cognitive evaluation contracts and one-shot operations.
 
-from .contracts import (
+@impl CES-009
+"""
+
+from deerflow_deep_research.domain.evaluation import (
     ControlIdentity,
     EvaluationBundleManifest,
     EvaluationCase,
@@ -14,6 +17,7 @@ from .contracts import (
     ReviewSubmission,
     SubjectExecution,
 )
+
 from .controls import default_control_root, load_case_registry
 from .live import (
     SelectedLivePreflightError,

@@ -11,7 +11,8 @@ import json
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-from .contracts import ControlIdentity, EvaluationCase
+from deerflow_deep_research.domain.evaluation import ControlIdentity, EvaluationCase
+
 from .runner import CaseRegistry
 
 

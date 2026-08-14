@@ -663,13 +663,6 @@ def assert_hard_invariants(outcome: dict[str, Any]) -> None:
         raise AssertionError(f"hard invariants failed: {', '.join(str(value) for value in failures)}")
 
 
-def compute_metrics(state: dict[str, Any]) -> dict[str, Any]:
-    """Legacy report shim; typed outcome reporting is introduced by task 5.5."""
-    if not isinstance(state, dict):
-        raise TypeError("legacy_metric_state_required")
-    return {}
-
-
 __all__ = [
     "METRIC_VALUE_KINDS",
     "MetricResult",
@@ -687,7 +680,6 @@ __all__ = [
     "compute_distinct_normalized_host_count",
     "compute_final_citation_completeness",
     "compute_labeled_citation_precision",
-    "compute_metrics",
     "compute_must_answer_coverage",
     "compute_semantic_unsupported_major_claim_count",
     "compute_structural_missing_backing_ref_count",

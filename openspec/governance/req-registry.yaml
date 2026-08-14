@@ -255,12 +255,13 @@ RCF-001: research-confirmation — A pure typed admission boundary turns only a 
 # cognitive-evaluation-suite
 CES-001: cognitive-evaluation-suite — Registered versioned Evaluation Cases bind closed execution inputs and control identity without caller-supplied prompt, path, model, or resume authority
 CES-002: cognitive-evaluation-suite — The Python Cognitive Evaluation Runner executes one fresh isolated attempt per invocation without outer retry, resume, review dispatch, or production recovery control
-CES-003: cognitive-evaluation-suite — Immutable Evaluation Run Bundles retain objective observations, manifest digests, and exact review-control identities while rejecting altered or incomplete evidence before review
+CES-003: cognitive-evaluation-suite — Immutable Evaluation Run Bundles retain objective observations, manifest digests, exact review-control identities, and explicit evidence-layer provenance while rejecting altered, incomplete, missing-layer, or unknown-layer evidence before review
 CES-004: cognitive-evaluation-suite — Explicit human-initiated review is read-only, never reruns execution, and admits only Bundle-matched control inputs
-CES-005: cognitive-evaluation-suite — Separate immutable Review Records retain Bundle-matched provenance, evaluator evidence, four-state cognitive result, and advisory follow-up without mutating execution evidence
+CES-005: cognitive-evaluation-suite — Separate immutable Review Records retain Bundle-matched explicit provenance, evaluator evidence, four-state cognitive result, and advisory follow-up without mutating execution evidence or defaulting an absent/unknown evidence layer
 CES-006: cognitive-evaluation-suite — Two-state execution status and four-state cognitive result remain independent without converting failures or limited evidence into a pass
 CES-007: cognitive-evaluation-suite — V1 provides manually selected HITL1 brief and Wave0 worker node smoke Cases through existing production bridges and admission boundaries without a flow-quality claim
 CES-008: cognitive-evaluation-suite — Cognitive Evaluation Bundles remain a separate domain and cannot be discovered or used to recover a Deep Research Run
+CES-009: cognitive-evaluation-suite — The supported Evaluation runtime facade projects domain-owned contracts while the retired runtime contract re-export has no alias, fallback, or compatibility route
 
 # research-demo-tui
 RED-001: research-demo-tui — A standalone Textual demo renders an explicit fixture recipe through both HITL requests without Gateway, model, or network dependencies

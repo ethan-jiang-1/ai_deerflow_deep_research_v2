@@ -14,7 +14,8 @@ import secrets
 from datetime import UTC, datetime
 from pathlib import Path
 
-from .contracts import ExecutionStatus, ReviewRecord, ReviewSubmission
+from deerflow_deep_research.domain.evaluation import ExecutionStatus, ReviewRecord, ReviewSubmission
+
 from .runner import BundleIntegrityError, CaseRegistry, bundle_digest, verify_bundle
 
 

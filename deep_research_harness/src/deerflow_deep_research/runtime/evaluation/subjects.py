@@ -9,7 +9,8 @@ from __future__ import annotations
 from collections.abc import Awaitable, Callable, Mapping
 from typing import Any
 
-from .contracts import SubjectExecution
+from deerflow_deep_research.domain.evaluation import SubjectExecution
+
 from .runner import ExecutionContext, Subject
 
 ProductionBranch = Callable[[Mapping[str, Any]], Awaitable[Mapping[str, Any]]]

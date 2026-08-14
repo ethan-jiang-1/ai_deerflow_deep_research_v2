@@ -750,7 +750,7 @@ class EvaluationBundleManifest(_FrozenContract):
     case_id: str
     case_version: str
     status: ExecutionStatus
-    evidence_layer: EvidenceLayer = EvidenceLayer.DETERMINISTIC_HANDOFF
+    evidence_layer: EvidenceLayer
     controls: tuple[ControlIdentity, ...]
     content_digests: dict[str, str]
     failure: FailureDetail | None = None
@@ -791,7 +791,7 @@ class ReviewRecord(_FrozenContract):
     reviewed_at: datetime
     case_id: str
     case_version: str
-    evidence_layer: EvidenceLayer = EvidenceLayer.DETERMINISTIC_HANDOFF
+    evidence_layer: EvidenceLayer
     controls: tuple[ControlIdentity, ...]
     evidence: tuple[str, ...]
     confidence: Literal["low", "medium", "high"]
