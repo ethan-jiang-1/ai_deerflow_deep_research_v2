@@ -38,9 +38,9 @@
 | `a733d329902e779a108401f1305c937174f6e492` | 原始 plan snapshot | 保存最初审计问题和口径，不是最终发现 |
 | `5bb41c16a45ff3caae6e5b1e900610c91bf68336` | 应用与 current main-spec 取证基线 | `70-78` 的代码/spec/test结论以此为准 |
 | `811203726cfa6478ceebdabc378daabce1b6758b` | 完整审计综合 revision | `70-78`、54个最终Candidate与原26-change映射完成 |
-| `2d96183abc8f91ccc4b669f02a00348014dd4333` + 本目录当前worktree | change压缩前的执行编排 revision | 三层目录完成；本worktree进一步引入bounded program/workstream编排，把26个change收敛为8个；未改应用、tests或main specs |
+| `91709e740fdafcb8275c2a182a61554342e2bd08` | 8-change program执行编排 revision | 引入bounded program/workstream治理前置，把26个change收敛为8个；未改应用、tests或main specs |
 
-`5bb41c1 -> 2d96183` 没有产品代码或 current spec变化，因此现有 findings仍对应当前应用事实。实施任何
+`5bb41c1 -> 91709e7` 没有产品代码或 current spec变化，因此现有 findings仍对应当前应用事实。实施任何
 Candidate前仍须在当时 HEAD做 focused revalidation；若产品事实已变，先更新对应 findings，不整库重做
 没有受影响的审计。
 

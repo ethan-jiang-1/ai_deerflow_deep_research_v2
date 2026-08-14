@@ -4,7 +4,7 @@
 > 角色: `70-78` 最终审计 Candidate 的唯一导航总账，不复制完整证据
 > 应用/spec 取证基线: `5bb41c16a45ff3caae6e5b1e900610c91bf68336`
 > 审计综合 revision: `811203726cfa6478ceebdabc378daabce1b6758b`
-> 执行编排 revision: `2d96183abc8f91ccc4b669f02a00348014dd4333` + 本目录当前worktree；8-change budget
+> 执行编排 revision: `91709e740fdafcb8275c2a182a61554342e2bd08`；8-change program budget
 > 状态: 本基线审计完成；54 个最终 Candidate；implementation 尚未开始；0 active OpenSpec changes
 
 ## 使用规则
