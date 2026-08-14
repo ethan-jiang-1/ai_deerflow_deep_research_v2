@@ -20,6 +20,7 @@ from typing import Any
 import pytest
 from langgraph.types import Command
 
+from deerflow_deep_research import tool as tool_module
 from deerflow_deep_research.domain.lifecycle import (
     BundleAvailability,
     BundleControlResult,
@@ -209,6 +210,22 @@ async def test_scripted_start_projects_policy_once_and_later_actions_do_not_rein
         ("refine", BUNDLE_ID, {"refinement": "Focus on lifecycle durability."}),
         ("resume", BUNDLE_ID, None),
     ]
+
+
+def test_retired_marker_has_only_the_production_rejection_reader() -> None:
+    source_root = Path(tool_module.__file__).parent
+    marker_sources = {
+        source.relative_to(source_root): source.read_text(encoding="utf-8")
+        for source in source_root.rglob("*.py")
+        if "disable_clarification" in source.read_text(encoding="utf-8")
+    }
+
+    assert set(marker_sources) == {Path("tool.py")}
+    reader_source = marker_sources[Path("tool.py")]
+    assert 'if context.get("disable_clarification") is True:' in reader_source
+    assert reader_source.index('if context.get("disable_clarification") is True:') < reader_source.index(
+        'marked_non_interactive = context.get("non_interactive") is True'
+    )
 
 
 @pytest.mark.asyncio

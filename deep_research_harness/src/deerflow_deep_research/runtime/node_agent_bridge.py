@@ -154,20 +154,14 @@ def _safe_model_label(value: object) -> str | None:
 
 
 def _configured_endpoint_authority(selected_config: object) -> str | None:
-    """Normalize only the exact selected config aliases; never inspect a model object."""
+    """Normalize selected ``base_url`` only; never inspect a model object."""
 
-    candidates: list[str] = []
-    for attribute in ("base_url", "openai_api_base", "api_base"):
-        value = getattr(selected_config, attribute, None)
-        if value is None:
-            continue
-        normalized = _normalize_endpoint_authority(value)
-        if normalized is None:
-            return None
-        candidates.append(normalized)
-    if not candidates or len(set(candidates)) != 1:
+    if (
+        getattr(selected_config, "openai_api_base", None) is not None
+        or getattr(selected_config, "api_base", None) is not None
+    ):
         return None
-    return candidates[0]
+    return _normalize_endpoint_authority(getattr(selected_config, "base_url", None))
 
 
 def _normalize_endpoint_authority(value: object) -> str | None:

@@ -1588,6 +1588,27 @@ def test_unsafe_or_conflicting_selected_endpoint_is_omitted(selected: object) ->
     assert bridge_module._configured_endpoint_authority(selected) is None
 
 
+@pytest.mark.parametrize(
+    "selected",
+    [
+        SimpleNamespace(name="selected", openai_api_base="https://api.example.test"),
+        SimpleNamespace(name="selected", api_base="https://api.example.test"),
+        SimpleNamespace(
+            name="selected",
+            base_url="https://api.example.test",
+            openai_api_base="https://api.example.test",
+        ),
+        SimpleNamespace(
+            name="selected",
+            base_url="https://api.example.test",
+            api_base="https://api.example.test",
+        ),
+    ],
+)
+def test_retired_selected_endpoint_aliases_are_omitted_even_when_they_match_base_url(selected: object) -> None:
+    assert bridge_module._configured_endpoint_authority(selected) is None
+
+
 async def test_raw_or_invalid_custom_binding_cannot_infer_model_identity(monkeypatch: pytest.MonkeyPatch) -> None:
     raw_model = SimpleNamespace(name="leaked-model", base_url="https://leaked.example.test/private")
     raw_result = await _run_hitl_provider_error(monkeypatch, _http_status_error(503), resolved_model=raw_model)

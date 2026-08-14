@@ -25,9 +25,11 @@ from collections.abc import AsyncIterator, Callable
 from typing import Any, Protocol, runtime_checkable
 
 from deerflow_deep_research.runtime.checkpoint import (
+    ProviderConfigurationError,
     ProviderSelection,
     build_deep_research_checkpoint_serde,
     resolve_effective_provider,
+    validate_provider_configuration,
 )
 from deerflow_deep_research.runtime.runtime_adapter import (
     STARTUP_FINGERPRINT_ENV,
@@ -139,6 +141,7 @@ class GraphHost:
         # Startup-only drift must fail before any provider or namespace access so
         # the nested runtime cannot pair with different startup singletons.
         self._fingerprint_verifier(envelope.app_config)
+        self._validate_provider_configuration(envelope.app_config)
 
         thread_key = handler.derive_namespace(envelope, action_input)
         async with self._namespace_lock(thread_key):
@@ -169,6 +172,7 @@ class GraphHost:
         if handler is None:
             raise GraphHostError("action_unavailable", f"no registered handler for action: {action}")
         self._fingerprint_verifier(envelope.app_config)
+        self._validate_provider_configuration(envelope.app_config)
         thread_key = handler.derive_namespace(envelope, action_input)
         async with self._namespace_lock(thread_key):
             provider = resolve_effective_provider(envelope.app_config)
@@ -183,6 +187,13 @@ class GraphHost:
             builder = handler.build_graph()
             self._builders[handler.action] = builder
         return builder.compile(checkpointer=saver)
+
+    @staticmethod
+    def _validate_provider_configuration(app_config: Any) -> None:
+        try:
+            validate_provider_configuration(app_config)
+        except ProviderConfigurationError as exc:
+            raise GraphHostError(exc.code, exc.code) from exc
 
     @contextlib.asynccontextmanager
     async def _saver_context(self, app_config: Any, provider: ProviderSelection) -> AsyncIterator[Any]:

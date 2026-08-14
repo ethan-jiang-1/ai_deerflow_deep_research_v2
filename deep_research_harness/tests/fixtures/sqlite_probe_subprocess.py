@@ -37,8 +37,8 @@ def _envelope(app_config: object) -> TrustedRuntimeEnvelope:
 async def _main() -> None:
     db_path, probe_id = sys.argv[1], sys.argv[2]
     app_config = SimpleNamespace(
-        checkpointer=SimpleNamespace(type="sqlite", connection_string=db_path),
-        database=None,
+        checkpointer=None,
+        database=SimpleNamespace(backend="sqlite", checkpointer_sqlite_path=db_path, postgres_url=None),
     )
     host = build_probe_graph_host(fingerprint_verifier=lambda _app_config: None)
     result = await host.run_action(action="infra_probe", envelope=_envelope(app_config), action_input=probe_id)

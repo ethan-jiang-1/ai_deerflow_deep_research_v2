@@ -10,7 +10,6 @@ from types import SimpleNamespace
 
 import pytest
 from deerflow.config.app_config import AppConfig
-from deerflow.config.checkpointer_config import CheckpointerConfig
 from deerflow.config.database_config import DatabaseConfig
 from deerflow.config.sandbox_config import SandboxConfig
 
@@ -26,7 +25,7 @@ def _snapshot_module():
 def _config(
     *,
     database: DatabaseConfig | None = None,
-    checkpointer: CheckpointerConfig | None = None,
+    checkpointer: object | None = None,
     sandbox: SandboxConfig | None = None,
 ):
     return SimpleNamespace(
@@ -104,60 +103,28 @@ def test_unified_database_provider_matrix(
 
 
 @pytest.mark.parametrize(
-    ("checkpointer", "expected"),
+    "checkpointer",
     [
-        (CheckpointerConfig(type="memory"), ("memory", None, "same_process", None)),
-        (CheckpointerConfig(type="sqlite", connection_string=None), ("sqlite", "store.db", "restart_durable", None)),
-        (
-            CheckpointerConfig(type="sqlite", connection_string=":memory:"),
-            ("sqlite", ":memory:", "same_process", None),
-        ),
-        (
-            CheckpointerConfig(type="sqlite", connection_string="file:memdb?mode=memory&cache=shared"),
-            ("sqlite", "file:memdb?mode=memory&cache=shared", "same_process", None),
-        ),
-        (
-            CheckpointerConfig(type="postgres", connection_string="postgresql://user:secret@db/research"),
-            ("postgres", "postgresql://user:secret@db/research", "restart_durable", None),
-        ),
-        (
-            CheckpointerConfig(type="postgres", connection_string=None),
-            ("postgres", None, "unavailable", "postgres_connection_missing"),
-        ),
+        SimpleNamespace(type="memory", connection_string=None),
+        SimpleNamespace(type="sqlite", connection_string="legacy.db"),
+        SimpleNamespace(type="postgres", connection_string="postgresql://legacy:secret@db/research"),
     ],
 )
-def test_legacy_checkpointer_provider_matrix(
-    checkpointer: CheckpointerConfig,
-    expected: tuple[str, str | None, str, str | None],
+@pytest.mark.parametrize(
+    "database",
+    [
+        None,
+        DatabaseConfig(backend="memory"),
+        DatabaseConfig(backend="sqlite", sqlite_dir="unified-db"),
+        DatabaseConfig(backend="postgres", postgres_url="postgresql://unified:secret@db/research"),
+    ],
+)
+def test_legacy_checkpointer_is_rejected_before_provider_classification(
+    checkpointer: SimpleNamespace,
+    database: DatabaseConfig | None,
 ) -> None:
-    selection = _checkpoint_module().resolve_effective_provider(_config(checkpointer=checkpointer))
-
-    assert selection.source == "legacy_checkpointer"
-    assert (selection.kind, selection.connection, selection.durability, selection.issue) == expected
-
-
-LEGACY_CASES = [
-    CheckpointerConfig(type="memory"),
-    CheckpointerConfig(type="sqlite", connection_string="legacy.db"),
-    CheckpointerConfig(type="postgres", connection_string="postgresql://legacy:secret@db/research"),
-]
-DATABASE_CASES = [
-    DatabaseConfig(backend="memory"),
-    DatabaseConfig(backend="sqlite", sqlite_dir="unified-db"),
-    DatabaseConfig(backend="postgres", postgres_url="postgresql://unified:secret@db/research"),
-]
-
-
-@pytest.mark.parametrize("legacy", LEGACY_CASES, ids=lambda value: value.type)
-@pytest.mark.parametrize("database", DATABASE_CASES, ids=lambda value: value.backend)
-def test_every_legacy_database_conflict_selects_legacy(
-    legacy: CheckpointerConfig,
-    database: DatabaseConfig,
-) -> None:
-    selection = _checkpoint_module().resolve_effective_provider(_config(database=database, checkpointer=legacy))
-
-    assert selection.source == "legacy_checkpointer"
-    assert selection.kind == legacy.type
+    with pytest.raises(ValueError, match="legacy_checkpointer_unsupported"):
+        _checkpoint_module().resolve_effective_provider(SimpleNamespace(database=database, checkpointer=checkpointer))
 
 
 @pytest.mark.asyncio
@@ -167,45 +134,24 @@ def test_every_legacy_database_conflict_selects_legacy(
         _config(database=DatabaseConfig(backend="memory")),
         _config(database=DatabaseConfig(backend="sqlite", sqlite_dir="db")),
         _config(database=DatabaseConfig(backend="postgres", postgres_url="postgresql://db/research")),
-        _config(
-            database=DatabaseConfig(backend="postgres", postgres_url="postgresql://ignored/db"),
-            checkpointer=CheckpointerConfig(type="memory"),
-        ),
-        _config(
-            database=DatabaseConfig(backend="memory"),
-            checkpointer=CheckpointerConfig(type="sqlite", connection_string="legacy.db"),
-        ),
-        _config(
-            database=DatabaseConfig(backend="sqlite", sqlite_dir="ignored"),
-            checkpointer=CheckpointerConfig(type="postgres", connection_string="postgresql://legacy/db"),
-        ),
     ],
     ids=[
         "database-memory",
         "database-sqlite",
         "database-postgres",
-        "legacy-memory",
-        "legacy-sqlite",
-        "legacy-postgres",
     ],
 )
-async def test_classifier_matches_actual_make_checkpointer_branch(config, monkeypatch) -> None:
+async def test_database_classifier_matches_actual_make_checkpointer_branch(config, monkeypatch) -> None:
     from deerflow.runtime.checkpointer import async_provider
     from langgraph.checkpoint.memory import InMemorySaver
 
     observed: list[tuple[str, str]] = []
 
     @asynccontextmanager
-    async def fake_legacy(selected):
-        observed.append(("legacy_checkpointer", selected.type))
-        yield object()
-
-    @asynccontextmanager
     async def fake_database(selected):
         observed.append(("database", selected.backend))
         yield object()
 
-    monkeypatch.setattr(async_provider, "_async_checkpointer", fake_legacy)
     monkeypatch.setattr(async_provider, "_async_checkpointer_from_database", fake_database)
     selection = _checkpoint_module().resolve_effective_provider(config)
 

@@ -97,7 +97,9 @@ def _admitted_start_action_input(*, action: str, context: Mapping[str, Any]) -> 
 
     if action not in {"start", "resume", "refine"}:
         return None
-    marked_non_interactive = context.get("non_interactive") is True or context.get("disable_clarification") is True
+    if context.get("disable_clarification") is True:
+        raise ValueError("non_interactive_policy_invalid")
+    marked_non_interactive = context.get("non_interactive") is True
     if not marked_non_interactive:
         return None
     candidate = context.get("non_interactive_policy")
@@ -148,6 +150,15 @@ async def run_deep_research(
             code="exclusive_control_call_required",
         )
 
+    context = getattr(runtime, "context", None)
+    context = context if isinstance(context, dict) else {}
+    start_input = None
+    if lifecycle_action is not None:
+        try:
+            start_input = _admitted_start_action_input(action=action, context=context)
+        except ValueError:
+            return BundleControl.unavailable_wire_result(action=lifecycle_action, code="interactive_required")
+
     adapter = adapter or RuntimeAdapter()
     try:
         initialize_parent_sandbox = action in {"start", "resume"}
@@ -170,12 +181,6 @@ async def run_deep_research(
             action_input=probe_id or generate_probe_id(),
         )
 
-    context = getattr(runtime, "context", None)
-    context = context if isinstance(context, dict) else {}
-    try:
-        start_input = _admitted_start_action_input(action=action, context=context)
-    except ValueError:
-        return BundleControl.unavailable_wire_result(action=lifecycle_action, code="interactive_required")
     if action in {"start", "resume", "refine"} and (context.get("channel_user_id") or context.get("channel_name")):
         return BundleControl.unavailable_wire_result(
             action=lifecycle_action,

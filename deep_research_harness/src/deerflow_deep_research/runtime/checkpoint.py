@@ -12,7 +12,7 @@ from typing import Literal
 from urllib.parse import parse_qs, urlsplit
 
 ProviderKind = Literal["memory", "sqlite", "postgres"]
-ProviderSource = Literal["legacy_checkpointer", "database", "default"]
+ProviderSource = Literal["database", "default"]
 Durability = Literal["same_process", "restart_durable", "unavailable"]
 
 # Infrastructure-probe checkpoint topology/namespace. It remains independent from
@@ -30,6 +30,14 @@ class CheckpointNamespaceError(ValueError):
         super().__init__(f"[{code}] {detail}")
         self.code = code
         self.detail = detail
+
+
+class ProviderConfigurationError(ValueError):
+    """Reject a retired provider input without exposing its configuration."""
+
+    def __init__(self, code: str) -> None:
+        super().__init__(code)
+        self.code = code
 
 
 @dataclass(frozen=True)
@@ -71,16 +79,17 @@ def _selection(
     return ProviderSelection(kind, source, normalized, durability)
 
 
-def resolve_effective_provider(app_config) -> ProviderSelection:
-    """Mirror ``make_checkpointer(app_config)`` precedence without opening a provider."""
+def validate_provider_configuration(app_config: object) -> None:
+    """Reject retired local provider input before classification or factory use."""
 
-    legacy = getattr(app_config, "checkpointer", None)
-    if legacy is not None:
-        return _selection(
-            kind=legacy.type,
-            source="legacy_checkpointer",
-            connection=getattr(legacy, "connection_string", None),
-        )
+    if getattr(app_config, "checkpointer", None) is not None:
+        raise ProviderConfigurationError("legacy_checkpointer_unsupported")
+
+
+def resolve_effective_provider(app_config) -> ProviderSelection:
+    """Classify only the supported database input without opening a provider."""
+
+    validate_provider_configuration(app_config)
 
     database = getattr(app_config, "database", None)
     if database is None:
@@ -167,12 +176,14 @@ __all__ = [
     "INFRA_PROBE_GRAPH_VERSION",
     "SUPPORTED_PROBE_KEY_SCHEMAS",
     "CheckpointNamespaceError",
+    "ProviderConfigurationError",
     "Durability",
     "ProviderKind",
     "ProviderSelection",
     "ProviderSource",
     "derive_probe_thread_key",
     "resolve_effective_provider",
+    "validate_provider_configuration",
     "validate_probe_key_schema",
     "build_deep_research_checkpoint_serde",
 ]

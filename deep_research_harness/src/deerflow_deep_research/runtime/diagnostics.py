@@ -138,9 +138,19 @@ def run_diagnostics(
         return diag
 
     try:
-        from deerflow_deep_research.runtime.checkpoint import resolve_effective_provider
+        from deerflow_deep_research.runtime.checkpoint import (
+            ProviderConfigurationError,
+            resolve_effective_provider,
+            validate_provider_configuration,
+        )
     except Exception:
         diag.issues.append("runtime checkpoint module is unavailable")
+        return diag
+
+    try:
+        validate_provider_configuration(app_config)
+    except ProviderConfigurationError as exc:
+        diag.issues.append(exc.code)
         return diag
 
     provider = resolve_effective_provider(app_config)

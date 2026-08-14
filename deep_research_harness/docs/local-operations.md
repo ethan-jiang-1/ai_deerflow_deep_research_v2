@@ -69,6 +69,36 @@ No session, observation, cache, or external state can restore it.
 Known IM transports and non-interactive contexts refuse `start` and `resume`. Report
 the returned typed outcome rather than assuming another action is legal.
 
+## Retired Runtime Inputs
+
+The trusted runtime accepts scripted lifecycle input only as
+`non_interactive=true` with the exact closed `non_interactive_policy` containing
+`auto_profile: true` and `auto_proceed: true`. The retired
+`disable_clarification=true` marker is not an interactive fallback: `start`,
+`resume`, and `refine` return `interactive_required` before Bundle publication,
+sandbox/graph selection, or policy checkpoint writing. Caller arguments cannot
+create this trusted context.
+
+For generic infrastructure probes, `database` is the sole local provider setting.
+A non-null legacy `checkpointer` section is refused before the provider opens; the
+GraphHost and diagnostics report the redacted
+`legacy_checkpointer_unsupported` outcome. Remove the legacy section and configure
+the required `database` backend. This reference does not establish support for a
+host, deployment, AppConfig version, or provider outside the source-controlled
+downstream inventory.
+
+Endpoint observation uses only the exact selected model configuration's safe,
+normalized `base_url`. The retired `openai_api_base` and `api_base` fields, whether
+alone or alongside `base_url`, produce no endpoint observation and do not alter model
+selection, provider behavior, retries, routes, or lifecycle control. Use selected
+`base_url` when a safe observation is required.
+
+There is no in-process compatibility mode for these retired inputs. A material
+deployment incident requires a separately approved hotfix or revert of the complete
+affected local reader, followed by its deterministic tests. Do not rewrite input,
+select a legacy provider, add an alias-specific switch, or treat a partial consumer
+restore as recovery.
+
 ## Local Configuration Profiles
 
 The upstream DeerFlow repository at the root remains unchanged. Local configuration

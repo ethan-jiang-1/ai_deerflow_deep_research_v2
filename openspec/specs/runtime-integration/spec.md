@@ -121,23 +121,45 @@ through the Harness lifecycle module. (`RUI-004`)
   the independent `infra_probe` contract remains unchanged
 
 ### Requirement: Persistence guarantees match the selected backend
-The probe SHALL describe memory and SQLite memory-mode connections as same-process only, file-backed SQLite/Postgres as durable across provider reopen and Gateway restart when correctly configured, and invalid or missing connection data as unavailable. Probe and doctor output SHALL NOT claim stronger durability than the active resolved backend provides.
+
+The probe SHALL describe memory and SQLite memory-mode connections as same-process
+only, file-backed SQLite/Postgres as durable across provider reopen and Gateway
+restart when correctly configured, and invalid or missing database connection data as
+unavailable. Probe and doctor output SHALL NOT claim stronger durability than the
+active resolved database backend provides.
+
+A non-null legacy `checkpointer` section is retired input. The local runtime SHALL
+reject it before GraphHost opens a generic provider or derives a provider-backed
+claim, and doctor/diagnostics SHALL return the same bounded
+`legacy_checkpointer_unsupported` configuration result without exposing its type,
+connection, DSN, or secret. `database` is the sole local provider-classification
+input. An emergency rollback is a separately approved hotfix that restores the
+entire prior reader and its provider/diagnostic parity; it SHALL not rewrite a
+configuration, silently choose a provider, or add support for another legacy shape.
 
 #### Scenario: Memory revisits only in one process
-- **WHEN** two probe actions use the same process-local memory GraphHost
+- **WHEN** two probe actions use the same process-local memory GraphHost configured
+  through `database`
 - **THEN** the second action observes prior state and the response labels restart recovery unsupported
 
 #### Scenario: Persistent provider survives reopen
-- **WHEN** a file-backed SQLite or valid Postgres probe is written, its provider context is closed, and a fresh context reads the same namespace
+- **WHEN** a file-backed SQLite or valid Postgres probe is written through
+  `database`, its provider context is closed, and a fresh context reads the same
+  namespace
 - **THEN** the prior checkpoint is recovered without using outer lead-agent checkpoint state
 
 #### Scenario: SQLite memory mode is not restart durable
-- **WHEN** the effective legacy SQLite connection is `:memory:` or an equivalent memory-mode URI
+- **WHEN** the effective SQLite database connection is `:memory:` or an equivalent
+  memory-mode URI
 - **THEN** GraphHost and doctor report same-process-only durability and never claim provider-reopen or Gateway-restart recovery
 
 #### Scenario: Legacy provider overrides unified database
-- **WHEN** legacy `checkpointer` selects memory and `database` selects SQLite, or vice versa
-- **THEN** GraphHost and doctor both use and report the legacy selection, matching `make_checkpointer(app_config)`
+- **WHEN** AppConfig supplies any non-null legacy `checkpointer`, whether or not a
+  `database` section is also present and even where the legacy type conflicts with
+  the database backend
+- **THEN** GraphHost opens no generic provider, doctor and GraphHost expose the same
+  redacted `legacy_checkpointer_unsupported` result, and no legacy source determines
+  durability or persistence behavior
 
 ### Requirement: Research lifecycle dispatch preserves runtime and resource boundaries
 
@@ -151,10 +173,13 @@ construct fresh reduced dependencies only when the selected available Bundle mus
 or continue graph execution.
 
 For a new `start`, the reflected boundary SHALL validate a trusted non-interactive
-policy as one closed typed action input before Bundle publication. The canonical marker
-is `non_interactive=true`; the existing trusted `disable_clarification=true` marker is
-a compatibility alias subject to the same validation. When trusted runtime composition
-supplies a `BundleGraphExecutor`, the controller may carry that input only to the first
+policy as one closed typed action input before Bundle publication. The sole accepted
+marker is `non_interactive=true`. A trusted `disable_clarification=true` value is
+retired input and SHALL return the existing typed `INTERACTIVE_REQUIRED` denial before
+Bundle publication, graph mutation, executor selection, sandbox initialization, or
+policy checkpoint writing; it SHALL not fall back to ordinary interactive execution.
+When trusted runtime composition supplies a `BundleGraphExecutor`, the controller may
+carry canonical marked input only to the first
 graph invocation for the new selected Bundle; the initial graph values are its sole
 state-writing path. A later `resume`, `refine`, reprojection, or same-start replay
 SHALL not carry runtime context as a graph-state writer. It SHALL read the selected
@@ -163,10 +188,10 @@ NOT instantiate or select a graph executor, so the existing uncomposed fallback/
 fake lifecycle remains unchanged. Presentation adapters, caller input, and generic
 GraphHost state SHALL not supply or replace this action input.
 
-For a marked input-bearing `resume` or `refine`, the reflected boundary SHALL still
-apply the same closed-policy validation before Bundle or graph mutation. A complete
-later policy may satisfy that validation but SHALL NOT become a controller or graph
-action input; continuation consumes only the selected Bundle checkpoint.
+For a canonically marked input-bearing `resume` or `refine`, the reflected boundary
+SHALL still apply the same closed-policy validation before Bundle or graph mutation. A
+complete later policy may satisfy that validation but SHALL NOT become a controller or
+graph action input; continuation consumes only the selected Bundle checkpoint.
 
 When a text-bearing `refine` legally reactivates an ended Bundle without a pending
 direction, when an explicit selected textless continuation legally consumes an ended
@@ -204,14 +229,20 @@ turn a provider or checkpoint reopen into Run recovery. (`RUI-006`)
   external checkpoint or broker can reinterpret it
 
 #### Scenario: Valid scripted start writes only initial graph values
-- **WHEN** a trusted non-interactive `start` supplies a complete closed policy and the
+- **WHEN** a trusted canonical non-interactive `start` supplies a complete closed policy and the
   selected Bundle has no graph checkpoint and trusted runtime composition supplies a
   `BundleGraphExecutor`
 - **THEN** the policy enters graph state only with the initial graph invocation and no
   presentation adapter, caller argument, or generic checkpoint becomes its authority
 
+#### Scenario: Retired marker fails before lifecycle mutation
+- **WHEN** trusted runtime supplies `disable_clarification=true`, with or without a
+  policy-shaped context, for `start`, `resume`, or `refine`
+- **THEN** dispatch returns `INTERACTIVE_REQUIRED`, publishes no Bundle, writes no
+  graph policy, selects no executor, and does not treat the action as interactive
+
 #### Scenario: Policy admission does not compose graph work
-- **WHEN** a trusted non-interactive `start` supplies a complete closed policy but the
+- **WHEN** a trusted canonical non-interactive `start` supplies a complete closed policy but the
   lifecycle has no trusted-composed `BundleGraphExecutor`
 - **THEN** dispatch retains the existing uncomposed fallback/full-fake lifecycle and
   does not create graph state or select a graph executor
@@ -270,9 +301,9 @@ turn a provider or checkpoint reopen into Run recovery. (`RUI-006`)
   next action
 
 #### Scenario: Non-interactive and unsupported transport contexts fail before mutation
-- **WHEN** trusted runtime marks an input-bearing action non-interactive without a
-  complete closed policy, or a checked-in IM transport cannot carry the legal input or
-  control flow
+- **WHEN** trusted runtime marks an input-bearing action canonical non-interactive
+  without a complete closed policy, supplies the retired marker, or a checked-in IM
+  transport cannot carry the legal input or control flow
 - **THEN** the affected action returns the existing bounded denial before Bundle or
   graph mutation, while status and cancel remain dispatchable when their Bundle is
   available

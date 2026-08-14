@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -145,6 +146,22 @@ def test_missing_worker_defaults_to_one() -> None:
     # When GATEWAY_WORKERS is absent, normalize_gateway_workers defaults to 1.
     diag = run_diagnostics(app_config=MEMORY_CONFIG)
     assert diag.worker_count == 1
+
+
+def test_legacy_checkpointer_returns_a_redacted_unsupported_diagnostic(tmp_path: Path) -> None:
+    config = MemoryAppConfig()
+    secret = "postgresql://legacy:secret@db/research"
+    config.checkpointer = SimpleNamespace(type="postgres", connection_string=secret)
+    config.database = SimpleNamespace(backend="sqlite", checkpointer_sqlite_path="probe.db", postgres_url=None)
+
+    diag = run_diagnostics(app_config=config, work_unit_storage_base_dir=tmp_path)
+
+    assert "legacy_checkpointer_unsupported" in diag.issues
+    assert diag.provider_kind is None
+    assert diag.durability is None
+    assert diag.redacted_provider is None
+    assert secret not in repr(diag)
+    assert "postgres" not in repr(diag)
 
 
 # ── entry readiness tri-state ───────────────────────────────────────────────

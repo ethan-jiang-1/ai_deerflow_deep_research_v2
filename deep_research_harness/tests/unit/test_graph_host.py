@@ -8,6 +8,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 from dataclasses import dataclass, field
+from types import SimpleNamespace
 from typing import Any, TypedDict
 
 import pytest
@@ -38,8 +39,8 @@ class MemoryDatabase:
 class FakeAppConfig:
     """Resolves through the effective-provider classifier without real config."""
 
-    def __init__(self, database: MemoryDatabase | None = None) -> None:
-        self.checkpointer = None
+    def __init__(self, database: MemoryDatabase | None = None, checkpointer: Any = None) -> None:
+        self.checkpointer = checkpointer
         self.database = database
 
 
@@ -196,6 +197,52 @@ async def test_sql_provider_closed_on_execute_exception() -> None:
     with pytest.raises(RuntimeError):
         await host.run_action(action="test_probe", envelope=_envelope(app_config=sqlite_config), action_input="p1")
     assert log == ["enter", "exit"]  # provider context closed despite the error
+
+
+async def test_legacy_checkpointer_is_refused_before_action_saver_factory() -> None:
+    factory_calls: list[object] = []
+    host = _make_host(checkpointer_factory=lambda config: factory_calls.append(config))
+    handler = CounterHandler()
+    host.register(handler)
+    secret = "postgresql://legacy:secret@db/research"
+
+    for database in (None, MemoryDatabase(backend="sqlite", checkpointer_sqlite_path="probe.db")):
+        config = FakeAppConfig(
+            database=database,
+            checkpointer=SimpleNamespace(type="postgres", connection_string=secret),
+        )
+        with pytest.raises(GraphHostError, match="legacy_checkpointer_unsupported") as error:
+            await host.run_action(action="test_probe", envelope=_envelope(app_config=config), action_input="p1")
+
+        assert error.value.code == "legacy_checkpointer_unsupported"
+        assert secret not in str(error.value)
+        assert factory_calls == []
+        assert handler.builds == 0
+        assert handler.executed == 0
+
+
+async def test_legacy_checkpointer_is_refused_before_snapshot_saver_factory() -> None:
+    factory_calls: list[object] = []
+    host = _make_host(checkpointer_factory=lambda config: factory_calls.append(config))
+    handler = CounterHandler()
+    host.register(handler)
+    secret = "postgresql://legacy:secret@db/research"
+    config = FakeAppConfig(
+        database=MemoryDatabase(backend="sqlite", checkpointer_sqlite_path="probe.db"),
+        checkpointer=SimpleNamespace(type="postgres", connection_string=secret),
+    )
+
+    with pytest.raises(GraphHostError, match="legacy_checkpointer_unsupported") as error:
+        await host.read_checkpoint_snapshot(
+            action="test_probe",
+            envelope=_envelope(app_config=config),
+            action_input="p1",
+        )
+
+    assert error.value.code == "legacy_checkpointer_unsupported"
+    assert secret not in str(error.value)
+    assert factory_calls == []
+    assert handler.builds == 0
 
 
 async def test_same_namespace_actions_are_serialized() -> None:

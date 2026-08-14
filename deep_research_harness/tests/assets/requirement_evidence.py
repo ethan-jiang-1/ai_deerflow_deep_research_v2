@@ -1144,6 +1144,20 @@ REQUIREMENT_IMPACTS = (
         "the default GraphHost could otherwise register a caller-selected or fixture recipe",
     ),
     RequirementImpact(
+        "RUI-005",
+        "runtime-integration",
+        StableSeam.RUNTIME_INTEGRATION,
+        "tests/unit/test_graph_host.py::test_legacy_checkpointer_is_refused_before_action_saver_factory",
+        "a legacy deployment section could otherwise reach the generic saver factory and select durability",
+    ),
+    RequirementImpact(
+        "RUI-006",
+        "runtime-integration",
+        StableSeam.PUBLIC_ENTRY,
+        "tests/unit/test_non_interactive.py::test_tool_rejects_the_retired_marker_before_sandbox_or_graph_selection",
+        "a retired trusted marker could otherwise initialize runtime resources or fall back to interactive dispatch",
+    ),
+    RequirementImpact(
         "RUI-006",
         "runtime-integration",
         StableSeam.LIFECYCLE_MIXED_GRAPH,
@@ -1166,12 +1180,29 @@ REQUIREMENT_IMPACTS = (
     RequirementImpact(
         "RUO-001",
         "runtime-operations",
+        StableSeam.PUBLIC_ENTRY,
+        "tests/unit/test_non_interactive.py::test_tool_rejects_the_retired_marker_before_sandbox_or_graph_selection",
+        "a retired trusted marker could otherwise bypass its named interactive-required denial",
+    ),
+    RequirementImpact(
+        "RUO-001",
+        "runtime-operations",
         StableSeam.LIFECYCLE_MIXED_GRAPH,
         (
             "tests/blocking_io/test_research_runtime.py::"
             "test_composed_start_persists_policy_once_in_the_selected_bundle_checkpoint"
         ),
         "a valid policy could otherwise be lost before the initial graph checkpoint write",
+    ),
+    RequirementImpact(
+        "NOA-005",
+        "node-agent-runtime",
+        StableSeam.RUNTIME_INTEGRATION,
+        (
+            "tests/unit/test_node_agent_bridge.py::"
+            "test_retired_selected_endpoint_aliases_are_omitted_even_when_they_match_base_url"
+        ),
+        "a retired selected-config alias could otherwise become a safe-looking endpoint observation",
     ),
     RequirementImpact(
         "RUO-002",
