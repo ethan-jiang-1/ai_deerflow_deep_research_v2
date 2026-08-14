@@ -140,6 +140,10 @@ spec替代 main spec。tests还直接引用少数 `_done` / suspended diagnosis�
 - **OpenSpec change slice**: 不建共享spec-cleanup owner；follow [80 - Remediation Change Map](../03-execution/80-remediation-change-map.md)
   的03-05 owner-scoped workstreams。
 
+**执行更新（2026-08-14）:** 03 已完成 Node Cognition owner-local convergence，04 已完成 Bundle/Journal
+owner-local convergence；两者都已 archive。05 只保留其尚未满足 gate 的 fixture-composition owner scope，不能将
+OR-C03 当作跨域 spec-cleanup 的理由。
+
 ### OR-C04 - Correct the structural registry in both directions
 
 - **证据**: empty `tests/e2e` positive entry；workflows/skills absent from required tracked inventory；broad ignored path。

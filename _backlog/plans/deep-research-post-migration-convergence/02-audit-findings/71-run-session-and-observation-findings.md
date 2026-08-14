@@ -238,3 +238,8 @@ violation：临时创建同名 module 或向 Journal 增加 control method 必�
   取消且有新 recovery/authority decision 时才可单独评审。
 - **保留负向护栏**: 上述 guard 本身即必须保留的负向证据；exception baseline 只减不增。
 - **OpenSpec change slice**: RS-C01/RS-C02 的 mandatory evidence-migration task，不另建 guard-only change。
+
+**04 closeout（2026-08-14）:** `converge-run-bundle-observation-authority` 已归档；RES/RUS current capability
+paths 已退役，`RES-*`/`RUS-*` registry IDs 已保留为 `[DEPRECATED]`，有效的 Bundle-loss、Journal non-authority、
+diagnostic、structure 和 workbench proof 已迁到当前 owners。RS-C05 仍是 retained guard，必须在07的 retained-data
+cutover重新验证，不将04的 authority closure当作持久化数据 inventory 或 compatibility decision。

@@ -3,7 +3,7 @@
 > 导航: [执行层索引](README.md) | [Candidate Register](candidate-register.md) | [根总导航](../README.md)
 > 角色: 最终逐步执行总计划
 > 输入: [70-78 findings](../02-audit-findings/) 的54个最终Candidate；change映射以 [80 - Remediation Change Map](80-remediation-change-map.md) 为准
-> 状态: 00 已于 2026-08-14 archive 并同步 main spec（commit `8661693`）；01 已于同日 archive 并同步 main spec（commit `47a3bb5`）；03 已于同日 archive 并同步 main spec（commit `84d533a`）；当前无 active change。02仍等待 Evaluation Owner 的 supported Python import 决定及 retained `evals/runs` inventory/retention cutover；04的 current-HEAD refinement consumer/export gate已关闭，可进入 propose 后强制 polish。全局预算8个change（00-07）；checkbox只记录change closure，不替代active change的 `tasks.md`
+> 状态: 00 已于 2026-08-14 archive 并同步 main spec（commit `8661693`）；01 已于同日 archive 并同步 main spec（commit `47a3bb5`）；03 已于同日 archive 并同步 main spec（commit `84d533a`）；04 已于同日 archive 并同步 main spec（commits `4ef1d69`、`8a18dbd`）；当前无 active change。02 仍等待 Evaluation Owner 的 supported Python import 决定及 retained `evals/runs` inventory/retention cutover；05、06、07 分别仍等待其列出的 input/support 或 retained-data inventory。全局预算8个change（00-07）；checkbox只记录change closure，不替代active change的 `tasks.md`
 
 ## Propose 后强制 Polish
 
@@ -136,11 +136,9 @@ live/external evidence，也未引入新的 compatibility obligation。
 
 ## Phase E - Run/Bundle/Observation authority
 
-先完成refinement method的supported consumer matrix；若Python export support仍未知，不创建04。
+04 创建前已完成refinement method的supported consumer matrix；若当时Python export support仍未知，则不得创建04。
 
-- [ ] **04 `converge-run-bundle-observation-authority`**: RS-C01..C04、RC-C01、OR-C03。Stage 1迁移
-  negative invariants后退役RES；Stage 2迁移RUS、rename Bundle capabilities并修RWB registry；Stage 3迁移
-  workbench/refinement consumers后删除state-only wrapper。
+- [x] **04 `converge-run-bundle-observation-authority`**: RS-C01..C04、RC-C01、OR-C03。已 archive 并同步 main spec（`4ef1d69`、`8a18dbd`）。
 
 **Gate E:** Bundle/Journal/operator boundaries各有唯一owner；Local Session Workbench仍可用但不宣传broker；
 binding/session store不能复活或在Bundle loss后recovery；PC-C05 refinement recovery语义与RS-C05 guards不变。
@@ -153,7 +151,16 @@ application-internal test consumers。host-facing `deep_research_tool`只在内�
 import route。因此`runtime.bundle_lifecycle`及state-only wrapper是application-internal contract，04不承诺新的
 public facade或compatibility window。workbench必须改为消费`RefinementAdmission`并保持自己的
 `BundleControlResult`投影；若发现外部 consumer，须在另一个 change明确支持边界或迁移。上述 focused lifecycle、
-workbench、admission、recovery与workflow suites在 current HEAD通过（60 passed），可创建04 proposal。
+workbench、admission、recovery与workflow suites在当时 HEAD通过（60 passed），构成04 proposal的admission evidence。
+
+**04 closeout（2026-08-14）:** `openspec/changes/archive/2026-08-14-converge-run-bundle-observation-authority/`
+保存完成的 change artifacts 与 17 项完成任务；`BundleLifecycle.refine()` 已删除，Local Session Workbench只消费
+`admit_refinement().state`并保留既有 `BundleControlResult` projection。`research-run-session` 与
+`research-session-lifecycle-binding` main specs 已退役，`RUS-*`/`RES-*` ID 保留为 `[DEPRECATED]`；RDO/RSV capability
+已收敛为 Run Bundle 名称，Journal、Bundle-loss、诊断、结构与 namespace 的证明都迁至当前 owner。严格 OpenSpec、
+requirement/spec/architecture governance、focused runtime/no-resurrection suites、`UV_OFFLINE=1 make verify` 与 git
+whitespace check通过；`deerflow` gitlink保持 `66b9e7f…` 且 submodule工作树干净。未运行live/release/Postgres/real-Gateway、
+external Python consumer与retained-data inventory lanes；本 change没有作这些外部闭合或上游兼容性声明。
 
 ## Phase F - Run input与composition truth
 

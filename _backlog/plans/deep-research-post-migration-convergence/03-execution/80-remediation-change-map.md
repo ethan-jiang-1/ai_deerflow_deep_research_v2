@@ -2,7 +2,7 @@
 
 > 导航: [执行层索引](README.md) | [默认执行入口](99-progressive-execution.md) | [Candidate Register](candidate-register.md)
 > 角色: 把 `70-78` 的 54 个最终 Candidate 映射成有界 OpenSpec changes、decision gates 与 non-regression obligations
-> 状态: 编排完成；00 governance bootstrap 已 archive（`8661693`）；01 已 archive 并同步 main spec（`47a3bb5`），其 16-ID budget 已关闭；03 已 archive 并同步 main spec（`84d533a`），其 9-ID budget 已关闭；02仍等待 Evaluation Owner 的 retained-record 与 Python support 结论；04已由current-HEAD refinement consumer/export matrix关闭application-internal import gate，可进入proposal + polish；change names 是建议的稳定 slug，创建前仍须以当时 HEAD 复核
+> 状态: 编排完成；00 governance bootstrap 已 archive（`8661693`）；01 已 archive 并同步 main spec（`47a3bb5`），其 16-ID budget 已关闭；03 已 archive 并同步 main spec（`84d533a`），其 9-ID budget 已关闭；04 已 archive 并同步 main spec（`4ef1d69`、`8a18dbd`），其 6 个 primary Candidate 与 attached evidence migration 已关闭；02仍等待 Evaluation Owner 的 retained-record 与 Python support 结论；05、06、07仍分别等待 input/support 或 retained-data inventory。change names 是建议的稳定 slug，创建前仍须以当时 HEAD 复核
 > 硬约束: 全局预算 8 个 change（00-07）；一次一个 active change；上一 change archive 后才创建下一项
 
 ## Admission semantics
@@ -59,7 +59,7 @@ partial archive。
 | 01 | program | `restore-delivery-and-subtract-dead-assets` | OR-C01, OR-C02, OR-C04; TA-C01, TA-C02, TA-C05; EC-C04; RC-C02 | OR-C06; TA-C03/C04/C06/C07; EC-C01/C03; RC-C07 | 已 archive（`47a3bb5`）：repository-tracked delivery恢复，五个 owner-local workstream关闭；manual-live 未运行且仍为手动 lane，current guards不变 |
 | 02 | ordinary | `converge-evaluation-boundary-compatibility` | EV-C02, EV-C03, EV-C04 | EV-C05, TA-C04 | 01；evaluation owner在consumer/data gates关闭后同批收敛metrics shim、import facade和persisted evidence layer |
 | 03 | program | `converge-node-language-and-product-records` | NC-C01, NC-C02, NC-C03; EC-C02; OR-C03, OR-C05 | EV-C01, OR-C07, OR-C08 | 已 archive（`84d533a`）：两个 owner-scoped workstream关闭；九项 Candidate/obligation 已进入 archive 或 retained guard/history disposition；未运行 live/external evidence 已记录 |
-| 04 | ordinary | `converge-run-bundle-observation-authority` | RS-C01..C04, RC-C01, OR-C03 | RS-C05, EC-C01, PC-C05, TA-C04 | 01；current-HEAD matrix已确认state-only refinement wrapper只有一个production workbench projection与两个internal test consumers，且无public Python export；Bundle lifecycle为primary owner，先迁negative evidence，再收敛capabilities、workbench projection与refinement API |
+| 04 | ordinary | `converge-run-bundle-observation-authority` | RS-C01..C04, RC-C01, OR-C03 | RS-C05, EC-C01, PC-C05, TA-C04 | 已 archive（`4ef1d69`、`8a18dbd`）：`admit_refinement()`成为唯一admission route，workbench保留state-derived projection，`BundleLifecycle.refine()`、RUS/RES current capabilities已退役；RDO/RSV与evidence owner已迁移。07只重验RS-C05，未继承04之外的retained-data closure |
 | 05 | program | `converge-run-input-and-composition-contracts` | FM-C01, FM-C02, FM-C04; EC-C06; PC-C01, PC-C02; RC-C03; EV-C06 | FM-C03, PC-C05, RC-C05, TA-C04 | 01；composition与profile/proposal两个workstream共享一个终态：admitted run input只产生显式、诚实、版本明确的composition truth |
 | 06 | program | `converge-runtime-input-compatibility` | EC-C05, EC-C07, PC-C07, RC-C04 | EC-C03, RC-C05 | 01；trusted-context与deployment-config两个workstream分别关闭producer/support matrix，使host输入的shape、precedence和failure明确 |
 | 07 | program | `converge-retained-run-data-compatibility` | PC-C03, PC-C04, PC-C06, RC-C06 | EV-C05, RS-C05 | 04；repair lifecycle与Run observation/result两个workstream完成dry-run、迁移/拒绝、rollback及old-reader closure；不伪造lifecycle或publication truth |
@@ -123,7 +123,7 @@ OpenSpec skills已恢复，且未引入 versioned external installer。bounded c
 - `FM-C03`; `EC-C01`, `EC-C03`; `TA-C03`, `TA-C04`, `TA-C06`, `TA-C07`;
 - `PC-C05`; `EV-C01`, `EV-C05`; `OR-C07`, `OR-C08`; `RC-C05`, `RC-C07`。
 
-`RS-C05` 也是 retained guard，但必须随04迁移 evidence owner，并在07迁移数据时重验。`EV-C06` 是05的
+`RS-C05` 是 retained guard，已随04迁移 evidence owner，仍须在07迁移数据时重验。`EV-C06` 是05的
 linked consumer；`OR-C03/C04/C06` 是 owner-local/structural/evidence umbrella，不另建重复 change。
 
 ## Candidate coverage
@@ -133,7 +133,7 @@ linked consumer；`OR-C03/C04/C06` 是 owner-local/structural/evidence umbrella�
 | Findings | Candidate coverage |
 | --- | --- |
 | `70` | NC-C01..C03 -> 03 |
-| `71` | RS-C01..C05 -> 04 + attached guard；07重验guard |
+| `71` | RS-C01..C05 -> 04 archived + retained guard；07重验RS-C05 |
 | `72` | FM-C01..C04 -> 05 + non-regression |
 | `73` | EC-C01..C07 -> 01, 03, 05-06 + non-regression |
 | `74` | TA-C01..C07 -> 01 + attached/non-regression |
@@ -151,7 +151,8 @@ linked consumer；`OR-C03/C04/C06` 是 owner-local/structural/evidence umbrella�
    structural/budget fixtures通过、archive后才允许program proposal；
 3. 用OpenSpec CLI创建表中一个change；ordinary proposal声明一个smallest primary causal owner；program
    proposal冻结一个bounded program outcome、完整Candidate集合和每个owner-scoped workstream，`tasks.md`不得
-   带入未审计scope；
+   带入未审计scope；proposal artifacts完成后必须立即按99的强制 `$polish-openspec-change` 阶段收敛为
+   `ready for apply`，不得跳过到实现；
 4. 每个workstream/stage分别写清owner、decision authority、cutover、negative path、recovery和old-entry closure；
 5. 每个stage red-before-green，迁移 target behavior与negative evidence，再删 implementation/tests/registry/docs；
 6. 运行 focused tests、相关 lanes、`UV_OFFLINE=1 make verify`、五个 governance checker与strict OpenSpec；

@@ -152,6 +152,11 @@ attempt policy时，应在自己的 change中重新审计，而不是由本计�
   textless selection与Bundle loss behavior不变。
 - **OpenSpec change slice**: `converge-run-bundle-observation-authority`，在 RS capability owner收敛stage后实施。
 
+**04 closeout（2026-08-14）:** workbench 和两个内部 integration consumers 已改为使用
+`admit_refinement().state`，`BundleLifecycle.refine()` 已删除，且没有新增 public Python facade 或 compatibility
+window。focused admission/workbench/replay/recovery 和 removed-surface evidence 通过；未运行的 external Python
+consumer 或 retained-data inventory lanes 仍不能从该内部 cutover 推导为已关闭。
+
 ### RC-C02 - Delete the legacy short-state planner helper
 
 - **证据**: `planner_inputs_from_state()`只有一条 test consumer；production用 canonical Bundle profile reader；
