@@ -257,13 +257,6 @@ def resolve_real_demo_model_profile(environ: Mapping[str, str] | None = None) ->
     )
 
 
-def _resolve_demo_models(environ: Mapping[str, str] | None = None) -> list[Any]:
-    """Compatibility helper for the fixed one-profile real-demo composition."""
-
-    profile = resolve_real_demo_model_profile(environ)
-    return [profile.model_config] if profile is not None else []
-
-
 class _DemoSandboxConfig:
     use = "deerflow.sandbox.local:LocalSandboxProvider"
 
@@ -800,10 +793,6 @@ def build_demo_host() -> Any:
     """Build the demo's generic probe host without lifecycle composition."""
 
     return build_control_graph_host(fingerprint_verifier=lambda _app_config: None)
-
-
-def check_credentials_available() -> bool:
-    return resolve_real_demo_model_profile() is not None
 
 
 # ── install demo patches at import time ──────────────────────────────

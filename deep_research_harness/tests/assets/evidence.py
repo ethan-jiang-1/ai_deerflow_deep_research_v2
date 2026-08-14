@@ -1009,7 +1009,10 @@ EVIDENCE_CLAIMS = (
     ),
     _correctness_claim(
         "demo-real-prerequisites",
-        "tests/unit/test_demo_core.py::test_real_demo_prerequisites_reject_missing_and_blank_values",
+        (
+            "tests/unit/test_demo_core.py::"
+            "test_real_demo_prerequisites_reject_missing_and_blank_values_before_adapter_construction"
+        ),
         StableSeam.RUNTIME_INTEGRATION,
         requirement_ids=("DPL-001", "DPL-004"),
     ),
@@ -1966,6 +1969,12 @@ EVIDENCE_CLAIMS = (
         requirement_ids=("DER-005",),
     ),
     _correctness_claim(
+        "delivery-repository-tracked",
+        "tests/contract/test_repository_delivery.py::test_repository_delivery_is_tracked_unignored_and_declares_codex",
+        StableSeam.PUBLIC_ENTRY,
+        requirement_ids=("DER-005",),
+    ),
+    _correctness_claim(
         "delivery-reference-benchmark",
         "tests/contract/test_delivery_efficiency_tools.py::test_reference_benchmark_report_rejects_missing_or_invalid_phase_data",
         StableSeam.DOMAIN_ENGINE,
@@ -2360,8 +2369,20 @@ EVIDENCE_CLAIMS = (
         requirement_ids=("PRS-001",),
     ),
     _correctness_claim(
+        "retired-test-structure-governance",
+        "tests/contract/test_test_structure_retirement.py::test_retained_test_roots_are_non_empty_and_e2e_has_no_active_surface",
+        StableSeam.DOMAIN_ENGINE,
+        requirement_ids=("PRS-001",),
+    ),
+    _correctness_claim(
         "suspended-full-real-execution-surface",
         "tests/contract/test_release_suspension.py::test_full_real_selector_is_retained_but_has_no_active_execution_surface",
+        StableSeam.PUBLIC_ENTRY,
+        requirement_ids=("EVH-005",),
+    ),
+    _correctness_claim(
+        "release-evidence-provenance-retirement",
+        "tests/contract/test_release_evidence_provenance.py::test_retained_release_provenance_routes_need_no_superseded_report",
         StableSeam.PUBLIC_ENTRY,
         requirement_ids=("EVH-005",),
     ),

@@ -13,11 +13,9 @@ from __future__ import annotations
 
 import asyncio
 import json
-import os
 import sys
 import types
 from dataclasses import replace
-from unittest.mock import patch
 
 import httpx
 import pytest
@@ -106,48 +104,48 @@ def test_demo_recipe_factories_do_not_expose_a_mode_selector(_scripts_path):
     assert not hasattr(_demo_core, "build_demo_recipe")
 
 
-def test_check_credentials_available_true(_scripts_path):
-    from _demo_core import check_credentials_available
-
-    with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "sk-test", "DEERFLOW_DEMO_MODEL": "anthropic-demo"}):
-        assert check_credentials_available() is True
-
-
-def test_check_credentials_available_false(_scripts_path):
-    from _demo_core import check_credentials_available
-
-    with patch.dict(os.environ, {}, clear=True):
-        # Temporarily remove ANTHROPIC_API_KEY if set
-        original = os.environ.pop("ANTHROPIC_API_KEY", None)
-        try:
-            assert check_credentials_available() is False
-        finally:
-            if original is not None:
-                os.environ["ANTHROPIC_API_KEY"] = original
-
-
-def test_real_demo_prerequisites_reject_missing_and_blank_values(_scripts_path):
+def test_real_demo_prerequisites_reject_missing_and_blank_values_before_adapter_construction(
+    _scripts_path,
+    monkeypatch,
+):
     """@impl DPL-001
     @impl DPL-004
     """
-    from _demo_core import DemoPrerequisiteError, validate_real_demo_prerequisites
+    from _demo_core import DemoAdapter, DemoPrerequisiteError, demo_readiness_report, validate_real_demo_prerequisites
 
-    with patch.dict(os.environ, {}, clear=True):
+    def adapter_init_must_not_run(*_args, **_kwargs):
+        raise AssertionError("DemoAdapter construction must not run before prerequisite failure")
+
+    monkeypatch.setattr(DemoAdapter, "__init__", adapter_init_must_not_run)
+    for environ in (
+        {},
+        {
+            "DEEPSEEK_API_KEY": "   ",
+            "DEERFLOW_DEMO_MODEL": "deepseek-v4-flash",
+            "TAVILY_API_KEY": "\t",
+        },
+    ):
+        report = demo_readiness_report(mode="real", environ=environ)
+        assert report.ready is False
+        assert report.failure is not None
+        assert report.failure.journal_record_created is False
         with pytest.raises(DemoPrerequisiteError) as missing:
-            validate_real_demo_prerequisites()
+            validate_real_demo_prerequisites(environ)
         assert missing.value.model_missing is True
         assert missing.value.web_tool_missing is True
         assert "API_KEY" not in str(missing.value)
+        with pytest.raises(DemoPrerequisiteError):
+            DemoAdapter.for_real(environ=environ)
 
-    with patch.dict(
-        os.environ,
-        {"OPENAI_API_KEY": "   ", "TAVILY_API_KEY": "\t"},
-        clear=True,
-    ):
-        with pytest.raises(DemoPrerequisiteError) as blank:
-            validate_real_demo_prerequisites()
-        assert blank.value.model_missing is True
-        assert blank.value.web_tool_missing is True
+    safe_output = demo_readiness_report(
+        mode="real",
+        environ={
+            "DEEPSEEK_API_KEY": "demo-secret",
+            "DEERFLOW_DEMO_MODEL": "deepseek-v4-flash",
+        },
+    ).model_dump_json()
+    assert "demo-secret" not in safe_output
+    assert "API_KEY" not in safe_output
 
 
 def test_demo_readiness_report_is_safe_and_non_network(_scripts_path):
@@ -162,20 +160,6 @@ def test_demo_readiness_report_is_safe_and_non_network(_scripts_path):
     assert real.failure is not None
     assert "API_KEY" not in str(real.model_dump(mode="json"))
     assert real.failure.journal_record_created is False
-
-
-def test_demo_model_selector_restricts_to_configured_models(_scripts_path):
-    from _demo_core import _resolve_demo_models
-
-    environ = {
-        "DEEPSEEK_API_KEY": "test-key",
-        "DEERFLOW_DEMO_MODEL": "deepseek-v4-flash",
-    }
-    selected = _resolve_demo_models(environ)
-    assert [model.name for model in selected] == ["deepseek-v4-flash"]
-
-    unavailable = _resolve_demo_models({**environ, "DEERFLOW_DEMO_MODEL": "unavailable-model"})
-    assert unavailable == []
 
 
 def test_all_real_demo_requires_an_explicit_selected_profile(_scripts_path, _real_demo_environ):
@@ -218,7 +202,13 @@ def test_explicit_real_demo_profile_is_single_safe_runtime_configuration(_script
     """@impl DPL-011"""
     from _demo_core import DemoAdapter, resolve_real_demo_model_profile
 
-    profile = resolve_real_demo_model_profile({**_real_demo_environ, "DEERFLOW_DEMO_MODEL": "deepseek-v4-flash"})
+    profile = resolve_real_demo_model_profile(
+        {
+            **_real_demo_environ,
+            "ANTHROPIC_API_KEY": "other-demo-secret",
+            "DEERFLOW_DEMO_MODEL": "deepseek-v4-flash",
+        }
+    )
 
     assert profile is not None
     assert profile.model_config.name == "deepseek-v4-flash"
@@ -226,11 +216,16 @@ def test_explicit_real_demo_profile_is_single_safe_runtime_configuration(_script
     assert profile.evidence.registry_revision == "v1"
     evidence = profile.evidence.model_dump_json()
     assert "demo-secret" not in evidence
+    assert "other-demo-secret" not in evidence
     assert "https://" not in evidence
 
     adapter = DemoAdapter.for_real(
         bundle_root=tmp_path / "runs",
-        environ={**_real_demo_environ, "DEERFLOW_DEMO_MODEL": "deepseek-v4-flash"},
+        environ={
+            **_real_demo_environ,
+            "ANTHROPIC_API_KEY": "other-demo-secret",
+            "DEERFLOW_DEMO_MODEL": "deepseek-v4-flash",
+        },
     )
     assert [model.name for model in adapter._envelope.app_config.models] == ["deepseek-v4-flash"]
     assert adapter._envelope.execution_profile == profile.evidence

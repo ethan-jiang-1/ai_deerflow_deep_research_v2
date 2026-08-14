@@ -156,32 +156,6 @@ def build_planner_prompt(
     )
 
 
-def planner_inputs_from_state(state: Mapping[str, object]) -> PlannerInputs:
-    """Build a fixture/catalog-only input from legacy short checkpoint fields.
-
-    Production topic planning instead calls :func:`planner_assignment_from_state`,
-    which reads the selected Bundle's canonical profile and rejects drift.
-    """
-    raw_questions = state.get("must_answer_questions") or ()
-    if isinstance(raw_questions, (tuple, list)):
-        questions = tuple(q for q in raw_questions if isinstance(q, str))
-    else:
-        questions = ()
-    return PlannerInputs(
-        request_text=str(state.get("request_text") or ""),
-        research_depth=str(state.get("research_depth") or ""),
-        target_audience=str(state.get("target_audience") or ""),
-        output_format=str(state.get("output_format") or ""),
-        cost_tolerance=str(state.get("cost_tolerance") or ""),
-        time_budget=str(state.get("time_budget") or ""),
-        must_answer_questions=questions,
-        comparison_subjects=tuple(str(value) for value in (state.get("comparison_subjects") or ())),
-        request_language=str(state.get("request_language") or ""),
-        output_language=str(state.get("output_language") or ""),
-        degraded_profile=bool(state.get("degraded_profile") or False),
-    )
-
-
 def _profile_ref_from_state(state: Mapping[str, object]) -> ContentRef:
     raw_ref = state.get("profile_ref")
     if raw_ref is None:
@@ -282,5 +256,4 @@ __all__ = [
     "build_planner_prompt",
     "parse_plan_output",
     "planner_assignment_from_state",
-    "planner_inputs_from_state",
 ]

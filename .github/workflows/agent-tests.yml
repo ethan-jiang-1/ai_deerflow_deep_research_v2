@@ -1,0 +1,27 @@
+name: Deep Research Deterministic Tests
+
+on:
+  pull_request:
+    paths:
+      - "deep_research_harness/**"
+      - ".github/workflows/agent-tests.yml"
+  push:
+    paths:
+      - "deep_research_harness/**"
+      - ".github/workflows/agent-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  deterministic:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: deep_research_harness
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: make install
+      - run: UV_OFFLINE=1 make verify
+      - run: UV_OFFLINE=1 make test-duration-policy

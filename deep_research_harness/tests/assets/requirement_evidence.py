@@ -141,6 +141,13 @@ REQUIREMENT_IMPACTS = (
         "slow tests require a bounded exact waiver",
     ),
     RequirementImpact(
+        "DER-005",
+        "deep-research-delivery-efficiency",
+        StableSeam.PUBLIC_ENTRY,
+        "tests/contract/test_repository_delivery.py::test_repository_delivery_is_tracked_unignored_and_declares_codex",
+        "a clean clone could otherwise depend on ignored local CI workflows or OpenSpec lifecycle skills",
+    ),
+    RequirementImpact(
         "DER-006",
         "deep-research-delivery-efficiency",
         StableSeam.DOMAIN_ENGINE,
@@ -1031,11 +1038,26 @@ REQUIREMENT_IMPACTS = (
         "the canonical downstream root must reject a tracked legacy compatibility directory",
     ),
     RequirementImpact(
+        "PRS-001",
+        "project-structure",
+        StableSeam.DOMAIN_ENGINE,
+        "tests/contract/test_test_structure_retirement.py::test_retained_test_roots_are_non_empty_and_e2e_has_no_active_surface",
+        "retired test scaffolding must not leave an active registry, lane, or suspended-selector gap",
+    ),
+    RequirementImpact(
         "EVH-005",
         "evaluation-hardening",
         StableSeam.PUBLIC_ENTRY,
         "tests/contract/test_release_suspension.py::test_full_real_selector_is_retained_but_has_no_active_execution_surface",
         "the retained full-real selector must have no active workflow, target, or evidence path",
+    ),
+    RequirementImpact(
+        "EVH-005",
+        "evaluation-hardening",
+        StableSeam.PUBLIC_ENTRY,
+        "tests/contract/test_release_evidence_provenance.py::test_retained_release_provenance_routes_need_no_superseded_report",
+        "dated baseline, accepted attestation, and regression-descent routes must remain discoverable "
+        "without the retired report",
     ),
     RequirementImpact(
         "RUS-001",

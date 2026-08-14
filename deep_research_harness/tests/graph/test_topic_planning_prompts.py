@@ -34,7 +34,6 @@ from deerflow_deep_research.graph.nodes.topic_planning.prompts import (
     build_planner_prompt,
     parse_plan_output,
     planner_assignment_from_state,
-    planner_inputs_from_state,
 )
 
 BUNDLE = RunBundleRef(bundle_id=BundleId("b_" + "A" * 43), scope_bucket="s_" + "B" * 43)
@@ -296,32 +295,7 @@ def test_parse_plan_output_round_trip_and_rejects_invalid() -> None:
         parse_plan_output("   ")
 
 
-def test_planner_inputs_from_state_reads_profile_fields() -> None:
-    inputs = planner_inputs_from_state(
-        {
-            "request_text": "X",
-            "research_depth": "standard",
-            "target_audience": "practitioner",
-            "output_format": "detailed_report",
-            "cost_tolerance": "moderate",
-            "time_budget": "standard",
-            "must_answer_questions": ["Q1", "Q2"],
-            "comparison_subjects": ["lithium-ion batteries", "vanadium redox flow batteries"],
-            "request_language": "en",
-            "output_language": "zh",
-            "degraded_profile": True,
-        }
-    )
-    assert inputs.research_depth == "standard"
-    assert inputs.must_answer_questions == ("Q1", "Q2")
-    assert inputs.degraded_profile is True
-    assert inputs.coverage_questions == ("Q1", "Q2")
-    assert inputs.comparison_subjects == ("lithium-ion batteries", "vanadium redox flow batteries")
-    assert inputs.request_language == "en"
-    assert inputs.output_language == "zh"
-
-
-async def test_planner_assignment_reads_canonical_scope_notes_and_profile_dimensions() -> None:
+async def test_planner_assignment_projects_every_canonical_profile_field() -> None:
     profile = _profile()
     profile_ref = _profile_ref(profile)
     reader = _ProfileReader(profile, profile_ref)
@@ -332,6 +306,18 @@ async def test_planner_assignment_reads_canonical_scope_notes_and_profile_dimens
 
     assert isinstance(assignment, PlannerAssignment)
     assert reader.refs == [profile_ref]
+    assert assignment.request_text == "Compare grid storage options."
+    assert assignment.research_depth == "deep_dive"
+    assert assignment.target_audience == "domain_expert"
+    assert assignment.output_format == "annotated_bibliography"
+    assert assignment.cost_tolerance == "extensive"
+    assert assignment.time_budget == "overnight"
+    assert assignment.must_answer_questions == ("Q1", "Q2")
+    assert assignment.coverage_questions == ("Q1", "Q2")
+    assert assignment.comparison_subjects == ("lithium-ion batteries", "vanadium redox flow batteries")
+    assert assignment.request_language == "en"
+    assert assignment.output_language == "zh"
+    assert assignment.degraded_profile is False
     assert assignment.scope_boundaries == "Grid-scale stationary storage only."
     assert assignment.custom_notes == "Prioritize peer-reviewed lifecycle evidence."
     assert payload["scope_boundaries"] == assignment.scope_boundaries
@@ -397,6 +383,10 @@ async def test_degraded_canonical_profile_uses_request_as_coverage_fallback() ->
         request_bundle=reader,
     )
 
+    assert assignment.degraded_profile is True
+    assert assignment.comparison_subjects == ()
+    assert assignment.request_language == "unspecified"
+    assert assignment.output_language == ""
     assert assignment.coverage_questions == ("Map the emerging storage risks.",)
     assert "degraded" in build_planner_prompt(assignment).objective.lower()
 

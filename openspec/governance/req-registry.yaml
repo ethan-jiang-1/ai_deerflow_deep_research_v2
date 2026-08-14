@@ -521,7 +521,7 @@ EVH-001: evaluation-hardening — Replay-based eval corpus framework supports qu
 EVH-002: evaluation-hardening — Quality metrics compute citation precision, must-answer coverage, and source diversity from accepted submissions and checkpoint state
 EVH-003: evaluation-hardening — Fault injection tests cover crash, timeout, cancel, and duplicate resume at key graph points with verified recovery or terminal outcome
 EVH-004: evaluation-hardening — Adversarial source tests verify prompt-injected content cannot gain control or forge submissions
-EVH-005: evaluation-hardening — Release gate combines deterministic hard CI checks with optional real-LLM canary tests; DPT parity audit documents achieved vs outstanding invariants
+EVH-005: evaluation-hardening — Release gate combines deterministic hard CI checks with optional real-LLM canary tests; dated baseline, accepted attestation, and regression-descent policy retain achieved and outstanding evidence routes
 EVH-006: evaluation-hardening — Every recorded real-mode integration incident maps to a deterministic regression at the lowest responsible test seam with stable diagnostics
 EVH-007: evaluation-hardening — Typed reusable scenarios declare risk, required authenticity, inputs, expected workflow outcomes, artifacts, invariants, metrics, and traceability
 EVH-008: evaluation-hardening — Every real node and high-risk real-prefix workflow has zero-API conformance coverage through real graph/runtime policy paths with only external model and tool adapters replaced

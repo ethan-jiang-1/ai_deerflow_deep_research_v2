@@ -50,6 +50,66 @@ kind = "file"
 owner = "PRS-004"
 
 [[required_paths]]
+path = ".gitignore"
+kind = "file"
+owner = "PRS-017"
+
+[[required_paths]]
+path = ".github/workflows/agent-tests.yml"
+kind = "file"
+owner = "PRS-017"
+
+[[required_paths]]
+path = ".github/workflows/agent-live-evaluation.yml"
+kind = "file"
+owner = "PRS-017"
+
+[[required_paths]]
+path = ".agents/skills/.openspec-target"
+kind = "file"
+owner = "PRS-017"
+
+[[required_paths]]
+path = ".agents/skills/openspec-apply-change/SKILL.md"
+kind = "file"
+owner = "PRS-017"
+
+[[required_paths]]
+path = ".agents/skills/openspec-archive-change/SKILL.md"
+kind = "file"
+owner = "PRS-017"
+
+[[required_paths]]
+path = ".agents/skills/openspec-explore/SKILL.md"
+kind = "file"
+owner = "PRS-017"
+
+[[required_paths]]
+path = ".agents/skills/openspec-propose/SKILL.md"
+kind = "file"
+owner = "PRS-017"
+
+[[required_paths]]
+path = ".agents/skills/openspec-sync-specs/SKILL.md"
+kind = "file"
+owner = "PRS-017"
+
+[[required_paths]]
+path = ".agents/skills/openspec-update-change/SKILL.md"
+kind = "file"
+owner = "PRS-017"
+
+[[required_paths]]
+path = ".agents/skills/polish-openspec-change/SKILL.md"
+kind = "file"
+owner = "PRS-017"
+
+[[required_paths]]
+path = ".agents/skills/polish-openspec-change/agents/openai.yaml"
+kind = "file"
+owner = "PRS-017"
+
+[[required_paths]]
 path = "deep_research_harness/CLAUDE.md"
 kind = "file"
 owner = "PRS-009"
@@ -768,11 +828,6 @@ owner = "PRS-006"
 path = "deep_research_harness/tests/integration/test_session_workbench.py"
 kind = "file"
 owner = "PRS-006"
-
-[[required_paths]]
-path = "deep_research_harness/tests/e2e"
-kind = "directory"
-owner = "PRS-001"
 
 [[required_paths]]
 path = "deep_research_harness/tests/fixtures"

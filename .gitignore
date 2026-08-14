@@ -221,8 +221,6 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# Local agent / editor / tooling dirs (not shared via git)
-.agents/
+# Local editor / tooling dirs (not shared via git)
 .claude/
-.github/
 .vscode/
