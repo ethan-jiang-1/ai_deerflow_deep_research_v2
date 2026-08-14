@@ -122,15 +122,22 @@ transient provider failures, and absent for `retry_followed_by_terminal_failure`
 When `recovery_action=fresh_start`, its human-readable `next_action` SHALL be congruent
 explanatory text only, and CLI/TUI SHALL not render it as a second action. `retryable`
 means a distinct new start may be attempted and never means the failed graph can resume.
-For every provider-diagnostic terminal, `diagnostic_location` SHALL be exactly one of
-`bundle_journal` or `unavailable` and its diagnostic reference SHALL be present.
-`diagnostic_location` SHALL be absent for legacy terminals with neither recovery
-projection nor final safe provider observation. `research_record_created` SHALL be true
-only for `bundle_journal` publication and false for `unavailable`. The shared `Terminal`
-update is the only source used by CLI and TUI; neither opens a retained bundle or uses
-an observation as lifecycle authority. A matching retained-session inspection command
-is a read-only diagnostic observation, not a `recovery_action`, retry, resume, or
-competing next action.
+Every current terminal `RunFailure` SHALL carry `diagnostic_location` as exactly one of
+`bundle_journal` or `unavailable`. A provider-diagnostic terminal SHALL carry its
+diagnostic reference; `research_record_created` SHALL be true only for verified
+`bundle_journal` publication and false for `unavailable`. A current non-provider
+terminal with no published diagnostic SHALL report `diagnostic_location=unavailable`
+without inventing a diagnostic reference. The shared `Terminal` update is the only
+source used by CLI and TUI; neither opens a retained bundle or uses an observation as
+lifecycle authority. A matching retained-session inspection command is a read-only
+diagnostic observation, not a `recovery_action`, retry, resume, or competing next
+action.
+
+A persisted or public terminal result that lacks `diagnostic_location` SHALL be rejected
+before participant projection, even when it is explicitly registered for the cutover.
+There is no migration route that guesses `bundle_journal`, synthesizes `unavailable`,
+uses an external diagnostic/Journal/Support Handoff, or derives resume/retry truth from
+that absence. Registration may record its rejection disposition only. (`RER-009`)
 
 The frozen provider-recovery projection SHALL permit only these valid combinations:
 
@@ -167,9 +174,8 @@ replace any stale suspended-session projection, and set
 through a support journal, external diagnostic, external Journal, or Support Handoff.
 Only after that publication outcome is known shall it construct the final shared
 `RunFailure` with its typed location and `research_record_created` truth. It SHALL never
-derive a replacement reference. Legacy and non-provider incidents SHALL remain valid
-with the new recovery and diagnostic-location fields absent. Returned-only `Working`
-updates SHALL not add or imply an in-flight retry state. (`RER-009`)
+derive a replacement reference. Returned-only `Working` updates SHALL not add or imply
+an in-flight retry state.
 
 #### Scenario: Exhausted timeout has an actionable bounded projection
 - **WHEN** a blocked HITL1 terminal incident reports `provider.timeout`, two attempts,
@@ -205,13 +211,17 @@ updates SHALL not add or imply an in-flight retry state. (`RER-009`)
   `diagnostic_location=unavailable`, and does not write, read, or present an external
   diagnostic while preserving the original terminal category and legal next action
 
+#### Scenario: Current non-provider terminal records unavailability explicitly
+- **WHEN** a current terminal has no provider diagnostic or verified Journal publication
+- **THEN** its terminal result carries `diagnostic_location=unavailable` and does not create a diagnostic reference, retry, or resume action
+
 #### Scenario: Legacy non-provider failures do not invent provider history
-- **WHEN** a blocked incident is legacy authentication, configuration, tool, structured
-  output, or graph failure with neither recovery facts nor a final safe provider
-  observation
-- **THEN** the terminal update leaves bridge/model-invocation and retry disposition absent
-  along with `recovery_action` and `diagnostic_location`, rather than displaying a
-  zero-valued or fabricated retry or a guessed record location
+- **WHEN** a current non-provider terminal has no recovery facts or final safe provider observation
+- **THEN** its result preserves the absent provider/retry facts, records `diagnostic_location=unavailable`, and does not fabricate a diagnostic reference, retry, or guessed record location
+
+#### Scenario: Missing diagnostic location is rejected before participant projection
+- **WHEN** a persisted or public terminal result lacks `diagnostic_location`
+- **THEN** the reader rejects it before CLI, TUI, machine participant, lifecycle, or Journal projection and does not infer a record location or legal recovery
 
 #### Scenario: Non-retryable HTTP observation survives without recovery history
 - **WHEN** a blocked terminal incident has a safe final `400` HTTP observation but no

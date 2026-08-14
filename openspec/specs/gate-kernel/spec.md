@@ -181,6 +181,8 @@ phase, fingerprint, and consecutive count.
 The default repair budget SHALL be 3 per phase; `final_delivery` self-repair SHALL
 default to 1. Maximum budget SHALL be 10 per phase.
 
+The gate kernel SHALL use only `gate_attempts_by_phase` and `repair_budget_by_phase` as durable repair-attempt and repair-budget facts. It SHALL neither read, write, reconstruct, nor reset a `repair_counts` checkpoint field. Checkpoint compatibility disposition occurs before gate evaluation; the gate SHALL not treat an old field as an alternate budget, repair-history hint, or admission exception. (`GAK-004`)
+
 #### Scenario: Successful repair after one retry
 - **WHEN** the first gate evaluation returns `REPAIR`, the repair agent runs, and the second gate evaluation returns `PASS`
 - **THEN** the phase advances with `gate_attempts_by_phase[phase] == 2` and `repair_budget_by_phase[phase]` decremented by 1
@@ -208,6 +210,15 @@ default to 1. Maximum budget SHALL be 10 per phase.
 #### Scenario: Repair agent receives full gate feedback
 - **WHEN** the repair target node re-enters after a `REPAIR` verdict
 - **THEN** the repair agent's context includes `GateResult.inspect`, `GateResult.advice`, and `GateResult.failed_refs` from the most recent evaluation
+
+#### Scenario: Retired repair counter cannot reach gate evaluation
+- **WHEN** a checkpoint containing `repair_counts` reaches the current graph reader without an approved completed migration
+- **THEN** it is rejected before any gate rule, route, feedback, or repair-budget mutation occurs
+
+#### Scenario: Migrated checkpoint uses only current repair facts
+- **WHEN** a registered checkpoint is migrated by the approved offline route and then evaluated with the same current gate facts
+- **THEN** its verdict, route, and bounded repair budget follow the current gate contract without consulting a replacement counter
+- **THEN** `route` is set to the mapped pass label and `generation` is incremented
 
 ### Requirement: Fixture rules preserve all fake graph paths
 

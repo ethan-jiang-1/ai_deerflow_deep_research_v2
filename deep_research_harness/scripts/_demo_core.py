@@ -66,6 +66,7 @@ _TAVILY_ATTEMPT_TIMEOUT_SECONDS = 60.0
 _TAVILY_MAX_READ_ATTEMPTS = 3
 _TAVILY_RETRY_BACKOFF_SECONDS = (1.0, 2.0)
 _DEMO_BUNDLE_ROOT_NAME = ".deep-research-demo-runs"
+_DEMO_RETAINED_DATA_SCOPE_REVISION = "retained-run-data-v5"
 
 
 @dataclass(frozen=True)
@@ -371,7 +372,11 @@ class DemoAdapter:
             ],
         )
         profile_kind = "all-real" if model_profile is not None else "fixture-graph"
-        profile_key = hashlib.sha256(f"{root.resolve()}:{profile_kind}".encode()).hexdigest()[:16]
+        # A clean retained-data cutover starts in a distinct trusted scope. Legacy
+        # local Bundles stay rejected; the demo never reopens or rewrites them.
+        profile_key = hashlib.sha256(
+            f"{root.resolve()}:{profile_kind}:{_DEMO_RETAINED_DATA_SCOPE_REVISION}".encode()
+        ).hexdigest()[:16]
         self._bundle_lifecycle = BundleLifecycle(workspace_host_path=workspace)
         self._envelope = TrustedRuntimeEnvelope(
             effective_user_id="demo-user",

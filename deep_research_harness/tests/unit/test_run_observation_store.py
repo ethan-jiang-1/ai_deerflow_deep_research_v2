@@ -433,7 +433,7 @@ async def test_capacity_preserves_diagnostic_anchors_without_renumbering_retaine
     store = RunObservationStore(bundle_root=bundle_root, bundle_id=BUNDLE_ID, max_event_records=3)
     recorder = RunObservationRecorder(store=store, bundle_id=BUNDLE_ID)
 
-    established = await recorder.establish(generation=0, phase="bootstrap", durability="restart_durable")
+    await recorder.establish(generation=0, phase="bootstrap", durability="restart_durable")
     await recorder.record(category=RunEventCategory.NODE, phase="bootstrap", attempt_id="bootstrap_a00")
     await recorder.record(category=RunEventCategory.NODE, phase="topic_planning", attempt_id="topic_planning_a00")
     await recorder.record(

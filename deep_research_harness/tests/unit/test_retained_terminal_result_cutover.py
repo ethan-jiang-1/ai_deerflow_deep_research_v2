@@ -24,10 +24,7 @@ from deerflow_deep_research.runtime.run_experience import ResearchRunExperience
 from scripts.retained_run_data_migration import InventoryRecord, MigrationSource, RetainedDataInventory, run_inventory
 
 FIXTURE = (
-    Path(__file__).parents[1]
-    / "fixtures"
-    / "retained_run_data"
-    / "terminal_result_missing_diagnostic_location.json"
+    Path(__file__).parents[1] / "fixtures" / "retained_run_data" / "terminal_result_missing_diagnostic_location.json"
 )
 
 

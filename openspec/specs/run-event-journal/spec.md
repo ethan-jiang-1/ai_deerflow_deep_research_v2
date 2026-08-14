@@ -60,14 +60,21 @@ failure SHALL retain only a bounded unknown category. The Journal SHALL NOT reta
 exception text, stack traces, prompts, answers, model/tool bodies, provider payloads,
 credentials, full URLs, host paths, checkpoints, or internal wires. (`REJ-002`)
 
-Newly established Journal events and manifests SHALL use schema version 3. Existing
-version-1 and version-2 Journals SHALL remain readable as bounded historical evidence
-without an inferred response shape or `post_candidate` stage. A writer SHALL NOT append
-a version-3 event to an older manifest or rewrite/upgrade older events or manifests. An
-attempt to record through an older Journal SHALL use the existing incomplete or
-unavailable observation behavior and SHALL NOT change graph, recovery, terminal, or
-lifecycle execution. The unchanged summary representation SHALL retain its current
-schema version.
+Newly established Journal events and manifests SHALL use schema version 3. The current
+Run Summary representation SHALL remain schema version 2. Version-1 Journal data has
+no migration route. A version-2 manifest and its complete correlated event set may be
+migrated to version 3 only by the separately invoked offline route when it is explicitly
+registered in the source-controlled migration inventory and its exact Bundle identity,
+sequence, and retained facts validate. The migration SHALL produce current v3 records
+without inferring response shape, `post_candidate` stage, watermark, generation, or
+validation provenance that was not retained. It SHALL preserve the current Summary v2
+representation without upgrading it.
+
+After cutover, the runtime reader SHALL accept only v3 Journal manifest/event records.
+An old, unregistered, malformed, partial, stale, replayed, or failed-migration Journal
+SHALL be unavailable or unsupported observation before append or participant
+projection. The runtime SHALL not append a v3 event to it, rewrite it, derive current
+facts from it, or change graph, recovery, terminal, publication, or lifecycle truth.
 
 #### Scenario: A validation repair preserves both observed rule results
 - **WHEN** a work attempt fails an initial validation rule and its repair also fails a
@@ -94,11 +101,17 @@ schema version.
 - **THEN** the journal retains a bounded unknown outcome and never labels it as a
   provider, validation, or tool failure from exception text
 
+#### Scenario: Registered v2 Journal migrates without upgrading provenance
+- **WHEN** the offline migration route processes a registered valid v2 manifest and complete matching event set
+- **THEN** it writes a v3 Journal whose retained facts and sequence remain valid, preserves Summary v2, and does not infer unavailable v3-only provenance
+
+#### Scenario: Legacy Journal cannot be read or silently upgraded after cutover
+- **WHEN** inspection or a producer encounters a v1, v2, partial, or unregistered Journal after cutover
+- **THEN** it returns only the bounded unavailable or unsupported observation outcome, appends and rewrites nothing, and leaves the Run outcome unchanged
+
 #### Scenario: Older Journals remain readable and are never silently upgraded
-- **WHEN** inspection or a resumed producer encounters a version-1 or version-2 Journal
-- **THEN** inspection exposes only its retained historical facts, no new shape or stage
-  is inferred or appended, and any observation-write failure leaves the Run outcome
-  unchanged
+- **WHEN** the approved offline migration decoder receives a registered complete v2 Journal before cutover
+- **THEN** it reads only the retained source facts to create its separately validated v3 output, while the post-cutover runtime reader rejects the old source and never silently upgrades it
 
 ### Requirement: Journal health and bounded retention are truthful
 

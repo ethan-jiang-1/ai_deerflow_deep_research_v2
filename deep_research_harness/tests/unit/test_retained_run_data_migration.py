@@ -14,7 +14,6 @@ from pathlib import Path
 
 import pytest
 
-from deerflow_deep_research.domain.run_experience import RunFailure
 from deerflow_deep_research.domain.run_observation import RunEvent, RunObservationManifest
 from scripts.retained_run_data_migration import (
     DEFAULT_INVENTORY_PATH,
