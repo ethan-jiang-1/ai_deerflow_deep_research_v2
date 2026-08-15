@@ -1,6 +1,6 @@
 # Plan: Node Cognitive Program Authoring and Legacy Vocabulary Retirement
 
-> Type: architecture / terminology / authoring guidance | Updated: 2026-08-15 | Status: audit recorded; requires one governed OpenSpec change before implementation
+> Type: architecture / terminology / authoring guidance | Updated: 2026-08-15 | Status: `harden-cognitive-node-authoring-and-retire-legacy-vocabulary` is planned and strict-valid; ready for apply
 
 ## Problem
 
@@ -307,7 +307,7 @@ named evidence recorded in the OpenSpec change or closeout record.
 - [x] P1. Scan all tracked files, separate current, archive, closed-record, and external-reference hits, and record the zero-residual target.
 - [x] P2. Review the existing node map, agent entry route, eleven reader projections, and twenty capability resources; record the cognitive-first authoring gap.
 - [x] P3. Define the current LLM-node vocabulary, cognitive-note review questions, node-edit-map authoring-gate role, ownership boundaries, and completion criteria.
-- [ ] P4. Create the single governed OpenSpec change with its primary owner, adjacent contracts, Focus Card, proposal, design, delta specs, and implementation tasks.
+- [x] P4. Create the single governed OpenSpec change with its primary owner, adjacent contracts, Focus Card, proposal, design, delta specs, and implementation tasks. (`harden-cognitive-node-authoring-and-retire-legacy-vocabulary`; strict validation passed 2026-08-15)
 - [ ] P5. Add red terminology and authoring-route guards, including planted legacy-token and missing cognitive-reading-order violations.
 - [ ] P6. Remove imported vocabulary from all tracked records, delete the external reference library, repair links, and demonstrate the full tracked-file scan has zero prohibited-term hits.
 - [ ] P7. Promote `node-edit-map.md` to the mandatory LLM-node authoring entry route and update the agent guide, Change Guidance route, local-context policy, and six LLM-node reader projections.
