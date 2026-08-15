@@ -16,7 +16,7 @@ route, state, provider, or DeerFlow interface.
 
 - Make the node edit map the single compact first read for LLM-node authoring.
 - Make the cognitive-program reading order and its six review questions visible from
-  the Harness guide, Change Guidance root, and six local LLM-node readers.
+  the Harness guide, Change Guidance root, and eight local LLM-node readers.
 - Converge every checked-out tracked record on current terms and prove zero literal
   residuals with a real deterministic negative control.
 - Reuse the existing prompt catalog and cognitive-program evidence board as the exact
@@ -44,12 +44,13 @@ composition, and would be loaded more often than the exact node context.
 
 ### Cognitive first, deterministic handoff explicit
 
-The six LLM-node reader projections use one ordered route: capability/contract,
-prompt/context, feedback/repair, proof/evaluation, then deterministic handoff. The
-order is not a claim that every failure is cognitive. A deterministic symptom names its
-typed/domain/graph owner and records why cognitive work is not causal. The five
-non-model projections retain their existing reader interfaces without fabricated
-prompt sections.
+The eight LLM-node reader projections -- Wave2 synthesis, HITL1, topic-planning,
+Wave0, Wave1, targeted-evidence, readiness, and final delivery -- use one ordered
+route: capability/contract, prompt/context, feedback/repair, proof/evaluation, then
+deterministic handoff. The order is not a claim that every failure is cognitive. A
+deterministic symptom names its typed/domain/graph owner and records why cognitive work
+is not causal. The three non-model projections -- bootstrap, HITL2, and rerun -- retain
+their existing reader interfaces without fabricated prompt sections.
 
 Alternative considered: require a cognitive checklist in all eleven projections.
 Rejected because it would misclassify intentional deterministic/human work as model
@@ -57,12 +58,15 @@ work and create misleading maintenance routes.
 
 ### A zero-residual working tree with a real test
 
-The terminology guard scans every tracked file, including retained archives and closed
-records. Its test code constructs forbidden tokens from fragments, allowing the
-working-tree scan to reach zero while still testing a planted residual. Archive and
-closed-record cleanup changes only imported terminology; it preserves identifiers,
-paths, dates, decisions, and validation facts. The imported external reference library
-is deleted after link audit instead of translated into an alternate guide.
+The terminology guard enumerates the tracked working tree without extension, path,
+archive, or backlog exclusions and scans raw bytes from every materialized ordinary
+file or symbolic-link value. Gitlink entries are metadata pointers rather than project
+text; the guard records their exclusion by mode instead of silently filtering a path.
+Its test code constructs forbidden tokens from fragments, allowing the working-tree
+scan to reach zero while still testing a planted residual. Archive and closed-record
+cleanup changes only imported terminology; it preserves identifiers, paths, dates,
+decisions, and validation facts. The imported external reference library is deleted
+after link audit instead of translated into an alternate guide.
 
 Alternative considered: exclude archive and backlog history from the guard. Rejected
 because those tracked texts remain discoverable to Coding Agents and continue to teach
@@ -87,7 +91,7 @@ proof. It does not mint a third prompt/capability registry.
 ## Migration Plan
 
 1. Add red current-language and reader-route fixtures before editing guidance.
-2. Update the map, entry routes, six LLM readers, Charter/reader requirements, and
+2. Update the map, entry routes, eight LLM readers, Charter/reader requirements, and
    associated contract tests.
 3. Audit all direct branch capability/prompt/evidence routes; correct only missing
    navigation and proof links.

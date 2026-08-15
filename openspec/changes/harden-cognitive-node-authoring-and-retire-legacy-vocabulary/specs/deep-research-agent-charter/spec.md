@@ -44,9 +44,13 @@ Every tracked project text surface, including source, tests, current specificati
 guidance, OpenSpec archive, and backlog records, SHALL use the current Deep
 Research/LangGraph vocabulary and SHALL contain no retired external workflow label.
 The project SHALL retain no checked-out imported workflow reference library. The
-deterministic language guard SHALL prove a zero-literal tracked-file scan while keeping
-the prohibited token construction confined to test-only fragments so a planted violation
-remains detectable without leaving a residual literal in the working tree.
+deterministic language guard SHALL enumerate tracked entries and scan raw bytes from
+every materialized ordinary file or symbolic-link value without extension, path,
+archive, backlog, or reference exceptions. It SHALL exclude only mode-`160000` Gitlink
+metadata, and SHALL fail closed for every other unsupported or unreadable materialized
+entry. It SHALL keep prohibited token construction confined to test-only fragments so a
+planted violation remains detectable without leaving a residual literal in the working
+tree.
 
 The guard SHALL preserve the factual decision, requirement identifier, path, date, and
 recorded validation outcome of a retained archive or closed record; terminology cleanup
@@ -57,6 +61,12 @@ does not reclassify historical behavior or create a compatibility term. (`DRC-01
   source/test surface, archived change, or closed backlog record
 - **THEN** the deterministic language guard rejects the repository and identifies the
   tracked surface that contains the residual
+
+#### Scenario: The complete tracked-file scan cannot hide a text surface
+- **WHEN** a prohibited external workflow label is planted in a materialized ordinary
+  tracked file or symbolic-link value with an unfamiliar path or extension
+- **THEN** the deterministic language guard rejects that exact path, while mode-`160000`
+  Gitlink entries are accounted for as metadata rather than scanned as text
 
 #### Scenario: Zero-literal scan retains a real negative control
 - **WHEN** the tracked-file residual scan runs on the completed repository
