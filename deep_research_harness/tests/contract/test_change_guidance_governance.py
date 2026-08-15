@@ -344,14 +344,17 @@ def _project(root: Path) -> None:
     _write(
         root,
         "openspec/README.md",
-        "# OpenSpec\n\nconfig.yaml\nspecs/\nchanges/\nproduct/deep-research.md\nchange-guidance/README.md\ngovernance/\n",
+        "# OpenSpec\n\n"
+        "config.yaml\nspecs/\nchanges/\nproduct/deep-research.md\n"
+        "change-guidance/README.md\ngovernance/\n",
     )
     _write(
         root,
         PRODUCT_DOCUMENT_PATH,
         "# Deep Research Product Context\n\n"
         "> role: concise product-context reading map\n"
-        "> authority: navigation only; definitions, requirements, runtime facts, and LLM-node authoring remain with their named owners\n\n"
+        "> authority: navigation only; definitions, requirements, runtime facts, and "
+        "LLM-node authoring remain with their named owners\n\n"
         "## Product Outcome\n\n"
         "A research outcome keeps evidence, scope, and material uncertainty visible.\n\n"
         "## Read By Question\n\n"
@@ -871,7 +874,8 @@ def test_product_document_cannot_claim_runtime_or_specification_authority(tmp_pa
     _replace(
         tmp_path,
         PRODUCT_DOCUMENT_PATH,
-        "authority: navigation only; definitions, requirements, runtime facts, and LLM-node authoring remain with their named owners",
+        "authority: navigation only; definitions, requirements, runtime facts, and "
+        "LLM-node authoring remain with their named owners",
         "authority: defines required behavior and runtime authority",
     )
 

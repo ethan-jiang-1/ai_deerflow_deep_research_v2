@@ -19,9 +19,8 @@
 
 | Plan | 类型 | 下一步 |
 |------|------|--------|
-| [node-cognitive-program-authoring-and-legacy-vocabulary-retirement.md](node-cognitive-program-authoring-and-legacy-vocabulary-retirement.md) | 架构 / 术语 / authoring guidance | 创建一个使全仓旧外来术语零残留、并收紧 cognitive-program authoring 的 OpenSpec change |
 
-**Next available plan ID: CLS-040**（移入 `_closed_plans/` 时分配）
+**Next available plan ID: CLS-041**（移入 `_closed_plans/` 时分配）
 
 ## 已归档（移至 `_done/_closed_plans/`）
 
