@@ -1,0 +1,3 @@
+# Local-only demo shell scripts. Never check these in.
+*
+!.gitignore
