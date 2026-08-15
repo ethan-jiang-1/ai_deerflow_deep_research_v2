@@ -14,6 +14,17 @@
 Workers propose untrusted source metadata; no worker accepts evidence, writes the
 ledger, decides retry, or selects a route.
 
+## LLM-Node Authoring Route
+
+For a model-bearing behavior symptom, read these local owners in order before changing
+validation, the ledger, or a gate.
+
+1. **Capability and contract:** [`capabilities.py`](capabilities.py) and [`contracts.py`](contracts.py) state the bounded worker and repair responsibilities.
+2. **Prompt and context:** [`prompts.py`](prompts.py) separates trusted assignment/output facts from delimited retrieved or draft content.
+3. **Feedback and repair:** [`subgraph.py`](subgraph.py) carries only bounded validation feedback into the zero-tool repair branch.
+4. **Proof and evaluation:** [`test_wave0_work_units.py`](../../../../../tests/integration/test_wave0_work_units.py) and the [cognitive-program evidence board](../../../../../tests/assets/node_agent_capabilities.py) cover the worker and repair branches without claiming source quality.
+5. **Deterministic handoff:** [`subgraph.py`](subgraph.py) and [`node.py`](node.py) send candidates to the existing validator, controller, ledger, and gate; workers cannot admit evidence or select a route.
+
 ## From Symptoms
 
 | Symptom | First owner | Proof seam |

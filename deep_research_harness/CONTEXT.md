@@ -392,7 +392,7 @@ _Avoid_: a Python execution driver, a one-shot opaque LLM judge, an auto-fixer, 
 **Evaluation Review Protocol**:
 The concise, versioned review instructions and output shape used by a Coding Agent or
 other evaluator to inspect an Evaluation Run Bundle. It gives V1 repeatability without
-creating a separately loaded MD Controller, evaluator runtime, or evaluator graph.
+creating a separately loaded Python control, evaluator runtime, or evaluator graph.
 _Avoid_: a production prompt authority, a second graph, a per-node Python judge
 
 **Cognitive Evaluation Review**:

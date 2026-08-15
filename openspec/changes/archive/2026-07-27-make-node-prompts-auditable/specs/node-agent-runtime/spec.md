@@ -2,9 +2,9 @@
 
 ## ADDED Requirements
 
-### Requirement: Phase-agent bridge consumes the shared final prompt projection
+### Requirement: node-agent bridge consumes the shared final prompt projection
 
-Before constructing a phase-agent child state, `RuntimeNodeAgentBridge` SHALL obtain
+Before constructing a node-agent child state, `RuntimeNodeAgentBridge` SHALL obtain
 the system-policy text and final human message from the agents-owned pure final-prompt
 renderer using the current validated `NodeExecutionRequest` and attempt workspace. It
 SHALL preserve the existing child sandbox/thread metadata, model and tool resolution,

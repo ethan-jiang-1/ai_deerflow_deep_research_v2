@@ -23,7 +23,7 @@ be the durable or user-facing representation of a known invocation failure.
   classification and the lifecycle can project a terminal incident without fabricating
   raw provider detail
 
-#### Scenario: A direct phase preserves a closed phase-agent stop
+#### Scenario: A direct phase preserves a closed node-agent stop
 - **WHEN** topic planning receives a non-successful result with
   `provider.usage_unavailable`, `budget.exhausted`, or `policy.denied`
 - **THEN** its terminal incident and later diagnostic/presentation projection retain
@@ -42,4 +42,4 @@ be the durable or user-facing representation of a known invocation failure.
   classified node problem
 - **THEN** it fails closed with an explicit bounded unknown outcome and does not label
   it as provider timeout, provider unavailable, structured output failure, or a known
-  phase-agent stop
+  node-agent stop

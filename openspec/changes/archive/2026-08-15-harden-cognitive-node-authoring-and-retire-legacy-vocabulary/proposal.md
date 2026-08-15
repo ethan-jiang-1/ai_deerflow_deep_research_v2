@@ -64,6 +64,6 @@ None.
   `graph/nodes/{wave2_synthesis,hitl1,topic_planning,wave0,wave1,targeted_evidence,readiness,final_delivery}/workflow.md`
   files and their contract tests.
 - Affected terminology records: current docs/specs/tests plus committed OpenSpec archive
-  and backlog records; the imported `_backlog/_reference/dpt/` library is removed after
-  link verification.
+  and backlog records; the imported workflow reference library is removed after link
+  verification.
 - No public API, persisted data, runtime behavior, or DeerFlow gitlink changes.

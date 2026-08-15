@@ -91,7 +91,7 @@ evidence that an LLM is already active.
 - **Necessary adjacent/external contracts:**
   - node-agent-reader-interface: answers how the existing six package-local
     workflow.md obligations coexist with the future eleven-node fixed-shape rollout.
-  - node-agent-capabilities: supplies the accepted capability bindings and direct
+  - node-agent-capabilities: supplies the accepted capability references and direct
     branch evidence for the current sixteen-branch audit; it is not modified here.
   - hitl2-node, readiness-node, and final-delivery-node: identify the accepted or
     unresolved product commitments that must remain distinct from current mechanisms;
@@ -146,7 +146,7 @@ conditional product responsibility already has a model loop, or that branch-leve
 quality has been evaluated. A node aggregate or a different branch's evidence cannot
 substitute for an individual row.
 
-| Current direct branch | Capability binding | Production entrypoint |
+| Current direct branch | capability reference | Production entrypoint |
 | --- | --- | --- |
 | hitl1/brief | hitl1-profile-brief | graph/nodes/hitl1/node.py::build_real |
 | hitl1/brief-repair | hitl1-profile-brief-repair | graph/nodes/hitl1/node.py::build_real |

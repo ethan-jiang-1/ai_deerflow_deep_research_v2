@@ -108,7 +108,7 @@ bridge and SHALL reject them from every other runtime module or layer. (`NOA-007
   published as a successful, blocked, or graph-cancelled result
 
 #### Scenario: Timeout carries an honest no-response observation
-- **WHEN** a bounded HITL1 phase-agent invocation reaches its wall-time limit
+- **WHEN** a bounded HITL1 node-agent invocation reaches its wall-time limit
 - **THEN** the bridge returns one `provider.timeout` problem with phase attribution,
   a vetted service label when available, `no_response`, no HTTP status, and no retry
 
@@ -158,13 +158,13 @@ bridge and SHALL reject them from every other runtime module or layer. (`NOA-007
   not label the result `provider.unavailable` for graph recovery
 
 #### Scenario: Unsupported HTTP status remains visible but non-retryable
-- **WHEN** a bounded phase-agent invocation raises a public `httpx.HTTPStatusError`
+- **WHEN** a bounded node-agent invocation raises a public `httpx.HTTPStatusError`
   with an unsupported status such as `400`
 - **THEN** the bridge returns its existing non-transient category with the safe `400`
   observation and does not label the result retry-eligible
 
 #### Scenario: Tool HTTP failure is not labelled as a model service
-- **WHEN** a tools-enabled phase-agent invocation raises a direct HTTP transport or
+- **WHEN** a tools-enabled node-agent invocation raises a direct HTTP transport or
   status error
 - **THEN** the bridge preserves its existing safe failure mapping without attaching a
   configured model-service observation or making the result newly retry-eligible

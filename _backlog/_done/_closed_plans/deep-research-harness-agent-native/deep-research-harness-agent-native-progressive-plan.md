@@ -139,11 +139,11 @@ durable decision 位于
 | 11 个 `workflow.md` 合计 427 行 | `graph/nodes/*/workflow.md` | main spec 明确把它们定义为 non-runtime reader projection；它们不能控制模型执行。 |
 | 方法、步骤、禁止项、repair 和输出格式大量拼在 `prompts.py` | `hitl1`、`topic_planning`、`wave0`、`wave1`、`wave2_synthesis`、`targeted_evidence` | 修改认知行为仍迫使 coding agent 像改传统程序一样改字符串和分支。 |
 | `NodeExecutionRequest` 的主要认知接口仍是自由文本 `objective` / `expected_output` | `domain/context.py` | capability 虽已可加载，但 Python 仍能临时重写大部分方法；认知程序没有单一、可版本化的 owner。 |
-| `RuntimeNodeAgentBridge` 每次建立无 checkpointer 的 ephemeral full-takeover agent | `agents/factory.py`、`runtime/node_agent_bridge.py` | 当前只保留 budget 和 tool-policy middleware；这是合理的 bounded phase-agent 安全姿态，但不等于充分利用 DeerFlow 的 skill/workflow 能力。 |
+| `RuntimeNodeAgentBridge` 每次建立无 checkpointer 的 ephemeral full-takeover agent | `agents/factory.py`、`runtime/node_agent_bridge.py` | 当前只保留 budget 和 tool-policy middleware；这是合理的 bounded node-agent 安全姿态，但不等于充分利用 DeerFlow 的 skill/workflow 能力。 |
 
 DeerFlow lead agent 已经提供正确的分层样板：SOUL / activated `SKILL.md` 负责让模型识别任务、
 选择 workflow 和解释结果；middleware、tool schema、ThreadState 与 runtime owner 负责执行边界。
-充分利用 DeerFlow 不意味着给每个内部 phase agent 打开 memory、subagent、todo 或 clarification，
+充分利用 DeerFlow 不意味着给每个内部 node agent 打开 memory、subagent、todo 或 clarification，
 而是让 **Markdown 成为认知方法的 runtime source**，再按每个角色的风险显式选择能力和
 middleware。full-takeover 可以继续存在，但必须是经过说明的 capability posture，而不能成为
 “既然都关掉了，就继续把认知写回 Python”的理由。

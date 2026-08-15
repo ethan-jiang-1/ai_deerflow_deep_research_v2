@@ -2,7 +2,7 @@
 
 See [proposal.md](proposal.md) for the observed demo failures. The current
 `RuntimeNodeAgentBridge` is the causal boundary for both failures: it turns every
-`PhaseAgentStop` into `tool.execution_failed`, and it decides whether a direct provider
+`NodeAgentStop` into `tool.execution_failed`, and it decides whether a direct provider
 exception can carry a safe `ProviderObservation` with a hard-coded `hitl1` node-name
 check. `ExecutionPolicy` is already frozen and owns each phase's tool posture and
 budget, but it has no provider-observation admission value.
@@ -12,13 +12,13 @@ when it receives `provider.timeout` or `provider.unavailable` with a safe observ
 the bridge currently prevents a real topic-planning `httpx.ReadTimeout` from reaching
 that table. `NodeProblem`, terminal incidents, and `ResearchRunExperience` already
 carry closed categories, but `RunFailureCode` and the shared safe-copy map do not yet
-represent the three distinct phase-agent stop outcomes.
+represent the three distinct node-agent stop outcomes.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
-- Preserve the typed reason of an eligible phase-agent stop through the bridge, direct
+- Preserve the typed reason of an eligible node-agent stop through the bridge, direct
   phase terminal incident, and shared run presentation. When that incident has no
   diagnostic reference, retain the existing shared diagnostic-publication behavior,
   which derives an opaque reference only from typed terminal facts.
@@ -41,21 +41,21 @@ represent the three distinct phase-agent stop outcomes.
 
 ## Decisions
 
-### 1. Project trusted phase-agent stops with a closed mapping table
+### 1. Project trusted node-agent stops with a closed mapping table
 
 The bridge will add three additive `RunFailureCode` values:
 
-| `NodeFinishReason` from `PhaseAgentStop` | Resulting `RunFailureCode` |
+| `NodeFinishReason` from `NodeAgentStop` | Resulting `RunFailureCode` |
 | --- | --- |
 | `USAGE_UNAVAILABLE` | `provider.usage_unavailable` |
 | `BUDGET_EXHAUSTED` | `budget.exhausted` |
 | `POLICY_DENIED` | `policy.denied` |
 
 The bridge will preserve the non-success `finish_reason` in `NodeExecutionResult` and
-use the table only for the typed `NodeProblem`. An unsupported `PhaseAgentStop` reason
+use the table only for the typed `NodeProblem`. An unsupported `NodeAgentStop` reason
 will fail closed as `internal.unexpected`. Neither stop detail nor exception text will
 be copied into `NodeProblem`, terminal state, diagnostic input, or presentation.
-No `PhaseAgentStop` will be a fallback to `tool.execution_failed`. Existing non-stop
+No `NodeAgentStop` will be a fallback to `tool.execution_failed`. Existing non-stop
 tools-enabled mappings, including the required-tool-count validation, remain outside
 this change.
 

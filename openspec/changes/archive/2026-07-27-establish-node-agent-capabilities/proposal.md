@@ -1,6 +1,6 @@
 ## Why
 
-The prompt catalog now makes a phase-agent request inspectable, but a request still
+The prompt catalog now makes a node-agent request inspectable, but a request still
 does not identify a node-local cognitive contract. A reviewer can see prompt text
 without being able to verify the bounded job, admitted candidate, tool posture, or
 deterministic evidence that belongs to a particular model-bearing branch. The fast
@@ -48,7 +48,7 @@ deterministic gate rather than treating focused evidence as an acceptance bypass
 
 | Failure class | Fact owner | Recovery owner and bound | Terminal disposition | Legal next action | Deterministic evidence seam |
 | --- | --- | --- | --- | --- | --- |
-| Missing or malformed migrated capability binding/ref | Request validation before node invocation | No node invocation or model call; no fallback capability. | Rejected request/configuration input. | Correct the builder/declaration before retrying the request. | Direct invalid-binding fixtures proving no node/model/tool invocation. |
+| Missing or malformed migrated capability reference/ref | Request validation before node invocation | No node invocation or model call; no fallback capability. | Rejected request/configuration input. | Correct the builder/declaration before retrying the request. | Direct invalid-binding fixtures proving no node/model/tool invocation. |
 | Unknown or mismatched migrated capability resource | Capability-resource loader before invocation | Owning node performs no model call and uses its existing failure handling; no fallback capability. | Existing node-owned non-success path. | The node's existing declared failure/blocked route only. | Invalid-resource fixtures and recording bridge proving no model/tool invocation. |
 | Requested and runtime-resolved tool posture disagree | Runtime bridge and `ExecutionPolicy` admission boundary | No model call or tool dispatch; no retry is created by this change. | Existing node-owned non-success path. | The node's existing declared failure/blocked route only. | Recording tool-binding fixture for required, forbidden, and unavailable tools. |
 | Candidate violates the branch output contract | Branch parser/evaluator/materializer | Existing branch-local repair bound, then its existing failure path. | Existing node-owned terminal or work-unit disposition. | Existing graph route after deterministic rejection. | Scripted malformed candidate and exhausted-repair journey through the real node seam. |
@@ -57,7 +57,7 @@ deterministic gate rather than treating focused evidence as an acceptance bypass
 
 - Add an agents-owned typed `NodeAgentCapability` declaration and a trusted,
   node-local capability-resource loader. The execution interface stays small: a
-  `legacy`/`required` capability binding marker with an exclusive reference
+  `legacy`/`required` capability selector with an exclusive reference
   invariant (`legacy` has no reference; `required` has one valid reference), trusted
   assignment, expected output contract, and numeric execution limits.
   Parser/evaluator/materializer, catalog source, repair owner, and evidence metadata

@@ -2,12 +2,14 @@
 """Validate non-runtime node-local workflow reader projections.
 
 @impl CNI-005
+@impl NRI-004
 """
 
 from __future__ import annotations
 
 import argparse
 import ast
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -29,6 +31,16 @@ REQUIRED_HEADINGS = (
     "Evaluation and Verification Order",
 )
 AUTHORITY_NOTICE = "Reader interface only. This file is not a runtime resource or configuration."
+LLM_NODE_PARTICIPATION_MODE = "bounded cognitive program"
+LLM_NODE_ROUTE_HEADING = "LLM-Node Authoring Route"
+LLM_NODE_ROUTE_STEPS = (
+    "Capability and contract",
+    "Prompt and context",
+    "Feedback and repair",
+    "Proof and evaluation",
+    "Deterministic handoff",
+)
+MARKDOWN_LINK = re.compile(r"\[[^\]]+\]\((?P<target>[^)]+)\)")
 
 
 class WorkflowReaderError(ValueError):
@@ -47,6 +59,56 @@ class WorkflowIdentityRecord:
     primary_program_surface: str
     deterministic_authority_boundary: str
     current_model_branch_evidence: str
+
+
+def _section_after_heading(text: str, heading: str) -> str | None:
+    match = re.search(rf"^## {re.escape(heading)}\s*$", text, flags=re.MULTILINE)
+    if match is None:
+        return None
+    next_heading = re.search(r"^## (?!#)", text[match.end() :], flags=re.MULTILINE)
+    end = match.end() + next_heading.start() if next_heading else len(text)
+    return text[match.end() : end]
+
+
+def _llm_node_route_step_lines(node: str, text: str) -> tuple[str, ...]:
+    if f"> Participation mode: {LLM_NODE_PARTICIPATION_MODE}" not in text:
+        return ()
+    route = _section_after_heading(text, LLM_NODE_ROUTE_HEADING)
+    if route is None:
+        raise WorkflowReaderError(f"{node}: llm_authoring_route_heading_missing")
+
+    lines: list[str] = []
+    positions: list[int] = []
+    for step in LLM_NODE_ROUTE_STEPS:
+        match = re.search(
+            rf"^\d+\. \*\*{re.escape(step)}:\*\* (?P<detail>.+)$",
+            route,
+            flags=re.MULTILINE,
+        )
+        if match is None:
+            raise WorkflowReaderError(f"{node}: llm_authoring_route_step_missing:{step}")
+        if MARKDOWN_LINK.search(match.group("detail")) is None:
+            raise WorkflowReaderError(f"{node}: llm_authoring_route_link_missing:{step}")
+        positions.append(match.start())
+        lines.append(match.group("detail"))
+    if positions != sorted(positions):
+        raise WorkflowReaderError(f"{node}: llm_authoring_route_order_invalid")
+    return tuple(lines)
+
+
+def _validate_llm_node_route_links(repo_root: Path, node: str, text: str, path: Path) -> None:
+    for detail in _llm_node_route_step_lines(node, text):
+        for match in MARKDOWN_LINK.finditer(detail):
+            target = match.group("target").split("#", 1)[0]
+            if not target or target.startswith(("/", "http://", "https://")):
+                raise WorkflowReaderError(f"{node}: llm_authoring_route_link_target_invalid:{target}")
+            target_path = (path.parent / target).resolve()
+            try:
+                target_path.relative_to(repo_root)
+            except ValueError as exc:
+                raise WorkflowReaderError(f"{node}: llm_authoring_route_link_target_invalid:{target}") from exc
+            if not target_path.is_file():
+                raise WorkflowReaderError(f"{node}: llm_authoring_route_link_target_missing:{target}")
 
 
 def logical_nodes(repo_root: Path) -> tuple[str, ...]:
@@ -91,6 +153,7 @@ def validate_reader_text(node: str, text: str) -> None:
             raise WorkflowReaderError(f"{node}: heading_missing:{heading}") from exc
     if heading_positions != sorted(heading_positions):
         raise WorkflowReaderError(f"{node}: heading_order_invalid")
+    _llm_node_route_step_lines(node, text)
 
 
 def load_reader_identity(node: str, text: str) -> WorkflowIdentityRecord:
@@ -123,7 +186,9 @@ def load_reader_inventory(repo_root: Path) -> tuple[WorkflowIdentityRecord, ...]
         path = repo_root / NODE_ROOT / node / "workflow.md"
         if not path.is_file():
             raise WorkflowReaderError(f"{node}: workflow_missing")
-        records.append(load_reader_identity(node, path.read_text(encoding="utf-8")))
+        text = path.read_text(encoding="utf-8")
+        records.append(load_reader_identity(node, text))
+        _validate_llm_node_route_links(repo_root, node, text, path)
     return tuple(records)
 
 

@@ -15,7 +15,7 @@
     同一个 runtime_policy.md system prompt
                     │
                     v
-    RuntimeNodeAgentBridge -> build_phase_agent()
+    RuntimeNodeAgentBridge -> build_node_agent()
 ```
 
 `NodeExecutionRequest` 只有 `objective`、`expected_output`、source artifact refs 和工具
@@ -45,10 +45,10 @@
 
 | 环节 | 当前 owner | 当前行为 | 缺口 |
 | --- | --- | --- | --- |
-| 角色 policy | `agents/resources/node_agent/runtime_policy.md` | 所有 branch 读同一份“bounded phase agent”文字。 | 没有 node 独有角色、方法、成功标准或工具策略。 |
+| 角色 policy | `agents/resources/node_agent/runtime_policy.md` | 所有 branch 读同一份“bounded node agent”文字。 | 没有 node 独有角色、方法、成功标准或工具策略。 |
 | 动态任务 | `graph/nodes/**/prompts.py` | 将角色、任务、数据、修复规则和 schema 组合为长 `objective` 字符串。 | 静态 policy 与动态 assignment 混合，审查和重用都困难。 |
 | request contract | `domain/context.py::NodeExecutionRequest` | 仅含字符串和工具数值，无 capability。 | runtime 无法验证“此请求应是什么 agent”。 |
-| 执行 | `runtime/node_agent_bridge.py` | 按 `tools_enabled` 解析工具，调用共享 renderer / phase agent。 | `system_prompt` 可替换整个 policy；默认 `tools_enabled=True` 会掩盖 node 的意图。 |
+| 执行 | `runtime/node_agent_bridge.py` | 按 `tools_enabled` 解析工具，调用共享 renderer / node agent。 | `system_prompt` 可替换整个 policy；默认 `tools_enabled=True` 会掩盖 node 的意图。 |
 | 审计 | `agent/node_prompts/` | 正确 dump 所有 case 的最终 system/human message。 | 它证明 system 层相同，却还不能证明 branch 有独立 capability。 |
 
 ## 实际模型调用 branch

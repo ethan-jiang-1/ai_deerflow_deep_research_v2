@@ -164,6 +164,6 @@ def test_request_bundle_store_protocol_is_pure_and_runtime_checkable() -> None:
 
 
 @pytest.mark.parametrize("name", ["queue.json", "index.json", "status.json", "claims.queue"])
-def test_dpt_control_files_are_not_registered_bundle_paths(name: str) -> None:
+def test_imported_workflow_control_files_are_not_registered_bundle_paths(name: str) -> None:
     path = f"{run_bundle_root(BUNDLE)}/work/{name}"
     assert classify_bundle_path(path) is BundlePathKind.UNKNOWN

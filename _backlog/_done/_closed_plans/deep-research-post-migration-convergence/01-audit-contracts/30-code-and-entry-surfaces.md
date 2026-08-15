@@ -50,8 +50,8 @@ helper 或第二个 controller。
 
 重点审计：
 
-- `phase agent` 文件、docstring、runtime policy 和 prompt identity；
-- legacy capability binding/default；
+- 已退役的导入式 actor 标签所在文件、docstring、runtime policy 和 prompt identity；
+- legacy capability selector/default；
 - capability Markdown、prompt builder、feedback/repair 与 current Node Cognitive Control Contract 是否
   使用同一语言；
 - 旧模型策略是否仍能被 runtime loader 选中；

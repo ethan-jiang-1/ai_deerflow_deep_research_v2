@@ -87,7 +87,7 @@ ResearchState: topic_registry + accepted_submission_refs
 | --- | --- | --- | --- |
 | `agent/src/deerflow_deep_research/resources/node_agent/runtime_policy.md` | model-visible system policy | `agents/prompts.py::load_policy_prompt` 读取，作为 shared base system policy | **是，system** |
 | capability MD 第一行 `<!-- node-agent-capability: ... -->` | deterministic admission metadata | `agents/capabilities.py::load_node_agent_capability` 校验 ID/schema；`tool_posture` 参与 runtime admission；整行随后被剥离 | **否** |
-| capability MD 第一行后的 body | model-visible system policy | 同一 loader 返回 `policy`；`agents/phase_prompt.py::render_phase_agent_prompt` 追加到 base system policy | **是，system** |
+| capability MD 第一行后的 body | model-visible system policy | 同一 loader 返回 `policy`；`agents/phase_prompt.py::render_node_agent_prompt` 追加到 base system policy | **是，system** |
 | `NodeExecutionRequest.objective` | model-visible request content | `wave2_synthesis/prompts.py` 构造；renderer 放进 `Objective:` user message | **是，user** |
 | `NodeExecutionRequest.expected_output` | model-visible request content | `_expected_synthesis_output` 构造；renderer 放进 `Expected output:` user message | **是，user** |
 | accepted evidence JSON | model-visible untrusted data | `build_synthesis_prompt` / repair builder 放进 delimited untrusted block，作为 objective 的一部分 | **是，user/untrusted** |
@@ -125,13 +125,13 @@ graph/builder.py::_node_wrapper
   -> NodeExecutionRequest(capability_ref=WAVE2_EVIDENCE_SYNTHESIS)
   -> dependencies.capabilities.run_agent
   -> runtime/node_agent_bridge.py::RuntimeNodeAgentBridge.run_agent
-  -> agents/phase_prompt.py::render_phase_agent_prompt
+  -> agents/phase_prompt.py::render_node_agent_prompt
   -> agents/capabilities.py::load_node_agent_capability
   -> importlib.resources reads capabilities/wave2-evidence-synthesis.md
   -> capability body appended to shared system policy
   -> objective + expected_output rendered as user message
   -> bridge resolves zero tools + model
-  -> agents/factory.py::build_phase_agent
+  -> agents/factory.py::build_node_agent
   -> agent.ainvoke
   -> RuntimeNodeAgentBridge._project_result
   -> NodeExecutionResult.summary

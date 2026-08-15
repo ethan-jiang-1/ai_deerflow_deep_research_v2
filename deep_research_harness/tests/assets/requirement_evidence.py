@@ -393,14 +393,14 @@ REQUIREMENT_IMPACTS = (
         "node-prompt-catalog",
         StableSeam.NODE_INTERFACE,
         "tests/graph/test_node_agent_capability_cohort.py::test_cohort_branch_binding[hitl1/brief]",
-        "the profile-brief catalog case must project its required local capability binding",
+        "the profile-brief catalog case must project its required local capability reference",
     ),
     RequirementImpact(
         "NPC-004",
         "node-prompt-catalog",
         StableSeam.NODE_INTERFACE,
         "tests/graph/test_node_agent_capability_cohort.py::test_cohort_branch_binding[wave1/source-diagnostic]",
-        "the eight planning and initial-intake catalog cases cannot hide the Wave1 critic capability binding",
+        "the eight planning and initial-intake catalog cases cannot hide the Wave1 critic capability reference",
     ),
     RequirementImpact(
         "TOP-006",
@@ -1200,7 +1200,7 @@ REQUIREMENT_IMPACTS = (
         StableSeam.RUNTIME_INTEGRATION,
         (
             "tests/unit/test_node_agent_bridge.py::"
-            "test_retired_selected_endpoint_aliases_are_omitted_even_when_they_match_base_url"
+            "test_retired_selected_endpoint_aliases_are_omitted_even_when_they_match_base_url[openai-api-base-only]"
         ),
         "a retired selected-config alias could otherwise become a safe-looking endpoint observation",
     ),

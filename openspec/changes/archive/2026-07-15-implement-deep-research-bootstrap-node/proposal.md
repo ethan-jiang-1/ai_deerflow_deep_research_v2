@@ -101,7 +101,7 @@ invariants (GAK-001..006), and the implementation map (REG-001) are unchanged.
 - **Sandbox artifacts read/written:** the bootstrap node writes the minimal
   `workspace/deep-research/<research_id>/` directory tree and a schema/version marker under
   the canonical `request` subtree, and reads the marker back for binding validation. No
-  evidence ledger, work-spec, result, or DPT queue/index/status bundle file is created. No
+  evidence ledger, work-spec, result, or imported workflow queue/index/status bundle file is created. No
   `rb_status.json` phase cursor is added.
 - **DeerFlow extension surfaces:** the existing downstream reflection path
   `deerflow_deep_research.tool:deep_research_tool` and registered lifecycle handlers are
@@ -120,7 +120,7 @@ invariants (GAK-001..006), and the implementation map (REG-001) are unchanged.
   already proven by change 04. Provisioner/remote/non-mounted sandbox modes fail closed in
   this version.
 - **Non-goals:** no topic rewrite, profile derivation, or user questioning; no real research
-  worker, source fetching, findings, or report generation; no DPT `rb_status.json` phase
+  worker, source fetching, findings, or report generation; no imported workflow `rb_status.json` phase
   cursor; no second submit/ledger/retry/drain authority. No files under `backend/` or
   `frontend/` are modified.
 

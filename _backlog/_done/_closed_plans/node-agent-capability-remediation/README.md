@@ -31,7 +31,7 @@ node 都有 prompt”的形式要求而给不应调用模型的状态/格式化�
 ## 共同证据
 
 当前所有 16 个 branch 都由
-`agents/phase_prompt.py::render_phase_agent_prompt()` 组合相同的
+`agents/phase_prompt.py::render_node_agent_prompt()` 组合相同的
 `resources/node_agent/runtime_policy.md` system text；node-specific 内容在 `Objective` 和
 `Expected output` 的 human message 中。现有生成审计目录 `agent/node_prompts/` 已把这个
 事实逐项展示出来。

@@ -492,7 +492,7 @@ def test_cognitive_program_evidence_rejects_invalid_rows(rows, claim_mutation: s
             (replace(COHORT_EVIDENCE[0], capability_id="unknown-capability"), *COHORT_EVIDENCE[1:]),
             None,
             None,
-            "unknown or missing capability binding",
+            "unknown or missing capability reference",
             id="unknown-capability",
         ),
         pytest.param(

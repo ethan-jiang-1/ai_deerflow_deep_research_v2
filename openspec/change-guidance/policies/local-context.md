@@ -103,12 +103,22 @@ cognitive-program seam before any deterministic edit:
 | Wrong route or terminal | Gate, wrapper, or route seam |
 
 A cognitive-program edit states its cognitive hypothesis and the observable result
-or evaluation that will show whether the edit worked. A deterministic edit for a
-node-behavior symptom is a guardrail change, not a substitute repair: it records a
-`Seam classification` showing the cognitive-program seam was already adjusted or
-rejected first. Presence or absence of a direct `run_agent` call is current-mechanism
-evidence, never a node's product identity; never infer a seam from the first file
-opened.
+or evaluation that will show whether the edit worked. The first-owner rule is specific
+to the declared classification:
+
+- **cognitive-program:** start at the local capability, prompt/context, and
+  feedback/repair surfaces; state the bounded cognitive responsibility and the evidence
+  that could disconfirm the change.
+- **deterministic-guardrail:** start at the named typed, parser, materializer, gate, or
+  route owner. For a model-bearing behavior symptom, record that the cognitive program
+  was considered or rejected first; a deterministic-only change does not fabricate a prompt obligation.
+- **human-decision:** start at the semantic subject, typed input boundary, and graph
+  authority. Do not infer a model role or prompt from a person making a decision.
+- **wiring:** start at the composition, injection, or adapter boundary. Inspect a
+  cognitive program only when the wiring change alters model-visible behavior.
+
+Presence or absence of a direct `run_agent` call is current-mechanism evidence, never
+a node's product identity; never infer a seam from the first file opened.
 
 Every active proposal declares exactly one closed value on its Focus Card's `Seam
 classification` field, written bare (no backticks, no punctuation inside the value),

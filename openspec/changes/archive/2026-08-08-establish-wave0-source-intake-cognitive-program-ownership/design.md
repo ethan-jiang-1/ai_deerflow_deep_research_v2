@@ -1,7 +1,7 @@
 ## Context
 
 See `proposal.md` for motivation and `specs/wave0-node/spec.md` for the required
-behavior. Wave0 already has two required local capability bindings: a required-tool
+behavior. Wave0 already has two required local capability references: a required-tool
 source-intake worker and a forbidden-tool repairer. The final renderer loads those
 resources, but `graph/nodes/wave0/prompts.py` still contains independently sufficient
 method text for retrieval, source judgment, untrusted data, limitations, and repair.

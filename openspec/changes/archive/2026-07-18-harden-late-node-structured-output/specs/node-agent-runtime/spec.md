@@ -2,7 +2,7 @@
 
 ## MODIFIED Requirements
 
-### Requirement: Phase-agent execution has explicit budgets
+### Requirement: node-agent execution has explicit budgets
 
 Every request-level tool-call limit SHALL be enforced cumulatively before tool
 dispatch, including a model response that proposes parallel calls. If prior calls plus

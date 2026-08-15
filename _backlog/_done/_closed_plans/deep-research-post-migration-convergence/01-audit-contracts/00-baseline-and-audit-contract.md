@@ -106,7 +106,7 @@ rg -n -i \
   --glob '!**/__pycache__/**' --glob '!**/.venv/**' --glob '!**/.reports/**'
 
 rg -n -i \
-  'phase agent|md controller|full_fake|deerflow_research|research session|run session' \
+  'node agent|Python control|full_fake|deerflow_research|research session|run session' \
   deep_research_harness openspec/specs \
   --glob '!**/__pycache__/**'
 ```

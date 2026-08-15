@@ -6,7 +6,7 @@
 
 The next capability cohort SHALL migrate exactly the following six cases from `legacy`
 to `required` bindings. Each listed resource SHALL be package-local; a forbidden posture
-SHALL retain a required capability binding while exposing no model-visible tool.
+SHALL retain a required capability reference while exposing no model-visible tool.
 
 | Catalog case | Capability ID | Package identity | Resource | Tool posture |
 | --- | --- | --- | --- | --- |

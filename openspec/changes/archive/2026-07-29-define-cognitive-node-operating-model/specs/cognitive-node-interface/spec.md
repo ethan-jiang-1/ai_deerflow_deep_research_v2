@@ -75,7 +75,7 @@ commitment state, primary cognitive/control program surface, or deterministic
 authority boundary.
 
 When current direct model branches are in scope, the change SHALL keep one
-individual branch row for every source-audited branch and capability binding. A
+individual branch row for every source-audited branch and capability reference. A
 grouped node row, aggregate test, generic category, or another branch's evidence
 SHALL NOT close a missing row. If the topology or branch discovery set differs from the
 accepted review, the change SHALL stop for new admission rather than silently edit a

@@ -17,7 +17,7 @@ serializes one checkpoint namespace only with process-local lock stripes, so tha
 cannot by itself protect a ledger shared by independent Gateway processes.
 
 Two current boundaries require explicit correction rather than assumption. First,
-`runtime/projection.py` currently derives phase-agent roots as
+`runtime/projection.py` currently derives node-agent roots as
 `<research_root>/attempts/<attempt_id>`, while the approved work-unit bundle is
 `<research_root>/work/<work_id>/<attempt_id>`. Second, the public sandbox providers do
 not all share `workspace_host_path`: LocalSandbox and local-container AIO use thread-data
@@ -59,7 +59,7 @@ source is changed.
   evidence floors.
 - DeerFlow `task` subagents, MCP, ACP, a second sandbox lifecycle, or a second delegated
   completion path.
-- DPT queue/index/status control files, a 20-item active window, dynamic priorities,
+- imported workflow queue/index/status control files, a 20-item active window, dynamic priorities,
   preemption, or late-submit winner semantics.
 - A database ledger, distributed consensus across hosts whose shared filesystem does not
   honor POSIX locking/rename semantics, or Postgres-backed action coordination.

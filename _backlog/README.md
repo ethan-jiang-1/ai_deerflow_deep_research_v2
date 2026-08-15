@@ -120,5 +120,5 @@ git mv plans/<name>.md _done/_closed_plans/<name>.md
 | `openspec/changes/` | 活跃 change |
 | `_digest/` | DeerFlow 源码研究笔记 |
 | `_faq_on_digested/` | 基于 digest 的 FAQ |
-| `_backlog/reference/` | 外部系统分析资料（如 DPT_FRAMEWORK），消化后产出 `_backlog/plans/` |
+| `_backlog/reference/` | 外部系统分析资料（如 imported workflow framework），消化后产出 `_backlog/plans/` |
 | `backend/` `frontend/` | 上游镜像（**禁改**，`main` 分支 1:1 跟踪 bytedance/deer-flow） |

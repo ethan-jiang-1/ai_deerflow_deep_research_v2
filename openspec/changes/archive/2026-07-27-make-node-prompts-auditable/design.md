@@ -1,6 +1,6 @@
 ## Context
 
-The phase-agent runtime currently reads one package Markdown policy and constructs
+The node-agent runtime currently reads one package Markdown policy and constructs
 the user message privately inside `RuntimeNodeAgentBridge`. Node-specific prompt
 builders return `NodeExecutionRequest` values from Python. This keeps execution
 bounded, but gives reviewers no single, rendered representation of what a node agent
@@ -15,7 +15,7 @@ committed output.
 
 **Goals:**
 
-- Render the exact package policy and final human message used for a phase-agent
+- Render the exact package policy and final human message used for a node-agent
   invocation from a `NodeExecutionRequest` and a canonical attempt workspace.
 - Make every direct node prompt-builder branch that can reach `run_agent` visible as
   a stable Markdown artifact in `agent/node_prompts/`.
@@ -73,7 +73,7 @@ is a review-completeness boundary, not runtime discovery or routing authority.
 Each case has a stable identity, source builder identity, repair flag, fixed virtual
 attempt workspace, and code-owned synthetic fixture. Fixtures use explicit synthetic
 markers and never derive a value from the environment, clock, provider, or a run.
-The registry covers every direct builder branch that can reach the phase-agent
+The registry covers every direct builder branch that can reach the node-agent
 capability, including normal and repair variants. The graph registry does not render
 the final message or import the agents layer.
 

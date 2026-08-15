@@ -10,7 +10,7 @@ already-specified one-shot provider recovery from running through the real bridg
 
 - **Primary module / causal owner:**
   `deerflow_research/src/deerflow_deep_research/runtime/node_agent_bridge.py`.
-  The bridge owns the deterministic projection of a phase-agent stop or direct
+  The bridge owns the deterministic projection of a node-agent stop or direct
   provider exception into the typed `NodeProblem` consumed by a graph node.
 - **Question:** How does a zero-tool node-agent termination or direct provider
   exception reach topic planning with a truthful closed category and, only when a
@@ -39,7 +39,7 @@ already-specified one-shot provider recovery from running through the real bridg
 
 | Failure class | Fact owner | Recovery owner and bound | Terminal disposition | Legal next action | Deterministic evidence seam |
 | --- | --- | --- | --- | --- | --- |
-| A zero-tool `PhaseAgentStop` with `USAGE_UNAVAILABLE`, `BUDGET_EXHAUSTED`, or `POLICY_DENIED` | `RuntimeNodeAgentBridge` maps the trusted stop reason to the closed `NodeProblem` category and preserves the result finish reason; `TerminalIncidentProjection` later retains that typed code. `ResearchRunExperience` subsequently derives or preserves an opaque diagnostic reference from typed terminal facts. | No provider recovery is admitted. Topic planning receives one non-provider result and follows its existing terminal path. | The direct topic-planning terminal retains the actual closed non-tool category without a provider observation or recovery projection. | Use only the existing category-specific terminal new-start or support action; no automatic provider retry is claimed. | Raise each typed stop from a scripted zero-tool bridge and assert the problem, terminal incident, shared failure code and opaque diagnostic reference, and absence of a provider recovery. |
+| A zero-tool `NodeAgentStop` with `USAGE_UNAVAILABLE`, `BUDGET_EXHAUSTED`, or `POLICY_DENIED` | `RuntimeNodeAgentBridge` maps the trusted stop reason to the closed `NodeProblem` category and preserves the result finish reason; `TerminalIncidentProjection` later retains that typed code. `ResearchRunExperience` subsequently derives or preserves an opaque diagnostic reference from typed terminal facts. | No provider recovery is admitted. Topic planning receives one non-provider result and follows its existing terminal path. | The direct topic-planning terminal retains the actual closed non-tool category without a provider observation or recovery projection. | Use only the existing category-specific terminal new-start or support action; no automatic provider retry is claimed. | Raise each typed stop from a scripted zero-tool bridge and assert the problem, terminal incident, shared failure code and opaque diagnostic reference, and absence of a provider recovery. |
 | Direct `httpx.ReadTimeout` from an authorized topic-planning zero-tool invocation | `RuntimeNodeAgentBridge` classifies the direct public exception and derives the safe `ProviderObservation` from its explicit model binding. | `topic_planning` owns exactly one retry of the identical initial planner request; the bridge remains one invocation and never retries. | A successful retry continues normally. A second eligible transient result is a provider terminal with the existing exhausted recovery projection; a non-provider second result retains its actual category. | The existing terminal `fresh_start` action after an exhausted transient provider result; never resume the failed graph. | Drive the actual bridge into the topic-planning node with two scripted timeout exceptions; assert two bridge calls, attempt/retry/exhaustion facts, retained incident, and shared terminal projection. |
 | A non-authorized zero-tool request or a tools-enabled request raises a direct transport exception | The bridge's execution-policy admission remains the only authority for attaching a model-service observation. | No new recovery is admitted by this change. | Existing safe mapping and terminal behavior remain unchanged. | Existing behavior only. | Assert a non-admitted policy and a tools-enabled request do not obtain the topic-planning observation or retry eligibility. |
 | Cancellation during bridge invocation or topic-planning backoff | The task cancellation remains the runtime/graph control fact. | No retry or terminal projection is created after cancellation. | `CancelledError` continues to propagate. | Existing cancellation/status behavior only. | Reuse and extend cancellation-focused bridge/node regression tests as needed. |
@@ -52,12 +52,12 @@ already-specified one-shot provider recovery from running through the real bridg
 
 ## What Changes
 
-- Replace the blanket `PhaseAgentStop -> tool.execution_failed` projection with
+- Replace the blanket `NodeAgentStop -> tool.execution_failed` projection with
   a closed mapping that preserves the safe stop reason: add
   `provider.usage_unavailable`, `budget.exhausted`, and `policy.denied` to
   `RunFailureCode`; map `USAGE_UNAVAILABLE`, `BUDGET_EXHAUSTED`, and
   `POLICY_DENIED` respectively; map an unsupported generic stop fail-closed to
-  the existing `internal.unexpected`; and ensure that no `PhaseAgentStop` is
+  the existing `internal.unexpected`; and ensure that no `NodeAgentStop` is
   projected as `tool.execution_failed`. Existing non-stop tools-enabled result
   mappings, including required-tool-count validation, remain unchanged. The
   bridge does not retain stop detail or raw exception text.
@@ -90,7 +90,7 @@ already-specified one-shot provider recovery from running through the real bridg
 
 ### Modified Capabilities
 
-- `node-agent-runtime`: project phase-agent stops truthfully and admit safe
+- `node-agent-runtime`: project node-agent stops truthfully and admit safe
   model-provider observations through an explicit zero-tool execution policy.
 - `topic-planning-node`: make the existing one-shot provider recovery observable
   through the real authorized bridge path without changing its bound or

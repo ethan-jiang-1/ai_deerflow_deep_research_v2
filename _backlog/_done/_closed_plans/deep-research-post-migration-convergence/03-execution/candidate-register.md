@@ -23,8 +23,8 @@
 
 | Initial hypothesis | Final Candidate | 审计后变化 |
 | --- | --- | --- |
-| PC-001 `phase agent` identity | NC-C02 | 确认为纵向rename，不与capability contract减法混批 |
-| PC-002 legacy capability binding | NC-C01 | 确认为ready deletion，required ref接管 |
+| PC-001 imported actor identity | NC-C02 | 确认为纵向rename，不与capability contract减法混批 |
+| PC-002 legacy capability selector | NC-C01 | 确认为ready deletion，required ref接管 |
 | PC-003 `FULL_FAKE` enum/value | FM-C02 | 保持migrate-then-retire，但依赖FM-C01产品选择与data closure |
 | PC-004 `bind_full_fake` naming | FM-C01 | 不只是rename；发现no-graph path写入不诚实`all_real` provenance |
 | PC-005 `MIXED` mode | FM-C03 | rejected as cleanup；explicit mixed composition是current evidence |
@@ -37,7 +37,7 @@
 | PC-012 config/path compatibility | EC-C03, EC-C05, PC-C07, RC-C04 | 拆成old-path rejection guard、checkpointer promise与AppConfig alias support |
 | PC-013 CONTEXT tail | NC-C03, OR-C05 | 逐段迁移owner后删除design/status residue，不按篇幅整体搬走 |
 | PC-014 superseded/dormant ADRs | OR-C05, OR-C08 | historical keep；只修current glossary/route，不重写ADR事实 |
-| PC-015 dated release/baseline docs | TA-C05..C07, OR-C06 | DPT duplicate删除；baseline/attestation历史保留；regression policy current keep |
+| PC-015 dated release/baseline docs | TA-C05..C07, OR-C06 | imported workflow duplicate删除；baseline/attestation历史保留；regression policy current keep |
 | PC-016 suspended EVH-024 | TA-C03 | retain suspension boundary，未授权激活或删除 |
 | PC-017 empty scaffolding | TA-C01, TA-C02 | 8个冗余marker与唯一空e2e scaffold分别删除 |
 | PC-018 evidence registries | TA-C04 | rejected wholesale；只随owning behavior逐行减法 |
@@ -91,7 +91,7 @@
 | [TA-C02](../02-audit-findings/74-test-and-evidence-asset-findings.md#ta-c02---retire-the-empty-testse2e-scaffold-and-registry-entry) | retired: empty scaffold and exact registry row | archived 01; lane and structure guards pass | actual test directories |
 | [TA-C03](../02-audit-findings/74-test-and-evidence-asset-findings.md#ta-c03---retain-the-evh-024-suspension-boundary) | guard-retained: EVH-024 suspension | archived 01; selector remains suspended and uncollected | evaluation-hardening owner |
 | [TA-C04](../02-audit-findings/74-test-and-evidence-asset-findings.md#ta-c04---keep-executable-evidence-registries-and-subtract-rows-only-with-their-owner) | guard-retained: executable joins | archived 01; owner-local row subtraction only | existing executable joins |
-| [TA-C05](../02-audit-findings/74-test-and-evidence-asset-findings.md#ta-c05---delete-the-superseded-dpt-report-and-its-shape-only-test-after-evidence-comparison) | retired after provenance comparison | archived 01; retained provenance route contract passes | baseline + attestation + regression policy |
+| [TA-C05](../02-audit-findings/74-test-and-evidence-asset-findings.md#ta-c05---delete-the-superseded-imported-workflow-report-and-its-shape-only-test-after-evidence-comparison) | retired after provenance comparison | archived 01; retained provenance route contract passes | baseline + attestation + regression policy |
 | [TA-C06](../02-audit-findings/74-test-and-evidence-asset-findings.md#ta-c06---preserve-dated-baseline-and-attestation-as-explicitly-historical-evidence) | historical-retained | archived 01; dated epochs remain distinct | frozen evidence epochs |
 | [TA-C07](../02-audit-findings/74-test-and-evidence-asset-findings.md#ta-c07---keep-regression-descent-as-current-evidence-policy) | guard-retained: regression descent | archived 01; current policy route retained | test/evaluation governance |
 
@@ -127,7 +127,7 @@
 | [OR-C03](../02-audit-findings/77-openspec-and-record-findings.md#or-c03---converge-owner-drifted-capabilities-through-owner-local-changes) | 03 and 04 archived: node and Run Bundle owner-local convergence closed | current-language, current Bundle owner, requirement coverage, and strict OpenSpec checks pass | 05 may only close its independently gated fixture-composition scope; no spec-cleanup mega-change |
 | [OR-C04](../02-audit-findings/77-openspec-and-record-findings.md#or-c04---correct-the-structural-registry-in-both-directions) | repaired: delivery inventory and scaffold row | archived 01; structure and trackedness guards pass | completed delivery/test-structure workstreams |
 | [OR-C05](../02-audit-findings/77-openspec-and-record-findings.md#or-c05---restore-product-context-to-glossary-only-scope-without-rewriting-adr-history) | archived 03: migrated/deleted glossary residue; ADRs retained | seven-row ledger, glossary contract, and no-ADR-diff scan pass | `2026-08-14-converge-node-language-and-product-records` |
-| [OR-C06](../02-audit-findings/77-openspec-and-record-findings.md#or-c06---keep-current-indexes-and-historical-evidence-delete-only-the-grounded-dpt-duplicate) | retired duplicate; retained current and historical routes | archived 01; provenance route contract passes | current docs/evidence owners |
+| [OR-C06](../02-audit-findings/77-openspec-and-record-findings.md#or-c06---keep-current-indexes-and-historical-evidence-delete-only-the-grounded-imported-workflow-duplicate) | retired duplicate; retained current and historical routes | archived 01; provenance route contract passes | current docs/evidence owners |
 | [OR-C07](../02-audit-findings/77-openspec-and-record-findings.md#or-c07---retain-generated-projections-and-their-freshness-guards) | rechecked 03: retain projections/guards | missing, stale, and extra generated projection output still fails | generators + source authorities |
 | [OR-C08](../02-audit-findings/77-openspec-and-record-findings.md#or-c08---preserve-archive-and-completed-backlog-history-as-evidence-only) | rechecked 03: historical keep | archive/completed-backlog records remain evidence-only and unchanged | archive/backlog lifecycle |
 

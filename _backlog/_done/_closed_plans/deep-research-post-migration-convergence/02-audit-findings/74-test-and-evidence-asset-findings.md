@@ -79,9 +79,9 @@ requirement mismatch。故不能因 registry 大或含历史 discovery row 整�
 requirement/selector 已退役后仍留下的单行 claim、impact 或 fixture；它们应随对应 authority cluster 同批
 减少，而不是另建第二套总 registry 或一次 wholesale rewrite。
 
-## Finding TA-05: Superseded DPT report 只被 shape-only test 保护
+## Finding TA-05: Superseded imported workflow report 只被 shape-only test 保护
 
-`docs/dpt-invariant-parity-release-report-2026-07-17.md` 自身声明已被
+已删除的 historical parity report 自身声明已被
 `release-attestation-2026-07-17.json` supersede。它没有进入 `docs/README.md`、产品 README 或 current
 testing guide；唯一 current inbound consumer 是 `test_release_evidence_report.py`，该测试逐字保护旧
 `NOT READY`、`2 of 3` 和 “full-real not executed” 形状。
@@ -167,7 +167,7 @@ rationale。这是 current evidence governance；它与某一份 2026-07-17 repo
 - **OpenSpec change slice**: 不建 registry-cleanup mega-change；作为 NC/RS/FM/PC owning changes 的
   mandatory evidence-subtraction task。
 
-### TA-C05 - Delete the superseded DPT report and its shape-only test after evidence comparison
+### TA-C05 - Delete the superseded imported workflow report and its shape-only test after evidence comparison
 
 - **证据**: report 自标 superseded；current docs 无 inbound route；只有
   `test_release_evidence_report.py` 逐字保护旧 verdict shape。

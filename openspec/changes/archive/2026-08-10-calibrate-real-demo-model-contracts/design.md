@@ -122,7 +122,7 @@ closed Journal vocabulary in `REJ-007`. A private per-invocation bridge result e
 passes the cause to `_record_result` and is discarded before `run_agent` returns. The
 existing `NodeFinishReason`, `RunFailureCode`, `NodeProblem`, graph-facing
 `NodeExecutionResult`, provider-timeout origin, recovery table, and graph route do not
-change. The private projection must not turn raw `PhaseAgentStop.detail` into a domain
+change. The private projection must not turn raw `NodeAgentStop.detail` into a domain
 or Journal value.
 
 The Journal accepts a budget-stop reason only on the existing attributable model/tool

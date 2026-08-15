@@ -29,7 +29,7 @@ scenario body uses the current `node-agent` mechanism term.
   classification and the lifecycle can project a terminal incident without
   fabricating raw provider detail
 
-#### Scenario: A direct phase preserves a closed phase-agent stop
+#### Scenario: A direct phase preserves a closed node-agent stop
 - **WHEN** topic planning receives a non-successful result with
   `provider.usage_unavailable`, `budget.exhausted`, or `policy.denied`
 - **THEN** its terminal incident and later diagnostic/presentation projection retain

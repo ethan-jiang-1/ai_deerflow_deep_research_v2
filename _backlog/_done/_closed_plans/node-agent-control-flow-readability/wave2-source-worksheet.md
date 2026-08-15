@@ -29,7 +29,7 @@ WSN-005.
 1. The local capability Markdown body is part of the rendered system policy;
    capability identity and tool posture are deterministic binding/enforcement
    facts, not automatically model-visible prompt text. Sources:
-   `agents/phase_prompt.py::render_phase_agent_prompt`,
+   `agents/phase_prompt.py::render_node_agent_prompt`,
    `runtime/node_agent_bridge.py::RuntimeNodeAgentBridge.run_agent`, and
    `tests/unit/test_phase_prompt.py::test_renderer_composes_a_declared_local_capability_after_base_policy`.
 2. `build_real` catches `ValueError` from parsing or semantic admission and

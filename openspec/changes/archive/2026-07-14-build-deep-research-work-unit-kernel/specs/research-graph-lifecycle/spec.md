@@ -150,7 +150,7 @@ deployment diagnostic without a research id and SHALL not call the sandbox.
 The Wave0 and Wave1 change-04 fixture paths MAY write only this bounded subset:
 controller-owned `work-spec.json`, worker-owned `result.json` and declared `outputs/`,
 and submit-owned `evidence/submissions.jsonl` plus its non-authoritative lock/staging
-files. They SHALL NOT write fetched cache, synthesis, review, final-report, DPT
+files. They SHALL NOT write fetched cache, synthesis, review, final-report, imported workflow
 queue/index/status, or non-fixture research artifacts. Host-side controller I/O SHALL
 run only after runtime proves that the trusted host workspace and parent sandbox share
 the same physical thread workspace; otherwise it SHALL fail before every write.

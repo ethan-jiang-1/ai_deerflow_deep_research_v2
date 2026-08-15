@@ -57,7 +57,7 @@ _SCOPE_BUCKET_RE = re.compile(r"^s_[A-Za-z0-9_-]{43}$")
 _STAGING_RE = re.compile(r"^\.submissions\.[0-9a-f]{32}\.tmp$")
 _ALIAS_PROBE_RE = re.compile(r"^\.work-unit-probe-[0-9a-f]{32}$")
 _FS_PROBE_RE = re.compile(r"^\.work-unit-fsprobe-[0-9a-f]{32}\.(?:lock|src|dst)$")
-_DPT_CONTROL_NAMES = frozenset({"queue.json", "index.json", "status.json"})
+_IMPORTED_WORKFLOW_CONTROL_NAMES = frozenset({"queue.json", "index.json", "status.json"})
 
 
 class BundlePathKind(StrEnum):
@@ -350,7 +350,7 @@ def classify_bundle_path(path: str) -> BundlePathKind:
             return BundlePathKind.UNKNOWN
         artifact = "/".join(tail[3:])
         if artifact in {"work-spec.json", "result.json"} or artifact.startswith("outputs/"):
-            if not any(name in _DPT_CONTROL_NAMES or name.endswith(".queue") for name in tail[3:]):
+            if not any(name in _IMPORTED_WORKFLOW_CONTROL_NAMES or name.endswith(".queue") for name in tail[3:]):
                 return BundlePathKind.CONTENT
     return BundlePathKind.UNKNOWN
 

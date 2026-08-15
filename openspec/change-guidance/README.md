@@ -3,12 +3,17 @@
 > scope: `deep_research_harness/` design and OpenSpec change admission
 > authority: guidance only; never runtime control, permission, or current-state truth
 
-This directory is the permanent starting point for the Deep Research product's
-cross-cutting design principles. It exists because this project is a downstream
-agent inside a larger DeerFlow checkout: the root guides protect the host boundary,
-while this Change Guidance route gives work inside `deep_research_harness/` a local product orientation.
+This directory is the policy-selection route for cross-cutting design and admission
+guidance. For product-specific Deep Research orientation, read the concise
+[product context](../product/deep-research.md) first; it is not a policy or runtime
+authority.
 
 ## Start Here
+
+For a Coding Agent creating, changing, or reviewing an LLM-Bearing Node or direct
+model branch, first read the [node edit map](node-edit-map.md) before implementation
+navigation. It routes cognitive behavior through capability, prompt/context,
+feedback/repair, and proof/evaluation before the separate deterministic handoff.
 
 For a change under `deep_research_harness/`, first read the focus gate at the start of
 `deep_research_harness/AGENTS.md`, then select one primary module or causal owner. Read its active
@@ -42,7 +47,7 @@ review guidance only; the route table above remains the sole selection entry.
 
 | Kind of statement | Canonical home | Does not own |
 |---|---|---|
-| Durable concept vocabulary / terminology map | [node-edit-map.md](node-edit-map.md) | Behavior, routes, or a per-change rule |
+| LLM-node authoring first-read route | [node-edit-map.md](node-edit-map.md) | Behavior, routes, permissions, or a per-change rule |
 | Durable, cross-capability Deep Research principle | [principles.md](principles.md) | Runtime behavior or a one-off feature contract |
 | Repeated design/review rule with a concrete trigger | `policies/<topic>.md` | State fields, routes, commands, or permissions |
 | Observable behavior, schema, action, or security boundary | Owning capability main spec and active delta | A different capability's behavior |

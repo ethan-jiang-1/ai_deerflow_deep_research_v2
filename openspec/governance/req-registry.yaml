@@ -120,6 +120,9 @@ DRC-008: deep-research-agent-charter — A routed node-agent-workflow-integrity 
 DRC-009: deep-research-agent-charter — A cross-cutting control-placement policy in the Change Guidance library structurally records deterministic control ownership, closed posture, human-decision composition, and handoff evidence without runtime authority
 DRC-010: deep-research-agent-charter — Selected control-placement reviews retain bounded advisory operation guidance and local closeout-evidence integration without creating task, archive, or semantic-review authority
 DRC-011: deep-research-agent-charter — Downstream agent entry documents route from the canonical Deep Research Harness root while preserving their bounded information-map role
+DRC-012: deep-research-agent-charter — A current-only node authoring route directs LLM-Bearing Node work through cognition, prompt/context, feedback/repair, proof/evaluation, and deterministic handoff without granting Markdown runtime authority
+DRC-013: deep-research-agent-charter — Every materialized tracked project text surface uses current Deep Research/LangGraph vocabulary and the deterministic guard rejects retired external workflow labels without archive or backlog exceptions
+DRC-014: deep-research-agent-charter — Deep Research product context is separately discoverable as a bounded, non-authoritative OpenSpec reading map with exact existing authority routes
 
 # deep-research-harness-run-bundles
 DRH-001: deep-research-harness-run-bundles — Fresh Deep Research Runs receive a fresh opaque Bundle identity and atomically published Bundle-local State and content roots
@@ -206,6 +209,7 @@ NAC-009: node-agent-capabilities — Final report composition binds one explicit
 NRI-001: node-agent-reader-interface — A package-local reader projection directs maintenance readers to the bounded node-agent role and existing deterministic authority without becoming a runtime resource or second behavior specification
 NRI-002: node-agent-reader-interface — A symptom-driven node reader projection exposes the source owner, narrow proof seam, repair-feedback limitation, and route authority needed to select the first correct maintenance edit
 NRI-003: node-agent-reader-interface — The six existing package-local reader obligations coexist with the complete cognitive-node reader inventory without gaining runtime authority
+NRI-004: node-agent-reader-interface — The eight LLM-Bearing Node reader projections expose cognitive-program-first capability, prompt/context, feedback/repair, proof/evaluation, and deterministic-handoff navigation without becoming runtime authority
 
 # cognitive-node-interface
 CNI-001: cognitive-node-interface — Every logical node exposes a product-responsibility-first non-runtime reader projection with fixed identity fields and headings

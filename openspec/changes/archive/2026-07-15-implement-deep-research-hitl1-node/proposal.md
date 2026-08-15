@@ -132,7 +132,7 @@ containment and exposes only a pure protocol to graph nodes.
 - **Sandbox artifacts read/written:** the HITL1 node reads the bootstrap marker
   only if needed for binding confirmation and writes `profile.json` under the
   canonical `request/` subtree via the request-bundle write capability. No evidence
-  ledger, work-spec, result, or DPT queue/index/status bundle file is created.
+  ledger, work-spec, result, or imported workflow queue/index/status bundle file is created.
 - **DeerFlow extension surfaces:** the existing downstream reflection path
   `deerflow_deep_research.tool:deep_research_tool` and registered lifecycle
   handlers are unchanged. No `config.yaml` section, `extensions_config.json` key,

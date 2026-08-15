@@ -15,6 +15,17 @@ Readiness runs one bounded zero-tool critic over accepted ledger evidence. The m
 proposes per-question verdicts; hard rules and the materializer retain admission and
 route authority.
 
+## LLM-Node Authoring Route
+
+For a model-bearing behavior symptom, read these local owners in order before changing
+hard rules, materialization, or a graph edge.
+
+1. **Capability and contract:** [`capabilities.py`](capabilities.py) and [`contracts.py`](contracts.py) bound the evidence-critic verdict candidate.
+2. **Prompt and context:** [`critic.py`](critic.py) constructs the zero-tool critic request from accepted ledger evidence and must-answer questions.
+3. **Feedback and repair:** [`critic.py`](critic.py) and [`node.py`](node.py) own the closed critic failure/result handling; this node has no invented repair branch.
+4. **Proof and evaluation:** [`test_readiness_real.py`](../../../../../tests/unit/test_readiness_real.py) and the [cognitive-program evidence board](../../../../../tests/assets/node_agent_capabilities.py) identify the critic proof and answerability-evaluation limitation.
+5. **Deterministic handoff:** [`hard_rules.py`](hard_rules.py), [`materializer.py`](materializer.py), and [`node.py`](node.py) conservatively admit verdicts and return the typed route outcome.
+
 ## From Symptoms
 
 Open `critic.py`, `hard_rules.py`, `materializer.py`, and `node.py` for current

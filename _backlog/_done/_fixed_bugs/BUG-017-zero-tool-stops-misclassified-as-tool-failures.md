@@ -25,8 +25,8 @@ failure_code=tool.execution_failed
 
 ## 根因
 
-`RuntimeNodeAgentBridge.run_agent()` 对所有 `PhaseAgentStop` 无条件写入
-`RunFailureCode.TOOL_EXECUTION_FAILED`。`PhaseAgentStop` 的子类同时承载
+`RuntimeNodeAgentBridge.run_agent()` 对所有 `NodeAgentStop` 无条件写入
+`RunFailureCode.TOOL_EXECUTION_FAILED`。`NodeAgentStop` 的子类同时承载
 预算超限、usage 缺失和策略拒绝，不能被统一解释为工具执行失败。
 
 这还会丢失安全的停止原因：bundle 事件只保留最终的
@@ -42,7 +42,7 @@ failure_code=tool.execution_failed
 ## 复现
 
 在 `RuntimeNodeAgentBridge` 的 unit seam 中，以 `node_name="topic_planning"`、
-`tools_enabled=False` 和空 `allowed_tool_names` 构造请求；让 fake phase agent
+`tools_enabled=False` 和空 `allowed_tool_names` 构造请求；让 fake node agent
 抛出 `AgentBudgetError(NodeFinishReason.USAGE_UNAVAILABLE, ...)`。断言结果保留
 `USAGE_UNAVAILABLE`，且 `problem.code` 不得为 `tool.execution_failed`；当前断言为红。
 
@@ -52,6 +52,6 @@ failure_code=tool.execution_failed
 ## 修复关联
 
 尚未创建 OpenSpec change。应建立一个运行时 failure-projection change：按
-`PhaseAgentStop.finish_reason` 分别投影预算/usage/policy 类别，保留真正的工具失败
+`NodeAgentStop.finish_reason` 分别投影预算/usage/policy 类别，保留真正的工具失败
 分类，并在 retained 诊断中写入安全、有限的 stop reason。该 change 需补齐
 bridge-to-presentation 回归测试。

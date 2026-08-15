@@ -7,7 +7,7 @@
 topic planning 声明在首个安全 transient provider timeout 后应执行一次受限恢复，
 但真实 bridge 产生的 timeout 不携带 `ProviderObservation`，因而节点直接终止。
 
-无网络内存重放以 `topic_planning` 零工具请求驱动 fake phase agent 抛出
+无网络内存重放以 `topic_planning` 零工具请求驱动 fake node agent 抛出
 `httpx.ReadTimeout`，得到：
 
 ```text
@@ -39,7 +39,7 @@ topic node 的 `_retry_eligible()` 同时要求 `provider.timeout` 或
 ## 复现
 
 在 `RuntimeNodeAgentBridge` 的 unit seam 中，以 `node_name="topic_planning"`、
-`tools_enabled=False` 构造请求，并让 fake phase agent 抛出 `httpx.ReadTimeout`。
+`tools_enabled=False` 构造请求，并让 fake node agent 抛出 `httpx.ReadTimeout`。
 断言 bridge 返回 `provider.timeout`、安全 `ProviderObservation`，再把该结果送入
 `topic_planning` node，断言 `run_agent()` 总共调用两次并记录 attempt/retry/exhaustion
 事件；当前 bridge 断言为红。

@@ -8,7 +8,7 @@ The active logical-node owners SHALL maintain one test-owned cognitive-program
 evidence row for each current direct model branch. The row IDs SHALL equal both the
 canonical prompt-catalog case IDs and `COHORT_EVIDENCE` case IDs exactly. Each row
 SHALL record product responsibility, bounded question, trusted/untrusted input
-boundary, capability binding, catalog and final-render seam, requested tool window,
+boundary, capability reference, catalog and final-render seam, requested tool window,
 bridge-enforcement seam, feedback disposition and recipient when one exists,
 candidate/admission owner, guardrail evidence, classified evidence links, and
 evaluation disposition. A node aggregate, grouped row, owner count, or catalog count

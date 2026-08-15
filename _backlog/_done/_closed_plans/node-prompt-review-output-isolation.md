@@ -14,7 +14,7 @@ covered by the change's completed verification tasks.
 
 `deerflow_research/node_prompts/` 不是运行时读取的 prompt 源码，也不是人工维护的第二份实现。
 它是 `deerflow_research/scripts/prompt_dump.py` 将 `graph.prompt_catalog` 提供的代码拥有的合成
-case，经 `agents.phase_prompt.render_phase_agent_prompt()` 渲染后的确定性 Markdown 审阅投影。
+case，经 `agents.phase_prompt.render_node_agent_prompt()` 渲染后的确定性 Markdown 审阅投影。
 
 当前目录由 2026-07-27 的 node-prompt catalog change 引入，并在 2026-07-31 从 `agent/` 随模块
 根目录迁移到 `deerflow_research/`。运行时 prompt authority 仍是 graph prompt builder、共享 renderer

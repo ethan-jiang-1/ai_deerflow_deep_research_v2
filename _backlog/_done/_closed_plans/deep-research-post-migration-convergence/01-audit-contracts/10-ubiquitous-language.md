@@ -32,7 +32,7 @@ Boundary` 是三个相关但不同的概念，不能全部机械替换为 `Node 
 
 | Cluster | 当前观察 | 需要锁定的 canonical distinction |
 | --- | --- | --- |
-| Node cognition | glossary 使用 `LLM-Bearing Node` / `Node Cognitive Control Program`；生产文件和模型策略仍使用 `phase agent`；代码广泛使用 `NodeAgent*` | product identity、cognitive program、runtime bridge/request 和旧 mechanism name 各自是什么 |
+| Node cognition | glossary 使用 `LLM-Bearing Node` / `Node Cognitive Control Program`；生产文件和模型策略仍带有已退役的导入式 actor 标签；代码广泛使用 `NodeAgent*` | product identity、cognitive program、runtime bridge/request 和旧 mechanism name 各自是什么 |
 | Run authority | current model 是 `Deep Research Run` + `Run Bundle` + Bundle-local `Research State`；current specs/tests 仍有 `research-run-session` / `research-session-lifecycle-binding` 名称 | Run、Bundle、State、Run Observation、compatibility binding 的唯一含义 |
 | Fixture composition | current recipe 输出 `fixture | mixed | all_real`；persisted enum 仍含 `full_fake`，demo method 仍叫 `bind_full_fake` | fixture evidence、mixed test composition、production recipe 和 retired wire value |
 | Observation/diagnosis | `Run Observation` 已替代 retired session store，但 specs/test filenames 仍以 session 命名 | authoritative State、Bundle-local observation、external observation、diagnostic projection |
@@ -64,7 +64,7 @@ Boundary` 是三个相关但不同的概念，不能全部机械替换为 `Node 
 - 先按 fact authority、writer、container、projection 和 lifecycle 分开；
 - 若两个概念确实不同，分别命名，不追求一个万能名词；
 - `manager/service/controller/session/context` 等泛词必须说明 jurisdiction，否则作为重命名候选；
-- “phase”可以是当前 logical phase，不代表 `phase agent` 仍是正确 product identity。
+- “phase”可以是当前 logical phase，不代表已退役的导入式 actor 标签仍是正确 product identity。
 
 ### 测试语言
 
@@ -76,8 +76,8 @@ Boundary` 是三个相关但不同的概念，不能全部机械替换为 `Node 
 
 1. `agents/phase_prompt.py`、`agents/policies.py`、`agents/factory.py`、
    `runtime/node_agent_bridge.py` docstrings 和 `resources/node_agent/runtime_policy.md` 仍称
-   `phase agent`；current glossary 已把 `Phase Agent` 视为退役参考说法。
-2. `tests/unit/test_phase_prompt.py` 明确断言 `Deep Research Phase Agent`，因此当前测试在保护旧
+   已退役的导入式 actor 标签；current glossary 已将其标为退役参考说法。
+2. `tests/unit/test_phase_prompt.py` 明确断言旧的 AI-facing actor identity，因此当前测试在保护旧
    AI-facing identity，而不只是旧文件名。
 3. `research-run-session` main spec 的当前正文实际约束 `RunObservation*`，生产 session store 已被
    负向测试证明不存在；capability 名与 current owner 可能已经分离。

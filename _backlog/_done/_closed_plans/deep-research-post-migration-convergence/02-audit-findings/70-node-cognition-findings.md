@@ -2,7 +2,7 @@
 
 > 审计类型: 术语 / AI-facing contract / graph-to-runtime request / migration closure
 > 审计基线: 2026-08-13 @ `5bb41c16a45ff3caae6e5b1e900610c91bf68336`
-> 审计结论: capability 迁移已经完成，但双态 request 和 `Phase Agent` 身份仍把迁移过程当成当前架构
+> 审计结论: capability 迁移已经完成，但双态 request 和已退役的导入式 actor 身份仍把迁移过程当成当前架构
 
 ## 范围与权威
 
@@ -19,14 +19,14 @@ typed request、renderer、runtime bridge、20-branch evidence denominator 和 o
 | 模型可见的局部程序 | `Node Cognitive Control Program` | capability Markdown、prompt、model-visible context、feedback |
 | 实现与治理分类 | `node-agent` | runtime bridge、request、Focus Card classification；不是产品身份 |
 
-`Phase Agent` 和 `MD controller` 已由
+已退役的导入式 actor 标签和外来的文本驱动控制方式已由
 `openspec/agent-charter/concepts.md` 明确标为 superseded。`phase` 仍可表示逻辑执行阶段，
-但不能再把一个 model-bearing program 的身份命名为 `Phase Agent`。
+但不能再把一个 model-bearing program 的身份命名为导入式 actor。
 
 ## Finding NC-01: 退役身份仍是当前 AI-facing behavior
 
 这不是只剩文件名或注释。当前 package policy 第一行向模型声明
-`Deep Research Phase Agent`，renderer tests 明确保护这段身份；factory name、exception type、
+已退役的 `Deep Research` actor identity，renderer tests 明确保护这段身份；factory name、exception type、
 renderer symbol、runtime bridge docstring、main specs 和 requirement registry 同时使用旧词。因此
 局部 rename 会留下新的双名期，必须做一次从模型策略到治理证据的 vertical rename。
 
@@ -49,26 +49,26 @@ renderer symbol、runtime bridge docstring、main specs 和 requirement registry
 
 - model-facing identity 与 product glossary 冲突；
 - tests 让旧身份成为受保护行为，普通 residual scan 无法把它识别为 residue；
-- `node-agent`、`phase agent`、`LLM-Bearing Node` 看似同义，实际混合了产品对象、认知程序和
+- `node-agent`、已退役的导入式 actor 标签、`LLM-Bearing Node` 看似同义，实际混合了产品对象、认知程序和
   runtime mechanism 三个层次。
 
 ## Finding NC-02: 20 个 direct branch 已迁移，request 仍保留无人使用的 legacy cohort
 
-`NodeExecutionRequest` 仍有：
+`NodeExecutionRequest` 当时同时接受以下两项概念：
 
 ```text
-capability_binding: "legacy" | "required" = "legacy"
+legacy_capability_mode: "legacy" | "required" = "legacy"
 capability_ref: NodeAgentCapabilityRef | None = None
 ```
 
 当前生产源码有 17 个 `NodeExecutionRequest(...)` construction expressions；参数化 builder 将它们
 投影为 20 个 canonical direct branches。17 个 construction expressions 全部显式传入
-`capability_binding="required"` 和 `capability_ref`，没有生产 builder 显式构造 `legacy`。
+required mode 和 `capability_ref`，没有生产 builder 显式构造 `legacy`。
 `tests/assets/node_agent_capabilities.py` 也把 denominator 封闭为 20 个 unique direct cases。
 
 该 request 是 graph-to-agents/runtime 的进程内 typed contract：它没有从 package top level export，
 没有 Bundle State serializer，也没有 Evaluation Bundle serializer。当前仓库内没有发现外部格式、
-配置或持久化 consumer。因而 `capability_binding` 是 declared cross-boundary internal field，而不是
+配置或持久化 consumer。因而 `capability_ref` 是 declared cross-boundary internal field，而不是
 public/persisted migration field。
 
 证据：
@@ -142,14 +142,14 @@ composition、tool posture admission、20-row evidence、deterministic owner 和
 - **证据**: `domain/context.py`; all production `graph/nodes/**/prompts.py`;
   `graph/nodes/final_delivery/composer.py`; `graph/nodes/readiness/critic.py`;
   `tests/assets/node_agent_capabilities.py`; `node-agent-capabilities/spec.md`。
-- **当前 owner**: `NodeExecutionRequest.capability_binding` 与
+- **当前 owner**: 旧的 legacy/required selector 与 `NodeExecutionRequest.capability_ref`，以及
   `node-agent-capabilities` 的 time-layered cohort requirements。
 - **目标 owner**: required `NodeExecutionRequest.capability_ref`；agents loader 和 runtime bridge
   继续拥有 pre-model validation；20-branch evidence ledger 继续拥有 denominator。
 - **Disposition**: `delete`。
 - **迁移条件**: 先加入缺失 `capability_ref` 在 request construction/render 前失败的 red test；确认
   20 catalog cases 与 17 construction expressions 全部显式提供 ref；更新 NAC/NOA/NPC evidence。
-- **删除条件**: 生产、tests 和 current specs 不再读取/写入 `capability_binding`；main spec 不再包含
+- **删除条件**: 生产、tests 和 current specs 不再读取/写入旧的 legacy/required selector；main spec 不再包含
   临时 legacy set 或 cohort 时态；focused tests、20-row joins、strict OpenSpec 和 governance 通过。
 - **保留负向护栏**: invalid/missing/package-mismatched capability 在 model/tool work 前失败；禁止
   capability inference、generic fallback、arbitrary system prompt override 和 capability-owned route/state。
@@ -161,13 +161,13 @@ composition、tool posture admission、20-row evidence、deterministic owner 和
 - **证据**: `resources/node_agent/runtime_policy.md`; `agents/phase_prompt.py`;
   `agents/factory.py`; `agents/middleware.py`; `runtime/node_agent_bridge.py`;
   `tests/unit/test_phase_prompt.py`; NOA/NPC specs 与 registry。
-- **当前 owner**: retired `Phase Agent` identity 分散在 model policy、Python symbols、tests 和 specs。
+- **当前 owner**: retired imported actor identity 分散在 model policy、Python symbols、tests 和 specs。
 - **目标 owner**: product identity 使用 `LLM-Bearing Node`；model-visible/local cognition 使用
   `Node Cognitive Control Program`；runtime/governance mechanism 使用 `node-agent`。
 - **Disposition**: `rename`。
 - **迁移条件**: 先批准一张 bounded term table；逐个区分 product text、model-facing text、private
   symbol 和 requirement prose；确认没有外部 Python import promise。
-- **删除条件**: current code/model policy/tests/main specs/registry 不再把 `Phase Agent` 当 current
+- **删除条件**: current code/model policy/tests/main specs/registry 不再把已退役的导入式 actor 标签当 current
   identity；residual 只允许 archive、明确的 retired-term guard 或逻辑 phase 的非 identity 用法。
 - **保留负向护栏**: full-takeover、no checkpointer、bounded budgets、closed tools、redaction、
   cancellation、no clarification、deterministic admission 与 graph-owned lifecycle 均保持原测试强度。

@@ -1,9 +1,8 @@
-# DPT Report Provenance Comparison
+# Historical Parity Report Provenance Comparison
 
 This record closes task 3.1 before the superseded report is removed. It compares
-the factual provenance and failure statements in
-`deep_research_harness/docs/dpt-invariant-parity-release-report-2026-07-17.md`
-with their retained owners. It does not rewrite any frozen evidence payload.
+the factual provenance and failure statements in the now-deleted historical parity
+report with their retained owners. It does not rewrite any frozen evidence payload.
 
 | Retired report fact group | Retained owner | Retained route | Disposition |
 | --- | --- | --- | --- |
@@ -16,7 +15,7 @@ with their retained owners. It does not rewrite any frozen evidence payload.
 | The later full-real normal lifecycle had accepted evidence, final artifacts, citation bindings, contained paths, cleanup, isolated checkpoint, and terminal completion | evaluation-hardening accepted release attestation | `docs/release-attestation-2026-07-17.json` `source_run.hard_invariants` and run counts | Retain the accepted historical run with its source date, hash, and schema. |
 | Full-real archive diagnostics were credential-free and raw-host-path-free | evaluation-hardening accepted release attestation | `docs/release-attestation-2026-07-17.json` `attestation_scan` and `source_archive_scan` | Retain the redaction result as the accepted run's own fact. |
 | Later provider failures and future repair work require an exact collected regression or an explicit live-only rationale | evaluation-hardening regression policy | `docs/regression-descent.md` table and workflow | Retain current policy without using a historical success to close later discoveries. |
-| The DPT authority/parity table summarizes current deterministic behavior; it is not an independent provenance or failure record | evaluation-hardening specification and central evidence catalog | `openspec/specs/evaluation-hardening/spec.md`; `tests/assets/evidence.py` | Keep the behavior under its current normative/evidence owners. No consumer needs the retired prose as a separate authority. |
+| The imported workflow authority/parity table summarizes current deterministic behavior; it is not an independent provenance or failure record | evaluation-hardening specification and central evidence catalog | `openspec/specs/evaluation-hardening/spec.md`; `tests/assets/evidence.py` | Keep the behavior under its current normative/evidence owners. No consumer needs the retired prose as a separate authority. |
 
 Every retired provenance or failure fact has a retained owner. The report and its
 shape-only contract may therefore be removed once a replacement-route assertion

@@ -984,6 +984,12 @@ EVIDENCE_CLAIMS = (
         StableSeam.PUBLIC_ENTRY,
         requirement_ids=("RUO-001",),
     ),
+    _correctness_claim(
+        "non-interactive-retired-marker-denial",
+        ("tests/unit/test_non_interactive.py::test_tool_rejects_the_retired_marker_before_sandbox_or_graph_selection"),
+        StableSeam.PUBLIC_ENTRY,
+        requirement_ids=("RUI-006", "RUO-001"),
+    ),
     TestEvidenceClaim(
         claim_id="non-interactive-checkpoint-handoff",
         selector=(
@@ -1000,6 +1006,21 @@ EVIDENCE_CLAIMS = (
         "tests/unit/test_node_agent_bridge.py::test_default_model_resolver_rejects_empty_model_config",
         StableSeam.RUNTIME_INTEGRATION,
         requirement_ids=("EVH-006", "EVH-008"),
+    ),
+    _correctness_claim(
+        "graph-host-legacy-checkpointer-refusal",
+        ("tests/unit/test_graph_host.py::test_legacy_checkpointer_is_refused_before_action_saver_factory"),
+        StableSeam.RUNTIME_INTEGRATION,
+        requirement_ids=("RUI-005",),
+    ),
+    _correctness_claim(
+        "node-agent-retired-endpoint-alias-denial",
+        (
+            "tests/unit/test_node_agent_bridge.py::"
+            "test_retired_selected_endpoint_aliases_are_omitted_even_when_they_match_base_url[openai-api-base-only]"
+        ),
+        StableSeam.RUNTIME_INTEGRATION,
+        requirement_ids=("NOA-005",),
     ),
     _correctness_claim(
         "demo-adapter-unique-sandbox",

@@ -16,7 +16,7 @@ surfaces that can be retired only after repository delivery is restored.
 - Remove the eight redundant `.gitkeep` markers, the empty `tests/e2e` scaffold and
   its structural entry, while retaining all current lane, registry, and suspension
   guards.
-- Compare the superseded DPT report against its current historical evidence owners,
+- Compare the superseded imported workflow report against its current historical evidence owners,
   then remove the report and its shape-only test; remove the two private demo helpers
   and the legacy short-state planner helper only after their canonical tests carry the
   distinct behavior.
@@ -100,13 +100,13 @@ subtracts their current implementation without changing those normative contract
 
 - **Primary module / causal owner:** evaluation-hardening
 - **Seam classification:** deterministic-guardrail because current historical evidence routes and evidence checks distinguish retained provenance from a superseded verdict copy.
-- **Question:** Do the baseline, attestation, and regression-descent records retain every unique fact needed before the superseded DPT report and shape-only test are removed?
+- **Question:** Do the baseline, attestation, and regression-descent records retain every unique fact needed before the superseded imported workflow report and shape-only test are removed?
 - **Necessary adjacent/external contracts:** current evaluation-hardening evidence policy answers registry/claim joins; historical baseline and attestation records answer provenance without becoming current release verdicts.
 - **Evidence seam:** Focused provenance comparison and test-asset/evidence contracts prove retained historical routes, redaction, and current regression policy after the report test is gone.
 - **Not in scope:** Rewriting frozen evidence payloads, claiming a new release result, running a credentialed live lane, or deleting baseline, attestation, or regression-descent policy.
 - **Triggered review policies:** change-admission
 - **Candidate / obligation IDs:** TA-C05, OR-C06, TA-C06, TA-C07
-- **Target / retirement:** Retire only the superseded DPT report and its implementation-shape test after evidence comparison; retain current indexes, dated provenance, and regression descent.
+- **Target / retirement:** Retire only the superseded imported workflow report and its implementation-shape test after evidence comparison; retain current indexes, dated provenance, and regression descent.
 - **Surface grade:** repository historical-evidence route and deterministic evidence governance.
 - **Decision authority:** Evaluation Hardening Owner approves the unique-fact comparison and removal evidence.
 - **Negative path / recovery:** Any unmatched provenance, inbound route, or evidence-join failure keeps the report/test in place and records the missing owner; no historical record is rewritten to manufacture closure.

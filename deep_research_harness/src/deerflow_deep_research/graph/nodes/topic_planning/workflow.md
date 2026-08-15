@@ -14,6 +14,17 @@
 The planner proposes a plan; deterministic materialization creates stable topic
 identity and refuses invalid/overlapping coverage.
 
+## LLM-Node Authoring Route
+
+For a model-bearing behavior symptom, read these local owners in order before changing
+materialization or graph routing.
+
+1. **Capability and contract:** [`capabilities.py`](capabilities.py) and [`contracts.py`](contracts.py) bound the planner and repair candidates.
+2. **Prompt and context:** [`prompts.py`](prompts.py) projects the confirmed profile, output contract, repair feedback, and delimited context.
+3. **Feedback and repair:** [`node.py`](node.py) owns the bounded planner-repair loop and its stop condition.
+4. **Proof and evaluation:** [`test_topic_planning_node.py`](../../../../../tests/graph/test_topic_planning_node.py) and the [cognitive-program evidence board](../../../../../tests/assets/node_agent_capabilities.py) retain the two branch-local proof/evaluation limits.
+5. **Deterministic handoff:** [`topics.py`](../../../domain/topics.py) materializes IDs and coverage; [`node.py`](node.py) returns the typed outcome consumed by the graph.
+
 ## From Symptoms
 
 | Symptom | First owner | Proof seam |

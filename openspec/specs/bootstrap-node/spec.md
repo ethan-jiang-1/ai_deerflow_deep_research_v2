@@ -22,7 +22,7 @@ it SHALL not carry a legacy research identity or select a root. Bootstrap SHALL 
 the shared-workspace capability's bounded POSIX lock, same-directory replace, and
 durability sync, and SHALL fail closed with `work_unit_storage_unavailable` on an
 unsupported provider before writing. A partial bootstrap write SHALL not be treated as a
-discoverable or active Run and SHALL not create evidence, work-spec, or DPT control
+discoverable or active Run and SHALL not create evidence, work-spec, or imported workflow control
 files. (`BON-001`)
 
 #### Scenario: Bootstrap content binds the selected Bundle identity

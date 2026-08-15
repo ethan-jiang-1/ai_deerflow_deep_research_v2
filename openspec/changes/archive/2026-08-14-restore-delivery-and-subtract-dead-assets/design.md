@@ -71,7 +71,7 @@ because ignored local files made that test pass while a clean clone failed.
 | --- | --- | --- | --- | --- |
 | delivery | repository-delivery | root ignore, workflow, skill, structural-delivery, and delivery-test surfaces | approved repository-tracked decision | trackedness guard and bounded clean clone |
 | test-structure | project-structure | markers, empty scaffold, exact structural row, focused tests | delivery closed | structure, asset, lane, and suspension guards |
-| evidence-report | evaluation-hardening | DPT report/test and their exact evidence metadata | delivery closed | provenance comparison plus retained evidence checks |
+| evidence-report | evaluation-hardening | imported workflow report/test and their exact evidence metadata | delivery closed | provenance comparison plus retained evidence checks |
 | demo-adapter | demo-adapter | private helper/tests and canonical test additions | delivery closed | focused canonical preflight/profile tests |
 | topic-planner | topic-planning | legacy helper/export/test and canonical test additions | delivery closed | focused canonical assignment and negative tests |
 
@@ -90,7 +90,7 @@ It retains EVH-024, current lane selection, non-empty collection, and registry j
 the dated baseline, accepted attestation, and current regression-descent policy before
 deleting the superseded report and its shape-only test. After that comparison, it
 updates the `EVH-005` registry description to name those retained evidence owners
-rather than the retired DPT report. It never rewrites a frozen record to make removal
+rather than the retired imported workflow report. It never rewrites a frozen record to make removal
 appear safe or changes the accepted `EVH-005` requirement.
 
 `demo-adapter` moves the only unique selected-profile and blank-credential cases onto

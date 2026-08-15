@@ -154,7 +154,7 @@ The new requirement IDs are `RUI-006` and `REG-001` through `REG-005`.
   `extensions_config.json -> skills.deep-research-controller.enabled`,
   `skills/public/deep-research-controller/SKILL.md`, and per-user
   `{DEER_FLOW_HOME}/users/{user_id}/agents/deep-research/{config.yaml,SOUL.md}` remain
-  the only entry surfaces. MCP, ACP, DeerFlow `task` subagents, phase skills, and DPT
+  the only entry surfaces. MCP, ACP, DeerFlow `task` subagents, phase skills, and imported workflow
   bundle control files are not used.
 - **Reload boundary:** public skill, Agent/SOUL, and reflected tool description changes
   take effect on the next agent build. Python package code requires the normal Gateway

@@ -68,7 +68,7 @@ consumer/data/support closure时，只能形成 decision/migration Candidate，�
 | [71 - Run, Bundle, Session, Observation](02-audit-findings/71-run-session-and-observation-findings.md) | 退役 lifecycle-binding与混合 Run Session capability；保留 Local Session Workbench与防复活guards | RS-C01..C05 |
 | [72 - Fixture And Implementation Mode](02-audit-findings/72-fixture-mode-findings.md) | 保留 `src_fake`/explicit mixed；no-graph full-fake会写出不诚实 `all_real`，需产品决策；old/missing mode需数据迁移 | FM-C01..C04 |
 | [73 - Entry And Configuration](02-audit-findings/73-entry-and-configuration-findings.md) | 保留职责不同的entry；删除private demo helpers；constructor/marker/checkpointer按export/support边界处理 | EC-C01..C07 |
-| [74 - Tests And Evidence Assets](02-audit-findings/74-test-and-evidence-asset-findings.md) | 删除8个冗余 `.gitkeep`、空 `tests/e2e` 与superseded DPT报告；保留EVH-024、registries、dated evidence与regression policy | TA-C01..C07 |
+| [74 - Tests And Evidence Assets](02-audit-findings/74-test-and-evidence-asset-findings.md) | 删除8个冗余 `.gitkeep`、空 `tests/e2e` 与superseded imported workflow报告；保留EVH-024、registries、dated evidence与regression policy | TA-C01..C07 |
 | [75 - Persisted Compatibility](02-audit-findings/75-persisted-compatibility-findings.md) | profile、checkpoint、terminal reason、Journal reader、checkpointer均需按各自persisted/deployment边界迁移；refinement facts保留 | PC-C01..C07 |
 | [76 - Evaluation Boundary](02-audit-findings/76-evaluation-boundary-findings.md) | Workspace/Bundle/Review/Node-or-Flow Run是不同概念；清理re-export与零行为shim前分别关闭import/data边界 | EV-C01..C06 |
 | [77 - OpenSpec And Records](02-audit-findings/77-openspec-and-record-findings.md) | clean clone已失去tracked CI与project OpenSpec skills；这是所有cleanup前的P0 blocker；current history/projections大多保留 | OR-C01..C08 |

@@ -1591,17 +1591,29 @@ def test_unsafe_or_conflicting_selected_endpoint_is_omitted(selected: object) ->
 @pytest.mark.parametrize(
     "selected",
     [
-        SimpleNamespace(name="selected", openai_api_base="https://api.example.test"),
-        SimpleNamespace(name="selected", api_base="https://api.example.test"),
-        SimpleNamespace(
-            name="selected",
-            base_url="https://api.example.test",
-            openai_api_base="https://api.example.test",
+        pytest.param(
+            SimpleNamespace(name="selected", openai_api_base="https://api.example.test"),
+            id="openai-api-base-only",
         ),
-        SimpleNamespace(
-            name="selected",
-            base_url="https://api.example.test",
-            api_base="https://api.example.test",
+        pytest.param(
+            SimpleNamespace(name="selected", api_base="https://api.example.test"),
+            id="api-base-only",
+        ),
+        pytest.param(
+            SimpleNamespace(
+                name="selected",
+                base_url="https://api.example.test",
+                openai_api_base="https://api.example.test",
+            ),
+            id="base-url-and-openai-api-base",
+        ),
+        pytest.param(
+            SimpleNamespace(
+                name="selected",
+                base_url="https://api.example.test",
+                api_base="https://api.example.test",
+            ),
+            id="base-url-and-api-base",
         ),
     ],
 )

@@ -104,7 +104,7 @@ a default or generic capability. (`NAC-003`)
 - **THEN** request construction or prompt admission rejects it without invoking a
   node, model resolver, tool resolver, model, or tool dispatch
 
-#### Scenario: Invalid capability binding is rejected before node invocation
+#### Scenario: Invalid capability reference is rejected before node invocation
 - **WHEN** a request has no ref or supplies an invalid, unknown, or package-mismatched ref
 - **THEN** construction or prompt admission rejects it without node invocation, model
   construction, tool resolution, or tool dispatch

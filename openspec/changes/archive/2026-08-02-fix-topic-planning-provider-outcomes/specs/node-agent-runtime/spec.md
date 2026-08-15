@@ -46,11 +46,11 @@ public status carriers to the existing authentication category, and SHALL fail c
 with the existing non-transient category for every other status or unclassified
 exception.
 
-For a direct `PhaseAgentStop`, the bridge SHALL preserve the trusted non-success
+For a direct `NodeAgentStop`, the bridge SHALL preserve the trusted non-success
 finish reason and use this closed projection: `USAGE_UNAVAILABLE` maps to
 `provider.usage_unavailable`, `BUDGET_EXHAUSTED` maps to `budget.exhausted`, and
 `POLICY_DENIED` maps to `policy.denied`. An unsupported stop reason SHALL map
-fail-closed to `internal.unexpected`. A phase-agent stop SHALL never be projected as
+fail-closed to `internal.unexpected`. A node-agent stop SHALL never be projected as
 `tool.execution_failed`. Existing non-stop tools-enabled result mappings, including
 the required-tool-count validation, SHALL remain unchanged. Stop detail and the
 original exception text SHALL not cross the bridge, create a provider observation, or
@@ -118,15 +118,15 @@ this raw-binding bridge and SHALL reject them from every other runtime module or
   its declared blocked path, and a later lifecycle result can explain that safe
   category without exposing the resolver exception
 
-#### Scenario: Closed phase-agent stops retain their real category
+#### Scenario: Closed node-agent stops retain their real category
 - **WHEN** a zero-tool topic-planning invocation raises a trusted
-  `PhaseAgentStop` with `USAGE_UNAVAILABLE`, `BUDGET_EXHAUSTED`, or `POLICY_DENIED`
+  `NodeAgentStop` with `USAGE_UNAVAILABLE`, `BUDGET_EXHAUSTED`, or `POLICY_DENIED`
 - **THEN** the result retains that finish reason and respectively exposes
   `provider.usage_unavailable`, `budget.exhausted`, or `policy.denied` with no provider
   observation, retry eligibility, raw detail, or `tool.execution_failed` category
 
-#### Scenario: Unsupported phase-agent stop fails closed
-- **WHEN** a trusted `PhaseAgentStop` has a non-success reason outside the three
+#### Scenario: Unsupported node-agent stop fails closed
+- **WHEN** a trusted `NodeAgentStop` has a non-success reason outside the three
   supported stop mappings
 - **THEN** the bridge returns `internal.unexpected` without retaining the stop detail
   or inventing a tool or provider failure
@@ -135,7 +135,7 @@ this raw-binding bridge and SHALL reject them from every other runtime module or
 - **WHEN** a tools-enabled invocation fails the existing required-tool-count
   validation
 - **THEN** it retains its existing non-stop tool result mapping, while a policy or
-  budget `PhaseAgentStop` is not given `tool.execution_failed`
+  budget `NodeAgentStop` is not given `tool.execution_failed`
 
 #### Scenario: Cancellation remains cancellation
 - **WHEN** the outer lifecycle task is cancelled while a child agent is active
@@ -208,7 +208,7 @@ this raw-binding bridge and SHALL reject them from every other runtime module or
   observation and does not label the result retry-eligible
 
 #### Scenario: Tool HTTP failure is not labelled as a model service
-- **WHEN** a tools-enabled phase-agent invocation raises a direct HTTP transport or
+- **WHEN** a tools-enabled node-agent invocation raises a direct HTTP transport or
   status error
 - **THEN** the bridge preserves its existing safe failure mapping without attaching a
   configured model-service observation or making the result newly retry-eligible

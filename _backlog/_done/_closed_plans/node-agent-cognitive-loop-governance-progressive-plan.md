@@ -449,7 +449,7 @@ guardrail proof; and an explicit judgment-eval disposition (`required` or why it
 requires changes 2, the owning calibration change where applicable, and change 11; a node aggregate
 or another branch's test cannot close it.
 
-| Current direct branch | Capability binding | Owning node responsibility | Branch closure | Status |
+| Current direct branch | capability reference | Owning node responsibility | Branch closure | Status |
 | --- | --- | --- | --- | --- |
 | `hitl1/brief` | `hitl1-profile-brief` | Profile-intake candidates | Changes 2, 4, 11 | [x] |
 | `hitl1/brief-repair` | `hitl1-profile-brief-repair` | Profile-intake candidates | Changes 2, 4, 11 | [x] |
@@ -701,7 +701,7 @@ focused proof in `agent/tests/graph/test_prompt_catalog.py`,
 `agent/tests/scenarios/` and `agent/tests/eval/`. It must give every branch a bounded question,
 model-visible trusted/untrusted layers, capability body, requested/enforced tools, candidate
 properties, and feedback that a subsequent model turn actually receives. For each of the 16 ledger
-rows, it records the exact product responsibility, capability binding, prompt/render seam, feedback
+rows, it records the exact product responsibility, capability reference, prompt/render seam, feedback
 recipient, candidate/authority seam, deterministic guardrail, and whether a judgment eval is
 required. The change does not create dossiers for HITL2, readiness, or final delivery.
 

@@ -2,7 +2,7 @@
 
 ## RENAMED Requirements
 
-- FROM: `### Requirement: Phase-agent prompt rendering has one source-faithful pure seam`
+- FROM: `### Requirement: node-agent prompt rendering has one source-faithful pure seam`
 - TO: `### Requirement: Node Cognitive Control Program rendering has one source-faithful pure seam`
 
 ## MODIFIED Requirements

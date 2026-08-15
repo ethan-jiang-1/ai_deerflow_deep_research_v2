@@ -14,6 +14,17 @@
 The model proposes structured synthesis; it does not accept evidence, publish an
 artifact, or choose an executable route.
 
+## LLM-Node Authoring Route
+
+For a model-bearing behavior symptom, read these local owners in order before changing
+semantic admission, a gate, or graph routing.
+
+1. **Capability and contract:** [`capabilities.py`](capabilities.py) and [`contracts.py`](contracts.py) define the accepted-evidence synthesis and repair responsibility.
+2. **Prompt and context:** [`prompts.py`](prompts.py) projects trusted assignment/output facts and delimited accepted evidence or draft context.
+3. **Feedback and repair:** [`node.py`](node.py) turns closed parser/semantic feedback into the bounded zero-tool repair request.
+4. **Proof and evaluation:** [`test_wave2_synthesis_real.py`](../../../../../tests/graph/test_wave2_synthesis_real.py) and the [cognitive-program evidence board](../../../../../tests/assets/node_agent_capabilities.py) retain synthesis/repair proof and the separate quality limitation.
+5. **Deterministic handoff:** [`node.py`](node.py) and [`materializer.py`](materializer.py) validate and materialize candidates before the preview, gate, and builder determine publication or route.
+
 ## From Symptoms
 
 | Symptom | First owner | Proof seam |

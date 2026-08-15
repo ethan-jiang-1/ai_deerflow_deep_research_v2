@@ -16,6 +16,17 @@ projection. Its composer may return only complete orders of supplied conclusion 
 uncertainty IDs. The deterministic renderer copies the admitted text and submission
 references verbatim; the model does not write an artifact or terminal fact.
 
+## LLM-Node Authoring Route
+
+For a model-bearing behavior symptom, read these local owners in order before changing
+publication, terminal status, or the final graph outcome.
+
+1. **Capability and contract:** [`capabilities.py`](capabilities.py) and [`contracts.py`](contracts.py) bound the report-layout candidate and its accepted inputs.
+2. **Prompt and context:** [`composer.py`](composer.py) builds the zero-tool request from readiness-bounded report entries and the closed layout contract.
+3. **Feedback and repair:** [`node.py`](node.py) handles the bounded composer result/failure path; this node has no invented repair branch.
+4. **Proof and evaluation:** [`test_zero_tool_node_conformance.py`](../../../../../tests/integration/test_zero_tool_node_conformance.py) and the [cognitive-program evidence board](../../../../../tests/assets/node_agent_capabilities.py) retain the composer proof/evaluation limitation.
+5. **Deterministic handoff:** [`composer.py`](composer.py), [`node.py`](node.py), and [`writer.py`](writer.py) validate, render, and publish only through the existing integrity gate and publisher owners.
+
 ## From Symptoms
 
 Open `composer.py`, `node.py`, and final-delivery contracts for candidate, publication,

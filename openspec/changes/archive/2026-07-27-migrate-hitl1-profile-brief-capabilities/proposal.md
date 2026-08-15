@@ -48,7 +48,7 @@ policy.
 
 - Add `hitl1-profile-brief` and `hitl1-profile-brief-repair` declarations and
   package-local Markdown policies with closed forbidden-tool metadata.
-- Migrate the two direct HITL1 brief builders to `required` capability bindings;
+- Migrate the two direct HITL1 brief builders to `required` capability references;
   preserve their existing assignment/output contracts, parser, repair bound, and
   node-owned lifecycle outcomes.
 - Extend the prompt catalog, exact cohort/legacy inventory, structure registry, and

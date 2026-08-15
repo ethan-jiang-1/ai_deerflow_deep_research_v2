@@ -4,7 +4,7 @@ See [proposal.md](proposal.md) for the motivation and frozen program boundary.
 
 Verified current facts establish the two workstreams' starting points:
 
-- `NodeExecutionRequest` defaults `capability_binding` to `legacy` while accepting
+- `NodeExecutionRequest` defaults a legacy/required capability selector while accepting
   a nullable capability ref. All production graph request builders already pass
   `required` plus an explicit ref, so the remaining dual mode is internal residue.
 - The prompt renderer validates the local capability before the bridge resolves
@@ -52,7 +52,7 @@ decision in this design requires reading or changing its source.
 ### Use one mandatory ref and one pre-resolver admission chain
 
 `NodeExecutionRequest` will require a `NodeAgentCapabilityRef` and no longer carry
-`capability_binding`. A missing ref is rejected by typed request construction. The
+the legacy/required selector. A missing ref is rejected by typed request construction. The
 renderer is then the first execution-adjacent step: it loads and validates the ref,
 resource, and metadata before it returns final prompt text. The bridge receives only
 that validated projection, checks its existing posture/window agreement, and only
@@ -99,7 +99,7 @@ workflow-phase vocabulary that is not an identity.
 The apply work renames current policy-resource title/text, renderer module and
 symbols, factory symbol/name, middleware stop symbols, bridge imports/error labels,
 current tests, generated/registry inputs, active main-spec requirement names and
-bodies, and the current prompt-review documentation. `PHASE_AGENT_NAME` becomes a
+bodies, and the current prompt-review documentation. `NODE_AGENT_NAME` becomes a
 node-agent identity with a new internal runtime name; the root
 `deep_research_tool` export remains unchanged. Archived material, delta rename
 provenance, the explicit retired-term supersession note in
@@ -107,16 +107,16 @@ provenance, the explicit retired-term supersession note in
 excluded from the residual-current scan.
 
 OpenSpec requires a modified requirement to retain every accepted scenario title.
-The exact `WFO-001` title `A direct phase preserves a closed phase-agent stop` is
+The exact `WFO-001` title `A direct phase preserves a closed node-agent stop` is
 therefore a validator-compatible legacy scenario identifier, not current product or
 runtime terminology. Its body uses `node-agent stop`; no other active requirement
 body, registry row, source symbol, policy resource, or current documentation may use
 the retired identity. `RER-009` retains all of its scenario titles and replaces its
-sole `phase-agent stop` body reference with `node-agent stop`.
+sole `node-agent stop` body reference with `node-agent stop`.
 
 The alternative, replacing every word `phase`, is rejected because graph phases are
 not the retired identity and a broad replacement would alter unrelated lifecycle
-language. The alternative, preserving `Phase Agent` as an internal alias, is rejected
+language. The alternative, preserving the retired imported-actor label as an internal alias, is rejected
 because it keeps a second current identity and weakens the convergence proof.
 
 ### Preserve current evidence while retiring migration narration

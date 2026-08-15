@@ -2,19 +2,19 @@
 
 The application has completed its node-capability migration, yet the current
 request contract and product records still retain a legacy/required dual mode and
-the retired `Phase Agent` identity. `CONTEXT.md` also repeats design and lifecycle
+the retired imported-actor identity. `CONTEXT.md` also repeats design and lifecycle
 records owned elsewhere, making the glossary a second authority. This change
 converges the closed current contract and its language without expanding an
 application-internal surface into a public compatibility promise.
 
 ## What Changes
 
-- **BREAKING (application-internal):** remove `NodeExecutionRequest.capability_binding`
+- **BREAKING (application-internal):** remove the legacy/required capability selector
   and require one validated `NodeAgentCapabilityRef` for every request. A missing,
   invalid, or package-mismatched ref is rejected before final prompt text is
   returned, tool resolution, model construction, or agent construction; no generic
   or legacy fallback remains.
-- Replace the current `Phase Agent` identity only where it names the current
+- Replace the current imported-actor identity only where it names the current
   product, model-visible program, or runtime/governance mechanism. The bounded term
   table is: `LLM-Bearing Node` for product identity, `Node Cognitive Control
   Program` for model-visible local cognition, and `node-agent` for the runtime and
@@ -77,7 +77,7 @@ None.
 - **Candidate / obligation budget:** NC-C01, NC-C02, NC-C03, EC-C02, OR-C03, OR-C05, EV-C01, OR-C07, OR-C08
 - **Declared workstream order:** node-contract-language, glossary-records
 - **Program decision authority:** Post-migration convergence plan owner approves only this frozen budget, order, and whole-program archive closure; it owns no runtime fact, writer, or semantic workstream decision.
-- **Shared archive invariant:** Both workstreams close with no current `capability_binding` or `Phase Agent` identity, a glossary-only `CONTEXT.md` that retains all current distinctions and `_Avoid_` entries, unchanged ADR history, and evidence that the retained current guards still fail closed.
+- **Shared archive invariant:** Both workstreams close with no current legacy/required capability selector or imported-actor identity, a glossary-only `CONTEXT.md` that retains all current distinctions and `_Avoid_` entries, unchanged ADR history, and evidence that the retained current guards still fail closed.
 - **Program failure / recovery:** A failed workstream is forward-repaired within its declared writer scope, or that workstream and any dependent later workstream are rolled back to the pre-change invariant. If neither path closes the frozen budget, the program stays active for approved plan-level re-scope or whole-program rollback; no workstream partially archives.
 - **Split / expansion rule:** No new Candidate, external Python compatibility support, runtime feature, DeerFlow boundary, or separate change enters this program. Any necessary expansion returns to the remediation map for explicit approval and preserves the eight-change budget.
 - **Not in scope:** Altering `deep_research_tool` or the root package export; changing graph lifecycle, tool permissions, provider behavior, 20-branch evidence scope, evaluation data/import compatibility, generated-projection ownership, ADR history, archive/backlog facts, or DeerFlow.
@@ -92,7 +92,7 @@ None.
 - **Not in scope:** New node capabilities, changing tool posture or budgets, graph routes/state writers/recovery, external Python consumer support, root export changes, or a semantic evaluation of model quality.
 - **Triggered review policies:** change-admission, node-agent-workflow-integrity, workflow-outcome-review, control-placement
 - **Candidate / obligation IDs:** NC-C01, NC-C02, OR-C03
-- **Target / retirement:** Require `NodeAgentCapabilityRef` on `NodeExecutionRequest`; retire `capability_binding`, current `Phase Agent` product/model/runtime identity, and their associated current code/spec/test/registry spellings.
+- **Target / retirement:** Require `NodeAgentCapabilityRef` on `NodeExecutionRequest`; retire the legacy/required capability selector, the imported-actor product/model/runtime identity, and their associated current code/spec/test/registry spellings.
 - **Surface grade:** application-internal typed contract and AI-facing product language; clean break is permitted because the root facade, package metadata, documentation, and entry points do not promise these names to third parties.
 - **Decision authority:** Node Cognition owner decides the request and terminology contract; the bridge and agents layers retain their existing deterministic execution/admission responsibilities, and the program authority does not substitute for either.
 - **Negative path / recovery:** Missing refs fail at request construction; invalid or package-mismatched refs fail at prompt admission before tools/model/agent work. A failed migration restores the previous internal code as one unit before archive; no legacy fallback or inferred capability is introduced.

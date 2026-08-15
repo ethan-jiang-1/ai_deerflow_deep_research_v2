@@ -3,6 +3,7 @@
 @impl PRS-004
 @impl PRS-001
 @impl PRS-006
+@impl PRS-009
 @impl PRS-011
 @impl PRS-017
 @impl PRS-018
@@ -128,6 +129,16 @@ owner = "PRS-004"
 
 [[required_paths]]
 path = "openspec/README.md"
+kind = "file"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/product"
+kind = "directory"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/product/deep-research.md"
 kind = "file"
 owner = "PRS-009"
 
@@ -304,6 +315,7 @@ class ArchitectureGovernanceContractTests(unittest.TestCase):
         _write(self.root, "openspec/governance/req-registry.yaml", REGISTRY_TEXT)
         _write(self.root, "openspec/governance/test-evidence-policy.md", "# Test Evidence Governance Policy\n")
         _write(self.root, "openspec/README.md", "# OpenSpec\n")
+        _write(self.root, "openspec/product/deep-research.md", "# Product Context\n")
         _write(self.root, "openspec/change-guidance/README.md", "# Change Guidance\n")
         _write(self.root, "openspec/change-guidance/principles.md", "# Principles\n")
         _write(self.root, "openspec/change-guidance/node-edit-map.md", "# Node Edit Map\n")
@@ -753,6 +765,16 @@ owner = "PRS-001"
         self.assertNotEqual(result.returncode, 0, result.stdout)
         self.assertIn("path.missing", result.stderr)
         self.assertIn("deep_research_harness/docs/testing-and-evaluation.md", result.stderr)
+
+    def test_registered_product_context_path_is_detected_when_removed(self) -> None:
+        product_document = self.root / "openspec/product/deep-research.md"
+        product_document.unlink()
+
+        result = self.run_checker()
+
+        self.assertNotEqual(result.returncode, 0, result.stdout)
+        self.assertIn("path.missing", result.stderr)
+        self.assertIn("openspec/product/deep-research.md", result.stderr)
 
     def test_direct_provider_classifier_imports_are_limited_to_the_raw_binding(self) -> None:
         _write(

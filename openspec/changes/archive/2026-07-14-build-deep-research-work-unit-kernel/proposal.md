@@ -128,7 +128,7 @@ gate-readable evidence.
   controller code writes `work/<work_id>/<attempt_id>/work-spec.json`; the assigned
   fixture worker writes only `result.json` and declared `outputs/...`; deterministic
   submit writes `evidence/submissions.jsonl` plus a research-scoped lock/staging file
-  used only for atomic publication. No DPT queue/index/status bundle files are added.
+  used only for atomic publication. No imported workflow queue/index/status bundle files are added.
 - **DeerFlow extension surfaces:** the existing downstream reflection path
   `deerflow_deep_research.tool:deep_research_tool` and registered lifecycle handler are
   unchanged. No `config.yaml` section, `extensions_config.json` key, public/custom

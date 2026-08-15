@@ -865,7 +865,7 @@ def validate_cohort_evidence(
         errors.append("cohort rows must use unique capabilities")
     bindings = {row.case_id: row.capability_id for row in rows}
     if bindings != EXPECTED_COHORT_BINDINGS:
-        errors.append("cohort rows contain an unknown or missing capability binding")
+        errors.append("cohort rows contain an unknown or missing capability reference")
     for row in rows:
         if not all((row.catalog_source, row.declaration_source, row.entrypoint, row.test_modules)):
             errors.append(f"{row.case_id}: source and entrypoint metadata is required")
@@ -976,9 +976,9 @@ def validate_cognitive_program_evidence(
             continue
         request = catalog_case.build_request()
         if row.capability_id != cohort_capability:
-            errors.append(f"{case_id}: capability binding does not match cohort")
+            errors.append(f"{case_id}: capability reference does not match cohort")
         if request.capability_ref is None or row.capability_id != request.capability_ref.capability_id:
-            errors.append(f"{case_id}: capability binding does not match catalog")
+            errors.append(f"{case_id}: capability reference does not match catalog")
         if row.catalog_builder_id != catalog_case.builder_id:
             errors.append(f"{case_id}: catalog builder does not match catalog")
         if row.final_render_seam != _FINAL_RENDER_SEAM:

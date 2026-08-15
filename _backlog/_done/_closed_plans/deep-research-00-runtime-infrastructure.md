@@ -23,7 +23,7 @@
 - **执行形态：in-process custom tool + nested StateGraph。** Deep Research 需要父 thread 的身份、sandbox、stream/cancel/runtime context；MCP/ACP 不作为默认承载。
 - **代码归属：顶层自有 source-backed package。** 源码在 `agent/src/deerflow_deep_research/`，不放入 `backend/`/`frontend/`，也不修改上游 backend workspace；local 用 sync 后 editable install，Docker override 用只读 source mount + `PYTHONPATH`。
 - **入口形态：全局 tool + public entry skill + per-user dedicated Agent。** `deep_research` tool 是真实入口；public skill 只是用户交互合同；dedicated Agent/SOUL 只是 UX 引导，不是安全边界。
-- **控制权边界：Python graph 控制 phase/state，node 内 DeerFlow agent loop 做开放式判断。** DPT 的 graph/state/gate/work-unit 语义保留，只把 Markdown controller 换成 Python controller。
+- **控制权边界：Python graph 控制 phase/state，node 内 DeerFlow agent loop 做开放式判断。** imported workflow 的 graph/state/gate/work-unit 语义保留，只把 Markdown controller 换成 Python controller。
 - **资源生命周期：GraphHost 不假设 Gateway lifespan hook。** reflected `BaseTool` 无可靠 app lifespan 接口；第一版 GraphHost 缓存 topology/builders，不持有长期 DB 连接。SQLite/Postgres 每次 tool action 用 `deerflow.runtime.checkpointer.async_provider.make_checkpointer(app_config)` 开启官方 async context，compile/invoke/inspect 后确定关闭。effective provider 必须遵循官方 legacy `checkpointer` 优先于 `database` 的规则；memory backend 可保留进程内 saver，但明确不支持进程重启恢复。
 - **权限不靠 prompt。** Agent/SOUL/tool_groups 只能降低误用概率；RuntimeAdapter、node-agent policy、path middleware、submit/gate 才是权限边界。
 - **身份来源：trusted runtime。** 必须显式存在 server-injected `runtime.context.user_id`；通用 helper 静默回退的 `default` 不算认证。thread/run/sandbox 只能从 DeerFlow runtime context/state 派生，模型参数和用户输入不能覆盖。
@@ -332,11 +332,11 @@ tool action
 `agents/factory.py` 必须封装：
 
 - 调用 DeerFlow `create_deerflow_agent()`；
-- 采用已由当前 DeerFlow 2.1 factory 验证的 `middleware=[...]` full takeover，避免自动加入不适合 phase agent 的 clarification/tool surface；
+- 采用已由当前 DeerFlow 2.1 factory 验证的 `middleware=[...]` full takeover，避免自动加入不适合 node agent 的 clarification/tool surface；
 - child 作为 bridge 内单独 runnable 调用，传 `checkpointer=None`，不作为会继承 parent saver 的 graph subgraph node；
 - bridge 在 ephemeral child state/context 中复用 parent `sandbox`、`thread_data`、runtime attribution 和 cancellation，不建立新 lifecycle；
 - 建立 model-call/tool-call/per-response/parallelism/token/model-output/tool-result/structured-result/wall-time policies；pre-call token admission 默认使用覆盖 actual messages/tool schemas 的 deterministic no-network UTF-8 byte upper bound，再用 actual usage reconciliation；
-- 禁止 phase agent 使用 `ask_clarification`；HITL 只能由 graph HITL nodes 发起；
+- 禁止 node agent 使用 `ask_clarification`；HITL 只能由 graph HITL nodes 发起；
 - structured output normalization 与 validation；
 - stream/progress projection 到 outer run events。
 

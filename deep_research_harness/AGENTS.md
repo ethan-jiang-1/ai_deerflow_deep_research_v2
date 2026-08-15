@@ -9,6 +9,11 @@ change explicitly owns that boundary.
 <!-- BEGIN: DEEP-RESEARCH-FOCUS-GATE -->
 ## Deep Research Focus Gate
 
+For a Coding Agent creating, changing, or reviewing an LLM-Bearing Node or direct
+model branch, first read the [node edit map](../openspec/change-guidance/node-edit-map.md)
+before implementation navigation. It orders cognitive responsibility, prompt/context,
+feedback/repair, and proof before deterministic handoff ownership.
+
 Start at [Change Guidance](../openspec/change-guidance/README.md), then
 select one primary module or causal owner. Read that module's active capability
 spec/delta, closest implementation, and lowest responsible test seam before widening
@@ -34,14 +39,9 @@ archive review compare the approved scope with tasks, diff, dependencies, and ev
 failed work stays active for repair, rollback, or plan-level re-scope, never partial
 archive.
 
-For an LLM-Bearing Node behavior symptom, classify the seam first: capability Markdown,
-prompt builder, and feedback are the first modification seam; a parser, gate, route, or
-bridge edit is a guardrail, not a substitute. Declare `Seam classification` on the Focus
-Card and follow the
-[local-context policy](../openspec/change-guidance/policies/local-context.md)
-seam rule before a deterministic edit for a node symptom. For the one-page terminology
-map that routes each term to its first edit, see the
-[node edit map](../openspec/change-guidance/node-edit-map.md).
+For an LLM-Bearing Node behavior symptom, declare `Seam classification` and follow the
+[local-context policy](../openspec/change-guidance/policies/local-context.md) before a
+deterministic edit. The map above is the first modification route, not a runtime control.
 
 | Central question | Primary owner to inspect first |
 | --- | --- |

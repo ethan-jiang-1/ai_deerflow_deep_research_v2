@@ -25,7 +25,7 @@ with reachable direct run_agent references: hitl1, topic_planning, wave0, wave1,
 wave2_synthesis, and targeted_evidence. The closed current direct-branch denominator
 in tests/assets/node_agent_capabilities.py contains sixteen individual branches, and
 tests/graph/test_node_agent_capability_cohort.py validates it. These sources prove
-current wiring and capability bindings, not product quality or future product
+current wiring and capability references, not product quality or future product
 commitment.
 
 The focused controller bundle for bootstrap, rerun, hitl2, readiness, and
@@ -140,7 +140,7 @@ by inference.
   would mark HITL2, readiness, and final delivery as permanently non-cognitive and
   would hide meaningful controller exclusions.
 - Omitting the audit was rejected because the current branch denominator and
-  capability bindings are valuable verification facts; their correct place is
+  capability references are valuable verification facts; their correct place is
   evidence, not identity.
 
 ### 3. Participation and commitment preserve honest differences

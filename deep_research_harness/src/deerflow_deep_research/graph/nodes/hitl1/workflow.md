@@ -14,6 +14,17 @@
 The model proposes a brief or semantic candidate; it cannot accept a reply, publish
 `profile.json`, mutate checkpoint authority, or choose a route.
 
+## LLM-Node Authoring Route
+
+For a model-bearing behavior symptom, read these local owners in order before changing
+the parser or graph path.
+
+1. **Capability and contract:** [`capabilities.py`](capabilities.py) and [`contracts.py`](contracts.py) define the bounded brief and semantic-candidate responsibility.
+2. **Prompt and context:** [`prompts.py`](prompts.py) composes the original question, proposal, reply, and constrained model-visible request.
+3. **Feedback and repair:** [`node.py`](node.py) owns bounded invalid-output feedback and the repair invocation boundary.
+4. **Proof and evaluation:** [`test_hitl1_node.py`](../../../../../tests/graph/test_hitl1_node.py) and the [cognitive-program evidence board](../../../../../tests/assets/node_agent_capabilities.py) identify the four current branches and their limits.
+5. **Deterministic handoff:** [`node.py`](node.py) parses and resolves candidates; only the typed/domain and graph owners publish a profile or route.
+
 ## From Symptoms
 
 | Symptom | First owner | Proof seam |

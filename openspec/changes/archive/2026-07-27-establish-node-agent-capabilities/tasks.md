@@ -38,7 +38,7 @@
 - [x] 2.5 Add recording-bridge red tests for capability/request/`ExecutionPolicy`
   posture agreement, the configured-tool intersection, no permitted Wave0
   alternative, and forbidden-tool visibility; then enforce those checks before
-  `build_phase_agent` or dispatch. (`NOA-011`)
+  `build_node_agent` or dispatch. (`NOA-011`)
 
 ## 3. First Vertical Cohort
 

@@ -25,7 +25,7 @@ Python 的 `objective` 字符串、注释和默认字段中。于是 graph 虽�
 ```text
 今天
 
-node Python objective ──> 共享 runtime_policy.md ──> 同一个泛化 phase agent
+node Python objective ──> 共享 runtime_policy.md ──> 同一个泛化 node agent
                          ^
                   角色 / 工具意图 / 方法混在普通消息中
 
@@ -72,7 +72,7 @@ projection、精确 legacy inventory（现为空）和每 branch 的成功/最�
   `tools_enabled=True`；
 - `targeted_evidence` 的 source diagnostic 和 claim verifier 注释为只读、无工具，
   请求同样默认允许工具；
-- `hitl1` 的自然语言语义理解虽然已有一个 builder，却仍只是通用 phase agent 的
+- `hitl1` 的自然语言语义理解虽然已有一个 builder，却仍只是通用 node agent 的
   一段 user message，没有专属系统级对话能力；
 - 当前 `RuntimeNodeAgentBridge.system_prompt` 可以替换整个 system policy，说明
   node capability 甚至没有不可绕开的组合位置。
@@ -214,7 +214,7 @@ branch，并将其余十个明确保持为封闭 `legacy` 集合。全部 16 个
 - [x] B.4 将工具 posture 变为 capability contract 的可验证部分，纠正当前已确认的不一致。
 - [x] B.5 升级 prompt catalog：显示 capability ID、node-local source、base safety、node
   capability、assignment、output contract 和 request/runtime tool-policy 区别。
-- [x] B.6 添加机械防线：builder 的 capability binding、policy asset、封闭 legacy
+- [x] B.6 添加机械防线：builder 的 capability reference、policy asset、封闭 legacy
   inventory、catalog 一致性和 posture/request 矛盾均可确定性验证。
 - [x] B.7 为六个迁移 branch 建立每 branch 的成功与最高风险行为证据；不得用聚合 pytest
   数量或其他 branch 的证据代替。
@@ -270,7 +270,7 @@ bounded retrieval、read-only critic）、12 个 direct branch 和两条实际�
 - 覆盖 `topic_planning/{plan,plan-repair}`、`wave0/{worker,repair}` 与
   `wave1/{worker,repair}`，即确认 profile 后的 topic decomposition、baseline source intake
   与 Wave1 evidence expansion。
-- 迁移仍为 legacy 的 topic-planning 与 Wave1 branch；Wave0 保留既有 capability binding，
+- 迁移仍为 legacy 的 topic-planning 与 Wave1 branch；Wave0 保留既有 capability reference，
   只补其 source strategy、tool-call、independence 与 honest-degradation 的行为 evidence。
 - 验收 coverage/non-overlap/profile constraints、Wave0 1--3 次 retrieval、Wave1 恰好一次
   新来源检索、repair 不补造事实/来源/claim/question，以及 deterministic admission、ledger/

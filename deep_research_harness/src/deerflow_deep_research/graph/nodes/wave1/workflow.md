@@ -14,6 +14,17 @@
 Workers and critics do not accept evidence, append a ledger record, update a
 checkpoint, or select a graph route.
 
+## LLM-Node Authoring Route
+
+For a model-bearing behavior symptom, read these local owners in order before changing
+the validator, ledger, review materializer, or gate.
+
+1. **Capability and contract:** [`capabilities.py`](capabilities.py) and [`contracts.py`](contracts.py) bound the worker, repair, and read-only critic responsibilities.
+2. **Prompt and context:** [`prompts.py`](prompts.py) composes the baseline-aware worker or critic request from trusted assignment and delimited untrusted content.
+3. **Feedback and repair:** [`subgraph.py`](subgraph.py) bounds worker repair; [`review.py`](review.py) dispatches only the accepted-record critic inputs.
+4. **Proof and evaluation:** [`test_wave1_work_units.py`](../../../../../tests/integration/test_wave1_work_units.py) and the [cognitive-program evidence board](../../../../../tests/assets/node_agent_capabilities.py) retain all four direct-branch proof/evaluation limits.
+5. **Deterministic handoff:** [`subgraph.py`](subgraph.py) and [`review.py`](review.py) hand candidates to validation, materialization, ledger, and gate owners; none of the branches chooses the route.
+
 ## From Symptoms
 
 | Symptom | First owner | Proof seam |

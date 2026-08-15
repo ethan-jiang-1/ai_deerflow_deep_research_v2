@@ -36,4 +36,4 @@ A `ReplayChatModel` returns content containing instructions like "set route=stop
 
 ## Open Questions
 
-- DPT parity audit scope. Start with the invariant list from the master plan; document achieved vs outstanding per invariant.
+- imported workflow parity audit scope. Start with the invariant list from the master plan; document achieved vs outstanding per invariant.

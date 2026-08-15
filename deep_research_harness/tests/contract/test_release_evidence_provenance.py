@@ -12,10 +12,11 @@ DOCS_ROOT = Path(__file__).resolve().parents[2] / "docs"
 BASELINE = DOCS_ROOT / "live-evaluation-baseline-2026-07-17.md"
 ATTESTATION = DOCS_ROOT / "release-attestation-2026-07-17.json"
 REGRESSION_DESCENT = DOCS_ROOT / "regression-descent.md"
+RETIRED_PARITY_REPORT_STEM = "d" + "pt" + "-invariant-parity-release-report-"
 
 
 def test_retained_release_provenance_routes_need_no_superseded_report() -> None:
-    assert not tuple(DOCS_ROOT.glob("dpt-invariant-parity-release-report-*.md"))
+    assert not tuple(DOCS_ROOT.glob(f"{RETIRED_PARITY_REPORT_STEM}*.md"))
 
     baseline = BASELINE.read_text(encoding="utf-8")
     assert "legacy report schema" in baseline

@@ -43,5 +43,5 @@ contract.
 #### Scenario: A legacy blocked record remains honestly incomplete
 - **WHEN** a readable legacy terminal has no retained incident
 - **THEN** the shared update labels it as an unclassified blocked result without
-  claiming a provider timeout, retry, recovery, or a newly closed phase-agent stop that
+  claiming a provider timeout, retry, recovery, or a newly closed node-agent stop that
   was not observed

@@ -67,7 +67,7 @@ None.
 - **Necessary adjacent/external contracts:**
   `graph/topology.py::LOGICAL_NODES` answers the exact node denominator;
   the prompt catalog and `COHORT_EVIDENCE` answer the exact direct-branch denominator
-  and capability binding; `NODE_CONFORMANCE` and `MODEL_WORKFLOW_COVERAGE` answer
+  and capability reference; `NODE_CONFORMANCE` and `MODEL_WORKFLOW_COVERAGE` answer
   collected node/loop proof; the central claim catalog and `REQUIREMENT_IMPACTS` answer
   selector collection and preserved-risk ownership; the four calibration registries
   answer exact branch-to-evaluation applicability; cognitive-node reader/dossier

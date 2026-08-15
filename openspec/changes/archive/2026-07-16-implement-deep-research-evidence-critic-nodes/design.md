@@ -97,7 +97,7 @@ configurable policy and threshold. Conflicting critic results form a gap recorde
 as such; the gate does not auto-resolve via majority vote. This change only
 produces the verdict artifacts and typed contracts.
 
-Why: DPT's critic model treats disagreement as signal, not noise. Making critics
+Why: imported workflow's critic model treats disagreement as signal, not noise. Making critics
 hard authority would let a misconfigured prompt override evidence. The gate remains
 the sole transition authority.
 

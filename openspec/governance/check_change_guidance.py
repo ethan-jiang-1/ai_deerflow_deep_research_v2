@@ -11,6 +11,8 @@ authority.
 @impl DRC-008
 @impl DRC-009
 @impl DRC-010
+@impl DRC-012
+@impl DRC-014
 @impl PRS-009
 """
 
@@ -33,6 +35,11 @@ POLICY_ROOT = GUIDANCE_ROOT / "policies"
 GUIDANCE_ROOT_MEMBERS = frozenset({"README.md", "principles.md", "node-edit-map.md", "policies"})
 OPEN_SPEC_README_PATH = Path("openspec/README.md")
 CONFIG_PATH = Path("openspec/config.yaml")
+PRODUCT_ROOT = Path("openspec/product")
+PRODUCT_DOCUMENT_PATH = PRODUCT_ROOT / "deep-research.md"
+PRODUCT_ROOT_MEMBERS = frozenset({"deep-research.md"})
+PRODUCT_ROUTE_ANCHOR = "product/deep-research.md"
+PLATFORM_ROOT = Path("openspec/platform")
 GUIDE_PATH = Path("deep_research_harness/AGENTS.md")
 CLAUDE_GUIDE_PATH = Path("deep_research_harness/CLAUDE.md")
 README_PATH = Path("deep_research_harness/README.md")
@@ -176,6 +183,9 @@ INFORMATION_MAP_POLICY_ANCHORS = (
     "local-operations.md",
     "testing-and-evaluation.md",
     "word-count",
+    "openspec/product/deep-research.md",
+    "60 lines",
+    "80 lines",
 )
 GUIDE_INFORMATION_MAP_ANCHORS = (
     "## Information Map",
@@ -191,7 +201,41 @@ LINE_BUDGETS = (
     (GUIDE_PATH, 120, 160, False),
     (CLAUDE_GUIDE_PATH, 10, 12, False),
     (CONFIG_PATH, 140, 180, False),
+    (PRODUCT_DOCUMENT_PATH, 60, 80, False),
     (README_PATH, 200, None, True),
+)
+PRODUCT_DOCUMENT_ANCHORS = (
+    "> role: concise product-context reading map",
+    "> authority: navigation only; definitions, requirements, runtime facts, and LLM-node authoring remain with their named owners",
+    "CONTEXT.md",
+    "main specs",
+    "active delta",
+    "code",
+    "typed contracts",
+    "tests",
+    "node-edit-map.md",
+)
+PRODUCT_AUTHORITY_CLAIM_PATTERN = re.compile(
+    r"\b(?:this (?:page|document|map)|product context)\s+"
+    r"(?:defines|owns|controls|authorizes|configures)\b",
+    re.IGNORECASE,
+)
+LLM_NODE_AUTHORING_TRIGGER = "creating, changing, or reviewing an LLM-Bearing Node"
+AUTHORING_ROUTE_DEMOTION_ANCHOR = "before implementation navigation"
+NODE_EDIT_MAP_ROUTE_STEPS = (
+    "1. **Classify the surface**",
+    "2. **Node Cognitive Control Contract and local capability**",
+    "3. **Prompt builder and model-visible context**",
+    "4. **Structured output, feedback, and repair**",
+    "5. **Focused proof and applicable cognitive evaluation**",
+    "6. **Deterministic handoff owners**",
+)
+LOCAL_CONTEXT_SEAM_OWNER_ANCHORS = (
+    "**cognitive-program:**",
+    "**deterministic-guardrail:**",
+    "**human-decision:**",
+    "**wiring:**",
+    "does not fabricate a prompt obligation",
 )
 
 
@@ -219,6 +263,92 @@ def _require_fragment(text: str, fragment: str, *, code: str, detail: str) -> No
         raise ContractViolation(code, detail)
 
 
+def _validate_llm_node_authoring_pointer(text: str, path: Path, *, code_prefix: str) -> None:
+    normalized = re.sub(r"\s+", " ", text)
+    trigger_position = normalized.find(LLM_NODE_AUTHORING_TRIGGER)
+    link_position = normalized.find("node-edit-map.md", trigger_position)
+    demotion_position = normalized.find(AUTHORING_ROUTE_DEMOTION_ANCHOR, trigger_position)
+    if min(trigger_position, link_position, demotion_position) == -1:
+        raise ContractViolation(
+            f"{code_prefix}.node_authoring_route_missing",
+            f"LLM-node authoring route is missing from {path.as_posix()}",
+        )
+    if not trigger_position <= link_position < demotion_position:
+        raise ContractViolation(
+            f"{code_prefix}.node_authoring_route_demoted",
+            f"node edit map must precede implementation navigation: {path.as_posix()}",
+        )
+
+
+def _validate_node_edit_map_route(node_edit_map: str, path: Path) -> None:
+    positions: list[int] = []
+    for step in NODE_EDIT_MAP_ROUTE_STEPS:
+        position = node_edit_map.find(step)
+        if position == -1:
+            raise ContractViolation(
+                "guidance.node_edit_map_route_missing",
+                f"node edit map lacks cognitive-first route step {step!r}: {path.as_posix()}",
+            )
+        positions.append(position)
+    if positions != sorted(positions):
+        raise ContractViolation(
+            "guidance.node_edit_map_route_order_invalid",
+            f"node edit map must retain its ordered cognitive-first route: {path.as_posix()}",
+        )
+
+
+def _validate_product_context(root: Path) -> None:
+    product_path = root / PRODUCT_ROOT
+    if not product_path.is_dir():
+        raise ContractViolation(
+            "product.document_missing",
+            f"product context directory is missing: {PRODUCT_ROOT.as_posix()}",
+        )
+    if product_path.is_symlink() or {path.name for path in product_path.iterdir()} != PRODUCT_ROOT_MEMBERS:
+        raise ContractViolation(
+            "product.root_members_mismatch",
+            f"product context members must equal {sorted(PRODUCT_ROOT_MEMBERS)!r}: {PRODUCT_ROOT.as_posix()}",
+        )
+    if (root / PLATFORM_ROOT).exists() or (root / PLATFORM_ROOT).is_symlink():
+        raise ContractViolation(
+            "product.platform_present",
+            f"a platform documentation tree is forbidden: {PLATFORM_ROOT.as_posix()}",
+        )
+
+    product_document = _read_file(root, PRODUCT_DOCUMENT_PATH, code="product.document_missing")
+    authority_lines = re.findall(r"^> authority:.*$", product_document, flags=re.MULTILINE)
+    if len(authority_lines) != 1 or not authority_lines[0].startswith("> authority: navigation only; "):
+        raise ContractViolation(
+            "product.authority_claim",
+            f"product context must retain its navigation-only authority boundary: {PRODUCT_DOCUMENT_PATH.as_posix()}",
+        )
+    if PRODUCT_AUTHORITY_CLAIM_PATTERN.search(product_document):
+        raise ContractViolation(
+            "product.authority_claim",
+            f"product context must not claim runtime or specification authority: {PRODUCT_DOCUMENT_PATH.as_posix()}",
+        )
+    normalized_product_document = product_document.lower()
+    for anchor in PRODUCT_DOCUMENT_ANCHORS:
+        _require_fragment(
+            normalized_product_document,
+            anchor.lower(),
+            code="product.authority_route_missing",
+            detail=(
+                f"product context lacks authority-routing anchor {anchor!r}: "
+                f"{PRODUCT_DOCUMENT_PATH.as_posix()}"
+            ),
+        )
+
+    for path in (OPEN_SPEC_README_PATH, CONFIG_PATH, GUIDANCE_ROOT / "README.md"):
+        entry = _read_file(root, path, code="product.entry_route_missing")
+        _require_fragment(
+            entry,
+            PRODUCT_ROUTE_ANCHOR,
+            code="product.entry_route_missing",
+            detail=f"product context route is missing from {path.as_posix()}",
+        )
+
+
 def _validate_change_guidance_tree(root: Path) -> None:
     for retired_root in RETIRED_GUIDANCE_ROOTS:
         path = root / retired_root
@@ -234,7 +364,9 @@ def _validate_change_guidance_tree(root: Path) -> None:
     node_edit_map_path = GUIDANCE_ROOT / "node-edit-map.md"
     index = _read_file(root, index_path, code="charter.path_missing")
     principles = _read_file(root, principles_path, code="charter.path_missing")
-    _read_file(root, node_edit_map_path, code="charter.path_missing")
+    node_edit_map = _read_file(root, node_edit_map_path, code="guidance.node_edit_map_missing")
+    _validate_node_edit_map_route(node_edit_map, node_edit_map_path)
+    _validate_llm_node_authoring_pointer(index, index_path, code_prefix="guidance")
 
     if guidance_path.is_symlink() or {path.name for path in guidance_path.iterdir()} != GUIDANCE_ROOT_MEMBERS:
         raise ContractViolation(
@@ -308,6 +440,13 @@ def _validate_change_guidance_tree(root: Path) -> None:
         code="charter.program_route_local_context_missing",
         detail=f"local-context policy lacks the bounded-program route: {local_context_path.as_posix()}",
     )
+    for anchor in LOCAL_CONTEXT_SEAM_OWNER_ANCHORS:
+        _require_fragment(
+            local_context,
+            anchor,
+            code="charter.local_context_seam_owner_missing",
+            detail=f"local-context policy lacks seam-owner rule {anchor!r}: {local_context_path.as_posix()}",
+        )
     change_admission_path = POLICY_ROOT / "change-admission.md"
     change_admission = _read_file(root, change_admission_path, code="charter.path_missing")
     _require_fragment(
@@ -352,6 +491,7 @@ def _validate_focus_gate(root: Path) -> None:
         )
 
     focus_gate = guide[begin:end]
+    _validate_llm_node_authoring_pointer(focus_gate, GUIDE_PATH, code_prefix="guide")
     _require_fragment(
         focus_gate,
         "change-guidance/README.md",
@@ -581,6 +721,7 @@ def _validate_information_map(root: Path) -> list[str]:
         GUIDE_PATH: guide,
         CLAUDE_GUIDE_PATH: _read_file(root, CLAUDE_GUIDE_PATH, code="guide.claude_entrypoint_missing"),
         CONFIG_PATH: config,
+        PRODUCT_DOCUMENT_PATH: _read_file(root, PRODUCT_DOCUMENT_PATH, code="product.document_missing"),
         README_PATH: readme,
     }
     warnings: list[str] = []
@@ -1212,6 +1353,7 @@ def validate(root: Path) -> list[str]:
     if not root.is_dir():
         raise ContractViolation("root.missing", f"project root is not a directory: {root}")
     _validate_change_guidance_tree(root)
+    _validate_product_context(root)
     _validate_focus_gate(root)
     _validate_claude_guide(root)
     _validate_authoring_pointer(root)

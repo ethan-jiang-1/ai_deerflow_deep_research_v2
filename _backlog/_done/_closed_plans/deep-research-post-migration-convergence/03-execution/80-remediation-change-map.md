@@ -74,7 +74,7 @@ OpenSpec skills已恢复，且未引入 versioned external installer。bounded c
 | --- | --- | --- | --- |
 | 01 | `delivery` | repository automation/skill delivery在clean clone可复现 | OR-C01/C02、OR-C04 delivery half |
 | 01 | `test-structure` | 删除空marker/scaffold及精确registry row | TA-C01/C02、OR-C04 scaffold half、TA-C03/C04 |
-| 01 | `evidence-report` | 对照provenance后删除superseded DPT report与shape-only test | TA-C05、OR-C06、TA-C06/C07 |
+| 01 | `evidence-report` | 对照provenance后删除superseded imported workflow report与shape-only test | TA-C05、OR-C06、TA-C06/C07 |
 | 01 | `demo-adapter` | 独有cases迁到canonical profile/preflight后删除private helpers | EC-C04、EC-C01/C03 |
 | 01 | `topic-planner` | canonical Bundle profile tests承接short-state behavior后删除helper | RC-C02、RC-C07 |
 | 03 | `node-contract-language` | required capability ref唯一，AI-facing/code/spec/test纵向使用term table | NC-C01/C02、OR-C03 |

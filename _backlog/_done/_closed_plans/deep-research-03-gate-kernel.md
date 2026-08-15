@@ -13,7 +13,7 @@
 
 ## 目标
 
-实现所有 phase 共用的 deterministic gate/repair 内核，保留 DPT collect-all、inspect/advice、attempt/fatigue 和不可假通过的合同。
+实现所有 phase 共用的 deterministic gate/repair 内核，保留 imported workflow collect-all、inspect/advice、attempt/fatigue 和不可假通过的合同。
 
 ## Scope（原有，保持不变）
 

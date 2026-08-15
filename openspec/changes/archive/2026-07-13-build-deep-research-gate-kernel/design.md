@@ -69,7 +69,7 @@ or artifacts need attention.
 
 The gate kernel is a pure synchronous function `evaluate_gate(state, phase,
 gate_def) -> GateResult`. Rules are sync (no I/O), so the gate is sync. It is
-invoked from the graph's `_node_wrapper` after each phase agent completes, when a
+invoked from the graph's `_node_wrapper` after each node agent completes, when a
 `GateDefinition` is registered for that phase. It is NOT a separate LangGraph node
 in the topology.
 

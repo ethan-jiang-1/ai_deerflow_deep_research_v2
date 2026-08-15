@@ -2,11 +2,12 @@
 
 > 类型: 设计 / 架构映射 | 更新: 2026-07-16
 > 状态: 00–13 ✅ 已归档 · 14 ⬜ ← 当前 · 15–18 ⬜
-> 参考: [`../_reference/dpt/`](../_reference/dpt/) 全部 9 份架构分析，以及 DPT 原始 workflow、gate、queue、work-unit、trace 实现
+> 参考: 已退役的外来工作流架构分析曾用于形成此计划；其具体库和链接已删除，保留的
+> 结论以下方现有项目术语为准。
 
 ## 结论先行
 
-本计划不是在若干候选方案中选择一个“方案 B”，而是把 DPT 已经存在的架构原样映射到 DeerFlow/LangGraph 的原生运行时。两边都是 **Graph-controlled, Agent-executed（图控流程、Agent 做判断）**：
+本计划不是在若干候选方案中选择一个“方案 B”，而是把 imported workflow 已经存在的架构原样映射到 DeerFlow/LangGraph 的原生运行时。两边都是 **Graph-controlled, Agent-executed（图控流程、Agent 做判断）**：
 
 1. 外层 LangGraph 用传统程序控制可枚举的 phase、HITL、fan-out/fan-in、重试上限、暂停与恢复。
 2. 每个需要开放式判断的 research node 内运行一个受限 DeerFlow agent loop。
@@ -17,9 +18,9 @@
 核心架构没有变化，变化的是 controller 的承载方式：
 
 ```text
-DPT
+imported workflow
   隐式 Graph       = phase Markdown + transitions.chain.json
-  Controller       = Phase Agent 读取当前 MD、执行 gate、消费 check.next
+  Controller       = 外来工作流的 Markdown 驱动 actor 读取当前 MD、执行 gate、消费 check.next
   State            = bundle JSON/JSONL + trace
   Node executor    = 当前 phase 内的 agentic loop
 
@@ -30,24 +31,24 @@ DeerFlow
   Node executor    = 当前 node 内的 DeerFlow agent loop
 ```
 
-DPT 的 phase、gate、state、queue、work-unit、submit、repair、HITL 和证据权威都继续存在，基本是一一映射；只是把原来由 `Phase Agent + Markdown` 隐式维持的程序控制，物化成 Python graph 和 typed state。Markdown 仍然保存每个节点的任务合同、研究规则和修复指导，但不再持有全局 program counter。
+imported workflow 的 phase、gate、state、queue、work-unit、submit、repair、HITL 和证据权威都继续存在，基本是一一映射；只是把原来由 Markdown 驱动 actor 隐式维持的程序控制，物化成 Python graph 和 typed state。Markdown 仍然保存每个节点的任务合同、研究规则和修复指导，但不再持有全局 program counter。
 
 程序只决定已经可枚举、应该确定的控制问题；LLM 继续拥有研究问题拆解、搜索策略、证据解释、缺口判断、修复策略、综合和写作等语义判断权。因此它仍然是自然的 agentic flow，不是把研究判断改写成脚本。
 
 ## 背景 / 现状
 
-### DPT 的原生架构
+### imported workflow 的原生架构
 
-DPT 不是简单的“11 个 prompt 串起来”，也不是一个单一 Agent 叠加若干 skill。它本身就是由 11 个职责受限的 agentic phase node、显式 gate、phase-local queue 和 work-unit 构成的 workflow graph：
+imported workflow 不是简单的“11 个 prompt 串起来”，也不是一个单一 Agent 叠加若干 skill。它本身就是由 11 个职责受限的 agentic phase node、显式 gate、phase-local queue 和 work-unit 构成的 workflow graph：
 
-| 能力 | DPT 机制 | 真正要保留的性质 |
+| 能力 | imported workflow 机制 | 真正要保留的性质 |
 |---|---|---|
 | 阶段控制 | Markdown phase + passive chain + gate handoff | 未经 gate 授权不能越过 phase |
 | phase 内工作调度 | queue active window/refill/in-flight | bounded demand、并发上限、drain 后才过 gate |
 | 委托可信度 | work-unit claim/submit + receipt + ledger | 子 agent 的“我完成了”不算完成，验证后的 submit 才算 |
 | 恢复与审计 | append-only trace + status projection | 能从权威记录恢复，不能靠手改状态伪造进度 |
 
-DPT 的核心优点是权威边界清楚：
+imported workflow 的核心优点是权威边界清楚：
 
 ```text
 Agent / Markdown 负责可犯错的判断
@@ -58,21 +59,21 @@ Gate 只承认验证后提交的证据
 
 ### 相同架构，不同 runtime substrate
 
-下列机制不是要被否定，而是 DPT 在 Markdown/coding-agent substrate 上实现 graph/state/gate 语义的具体办法：
+下列机制不是要被否定，而是 imported workflow 在 Markdown/coding-agent substrate 上实现 graph/state/gate 语义的具体办法：
 
 - `transitions.chain.json`、`enter-phase`、`advance-status` 三套表面共同证明一次 phase handoff。
 - `rb_status.json` 只是 cache，却还要与 `rb_trace.jsonl` 做 drift audit。
 - queue/index/ledger 是多个 JSON/JSONL 文件，因此 submit 需要锁、快照、回滚和 durable postcondition。
 - Markdown 动态加载需要 dependency DAG、loader receipt、mode banner 和 package consistency validator。
 - stop authorization 只能写成约定，实际并未被完整强制。
-- phase agent 必须自己记得 claim、poll、submit、repair、drain、gate、load-next，导致 phase Markdown 极长。
+- 每个外来工作流 actor 必须自己记得 claim、poll、submit、repair、drain、gate、load-next，导致 phase Markdown 极长。
 
 LangGraph 已经原生拥有 state、reducer、edge、checkpoint、interrupt、`Send`/并行 superstep 和可测试的 node 边界。映射时保留上述机制的语义和不变量，但把实现落到原生 primitive 上，而不是逐文件翻译为 Python：
 
-| DPT runtime 实现 | DeerFlow/LangGraph 原生映射 |
+| imported workflow runtime 实现 | DeerFlow/LangGraph 原生映射 |
 |---|---|
 | phase Markdown 持有当前阶段控制面 | Python node 选择并加载当前阶段 prompt/contract |
-| Phase Agent 消费 `check.next` 推进 | StateGraph edge/`Command` 推进 |
+| 外来工作流 actor 消费 `check.next` 推进 | StateGraph edge/`Command` 推进 |
 | `rb_status.json` + trace 重建当前状态 | checkpointed typed state 直接保存当前状态 |
 | queue active/refill/in-flight | pending work + bounded `Send` batch + reducer |
 | work-unit claim/submit | immutable WorkSpec + worker node + deterministic submit node |
@@ -80,7 +81,7 @@ LangGraph 已经原生拥有 state、reducer、edge、checkpoint、interrupt、`
 | enter/load/advance handoff witness | committed graph superstep/checkpoint |
 | stop/HITL Markdown 约定 | graph interrupt + resume |
 
-所以不是“删掉 DPT 的 state/gate/queue”，而是消除它们为了模拟 workflow runtime 而产生的重复文件协调。逻辑状态、门禁和工作单元仍然逐项存在。
+所以不是“删掉 imported workflow 的 state/gate/queue”，而是消除它们为了模拟 workflow runtime 而产生的重复文件协调。逻辑状态、门禁和工作单元仍然逐项存在。
 
 ### DeerFlow 当前可直接复用的能力
 
@@ -105,17 +106,17 @@ LangGraph 已经原生拥有 state、reducer、edge、checkpoint、interrupt、`
 - stop 只靠 skill 的 `stop` 字段；
 - phase 主要实现为 11 个 deferred skills。
 
-这些结论把 DPT 在特定 substrate 上的 controller 实现误当成了不可改变的架构原则。DPT 真正需要保留的是 phase graph、agentic node、gate feedback、state 和提交权威，而不是“必须由 Markdown/Phase Agent 持有 program counter”。
+这些结论把 imported workflow 在特定 substrate 上的 controller 实现误当成了不可改变的架构原则。imported workflow 真正需要保留的是 phase graph、agentic node、gate feedback、state 和提交权威，而不是“必须由 Markdown 驱动 actor 持有 program counter”。
 
-因此在实施前必须显式更新项目设计规则，让它描述同构映射：DPT 由 Markdown controller 驱动；DeerFlow 由 Python StateGraph controller 驱动；两者的 research graph 和质量控制合同基本相同。
+因此在实施前必须显式更新项目设计规则，让它描述同构映射：imported workflow 由 Markdown controller 驱动；DeerFlow 由 Python StateGraph controller 驱动；两者的 research graph 和质量控制合同基本相同。
 
-## DPT → DeerFlow 一一映射
+## imported workflow → DeerFlow 一一映射
 
-| DPT 架构角色 | DeerFlow 映射 | 保持不变的合同 |
+| imported workflow 架构角色 | DeerFlow 映射 | 保持不变的合同 |
 |---|---|---|
 | 11 个 phase node | StateGraph 中职责受限的 phase nodes | 单 phase 上下文、明确输入/产物、未经 gate 不推进 |
 | phase Markdown | node-specific prompt/contract Markdown | 研究规则、工具策略、失败修复指导 |
-| Phase Agent controller | Python StateGraph/Pregel controller | 一次只处于合法 phase，按 gate outcome 流转 |
+| 外来工作流的 Markdown 驱动 controller | Python StateGraph/Pregel controller | 一次只处于合法 phase，按 gate outcome 流转 |
 | `transitions.chain.json` | explicit graph edges / routers | 合法 transition 是静态、可检查的闭集 |
 | bundle control state | typed ResearchState + checkpoint | 可恢复、可审计、不能靠 LLM 自报推进 |
 | queue | pending/in-flight/terminal work state + batches | phase-local demand、并发上限、drain 后过 gate |
@@ -141,7 +142,7 @@ gate node
   -> 回到同一 gate
 ```
 
-程序决定“失败后回修复节点”；Agent 决定“如何修复”。DPT 也是这个结构，只是 DPT 的程序推进动作由 Phase Agent 按 Markdown 执行，DeerFlow 中由 Python graph runtime 执行。
+程序决定“失败后回修复节点”；Agent 决定“如何修复”。imported workflow 也是这个结构，只是其程序推进动作由 Markdown 驱动 actor 执行，DeerFlow 中由 Python graph runtime 执行。
 
 ### 嵌套 graph 只是当前挂载方式
 
@@ -282,9 +283,9 @@ flowchart TD
 仅表示 HITL2 的用户 stop 决策，两者不得合并。01 冻结以上顶层路由，后续 change
 只能替换 node 内实现或补充已规划的内部子图，不能静默改写这些逻辑 edge。
 
-### 不机械保留 DPT 的 11 phase
+### 不机械保留 imported workflow 的 11 phase
 
-| DPT phase | Graph 处置 | 理由 |
+| imported workflow phase | Graph 处置 | 理由 |
 |---|---|---|
 | instantiation + setup | 合并为 deterministic `bootstrap` | graph/store 可原子初始化，不需要 LLM 创建模板文件 |
 | hitl1 | 保留为强制 interrupt | 用户决定 profile/root questions，必须可恢复 |
@@ -382,7 +383,7 @@ RuntimeAdapter 只产出 `TrustedRuntimeEnvelope`；registered research handler 
 | 证据真相 | append-only validated submission ledger | 哪些 work output/claim/source 已被正式接受 |
 | 内容真相 | sandbox artifact files | 页面缓存、evidence、synthesis、report |
 
-不再保留 DPT 风格的 `rb_status.json` 作为第二个 phase cursor，也不需要 `enter-phase/load_complete/advance-status` 三步 handoff witness。Graph checkpoint 本身就是合法执行路径。
+不再保留 imported workflow 风格的 `rb_status.json` 作为第二个 phase cursor，也不需要 `enter-phase/load_complete/advance-status` 三步 handoff witness。Graph checkpoint 本身就是合法执行路径。
 
 ### 为什么还需要 submission ledger
 
@@ -404,7 +405,7 @@ Gate 只能读取 accepted submission records。裸文件、worker 最终文本�
 
 ### 最小 bundle
 
-建议从 DPT 的大 bundle 缩减为：
+建议从 imported workflow 的大 bundle 缩减为：
 
 ```text
 workspace/deep-research/<research_id>/
@@ -437,7 +438,7 @@ workspace/deep-research/<research_id>/
 
 ## Work Unit 原生映射
 
-### 保留的 DPT 性质
+### 保留的 imported workflow 性质
 
 - graph/controller 分配 work/attempt id，worker 不自行分配。
 - WorkSpec 不可变并带 hash。
@@ -453,7 +454,7 @@ workspace/deep-research/<research_id>/
 - queue/index 的状态事务由 graph state/checkpoint 承担；ledger 仍在 submit 成功后 append。
 - worker lifecycle receipt 的诊断语义由 node/run events 承担；证据权威仍由 submit validator 承担。
 - 第一版对过期 attempt fail closed，不启用 late-submit winner；后续只有确有需要才补等价状态机。
-- claim/poll/drain 由 fan-out/fan-in nodes 承担，不再要求 Phase Agent 手动执行 CLI。
+- claim/poll/drain 由 fan-out/fan-in nodes 承担，不再要求外来工作流 actor 手动执行 CLI。
 
 ### Fan-out / fan-in
 
@@ -876,7 +877,7 @@ RealNode: 对应 change 落地后的真实实现
 - **[风险] semantic critic 也会误判。**  
   → critic 不可覆盖 hard gate；高风险 claim 可双 critic/不同模型；把不一致作为 gap，不用多数票伪装真相。
 
-- **[风险] 过度复刻 DPT，复杂度再次膨胀。**  
+- **[风险] 过度复刻 imported workflow，复杂度再次膨胀。**
   → 每移植一个机制先回答“LangGraph/DeerFlow 是否已经提供”；MVP 明确不做 queue window、late-submit、status/trace 双权威。
 
 - **[取舍] graph 控制降低了任意跳转自由。**  
@@ -885,12 +886,12 @@ RealNode: 对应 change 落地后的真实实现
 ## 明确不做
 
 - 不修改 `backend/` 或 `frontend/`。
-- 不逐行翻译 DPT JS engine。
+- 不逐行翻译 imported workflow JS engine。
 - 不把 11 个 phase 全部预加载进 lead system prompt。
 - 不以文件存在、subagent 文本或 run event 代替 validated submit。
 - 不让 subagent 改 graph phase/gate/ledger。
-- 不在第一版实现 DPT late-submit、20 项 queue window 或多活 research run。
-- 不在没有 eval corpus 的情况下声称“质量达到 DPT”。
+- 不在第一版实现 imported workflow late-submit、20 项 queue window 或多活 research run。
+- 不在没有 eval corpus 的情况下声称“质量达到 imported workflow”。
 - 不为了绕过 single-graph 限制私改 `backend/langgraph.json`。
 
 ## 需要在 Phase 0 后确认的决策

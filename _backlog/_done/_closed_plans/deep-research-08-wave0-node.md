@@ -19,13 +19,13 @@
 
 ## 目标
 
-实现每 topic 的基础来源摄入和共享参考层，对应 DPT Wave0 的广度优先证据建立。
+实现每 topic 的基础来源摄入和共享参考层，对应 imported workflow Wave0 的广度优先证据建立。
 
 ## Scope（原有——核心是真实 web search/fetch + source validation，地基没做）
 
 ## 目标
 
-实现每 topic 的基础来源摄入和共享参考层，对应 DPT Wave0 的广度优先证据建立。
+实现每 topic 的基础来源摄入和共享参考层，对应 imported workflow Wave0 的广度优先证据建立。
 
 ## Scope
 

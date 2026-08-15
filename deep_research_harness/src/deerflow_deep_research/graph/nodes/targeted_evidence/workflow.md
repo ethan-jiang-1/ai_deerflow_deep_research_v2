@@ -14,6 +14,17 @@
 Workers and critics propose bounded candidates; they do not admit evidence, publish
 critic artifacts, or select the graph's return edge.
 
+## LLM-Node Authoring Route
+
+For a model-bearing behavior symptom, read these local owners in order before changing
+worker admission, critic materialization, the ledger, or the return edge.
+
+1. **Capability and contract:** [`capabilities.py`](capabilities.py) and [`contracts.py`](contracts.py) bound gap-worker, repair, and critic responsibilities.
+2. **Prompt and context:** [`prompts.py`](prompts.py) projects a named gate-owned gap, trusted assignment facts, and delimited candidate context.
+3. **Feedback and repair:** [`subgraph.py`](subgraph.py) carries closed worker feedback into repair and dispatches bounded critic requests.
+4. **Proof and evaluation:** [`test_targeted_evidence_real.py`](../../../../../tests/graph/test_targeted_evidence_real.py) and the [cognitive-program evidence board](../../../../../tests/assets/node_agent_capabilities.py) retain four branch-local proof/evaluation limits.
+5. **Deterministic handoff:** [`subgraph.py`](subgraph.py) and [`materializer.py`](materializer.py) send candidates to admission, artifacts, ledger, and the fixed builder return; no model branch selects that edge.
+
 ## From Symptoms
 
 | Symptom | First owner | Proof seam |

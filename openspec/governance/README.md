@@ -19,6 +19,10 @@
 | `test-evidence-policy.md` | 测试证据的 authority、lifecycle、synchronized-change？ | [test-evidence-policy.md](test-evidence-policy.md)；批准语义由 `evaluation-hardening` main spec 拥有 |
 | `change-guidance/README.md` | 先按什么原则、再选哪个 policy？ | [change-guidance/README.md](../change-guidance/README.md) |
 
+`governance/` is checker and registry navigation, not product documentation. For
+Deep Research-specific orientation, leave this directory and read the
+[product context](../product/deep-research.md) reading map.
+
 ## Checker 命令
 
 在 repo 根运行（默认扫当前目录；也可传 projectRoot 参数）：

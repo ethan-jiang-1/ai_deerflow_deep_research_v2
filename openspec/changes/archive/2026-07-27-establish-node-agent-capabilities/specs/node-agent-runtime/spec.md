@@ -17,7 +17,7 @@ required, but Wave0's alternative retrieval names do not require every configure
 provider. Existing middleware remains the owner of path, sandbox, budget,
 cancellation, and dispatch enforcement. An unknown capability, empty permitted-tool
 intersection, forbidden visible tool, or posture/window disagreement SHALL fail before
-`build_phase_agent` or tool dispatch. The bridge SHALL NOT interpret capability policy
+`build_node_agent` or tool dispatch. The bridge SHALL NOT interpret capability policy
 as a graph route, state write, retry, or arbitrary full-system-prompt override.
 (`NOA-011`)
 

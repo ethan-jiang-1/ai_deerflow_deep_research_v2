@@ -860,6 +860,16 @@ kind = "file"
 owner = "PRS-009"
 
 [[required_paths]]
+path = "openspec/product"
+kind = "directory"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/product/deep-research.md"
+kind = "file"
+owner = "PRS-009"
+
+[[required_paths]]
 path = "openspec/change-guidance"
 kind = "directory"
 owner = "PRS-009"

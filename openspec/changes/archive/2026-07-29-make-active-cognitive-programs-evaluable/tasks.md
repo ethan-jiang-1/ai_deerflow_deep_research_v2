@@ -7,7 +7,7 @@
 
 ## 2. Deterministic Composition And Feedback Evidence
 
-- [x] 2.1 Added the table-driven sixteen-case catalog and `phase_prompt` composition proof in `agent/tests/graph/test_cognitive_program_evidence.py`. It checks catalog builder, capability binding, requested tool window, and final rendered capability/message; the existing prompt-dump freshness check passed without generated-byte changes.
+- [x] 2.1 Added the table-driven sixteen-case catalog and `phase_prompt` composition proof in `agent/tests/graph/test_cognitive_program_evidence.py`. It checks catalog builder, capability reference, requested tool window, and final rendered capability/message; the existing prompt-dump freshness check passed without generated-byte changes.
 - [x] 2.2 Added the sixteen-case `RuntimeNodeAgentBridge` table test with fake model/tool bindings. It proves declared capability plus execution-policy admission before dispatch, skips tool resolution for forbidden windows, and proves every flipped window projects the existing `capability_admission_failed` before model/tool construction.
 - [x] 2.3 Extended the source-faithful HITL, topic-planning, Wave0, Wave1, Wave2, and targeted worker transitions to capture ordered production `NodeExecutionRequest`s and assert their bounded feedback datum. Added the sixteen-case feedback table so partial/absent rows retain the exact omitted datum and source seam instead of inferring delivery.
 

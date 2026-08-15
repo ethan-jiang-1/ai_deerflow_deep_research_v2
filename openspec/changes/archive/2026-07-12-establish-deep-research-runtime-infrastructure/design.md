@@ -2,7 +2,7 @@
 
 No downstream `agent/` package exists yet. DeerFlow currently registers only `lead_agent` in `backend/langgraph.json`; configured tools are reflected from `config.yaml -> tools[].use`, and the public embedded-agent factory is `deerflow.agents.create_deerflow_agent()`.
 
-The approved roadmap maps DPT's implicit Phase-Agent/Markdown controller to an explicit nested Python `StateGraph`. Change 00 establishes only the runtime and development substrate for that graph. It must remain additive because `backend/` and `frontend/` are upstream mirrors.
+The approved roadmap maps the imported workflow's implicit Markdown-directed controller to an explicit nested Python `StateGraph`. Change 00 establishes only the runtime and development substrate for that graph. It must remain additive because `backend/` and `frontend/` are upstream mirrors.
 
 Four verified constraints shape the design:
 
@@ -27,7 +27,7 @@ The implementation targets Python >=3.12 and directly compatible runtime floors 
 **Non-Goals:**
 
 - No full phase topology, `ResearchState`, gate kernel, work-unit ledger, HITL flow, rerun flow, or real research node.
-- No real model call, web search, evidence collection, DPT bundle control file, or final artifact publication.
+- No real model call, web search, evidence collection, imported workflow bundle control file, or final artifact publication.
 - No modification under `backend/` or `frontend/`, no second registered Gateway graph, and no lead-agent middleware injection.
 - No promise of restart recovery with the memory checkpointer.
 
@@ -35,9 +35,9 @@ The implementation targets Python >=3.12 and directly compatible runtime floors 
 
 ### 1. Treat the approved mapping as the controller baseline
 
-The downstream controller will be a nested Python `StateGraph`; node-specific Markdown remains prompt/contract material. Change 00 corrects the OpenSpec context before generating implementation tasks so later changes cannot reintroduce the superseded Phase-Agent controller.
+The downstream controller will be a nested Python `StateGraph`; node-specific Markdown remains prompt/contract material. Change 00 corrects the OpenSpec context before generating implementation tasks so later changes cannot reintroduce the superseded imported controller.
 
-Alternative considered: keep the lead Agent as controller and encode phase transitions in deferred skills. Rejected because it duplicates DPT's substrate rather than mapping its graph semantics onto LangGraph, makes phase/gate authority prompt-dependent, and contradicts the approved master plan.
+Alternative considered: keep the lead Agent as controller and encode phase transitions in deferred skills. Rejected because it duplicates imported workflow's substrate rather than mapping its graph semantics onto LangGraph, makes phase/gate authority prompt-dependent, and contradicts the approved master plan.
 
 ### 1A. Freeze the handoff from change 00 to change 01
 
@@ -290,13 +290,13 @@ Progress uses `langgraph.config.get_stream_writer()` behind a project-owned emit
 
 A required integration probe cancels an outer tool task while the nested graph/agent is active and proves child termination plus provider-context closure. If cancellation does not propagate with current public APIs, change 00 is blocked for design revision; implementation must not reach into Gateway `RunManager.abort_event` or modify backend.
 
-### 9. Bridge nodes to phase agents without leaking runtime authority
+### 9. Bridge nodes to node agents without leaking runtime authority
 
 `runtime/node_agent_bridge.py` is the only raw binding owner. It resolves the model and eligible tool objects from the trusted AppConfig plus a pure `PolicyRef`, creates an immutable execution policy, and builds the ephemeral child `ThreadState`/runtime context described above. Nodes call it only through `NodeExecutionCapabilities`; they do not import `agents` or `runtime`.
 
 `agents/factory.py` wraps `create_deerflow_agent()` with `middleware=[...]` full takeover and `checkpointer=None`. The compiled agent is invoked as a separate runnable from the bridge, never installed as a LangGraph subgraph node that could inherit the parent saver. A bound child runnable is created per `run_agent` request and discarded after completion/cancellation; it is never cached across actions, users, threads, attempts, or capability instances. The factory imports no runtime layer and accepts already resolved model/tools plus pure model-safe context and immutable execution policy. The policy contains exact allowed tool objects/names, read roots, write roots, attempt root, maximum model calls, total/per-response/parallel tool-call limits, total token budget, per-model-call output-token cap, per-tool-result and structured-result size caps, wall time, and structured output type.
 
-The curated chain contains only the minimum error normalization, policy enforcement, budget/cancellation, and structured-output middleware required by the phase agent. It does not auto-enable memory, title, uploads, subagents, skill evolution, todo, clarification, or an independent sandbox lifecycle. The exact ordered middleware types are pinned by a contract test.
+The curated chain contains only the minimum error normalization, policy enforcement, budget/cancellation, and structured-output middleware required by the node agent. It does not auto-enable memory, title, uploads, subagents, skill evolution, todo, clarification, or an independent sandbox lifecycle. The exact ordered middleware types are pinned by a contract test.
 
 Budget enforcement is admission control, not only after-the-fact accounting. A "model call" is one request to the chat model, independent of LangGraph supersteps. Before every text-only call, middleware serializes the actual message/tool-schema request and uses a deterministic UTF-8 byte upper bound (plus the policy's maximum output tokens) unless a provider counter is proven to be at least as conservative; it never depends on a network tokenizer download. Non-text content requires an explicit conservative modality estimator in policy and fails admission when none exists. The call is refused if the bound can exceed remaining tokens. Actual `usage_metadata` reconciles the estimate after the response; a model response without usable accounting is terminal `usage_unavailable`, has tool calls stripped, and cannot issue tools or another model call. Tool-call counts/parallelism are checked before dispatch, and every tool result is size-bounded before it can re-enter model context.
 
@@ -306,7 +306,7 @@ System/policy prompts are loaded from package resources. External source content
 
 The adapter returns a validated typed result with finish reason, usage, artifact refs, and redacted failure. Malformed output is a failure, not partial success. `ask_clarification` is absent from both tool list and middleware; an attempted call is rejected and cannot create an interrupt.
 
-Alternative considered: use default `RuntimeFeatures`. Rejected because its feature path always adds clarification and may add sandbox lifecycle or tools that phase agents must not own. Alternative considered: prompt-only restrictions. Rejected because source content and model errors can bypass them.
+Alternative considered: use default `RuntimeFeatures`. Rejected because its feature path always adds clarification and may add sandbox lifecycle or tools that node agents must not own. Alternative considered: prompt-only restrictions. Rejected because source content and model errors can bypass them.
 
 ### 10. Make folder, mount, policy, and prompt boundaries executable contracts
 

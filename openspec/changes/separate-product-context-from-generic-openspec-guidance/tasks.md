@@ -1,0 +1,22 @@
+## 1. Requirement And Red Controls
+
+- [x] 1.1 As the first apply mutation, register `DRC-014` in `openspec/governance/req-registry.yaml` with the product-context route's bounded navigation and non-authority contract; confirm the project-wide requirement checker is green before running any full verification gate. (`python3 openspec/governance/check_project_reqs.py .`: 398 registered, 0 orphan.)
+- [x] 1.2 Extend `deep_research_harness/tests/contract/test_change_guidance_governance.py` with its `@impl DRC-014` coverage annotation and fixtures for a missing product route, a missing or extra `openspec/product/` member, a missing required entry-route link, a product document that claims forbidden authority, a document above the 80-line budget, and a forbidden `openspec/platform/` directory; prove each fails deterministically before the implementation changes. (Focused red run: 11 expected failures, each demonstrating an unguarded product-route violation.)
+
+## 2. Product Context And Navigation
+
+- [x] 2.1 Add `openspec/product/deep-research.md` as the concise, non-authoritative Deep Research reading map, within its 80-line hard budget: identify the research-specific outcome and evidence/uncertainty posture, then route terminology, approved requirements, runtime facts/proof, and LLM-node authoring to their established owners without duplicating their content. (26 lines; routes verified to the glossary, specs/deltas, code/contracts/tests, and node edit map.)
+- [x] 2.2 Update `openspec/README.md`, `openspec/config.yaml`, and `openspec/change-guidance/README.md` with concise links to the product map; remove only duplicate Deep Research orientation while preserving their native navigation, authoring-context, and generic-policy roles. (All three link to `product/deep-research.md`; `git diff --check` is clean for the navigation edits.)
+- [x] 2.3 Review `openspec/governance/README.md`, `openspec/change-guidance/principles.md`, and `openspec/change-guidance/policies/agent-information-map.md`; register the product map's 60-line warning and 80-line hard budget, make only the small route distinction required for the new product entry, and retain governance as checker/registry navigation rather than product documentation. (Policy budget and entry role added; governance explicitly remains checker/registry navigation.)
+
+## 3. Structural And Guidance Guards
+
+- [x] 3.1 Register the exact `openspec/product/` directory and sole `deep-research.md` member in `openspec/governance/project-structure.toml`; preserve machine-readable governance ownership and the absence of any `platform/` tree. (`PRS-009`; `check_project_architecture.py .` passes.)
+- [x] 3.2 Extend `openspec/governance/check_change_guidance.py` to check the product entry's required authority-routing anchors, entry-route discoverability, 60/80 line budget, exact one-file directory shape, and prohibited authority/platform surfaces without judging product prose or creating runtime authority. (`check_change_guidance.py .` and the focused product/budget fixture run pass.)
+- [x] 3.3 Extend `deep_research_harness/tests/contract/test_change_guidance_governance.py` and `deep_research_harness/tests/contract/test_architecture_governance.py` so the new product route, structural registration, and planted negative controls are covered; make the red cases pass only after the corresponding guard and navigation changes are in place. (Focused contract suites pass: 242 tests.)
+
+## 4. Verification And Closeout
+
+- [x] 4.1 Run `cd deep_research_harness && .venv/bin/python -m pytest tests/contract/test_change_guidance_governance.py tests/contract/test_architecture_governance.py`, then run `python3 openspec/governance/check_change_guidance.py` and `python3 openspec/governance/check_project_architecture.py` from the repository root; resolve every failure within this change's documentation and deterministic-guard scope. (242 passed; both governance checkers passed.)
+- [ ] 4.2 Sync the approved delta requirements to the main specs, validate `separate-product-context-from-generic-openspec-guidance` strictly, and run `cd deep_research_harness && UV_OFFLINE=1 make verify`.
+- [ ] 4.3 Record and review `git diff HEAD --check`, `git status --porcelain=v1 --untracked-files=all`, `git ls-files --stage deerflow`, `git submodule status -- deerflow`, `git -C deerflow status --porcelain=v1 --untracked-files=all`, and `git diff --submodule=short`; confirm the change did not modify the DeerFlow gitlink or source before archive.

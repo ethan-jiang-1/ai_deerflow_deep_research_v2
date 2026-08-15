@@ -13,7 +13,7 @@
 
 ## 目标
 
-建立独立于证据作者的 semantic quality layer，映射 DPT `source-diagnostic` 和 `claim-verifier` roles，供 Wave1、Wave2 和 readiness 复用。
+建立独立于证据作者的 semantic quality layer，映射 imported workflow `source-diagnostic` 和 `claim-verifier` roles，供 Wave1、Wave2 和 readiness 复用。
 
 ## Scope
 

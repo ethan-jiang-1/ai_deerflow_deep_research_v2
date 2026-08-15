@@ -11,6 +11,8 @@
 @impl DRC-009
 @impl DRC-010
 @impl DRC-011
+@impl DRC-012
+@impl DRC-014
 @impl PRS-009
 """
 
@@ -33,6 +35,10 @@ RETIRED_GUIDANCE_ROOTS = (
     Path("openspec/guardrails"),
 )
 POLICY_ROOT = CHARTER_ROOT / "policies"
+PRODUCT_ROOT = Path("openspec/product")
+PRODUCT_DOCUMENT_PATH = PRODUCT_ROOT / "deep-research.md"
+PRODUCT_ROUTE_ANCHOR = "product/deep-research.md"
+OPEN_SPEC_README_PATH = Path("openspec/README.md")
 CLAUDE_GUIDE_PATH = Path("deep_research_harness/CLAUDE.md")
 README_PATH = Path("deep_research_harness/README.md")
 DOCS_INDEX_PATH = Path("deep_research_harness/docs/README.md")
@@ -46,6 +52,13 @@ FOCUS_END = "<!-- END: DEEP-RESEARCH-FOCUS-GATE -->"
 CONTEXT_EXPANSION_HEADING = "## Context Expansion Gate"
 CONTEXT_EXPANSION_SENTENCE = "A possible future use is not enough to expand scope."
 PROGRAM_ROUTE_ANCHOR = "Program form: `## Program Focus` with at least two"
+LOCAL_CONTEXT_SEAM_OWNER_ANCHORS = (
+    "**cognitive-program:**",
+    "**deterministic-guardrail:**",
+    "**human-decision:**",
+    "**wiring:**",
+    "does not fabricate a prompt obligation",
+)
 CLAUDE_IMPORT = "@AGENTS.md"
 FOCUS_FIELDS = (
     "Primary module / causal owner",
@@ -133,11 +146,30 @@ WARNING_BUDGETS = (
     (CLAUDE_GUIDE_PATH, 10),
     (Path("openspec/config.yaml"), 140),
     (README_PATH, 201),
+    (PRODUCT_DOCUMENT_PATH, 60),
 )
 HARD_BUDGETS = (
     (Path("deep_research_harness/AGENTS.md"), 161),
     (CLAUDE_GUIDE_PATH, 13),
     (Path("openspec/config.yaml"), 181),
+    (PRODUCT_DOCUMENT_PATH, 81),
+)
+LLM_NODE_AUTHORING_TRIGGER = "creating, changing, or reviewing an LLM-Bearing Node"
+AUTHORING_ROUTE_DEMOTION_ANCHOR = "before implementation navigation"
+NODE_EDIT_MAP_ROUTE_STEPS = (
+    "1. **Classify the surface**",
+    "2. **Node Cognitive Control Contract and local capability**",
+    "3. **Prompt builder and model-visible context**",
+    "4. **Structured output, feedback, and repair**",
+    "5. **Focused proof and applicable cognitive evaluation**",
+    "6. **Deterministic handoff owners**",
+)
+PRODUCT_DOCUMENT_ROUTE_ANCHORS = (
+    "CONTEXT.md",
+    "approved main specs",
+    "active delta",
+    "code, typed contracts, and tests",
+    "node-edit-map.md",
 )
 
 
@@ -285,6 +317,9 @@ def _project(root: Path) -> None:
         CHARTER_ROOT / "README.md",
         "# Deep Research Change Guidance\n\n"
         "## Start Here\n\n"
+        f"For {LLM_NODE_AUTHORING_TRIGGER}, first read `node-edit-map.md` "
+        f"{AUTHORING_ROUTE_DEMOTION_ANCHOR}.\n\n"
+        f"For Deep Research-specific orientation, read `../{PRODUCT_ROUTE_ANCHOR}`.\n\n"
         "Read `deep_research_harness/AGENTS.md` and `principles.md`.\n\n"
         "## Policy Route\n\n"
         f"{links}\n",
@@ -294,11 +329,33 @@ def _project(root: Path) -> None:
         CHARTER_ROOT / "principles.md",
         "# Deep Research Change Guidance\n\n> authority: guidance only; never runtime control\n\n## Product Boundary\n",
     )
-    _write(root, CHARTER_ROOT / "node-edit-map.md", "# Node Edit Map\n")
+    _write(
+        root,
+        CHARTER_ROOT / "node-edit-map.md",
+        "# Node Edit Map\n\n"
+        "## LLM-Node Authoring Route\n\n"
+        "1. **Classify the surface**\n"
+        "2. **Node Cognitive Control Contract and local capability**\n"
+        "3. **Prompt builder and model-visible context**\n"
+        "4. **Structured output, feedback, and repair**\n"
+        "5. **Focused proof and applicable cognitive evaluation**\n"
+        "6. **Deterministic handoff owners**\n",
+    )
     _write(
         root,
         "openspec/README.md",
-        "# OpenSpec\n\nconfig.yaml\nspecs/\nchanges/\nchange-guidance/README.md\ngovernance/\n",
+        "# OpenSpec\n\nconfig.yaml\nspecs/\nchanges/\nproduct/deep-research.md\nchange-guidance/README.md\ngovernance/\n",
+    )
+    _write(
+        root,
+        PRODUCT_DOCUMENT_PATH,
+        "# Deep Research Product Context\n\n"
+        "> role: concise product-context reading map\n"
+        "> authority: navigation only; definitions, requirements, runtime facts, and LLM-node authoring remain with their named owners\n\n"
+        "## Product Outcome\n\n"
+        "A research outcome keeps evidence, scope, and material uncertainty visible.\n\n"
+        "## Read By Question\n\n"
+        "CONTEXT.md\napproved main specs\nactive delta\ncode, typed contracts, and tests\nnode-edit-map.md\n",
     )
     for name in POLICY_NAMES:
         extra = ""
@@ -306,6 +363,10 @@ def _project(root: Path) -> None:
             extra = (
                 f"\n{CONTEXT_EXPANSION_HEADING}\n{CONTEXT_EXPANSION_SENTENCE}\n"
                 f"\n{PROGRAM_ROUTE_ANCHOR} registered Workstream Focus records.\n"
+                "\n**cognitive-program:** fixture cognitive owner\n"
+                "**deterministic-guardrail:** fixture deterministic owner; does not fabricate a prompt obligation\n"
+                "**human-decision:** fixture human owner\n"
+                "**wiring:** fixture wiring owner\n"
             )
         if name == "change-admission":
             extra = f"\n{PROGRAM_ROUTE_ANCHOR} registered Workstream Focus records.\n"
@@ -316,7 +377,8 @@ def _project(root: Path) -> None:
                 "runtime-architecture.md\n"
                 "local-operations.md\n"
                 "testing-and-evaluation.md\n"
-                "\n## Line Budgets\nword-count\n"
+                "openspec/product/deep-research.md\n"
+                "\n## Line Budgets\nword-count\n60 lines\n80 lines\n"
             )
         _write(
             root,
@@ -328,6 +390,9 @@ def _project(root: Path) -> None:
         "deep_research_harness/AGENTS.md",
         "# Deep Research\n\n"
         f"{FOCUS_BEGIN}\n"
+        f"For {LLM_NODE_AUTHORING_TRIGGER}, first read "
+        "`../openspec/change-guidance/node-edit-map.md` "
+        f"{AUTHORING_ROUTE_DEMOTION_ANCHOR}.\n\n"
         "Read `../openspec/change-guidance/README.md`.\n"
         "Choose one primary module and record `## Change Focus`.\n\n"
         f"{CONTEXT_EXPANSION_SENTENCE}\n\n"
@@ -357,6 +422,7 @@ def _project(root: Path) -> None:
         '    - "Use openspec/change-guidance/README.md and `## Change Focus` '
         "with Primary module / causal owner and Triggered review policies. "
         f'{CONTEXT_EXPANSION_SENTENCE}"\n'
+        f'    - "For Deep Research-specific orientation, read openspec/{PRODUCT_ROUTE_ANCHOR}."\n'
         f'    - "{PROGRAM_ROUTE_ANCHOR} registered Workstream Focus records."\n'
         '    - "control-placement requires `## Control Placement Review`."\n'
         '    - "workflow-outcome-review requires `## Workflow Outcome Review`."\n'
@@ -770,11 +836,142 @@ def test_extra_policy_member_fails_closed(tmp_path: Path) -> None:
     _assert_error(tmp_path, "guidance.policy_members_mismatch")
 
 
+def test_missing_product_document_fails_closed(tmp_path: Path) -> None:
+    _project(tmp_path)
+    (tmp_path / PRODUCT_DOCUMENT_PATH).unlink()
+    (tmp_path / PRODUCT_ROOT).rmdir()
+
+    _assert_error(tmp_path, "product.document_missing")
+
+
+@pytest.mark.parametrize("extra_member", (False, True))
+def test_product_directory_requires_exactly_one_document(tmp_path: Path, extra_member: bool) -> None:
+    _project(tmp_path)
+    if extra_member:
+        _write(tmp_path, PRODUCT_ROOT / "other.md", "# Extra product document\n")
+    else:
+        (tmp_path / PRODUCT_DOCUMENT_PATH).unlink()
+
+    _assert_error(tmp_path, "product.root_members_mismatch")
+
+
+@pytest.mark.parametrize(
+    "relative_path",
+    (OPEN_SPEC_README_PATH, Path("openspec/config.yaml"), CHARTER_ROOT / "README.md"),
+)
+def test_product_route_is_linked_from_each_required_entry_point(tmp_path: Path, relative_path: Path) -> None:
+    _project(tmp_path)
+    _replace(tmp_path, relative_path, PRODUCT_ROUTE_ANCHOR, "missing-product-route.md")
+
+    _assert_error(tmp_path, "product.entry_route_missing")
+
+
+def test_product_document_cannot_claim_runtime_or_specification_authority(tmp_path: Path) -> None:
+    _project(tmp_path)
+    _replace(
+        tmp_path,
+        PRODUCT_DOCUMENT_PATH,
+        "authority: navigation only; definitions, requirements, runtime facts, and LLM-node authoring remain with their named owners",
+        "authority: defines required behavior and runtime authority",
+    )
+
+    _assert_error(tmp_path, "product.authority_claim")
+
+
+def test_product_document_cannot_claim_authority_outside_its_boundary_line(tmp_path: Path) -> None:
+    _project(tmp_path)
+    product_document = tmp_path / PRODUCT_DOCUMENT_PATH
+    product_document.write_text(
+        product_document.read_text(encoding="utf-8") + "\nThis page defines a graph route.\n",
+        encoding="utf-8",
+    )
+
+    _assert_error(tmp_path, "product.authority_claim")
+
+
+@pytest.mark.parametrize("anchor", PRODUCT_DOCUMENT_ROUTE_ANCHORS)
+def test_product_document_requires_each_existing_authority_route(tmp_path: Path, anchor: str) -> None:
+    _project(tmp_path)
+    _replace(tmp_path, PRODUCT_DOCUMENT_PATH, anchor, "missing-product-authority-route")
+
+    _assert_error(tmp_path, "product.authority_route_missing")
+
+
+def test_product_document_hard_budget_fails_closed(tmp_path: Path) -> None:
+    _project(tmp_path)
+    _pad_to_lines(tmp_path, PRODUCT_DOCUMENT_PATH, 81)
+
+    _assert_error(tmp_path, "entry.line_budget_exceeded")
+
+
+def test_platform_directory_is_forbidden(tmp_path: Path) -> None:
+    _project(tmp_path)
+    (tmp_path / "openspec/platform").mkdir(parents=True)
+
+    _assert_error(tmp_path, "product.platform_present")
+
+
 def test_missing_focus_gate_fails(tmp_path: Path) -> None:
     _project(tmp_path)
     _replace(tmp_path, "deep_research_harness/AGENTS.md", FOCUS_BEGIN, "")
 
     _assert_error(tmp_path, "guide.focus_gate_missing")
+
+
+def test_missing_node_edit_map_fails_llm_node_authoring_route(tmp_path: Path) -> None:
+    _project(tmp_path)
+    (tmp_path / CHARTER_ROOT / "node-edit-map.md").unlink()
+
+    _assert_error(tmp_path, "guidance.node_edit_map_missing")
+
+
+@pytest.mark.parametrize(
+    ("relative_path", "code"),
+    (
+        (CHARTER_ROOT / "README.md", "guidance.node_authoring_route_demoted"),
+        (Path("deep_research_harness/AGENTS.md"), "guide.node_authoring_route_demoted"),
+    ),
+)
+def test_llm_node_authoring_route_cannot_be_demoted(
+    tmp_path: Path,
+    relative_path: Path,
+    code: str,
+) -> None:
+    _project(tmp_path)
+    _replace(
+        tmp_path,
+        relative_path,
+        f"node-edit-map.md` {AUTHORING_ROUTE_DEMOTION_ANCHOR}",
+        f"{AUTHORING_ROUTE_DEMOTION_ANCHOR} `node-edit-map.md`",
+    )
+
+    _assert_error(tmp_path, code)
+
+
+@pytest.mark.parametrize(
+    ("replacement", "code"),
+    (
+        ("missing cognitive route", "guidance.node_edit_map_route_missing"),
+        (
+            "6. **Deterministic handoff owners**\n5. **Focused proof and applicable cognitive evaluation**",
+            "guidance.node_edit_map_route_order_invalid",
+        ),
+    ),
+)
+def test_node_edit_map_requires_an_ordered_cognitive_first_route(
+    tmp_path: Path,
+    replacement: str,
+    code: str,
+) -> None:
+    _project(tmp_path)
+    _replace(
+        tmp_path,
+        CHARTER_ROOT / "node-edit-map.md",
+        "5. **Focused proof and applicable cognitive evaluation**\n6. **Deterministic handoff owners**",
+        replacement,
+    )
+
+    _assert_error(tmp_path, code)
 
 
 @pytest.mark.parametrize(
@@ -807,6 +1004,14 @@ def test_missing_context_expansion_policy_anchor_fails(tmp_path: Path) -> None:
     )
 
     _assert_error(tmp_path, "charter.context_expansion_policy_missing")
+
+
+@pytest.mark.parametrize("anchor", LOCAL_CONTEXT_SEAM_OWNER_ANCHORS)
+def test_local_context_requires_each_seam_owner_rule(tmp_path: Path, anchor: str) -> None:
+    _project(tmp_path)
+    _replace(tmp_path, POLICY_PATHS["local-context"], anchor, "missing-seam-owner-rule")
+
+    _assert_error(tmp_path, "charter.local_context_seam_owner_missing")
 
 
 def test_missing_context_expansion_guide_anchor_fails(tmp_path: Path) -> None:
@@ -915,6 +1120,14 @@ def test_information_map_policy_requires_budget_anchor(tmp_path: Path) -> None:
         "## Line Budgets",
         "",
     )
+
+    _assert_error(tmp_path, "charter.information_map_policy_missing")
+
+
+@pytest.mark.parametrize("anchor", ("openspec/product/deep-research.md", "60 lines", "80 lines"))
+def test_information_map_policy_requires_product_entry_budget_anchors(tmp_path: Path, anchor: str) -> None:
+    _project(tmp_path)
+    _replace(tmp_path, POLICY_PATHS["agent-information-map"], anchor, "missing-product-budget-anchor")
 
     _assert_error(tmp_path, "charter.information_map_policy_missing")
 

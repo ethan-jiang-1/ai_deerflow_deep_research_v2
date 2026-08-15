@@ -49,7 +49,7 @@ runtime behavior 的第二权威，具体行为仍由 accepted specs、active de
    `hitl1.semantic_intake` Node Agent 专门理解 proposal 语境，同时又不拥有 graph action
    authority。
 4. 随后的 prompt catalog 盘点进一步给出系统性证据：当前 16 条可达模型 branch 的最终
-   system 层都来自同一份通用 phase-agent policy；不同节点的智力差异散落在动态字符串里。
+   system 层都来自同一份通用 node-agent policy；不同节点的智力差异散落在动态字符串里。
    catalog 使这个事实可见，却没有改变它。
 5. 因而不断增加 parser、branch condition、HITL alias、单点 Objective 或 catalog diff
    没有解决根因：它们能补传统控制路径，却不能声明“这个 node 的 LLM 到底要怎样做研究、

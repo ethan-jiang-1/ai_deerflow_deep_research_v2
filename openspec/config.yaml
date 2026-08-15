@@ -1,20 +1,13 @@
 schema: spec-driven
 
 context: |
-  ## Deep Research Change Routing
-
-  Deep Research is the downstream product owned by `deep_research_harness/`.
-  `deerflow/` is the upstream gitlink leveraged as the host dependency; ordinary
-  downstream work MUST neither modify nor source-browse it unless a separately
-  approved change explicitly owns that boundary. DeerFlow MUST NOT import the
-  downstream package.
-
   ## Default Context Boundary
 
   This is a short OpenSpec-authoring route, not a project manual. It intentionally
-  does not restate full DeerFlow architecture, runtime facts, roadmap decisions, or
-  historical change material. Follow a pointer to the owning source only when the
-  change's question requires it.
+  does not restate runtime facts, roadmap decisions, or historical change material.
+  For Deep Research-specific orientation, read
+  [product/deep-research.md](product/deep-research.md). Follow a pointer to the
+  owning source only when the change's question requires it.
 
   ## Sources Of Truth
 
@@ -27,7 +20,7 @@ context: |
   4. [Change Guidance](change-guidance/README.md) guides local design and
      admission only. It never creates runtime behavior, authority, or permission.
 
-  Label unknowns and proposals as such. Do not convert a roadmap idea, DPT reference,
+  Label unknowns and proposals as such. Do not convert a roadmap idea, imported workflow reference,
   or unverified DeerFlow assumption into a claim about current behavior.
 
   ## Test Evidence

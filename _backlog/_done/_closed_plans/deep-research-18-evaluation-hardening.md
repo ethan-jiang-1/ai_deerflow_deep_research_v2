@@ -26,7 +26,7 @@
 - graph edge/node fault matrix：crash、timeout、cancel、duplicate resume、conflicting result、DB transient failure。
 - quality regression thresholds 和 release gate；固定 Replay fixtures 与少量 `@requires_llm` canary 分层。
 - multi-worker Postgres/concurrency/security review、operator runbook、migration rehearsal。
-- 对照 DPT invariants 做 parity audit，不按文件数量做 parity。
+- 对照 imported workflow invariants 做 parity audit，不按文件数量做 parity。
 
 ## 验收
 
@@ -34,7 +34,7 @@
 - insufficient evidence case 能输出“不足以判断”，不强行结论。
 - prompt-injected source 不能获得控制权或伪造 submission。
 - 所有 critical fault points 有恢复或明确 terminal outcome，不产生 silent partial success。
-- 发布报告列出已达到与未达到的 DPT invariant parity。
+- 发布报告列出已达到与未达到的 imported workflow invariant parity。
 
 ## Non-Goals
 

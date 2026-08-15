@@ -2,15 +2,15 @@
 
 ## ADDED Requirements
 
-### Requirement: Phase-agent prompt rendering has one source-faithful pure seam
+### Requirement: node-agent prompt rendering has one source-faithful pure seam
 
 The agents layer SHALL expose one pure rendering interface that accepts a validated
 `NodeExecutionRequest` and an explicit attempt workspace and returns the exact package
-system-policy text plus the exact final human message for a phase-agent invocation.
+system-policy text plus the exact final human message for a node-agent invocation.
 It SHALL preserve the existing untrusted-artifact projection. It SHALL not import
 graph or runtime code, inspect runtime configuration, resolve a model or tool, create
 a sandbox, or execute an agent. The runtime bridge SHALL consume that rendering
-interface when it constructs its phase-agent messages, so no catalog or adapter
+interface when it constructs its node-agent messages, so no catalog or adapter
 duplicates the final message template. (`NPC-001`)
 
 #### Scenario: Catalog and bridge receive the same final prompt text

@@ -329,7 +329,7 @@ lowercase normalization. Mismatched id/value, unknown choice, or oversized text 
 
 Alternative considered: accept an `answer` tool argument. Rejected because the model
 could forge it. Alternative considered: reuse `ask_clarification`. Rejected because
-phase agents are forbidden to own HITL and the nested graph needs its own checkpointed
+node agents are forbidden to own HITL and the nested graph needs its own checkpointed
 suspension/correlation semantics.
 
 ### 7. Start correlation, lifecycle actions, and control results are one protocol
@@ -581,7 +581,7 @@ claimed. No Postgres or Docker daemon is required.
 
 No `config.yaml` or `extensions_config.json` key changes. The reflection path remains
 `deerflow_deep_research.tool:deep_research_tool`; MCP, ACP, `task` subagents, phase
-skills, and DPT bundle files remain unused. The public skill and Agent/SOUL text label
+skills, and imported workflow bundle files remain unused. The public skill and Agent/SOUL text label
 the lifecycle as a development-only `full_fake` skeleton, require the lead to surface
 that mode, and prohibit describing a fake terminal marker as research output. Those
 text changes take effect on the next agent build. Python package

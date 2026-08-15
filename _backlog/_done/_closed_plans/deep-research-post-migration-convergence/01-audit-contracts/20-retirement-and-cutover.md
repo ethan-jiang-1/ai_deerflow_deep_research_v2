@@ -33,10 +33,10 @@
 
 ## 首批切换候选
 
-### R1 - Legacy node capability binding
+### R1 - Legacy capability selector
 
-当前 `NodeExecutionRequest` 默认 `capability_binding="legacy"`，但已扫描到的 17 个 production
-request builders 都显式使用 `required` capability。需要确认：
+当前 `NodeExecutionRequest` 默认旧的 `legacy`/`required` capability selector，且已扫描到的 17 个
+production request builders 都显式提供 required capability reference。需要确认：
 
 - 是否还有 reflection、fixture、evaluation 或外部 import 直接构造默认 request；
 - request 是否被持久化或只跨 graph/agents 内部边界；

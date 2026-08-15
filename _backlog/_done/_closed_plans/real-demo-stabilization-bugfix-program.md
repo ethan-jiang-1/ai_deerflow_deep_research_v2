@@ -119,7 +119,7 @@ then prevents a successful run from researching a pair the user never chose.
 
 ### Decisions that the formal design must make explicitly
 
-1. PhaseAgentStop is a family of stops, not evidence of tool execution. The
+1. NodeAgentStop is a family of stops, not evidence of tool execution. The
    bridge must preserve the stop's safe finish_reason and map each admitted
    category truthfully. tool.execution_failed is allowed only where an actual
    tool execution failed; it must not be the blanket projection for usage,

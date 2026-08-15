@@ -99,7 +99,7 @@ OR-C02 选择的推荐 repository-tracked route已关闭，且未引入 versione
 
 1. `delivery`: 恢复current CI workflows和可复现的 repository-tracked OpenSpec skill route，建立clean-clone trackedness guard；
 2. `test-structure`: 在delivery关闭后删除8个marker、空`tests/e2e`与精确registry row；
-3. `evidence-report`: 对照baseline/attestation/regression provenance后删除DPT report与shape-only test；
+3. `evidence-report`: 对照baseline/attestation/regression provenance后删除imported workflow report与shape-only test；
 4. `demo-adapter`: 把独有cases迁到canonical profile/preflight后删除private helpers；
 5. `topic-planner`: 由canonical Bundle-profile tests承接short-state behavior后删除legacy helper/export。
 
@@ -164,11 +164,11 @@ evidence-limited 状态归档。未运行 credentialed/live、release、Postgres
 workstream逐段迁移独有规则，删除CONTEXT中的design/status residue和dormant local-first language；保留EV-C01
 distinctions、`_Avoid_`、generated projection freshness guard与ADR history。
 
-**Gate D:** required capability ref唯一；current identity不再使用`Phase Agent`；CONTEXT只承载current terms与
+**Gate D:** required capability ref唯一；current identity不再使用导入式 actor 标签；CONTEXT只承载current terms与
 必要`_Avoid_`，没有丢失Evaluation Workspace/Bundle/Review/Run等真实不同概念；ADR历史事实未被改写。
 
 **03 admission recheck（2026-08-14）:** 所有当前 graph request builders均已传入`required` capability ref。根包
-`__all__`只公开`__version__`和host-facing `deep_research_tool`；`NodeExecutionRequest`、phase-agent factory及其
+`__all__`只公开`__version__`和host-facing `deep_research_tool`；`NodeExecutionRequest`、node-agent factory及其
 module paths没有 public facade、文档或 entry-point support promise。它们因此是application-internal contract，03
 不得改变根 tool export；仓内 consumer inventory与现有 fail-closed tests构成其 cutover evidence。若未来出现外部
 consumer，必须在另一个 change 明确支持边界或compatibility，不得倒推为本 change 的隐含义务。

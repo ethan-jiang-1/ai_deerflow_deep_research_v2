@@ -2,13 +2,13 @@
 
 ## RENAMED Requirements
 
-- FROM: `### Requirement: Phase agents inherit one parent runtime`
+- FROM: `### Requirement: node-agents inherit one parent runtime`
 - TO: `### Requirement: LLM-Bearing Nodes inherit one parent runtime`
-- FROM: `### Requirement: Phase-agent execution has explicit budgets`
+- FROM: `### Requirement: node-agent execution has explicit budgets`
 - TO: `### Requirement: LLM-Bearing Node execution has explicit budgets`
 - FROM: `### Requirement: Phase execution policies are named and independently bounded`
 - TO: `### Requirement: Node-agent execution policies are named and independently bounded`
-- FROM: `### Requirement: Phase-agent bridge consumes the shared final prompt projection`
+- FROM: `### Requirement: node-agent bridge consumes the shared final prompt projection`
 - TO: `### Requirement: Node-agent bridge consumes the shared final prompt projection`
 
 ## MODIFIED Requirements

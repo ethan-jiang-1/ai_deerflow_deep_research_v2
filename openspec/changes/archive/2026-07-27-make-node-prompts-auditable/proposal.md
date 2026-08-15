@@ -1,6 +1,6 @@
 ## Why
 
-Deep Research currently makes the common phase-agent policy visible as Markdown, but
+Deep Research currently makes the common node-agent policy visible as Markdown, but
 leaves each node-specific objective, output contract, tool request, and final user
 message embedded in Python prompt builders. A reviewer cannot see the actual input to
 an agent loop after a prompt change without reconstructing code paths mentally, which
@@ -14,12 +14,12 @@ research run.
 
 - **Primary module / causal owner:** `agent/src/deerflow_deep_research/agents/` prompt-rendering module.
 - **Question:** How can one pure, deterministic rendering interface produce the exact
-  system policy and child user message used by the phase-agent bridge, and a safe
+  system policy and child user message used by the node-agent bridge, and a safe
   reviewable catalog of each node prompt variant, without turning generated Markdown
   into a second runtime authority?
 - **Necessary adjacent/external contracts:** `node-agent-runtime` answers how the
   bridge consumes the shared rendered message; `graph` answers which node builder
-  branches reach a phase-agent loop and therefore require a catalog case;
+  branches reach a node-agent loop and therefore require a catalog case;
   `project-structure` answers how the new renderer, generator, tests, and committed
   catalog are registered. No upstream DeerFlow interface changes are needed.
 - **Evidence seam:** a source-backed inventory test scans the direct
@@ -53,7 +53,7 @@ research run.
 ### New Capabilities
 
 - `node-prompt-catalog`: Produces a deterministic, safe, complete catalog of the
-  production-shaped phase-agent prompts for review and test verification.
+  production-shaped node-agent prompts for review and test verification.
 
 ### Modified Capabilities
 

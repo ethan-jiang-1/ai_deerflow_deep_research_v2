@@ -1,7 +1,7 @@
 # Agent Information Map Policy
 
 > role: keep Deep Research contributor entry documents small, distinct, and routable
-> trigger: adding material to `deep_research_harness/AGENTS.md`, `deep_research_harness/CLAUDE.md`, `deep_research_harness/README.md`, or `openspec/config.yaml`
+> trigger: adding material to `deep_research_harness/AGENTS.md`, `deep_research_harness/CLAUDE.md`, `deep_research_harness/README.md`, `openspec/config.yaml`, or `openspec/product/deep-research.md`
 > authority: guidance only; behavior, current facts, and path inventory remain with their owning contracts
 
 ## Reader Roles
@@ -18,7 +18,8 @@ copying it into another default reading surface.
 | `deep_research_harness/docs/runtime-architecture.md` | Human/operator | Inspect downstream runtime and authority boundaries | Operations or test execution instructions |
 | `deep_research_harness/docs/local-operations.md` | Operator | Run profiles, demos, diagnostics, and retained-session workflows | Runtime authority or coding-agent guidance |
 | `deep_research_harness/docs/testing-and-evaluation.md` | Contributor/operator | Inspect test selection and evidence posture | The enumerable test registry or runtime behavior authority |
-| `openspec/config.yaml` | OpenSpec author | State the product boundary, truth discipline, and change-authoring route | Full DeerFlow reference material, runtime facts, roadmap, or design history |
+| `openspec/config.yaml` | OpenSpec author | State truth discipline and the change-authoring route | Full DeerFlow reference material, runtime facts, roadmap, or design history |
+| `openspec/product/deep-research.md` | Human/Coding agent | Choose the existing owner for Deep Research-specific orientation | A glossary, requirement, runtime handbook, node-authoring guide, or runtime configuration |
 
 An ordinary coding change starts with the focus gate in `deep_research_harness/AGENTS.md`, not by
 loading the README, every Change Guidance policy, or all of `openspec/config.yaml`. A policy
@@ -37,6 +38,7 @@ before it fails a hard budget.
 | `deep_research_harness/AGENTS.md` | 120 lines | more than 160 lines |
 | `deep_research_harness/CLAUDE.md` | 10 lines | more than 12 lines |
 | `openspec/config.yaml` | 140 lines | more than 180 lines |
+| `openspec/product/deep-research.md` | 60 lines | more than 80 lines |
 | `deep_research_harness/README.md` | more than 200 lines | none |
 
 `deep_research_harness/README.md` must place `## Reading Map` within its first 80 lines and link to
@@ -60,9 +62,12 @@ existing owner and leave a brief pointer:
   authorities that own them;
 - stable cross-capability principles stay in [`principles.md`](../principles.md);
 - recurring review rules with a narrow trigger stay in a policy; and
-- product orientation and quick start remain in the human-facing README; detailed
-  architecture, operations, and test/evidence reference move to one scoped document
-  behind `deep_research_harness/docs/README.md`.
+- Deep Research-specific orientation stays in
+  [`product/deep-research.md`](../../product/deep-research.md), which points to its
+  named owners; and
+- human-facing quick start remains in the README; detailed architecture, operations,
+  and test/evidence reference move to one scoped document behind
+  `deep_research_harness/docs/README.md`.
 
 The generated structure block in `deep_research_harness/AGENTS.md` is a locator, not a second path
 inventory. It points to the registry, roots, grammar, and checker command. The TOML

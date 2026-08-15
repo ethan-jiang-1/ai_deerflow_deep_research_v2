@@ -1,16 +1,15 @@
 # Deep Research Change Guidance Principles
 
-> role: local product constitution for Deep Research design and change admission
+> role: cross-cutting design principles for Deep Research change admission
 > scope: `deep_research_harness/` and its OpenSpec governance; root DeerFlow guidance remains an upstream constraint
 > authority: guidance only; current facts and behavior remain with their owning contracts
 
-## Product Boundary
+## Reading Boundary
 
-Deep Research is the downstream product owned by `deep_research_harness/`. DeerFlow is its host
-runtime, leveraged through the upstream `deerflow/` gitlink. Ordinary downstream work
-neither modifies nor source-browses that gitlink. The root repository guides establish
-upstream facts and boundaries; they are not the default place to design a local Deep
-Research change. This guidance neither edits nor overrides root `AGENTS.md` or `CLAUDE.md`.
+For Deep Research-specific orientation, open the
+[`product/deep-research.md`](../product/deep-research.md) reading map. This document
+keeps reusable change principles; local guides and the authoring context retain the
+downstream/upstream boundary and do not grant this guidance runtime authority.
 
 ## Principles
 

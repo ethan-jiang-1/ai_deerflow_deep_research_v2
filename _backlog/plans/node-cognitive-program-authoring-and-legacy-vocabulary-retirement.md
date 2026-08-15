@@ -1,6 +1,6 @@
 # Plan: Node Cognitive Program Authoring and Legacy Vocabulary Retirement
 
-> Type: architecture / terminology / authoring guidance | Updated: 2026-08-15 | Status: `harden-cognitive-node-authoring-and-retire-legacy-vocabulary` is planned and strict-valid; ready for apply
+> Type: architecture / terminology / authoring guidance | Updated: 2026-08-15 | Status: `harden-cognitive-node-authoring-and-retire-legacy-vocabulary` is in apply at 19/21 tasks; focused and governance evidence is green, while the full deterministic gate is blocked by pre-existing test-asset claim drift
 
 ## Problem
 
@@ -91,7 +91,7 @@ miss during implementation:
   `node.py`, graph builder, parser, or test without ever taking that route.
 - All eleven node reader projections share compact structural headings, and there are
   twenty capability Markdown resources. Their local content is often strong, but no
-  shared reader contract requires each of the six LLM-Bearing Nodes to expose the full
+  shared reader contract requires each of the eight LLM-Bearing Nodes to expose the full
   cognitive reading order. Some current reader notes lead with a node/materializer test
   and defer capability/prompt inspection, which recreates the deterministic-first habit.
 - The current-language test protects terminology in selected source/spec/policy paths,
@@ -246,7 +246,7 @@ the imported mental model with the current project vocabulary.
    planted missing authoring-gate route so that a future guide cannot silently demote it.
 5. **Make cognitive review executable.** Put the six-question authoring checklist in
    the existing local-context guidance, not a new top-level manual. Update every
-   one of the six LLM-Bearing Node reader projections and every direct model-branch
+   one of the eight LLM-Bearing Node reader projections and every direct model-branch
    capability inventory that lacks the cognitive reading order or its exact links. Keep
    prompt source, context construction, feedback, deterministic handoff, and evaluation
    evidence separately named. Do not impose this cognitive reading order on the five
@@ -308,9 +308,9 @@ named evidence recorded in the OpenSpec change or closeout record.
 - [x] P2. Review the existing node map, agent entry route, eleven reader projections, and twenty capability resources; record the cognitive-first authoring gap.
 - [x] P3. Define the current LLM-node vocabulary, cognitive-note review questions, node-edit-map authoring-gate role, ownership boundaries, and completion criteria.
 - [x] P4. Create the single governed OpenSpec change with its primary owner, adjacent contracts, Focus Card, proposal, design, delta specs, and implementation tasks. (`harden-cognitive-node-authoring-and-retire-legacy-vocabulary`; strict validation passed 2026-08-15)
-- [ ] P5. Add red terminology and authoring-route guards, including planted legacy-token and missing cognitive-reading-order violations.
-- [ ] P6. Remove imported vocabulary from all tracked records, delete the external reference library, repair links, and demonstrate the full tracked-file scan has zero prohibited-term hits.
-- [ ] P7. Promote `node-edit-map.md` to the mandatory LLM-node authoring entry route and update the agent guide, Change Guidance route, local-context policy, and six LLM-node reader projections.
-- [ ] P8. Audit every direct model-branch capability/prompt/context/feedback/evaluation route against the six cognitive-contract questions and implement the needed note or proof corrections.
-- [ ] P9. Run focused language, reader-interface, prompt, evidence-board, Change Guidance, governance, and full deterministic verification; record any unavailable live evidence honestly.
+- [x] P5. Add red terminology and authoring-route guards, including planted legacy-token and missing cognitive-reading-order violations. (`tasks.md` 1.1-1.4; 260 focused contracts passed 2026-08-15, retaining planted language, missing-map, and missing-reader-route controls.)
+- [x] P6. Remove imported vocabulary from all tracked records, delete the external reference library, repair links, and demonstrate the full tracked-file scan has zero prohibited-term hits. (`tasks.md` 4.1-4.4; separately reviewed 109 historical files, removed the 10-file reference library after an empty inbound-link audit, and scanned 1840 materialized entries with 1 Gitlink metadata entry on 2026-08-15.)
+- [x] P7. Promote `node-edit-map.md` to the mandatory LLM-node authoring entry route and update the agent guide, Change Guidance route, local-context policy, and eight LLM-node reader projections. (`tasks.md` 2.1-3.1; Change Guidance governance and reader contracts passed on 2026-08-15.)
+- [x] P8. Audit every direct model-branch capability/prompt/context/feedback/evaluation route against the six cognitive-contract questions and implement the needed note or proof corrections. (`tasks.md` 3.2-3.3; all 20 existing direct branches join their catalog, cohort, and cognitive-program evidence owners; no runtime semantic change.)
+- [ ] P9. Run focused language, reader-interface, prompt, evidence-board, Change Guidance, governance, and full deterministic verification; record any unavailable live evidence honestly. (focused contracts: 260 passed; governance: all five checks passed; strict change validation and `git diff HEAD --check` passed; user-authorized test-asset repair passed with 414 central claims and 2946 deterministic tests. The stale `public-controller-direction-loop` `tool_schema_digest` was refreshed to the unchanged `tool.py`/`HEAD` digest, and `tests/eval/test_cognitive_evaluation_suite.py` passed 59 tests. A subsequent `UV_OFFLINE=1 make verify` stops at governance only because separately active `separate-product-context-from-generic-openspec-guidance` declares unregistered `DRC-014`; it does not reach the Harness suite. No live evidence was required or run.)
 - [ ] P10. Sync approved main specs, archive the OpenSpec change, rerun post-archive checks, move this plan to `_done/_closed_plans/`, and commit the closeout.

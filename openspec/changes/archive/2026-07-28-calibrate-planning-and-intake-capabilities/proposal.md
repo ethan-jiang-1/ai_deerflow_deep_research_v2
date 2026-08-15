@@ -37,7 +37,7 @@ targeted gap resolution, or evidence critics have already been calibrated.
 - Migrate `topic-planning/plan`, `topic-planning/plan-repair`, `wave1/worker`, and
   `wave1/repair` from the closed legacy set to declared node-local capabilities with
   their correct forbidden or required tool posture. Preserve Wave0's existing
-  capability bindings while calibrating its behavioral evidence.
+  capability references while calibrating its behavioral evidence.
 - Define observable planning acceptance: complete profile-constraint preservation,
   bounded coverage/non-overlap, zero model-visible tools, and repair that cannot add
   external facts or alter confirmed profile authority.
@@ -83,7 +83,7 @@ None.
   next closed capability cohort with explicit local policies and evidence rows.
 - `node-prompt-catalog`: project the newly migrated branch policies and their correct
   request/runtime tool posture.
-- `topic-planning-node`: make the planning/repair capability binding and behavior
+- `topic-planning-node`: make the planning/repair capability reference and behavior
   acceptance observable without changing topic authority or graph routing.
 - `wave0-node`: specify source-intake/repair behavior evidence for bounded retrieval,
   no fabrication, and honest degradation.

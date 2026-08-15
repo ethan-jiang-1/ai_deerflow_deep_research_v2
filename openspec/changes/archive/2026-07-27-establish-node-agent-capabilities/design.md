@@ -46,7 +46,7 @@ Introduce a frozen domain `NodeAgentCapabilityRef` with exactly a stable capabil
 ID, a package identity rooted under `deerflow_deep_research.graph.nodes`, and a simple
 relative Markdown resource name rooted under that package's `capabilities/` directory.
 It rejects an absolute path, traversal, a non-Markdown name, or a package outside that
-node namespace. `NodeExecutionRequest` also carries an explicit capability binding
+node namespace. `NodeExecutionRequest` also carries an explicit capability reference
 with an exclusive ref invariant: `legacy` requires no ref and preserves the
 pre-cohort renderer path; `required` requires exactly one syntactically valid ref.
 Request validation rejects any other binding/ref combination before node invocation.
@@ -84,7 +84,7 @@ text. Rejected because graph input would become mutable prompt authority.
 
 ### 2. Use a closed transitional legacy set, never a generic fallback
 
-Capability binding is transitional only during this cohort because ten direct
+capability reference is transitional only during this cohort because ten direct
 production builders have not yet migrated. The migrated catalog cases are exactly
 `hitl1/semantic-intake`, `hitl1/semantic-intake-repair`, `wave0/worker`,
 `wave0/repair`, `wave2-synthesis/synthesis`, and `wave2-synthesis/repair`. The closed
@@ -128,7 +128,7 @@ call limit, and a non-empty resource set that is a subset of the selected
 `ExecutionPolicy.allowed_tool_names`. The bridge resolves only the intersection with
 configured actual tools; a required posture needs at least one such tool, not every
 operator-provided Wave0 alternative. A mismatch, no permitted actual tool, or a
-forbidden visible tool fails before `build_phase_agent` or tool dispatch. Existing
+forbidden visible tool fails before `build_node_agent` or tool dispatch. Existing
 middleware remains the authority for path, sandbox, cancellation, and cumulative
 budgets.
 

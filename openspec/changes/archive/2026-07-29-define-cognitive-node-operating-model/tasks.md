@@ -16,10 +16,10 @@ violation stops the change rather than authorizing a compensating edit.
 
 ## 1. Revalidate the closed source audit
 
-- [x] 1.1 Run `cd agent && UV_OFFLINE=1 uv run pytest tests/graph/test_topology_and_implementation.py tests/contract/test_workflow_node_inventory.py tests/domain/test_node_agent_capability.py tests/graph/test_node_agent_capability_cohort.py tests/graph/test_bootstrap_node.py tests/unit/test_rerun_real.py tests/unit/test_hitl2_real.py tests/unit/test_readiness_real.py tests/unit/test_final_delivery_real.py`. Confirm the ordered 11-node topology, six current direct-model owners, 16 individual capability bindings, and five remaining current mechanisms.
+- [x] 1.1 Run `cd agent && UV_OFFLINE=1 uv run pytest tests/graph/test_topology_and_implementation.py tests/contract/test_workflow_node_inventory.py tests/domain/test_node_agent_capability.py tests/graph/test_node_agent_capability_cohort.py tests/graph/test_bootstrap_node.py tests/unit/test_rerun_real.py tests/unit/test_hitl2_real.py tests/unit/test_readiness_real.py tests/unit/test_final_delivery_real.py`. Confirm the ordered 11-node topology, six current direct-model owners, 16 individual capability references, and five remaining current mechanisms.
 - [x] 1.2 Reconcile every individual row of the Product Responsibility Review and Charter Model-Branch Evidence Appendix against that source audit. Preserve the separation of product responsibility, participation mode, commitment state, current mechanism, deterministic authority, and audit-only branch evidence.
-- [x] 1.3 Reconcile every individual row of the 16-Branch Evidence Ledger against `tests/assets/node_agent_capabilities.py`, including its capability binding and production entrypoint. Do not replace an individual row with a node aggregate.
-- [x] 1.4 If a denominator, current mechanism, capability binding, or source/spec observation differs, stop for a new Scope Card rather than editing a classification or future commitment by inference.
+- [x] 1.3 Reconcile every individual row of the 16-Branch Evidence Ledger against `tests/assets/node_agent_capabilities.py`, including its capability reference and production entrypoint. Do not replace an individual row with a node aggregate.
+- [x] 1.4 If a denominator, current mechanism, capability reference, or source/spec observation differs, stop for a new Scope Card rather than editing a classification or future commitment by inference.
 
 ## 2. Capture the bounded reader contract
 

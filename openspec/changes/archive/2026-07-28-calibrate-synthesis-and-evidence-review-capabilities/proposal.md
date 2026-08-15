@@ -32,7 +32,7 @@ planner, Wave0, or Wave1 cohort.
 
 - Migrate the four remaining targeted-evidence direct branches from `legacy` to
   declared package-local capabilities with their bounded retrieval or zero-tool
-  posture; retain Wave2's existing zero-tool capability bindings.
+  posture; retain Wave2's existing zero-tool capability references.
 - Define acceptance evidence for assigned-evidence synthesis, gap-authorized targeted
   retrieval, read-only source/claim criticism, and repairs that cannot add evidence,
   claims, sources, or gaps.

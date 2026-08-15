@@ -71,7 +71,7 @@ lifecycle result stays `implementation_mode=full_fake` (no findings/report).
 - No redesign of identity derivation, start idempotency, or conflict detection (REG-004).
 - No new checkpointed state field and no `RESEARCH_STATE_SCHEMA_VERSION` bump; the binding is
   validated, not stored.
-- No DPT `rb_status.json` phase cursor; no evidence ledger, work-spec, or submit path changes.
+- No imported workflow `rb_status.json` phase cursor; no evidence ledger, work-spec, or submit path changes.
 - No real research worker, source fetching, findings, or report generation.
 - No `backend/` or `frontend/` modification.
 
@@ -169,7 +169,7 @@ added to `domain/bundle.py` alongside the existing `REQUEST_SUBTREE`): a version
 written under the canonical `request/` subtree. `request_digest` is the authoritative digest
 of the latest `HumanMessage` text — the start message is the sole question authority and tool
 payloads cannot supply a question — bound via the checkpoint. The marker is explicitly not a
-DPT `rb_status.json` phase cursor and carries no phase/generation program counter; `generation`
+imported workflow `rb_status.json` phase cursor and carries no phase/generation program counter; `generation`
 remains owned by the checkpoint (REG-006) and the real bootstrap does not increment it.
 
 **Alternative considered: reuse `WorkUnitStore` directly.** Rejected because the work-unit

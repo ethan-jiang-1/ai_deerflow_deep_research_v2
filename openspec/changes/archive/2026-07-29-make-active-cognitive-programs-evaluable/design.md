@@ -8,9 +8,9 @@ current facts, not new runtime behavior:
   direct-branch cases. `tests/graph/test_prompt_catalog.py` independently discovers
   direct `NodeExecutionRequest` builders and requires the catalog to cover them.
 - `tests/assets/node_agent_capabilities.py::COHORT_EVIDENCE` has the same sixteen
-  case IDs and current capability bindings. Its validator already rejects missing,
+  case IDs and current capability references. Its validator already rejects missing,
   duplicate, unknown, aggregate-substituted, and uncollected branch claims.
-- `agents/phase_prompt.py::render_phase_agent_prompt` is the pure final-prompt seam;
+- `agents/phase_prompt.py::render_node_agent_prompt` is the pure final-prompt seam;
   `runtime/node_agent_bridge.py::RuntimeNodeAgentBridge` consumes that result and
   enforces the declared capability posture before model construction or tool dispatch.
 - Each active node package owns its candidate parsing, admission, recovery, and
@@ -127,7 +127,7 @@ test and cannot be used to close a required role or authorize deletion in this c
 | Proof obligation | Lowest responsible seam | Deterministic evidence | Boundary |
 | --- | --- | --- | --- |
 | Exact denominator and row shape | `COHORT_EVIDENCE` joined to `prompt_catalog_cases()` | Red invalid-fixture cases for missing, duplicate, stale, grouped, and mismatched rows | No production registry or prompt selection changes |
-| Model-visible composition | `render_phase_agent_prompt` plus catalog case | Case-by-case renderer/catalog assertions | Does not prove model judgment |
+| Model-visible composition | `render_node_agent_prompt` plus catalog case | Case-by-case renderer/catalog assertions | Does not prove model judgment |
 | Requested versus enforced tools | `RuntimeNodeAgentBridge` capability admission | Real bridge with fake model/tool bindings for every ledger case/posture | Does not resolve live configured tools |
 | Feedback reachability | Existing node/subgraph branch transition | Ordered captured production requests, or an asserted `partial`/`absent` disposition | Does not alter repair/retry behavior |
 | Candidate cannot gain authority | Existing parser/materializer/controller/ledger seam | Per-row linked collected guardrail claim | Does not test prompt quality |

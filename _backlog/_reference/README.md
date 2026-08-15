@@ -7,7 +7,6 @@
 
 | 目录 | 内容 |
 |------|------|
-| [dpt/](dpt/) | DPT_FRAMEWORK（`ai_tool_deepresearch`）完整架构分析 |
 
 ## 与 plans 的关系
 

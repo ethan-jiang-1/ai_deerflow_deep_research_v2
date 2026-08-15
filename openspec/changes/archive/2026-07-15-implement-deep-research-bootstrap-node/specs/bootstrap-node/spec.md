@@ -14,8 +14,8 @@ change-04 shared-workspace capability (bounded POSIX lock, same-directory replac
 sync) and SHALL fail closed with `work_unit_storage_unavailable` on an unsupported provider
 before writing anything. A partial establishment (missing or mismatched marker) SHALL be
 cleaned up and re-established on re-entry so it is never observable as an active or completed
-bundle. The bootstrap node SHALL NOT create a DPT `rb_status.json` phase cursor or any
-evidence, work-spec, or DPT control file.
+bundle. The bootstrap node SHALL NOT create a imported workflow `rb_status.json` phase cursor or any
+evidence, work-spec, or imported workflow control file.
 
 #### Scenario: Fresh establishment binds the checkpoint identity
 - **WHEN** the real bootstrap runs for a fresh research id with a validated checkpoint

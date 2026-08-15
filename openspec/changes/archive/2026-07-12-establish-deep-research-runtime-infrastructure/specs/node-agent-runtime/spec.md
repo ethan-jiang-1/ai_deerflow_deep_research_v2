@@ -2,7 +2,7 @@
 
 ## ADDED Requirements
 
-### Requirement: Phase agents inherit one parent runtime
+### Requirement: node-agents inherit one parent runtime
 The runtime-owned node-agent bridge SHALL implement a pure domain capability protocol used by graph nodes. It SHALL resolve model/tools from TrustedRuntimeEnvelope, seed an ephemeral child state/context with the already validated parent sandbox and thread data, and invoke a bounded embedded agent produced by the full-takeover factory. The agents layer SHALL not import runtime; raw AppConfig, identity, host paths, sandbox internals, and checkpoint identity SHALL not enter graph/node contracts, checkpoints, events, or model-visible context. Each bound compiled child SHALL be created for one `run_agent` request, invoked as a separate runnable with `checkpointer=None`, and discarded after completion/cancellation; it SHALL never be cached across actions/users/threads/attempts, mounted as a checkpoint-inheriting subgraph, or create another sandbox lifecycle, thread namespace, or persistent controller.
 
 #### Scenario: Parent context is preserved
@@ -13,7 +13,7 @@ The runtime-owned node-agent bridge SHALL implement a pure domain capability pro
 - **WHEN** a node requests an agent without validated parent sandbox/thread context
 - **THEN** the factory refuses construction before a model or tool is invoked
 
-### Requirement: Phase-agent execution has explicit budgets
+### Requirement: node-agent execution has explicit budgets
 Every node-agent policy SHALL specify a resolved model, exact tools, maximum model calls, total tool calls, tool calls per model response, parallel tool-call limit, total token budget, per-model-call output-token cap, per-tool-result size cap, structured-result size cap, and wall-time budget. Before each text-only model call the runtime SHALL use a deterministic no-network conservative upper bound over the actual messages/tool schemas plus capped model output; non-text content SHALL require an explicit conservative modality estimator or fail admission. It SHALL then reconcile actual usage metadata. Missing usable token accounting SHALL terminate with `usage_unavailable` before tool execution or another model call. Tool results SHALL be bounded before re-entering model context. Exhausting any budget SHALL stop the agent with a typed non-success finish reason and cancel outstanding child work.
 
 #### Scenario: Work completes within budget
@@ -62,7 +62,7 @@ The adapter SHALL validate structured model output and project stable redacted p
 - **THEN** child work is cancelled and awaited, cleanup completes, and no successful result is emitted
 
 ### Requirement: Clarification belongs only to graph HITL nodes
-The phase-agent factory SHALL omit `ask_clarification` and clarification middleware. A phase agent SHALL not create a user interrupt; only a graph-owned HITL node introduced by a later change can do so.
+The node-agent factory SHALL omit `ask_clarification` and clarification middleware. A node agent SHALL not create a user interrupt; only a graph-owned HITL node introduced by a later change can do so.
 
 #### Scenario: Normal node toolset has no clarification
 - **WHEN** the factory builds its full-takeover middleware and tool list

@@ -4,12 +4,12 @@
 
 ### Requirement: Migrated node-agent requests bind a validated local capability
 
-A migrated direct phase-agent branch SHALL construct a frozen
+A migrated direct node-agent branch SHALL construct a frozen
 `NodeAgentCapabilityRef` with a stable capability ID, a package identity rooted under
 `deerflow_deep_research.graph.nodes`, and a simple relative Markdown name rooted at
 that package's `capabilities/` directory. The ref SHALL reject an absolute path,
 traversal, a non-Markdown name, or a package outside that node namespace. The
-request SHALL carry one explicit capability binding with an exclusive ref invariant:
+request SHALL carry one explicit capability reference with an exclusive ref invariant:
 `legacy` SHALL carry no ref and retain the existing renderer path, while `required`
 SHALL carry exactly one syntactically valid ref. Every other binding/ref combination
 SHALL be rejected before node invocation. A migrated branch SHALL use `required`; an
@@ -98,7 +98,7 @@ zero-tool runtime policy rather than the HITL1 bridge policy. (`NAC-003`)
   resource with the listed posture, exactly the named ten legacy cases have no ref,
   and no other branch is counted as migrated by owner-level aggregation
 
-#### Scenario: Invalid capability binding is rejected before node invocation
+#### Scenario: Invalid capability reference is rejected before node invocation
 - **WHEN** a first-cohort builder constructs `required` without a ref or `legacy`
   with a ref
 - **THEN** request validation rejects the request without invoking a node, model,

@@ -38,7 +38,7 @@
 ## Non-Goals
 
 - 不做 topic rewrite、profile 推导或用户提问。
-- 不创建 DPT 的冗余 `rb_status.json` phase cursor。
+- 不创建 imported workflow 的冗余 `rb_status.json` phase cursor。
 
 ## 落地关联
 

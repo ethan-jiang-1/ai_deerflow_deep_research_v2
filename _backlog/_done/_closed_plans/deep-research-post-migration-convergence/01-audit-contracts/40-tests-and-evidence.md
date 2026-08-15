@@ -26,7 +26,7 @@
 
 ### Old terminology assertions
 
-`tests/unit/test_phase_prompt.py` 当前断言 AI-facing `Deep Research Phase Agent`。若 canonical
+`tests/unit/test_phase_prompt.py` 当时断言已退役的 AI-facing actor identity。若 canonical
 identity 改为 Node Cognitive Control Program/Node Agent runtime worker，该测试必须与生产 policy 同批
 迁移；不能只 rename 文件而继续断言旧字符串。
 

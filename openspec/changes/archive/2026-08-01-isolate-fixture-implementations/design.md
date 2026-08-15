@@ -199,7 +199,7 @@ Alternatives considered:
 
 **Verified current behavior.** `scripts/prompt_dump.py` obtains code-owned synthetic
 `PromptCatalogCase` values from `graph.prompt_catalog` and renders them through the shared
-`agents.phase_prompt.render_phase_agent_prompt()` interface. Its current
+`agents.phase_prompt.render_node_agent_prompt()` interface. Its current
 `deerflow_research/node_prompts/` tree contains that deterministic output; no runtime path
 loads those Markdown files. The prompt builders, shared renderer, and runtime bridge remain
 the owners of prompt behavior, while the generated tree is only a review projection.

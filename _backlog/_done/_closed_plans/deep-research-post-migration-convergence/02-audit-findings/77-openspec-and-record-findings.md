@@ -75,11 +75,11 @@ ADR 0007已标 `superseded by ADR-0028`；0002/0003/0006/0008/0010明确写 non-
 current docs把这些历史 ADR当 runtime behavior authority，故不应删除/改写其历史名。当前缺少统一 ADR index
 不自动构成新结构需求；README/docs未把读者路由进这些 old ADR，direct link与 status已足以消歧。
 
-## Finding OR-06: Current docs 路由大体正确，只有 superseded DPT report 可减
+## Finding OR-06: Current docs 路由大体正确，只有 superseded imported workflow report 可减
 
 root/product README、docs index把 current product/operator/testing/evaluation routes分开。dated live baseline
 和 release attestation以有日期、有限证据导航；regression descent是 current policy。TA-C05证明 superseded
-DPT report无 current route，只有 shape-only test保护，可在证据对照后删除。
+imported workflow report无 current route，只有 shape-only test保护，可在证据对照后删除。
 
 文档清理应保持 index角色：不把 Candidate结论复制进 product docs，不把 dated artifact冒充 freshness，
 也不因 old term residual批量改 history。
@@ -168,13 +168,13 @@ OR-C03 当作跨域 spec-cleanup 的理由。
 - **OpenSpec change slice**: `converge-node-language-and-product-records` 的 `glossary-records` workstream，
   结合 NC-C03/EC-C02/EV-C01。
 
-### OR-C06 - Keep current indexes and historical evidence; delete only the grounded DPT duplicate
+### OR-C06 - Keep current indexes and historical evidence; delete only the grounded imported workflow duplicate
 
 - **证据**: docs routes；TA-C05..C07 evidence comparison。
-- **当前 owner**: current navigation + frozen evidence epochs + regression policy；DPT report is superseded duplicate。
-- **目标 owner**: unchanged current index/evidence owners after DPT subtraction。
-- **Disposition**: indexes/baseline/attestation/policy `keep/historical`; DPT `migrate then delete`。
-- **迁移条件**: compare unique DPT provenance before deletion；do not copy verdict prose。
+- **当前 owner**: current navigation + frozen evidence epochs + regression policy；imported workflow report is superseded duplicate。
+- **目标 owner**: unchanged current index/evidence owners after imported workflow subtraction。
+- **Disposition**: indexes/baseline/attestation/policy `keep/historical`; imported workflow `migrate then delete`。
+- **迁移条件**: compare unique imported workflow provenance before deletion；do not copy verdict prose。
 - **删除条件**: TA-C05 exact closure; no broken current links/tests。
 - **保留负向护栏**: dated evidence never proves freshness；attestation immutable；regression descent remains current。
 - **OpenSpec change slice**: `restore-delivery-and-subtract-dead-assets` 的 `evidence-report` workstream。

@@ -12,7 +12,7 @@ data. Each action SHALL bind fresh dependencies and compile inside the lifetime 
 effective selected checkpointer. SQLite/Postgres SHALL use `make_checkpointer(app_config)` per
 action and close it on success, failure, or cancellation; the project-owned provider
 classifier SHALL follow the official legacy `checkpointer`-over-`database` precedence;
-embedded phase agents SHALL not receive that checkpointer. The infrastructure probe retains
+embedded node agents SHALL not receive that checkpointer. The infrastructure probe retains
 its own versioned topology and namespace, separate from the public real research graph.
 
 #### Scenario: SQL provider is reopened and closed
