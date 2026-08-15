@@ -11,7 +11,7 @@
 _done/
 ├── README.md              # 本文件（状态总览 + 查阅指南）
 ├── _fixed_bugs/           # 已修复 Bug（编号权威源）
-├── _suspened_bugs/        # 悬挂 Bug（暂未确认修复）
+├── _suspended_bugs/        # 悬挂 Bug（暂未确认修复）
 ├── _done_todos/           # 已完成 TODO（DONE-NNN）
 ├── _closed_plans/         # 已完成 Plan（CLS-NNN）
 └── _suspended_plans/      # 明确暂停、保留重启条件的计划/延期跟进
@@ -33,7 +33,7 @@ _done/
 
 | 归档目录 | 数量 | 重启方式 |
 |---------|------|---------|
-| `_suspened_bugs/` | 0 | 确认修复后移回活跃 bug 流程 |
+| `_suspended_bugs/` | 0 | 确认修复后移回活跃 bug 流程 |
 | `_suspended_plans/` | 5 | — |
 
 _Closed plan count follows the indexed CLS records; each future move increments the count and Next ID together._

@@ -48,4 +48,4 @@ bug 修完后从 `_backlog/bugs/` 通过 `git mv` 移入本目录：
 
 ## Suspended (未修复，仍在排查)
 
-悬挂 bug 放在 [`../_suspened_bugs/`](../_suspened_bugs/)，尚未确认修复。此处不列。
+悬挂 bug 放在 [`../_suspended_bugs/`](../_suspended_bugs/)，尚未确认修复。此处不列。

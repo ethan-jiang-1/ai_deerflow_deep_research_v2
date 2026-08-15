@@ -22,7 +22,7 @@ _backlog/
 │   ├── _fixed_bugs/                   #   已修复 Bug（编号权威源）
 │   ├── _done_todos/                   #   已完成 TODO（DONE-NNN）
 │   ├── _closed_plans/                 #   已完成 Plan（CLS-NNN）
-│   └── _suspened_bugs/                #   悬挂 Bug（暂未确认修复）
+│   └── _suspended_bugs/                #   悬挂 Bug（暂未确认修复）
 │
 ├── bugs/                              # 🐛 活跃 bug → 修完移入 _done/_fixed_bugs/
 ├── todos/                            # 📋 活跃 todo → 做完移入 _done/_done_todos/
