@@ -24,7 +24,7 @@ context: |
      current behavior and conformance evidence.
   3. `openspec/governance/project-structure.toml` is the exact structural inventory;
      `architecture-policy.md` defines its update protocol.
-  4. The [Agent Charter](agent-charter/README.md) guides local design and
+  4. [Change Guidance](change-guidance/README.md) guides local design and
      admission only. It never creates runtime behavior, authority, or permission.
 
   Label unknowns and proposals as such. Do not convert a roadmap idea, DPT reference,
@@ -41,7 +41,7 @@ context: |
   1. Read `deep_research_harness/AGENTS.md` and select one primary module / causal owner.
   2. Read its owning capability spec/delta, closest implementation, and lowest
      responsible evidence seam.
-  3. Use `openspec/agent-charter/README.md` to select every canonical policy whose
+  3. Use `openspec/change-guidance/README.md` to select every canonical policy whose
      route-table trigger applies to the change. A change still has one primary module
      / causal owner.
   4. Add `## Change Focus` to the proposal with Primary module / causal owner,
@@ -78,11 +78,11 @@ rules:
     - "New downstream code lives under deep_research_harness/ and may use public deerflow.* APIs. Keep blocking I/O off the async event loop."
     - >
       当 graph、node、state、checkpoint、candidate admission、retry 或 terminal handling 改变时，
-      先从 `openspec/agent-charter/README.md` 选择触发的 policy；node 的 LLM role、
+      先从 `openspec/change-guidance/README.md` 选择触发的 policy；node 的 LLM role、
       tool posture 或 candidate admission 读取
-      `openspec/policies/node-agent-workflow-integrity.md`，而 model、tool、
+      `openspec/change-guidance/policies/node-agent-workflow-integrity.md`，而 model、tool、
       provider、retry、terminal、diagnostic 或 lifecycle projection 读取
-      `openspec/policies/workflow-outcome-review.md`。随后在 design 识别 owning
+      `openspec/change-guidance/policies/workflow-outcome-review.md`。随后在 design 识别 owning
       StateGraph transition/predicate、typed input/output、writer/reducer、evaluator/materializer、
       bounded recovery/terminal disposition 与 deterministic test；不得创建 competing controller 或 authority。
   tasks:
@@ -97,7 +97,7 @@ operations:
     guidance:
       - "Review control-placement only when the selected proposal declares it; guidance is advisory."
       - "Before a target edit or resumed apply, re-read the selected review, policy, tasks, and relevant historical counterexample; add every actionable finding as an unchecked ordinary task."
-      - "For a selected control-placement change, openspec/guardrails/selected_change_closeout.py verifies only caller-declared committed ranges; its evidence is non-authoritative and does not change native archive authority."
+      - "For a selected control-placement change, openspec/governance/closeout-evidence/selected_change_closeout.py verifies only caller-declared committed ranges; its evidence is non-authoritative and does not change native archive authority."
       - "Guidance does not execute commands, create or complete tasks, or block native operations."
   archive:
     guidance:

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate permanent Deep Research Agent Charter navigation and admission anchors.
+"""Validate permanent Deep Research Change Guidance navigation and admission anchors.
 
 This checker deliberately validates only stable locations, links, admission anchors,
 the mechanical shape of an active change's Focus Card, and bounded entry-document
@@ -22,9 +22,16 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-CHARTER_ROOT = Path("openspec/agent-charter")
-LEGACY_CHARTER_ROOT = Path("openspec/governance/agent-charter")
-POLICY_ROOT = Path("openspec/policies")
+GUIDANCE_ROOT = Path("openspec/change-guidance")
+RETIRED_GUIDANCE_ROOTS = (
+    Path("openspec/agent-charter"),
+    Path("openspec/policies"),
+    Path("openspec/guardrails"),
+    Path("openspec/governance/agent-charter"),
+)
+POLICY_ROOT = GUIDANCE_ROOT / "policies"
+GUIDANCE_ROOT_MEMBERS = frozenset({"README.md", "principles.md", "node-edit-map.md", "policies"})
+OPEN_SPEC_README_PATH = Path("openspec/README.md")
 CONFIG_PATH = Path("openspec/config.yaml")
 GUIDE_PATH = Path("deep_research_harness/AGENTS.md")
 CLAUDE_GUIDE_PATH = Path("deep_research_harness/CLAUDE.md")
@@ -108,7 +115,9 @@ CONTROL_PLACEMENT_TASKS_RULE = "When `Triggered review policies` includes `contr
 APPLY_GUIDANCE = "Review control-placement only when the selected proposal declares it; guidance is advisory."
 ARCHIVE_GUIDANCE = "Before archive, review control-placement only when the selected proposal declares it; guidance is advisory."
 OPERATION_GUIDANCE_ADVISORY_BOUNDARY = "does not execute commands, create or complete tasks, or block native operations"
-CLOSEOUT_EVIDENCE_GUIDANCE = "openspec/guardrails/selected_change_closeout.py verifies only caller-declared committed ranges"
+CLOSEOUT_EVIDENCE_GUIDANCE = (
+    "openspec/governance/closeout-evidence/selected_change_closeout.py verifies only caller-declared committed ranges"
+)
 CONTROL_PLACEMENT_REVIEW_COLUMNS = (
     "Changed decision or fact",
     "Cognitive candidate or human judgment",
@@ -142,7 +151,7 @@ class WorkstreamFocus:
 def _policy_document(name: str) -> PolicyDocument:
     return PolicyDocument(
         path=POLICY_ROOT / f"{name}.md",
-        index_link=f"../policies/{name}.md",
+        index_link=f"policies/{name}.md",
     )
 
 
@@ -158,7 +167,6 @@ POLICY_REGISTRY = {
     "agent-information-map": _policy_document("agent-information-map"),
     CONTROL_PLACEMENT_POLICY: _policy_document(CONTROL_PLACEMENT_POLICY),
 }
-POLICY_LIBRARY_INDEX = POLICY_ROOT / "README.md"
 INFORMATION_MAP_POLICY = POLICY_ROOT / "agent-information-map.md"
 INFORMATION_MAP_POLICY_ANCHORS = (
     "## Reader Roles",
@@ -211,31 +219,47 @@ def _require_fragment(text: str, fragment: str, *, code: str, detail: str) -> No
         raise ContractViolation(code, detail)
 
 
-def _validate_charter_tree(root: Path) -> None:
-    index_path = CHARTER_ROOT / "README.md"
-    charter_path = CHARTER_ROOT / "charter.md"
-    index = _read_file(root, index_path, code="charter.path_missing")
-    charter = _read_file(root, charter_path, code="charter.path_missing")
+def _validate_change_guidance_tree(root: Path) -> None:
+    for retired_root in RETIRED_GUIDANCE_ROOTS:
+        path = root / retired_root
+        if path.exists() or path.is_symlink():
+            raise ContractViolation(
+                "guidance.retired_tree_present",
+                f"retired guidance tree must be absent: {retired_root.as_posix()}",
+            )
 
-    legacy_root = root / LEGACY_CHARTER_ROOT
-    if legacy_root.exists() or legacy_root.is_symlink():
+    guidance_path = root / GUIDANCE_ROOT
+    index_path = GUIDANCE_ROOT / "README.md"
+    principles_path = GUIDANCE_ROOT / "principles.md"
+    node_edit_map_path = GUIDANCE_ROOT / "node-edit-map.md"
+    index = _read_file(root, index_path, code="charter.path_missing")
+    principles = _read_file(root, principles_path, code="charter.path_missing")
+    _read_file(root, node_edit_map_path, code="charter.path_missing")
+
+    if guidance_path.is_symlink() or {path.name for path in guidance_path.iterdir()} != GUIDANCE_ROOT_MEMBERS:
         raise ContractViolation(
-            "charter.legacy_tree_present",
-            f"legacy charter tree must be absent: {LEGACY_CHARTER_ROOT.as_posix()}",
+            "guidance.root_members_mismatch",
+            f"Change Guidance members must equal {sorted(GUIDANCE_ROOT_MEMBERS)!r}: {GUIDANCE_ROOT.as_posix()}",
         )
 
-    nested_policy_root = root / CHARTER_ROOT / "policies"
-    if nested_policy_root.exists() or nested_policy_root.is_symlink():
+    expected_policy_members = {document.path.name for document in POLICY_REGISTRY.values()}
+    policy_path = root / POLICY_ROOT
+    if (policy_path / "README.md").exists() or (policy_path / "README.md").is_symlink():
         raise ContractViolation(
-            "charter.nested_policy_tree_present",
-            f"charter tree must not contain nested policy prose: {(CHARTER_ROOT / 'policies').as_posix()}",
+            "guidance.policy_index_present",
+            f"Change Guidance policy directory must not contain an index: {POLICY_ROOT.as_posix()}",
+        )
+    if policy_path.is_symlink() or {path.name for path in policy_path.iterdir()} != expected_policy_members:
+        raise ContractViolation(
+            "guidance.policy_members_mismatch",
+            f"Change Guidance policies must equal {sorted(expected_policy_members)!r}: {POLICY_ROOT.as_posix()}",
         )
 
     _require_fragment(
         index,
-        "charter.md",
+        "principles.md",
         code="charter.index_link_missing",
-        detail=f"charter index does not link to {charter_path.as_posix()}",
+        detail=f"Change Guidance index does not link to {principles_path.as_posix()}",
     )
     _require_fragment(
         index,
@@ -244,18 +268,10 @@ def _validate_charter_tree(root: Path) -> None:
         detail=f"charter index lacks a policy route: {index_path.as_posix()}",
     )
     _require_fragment(
-        charter,
+        principles,
         "authority: guidance only",
         code="charter.authority_boundary_missing",
-        detail=f"charter lacks its non-authority boundary: {charter_path.as_posix()}",
-    )
-
-    policy_index = _read_file(root, POLICY_LIBRARY_INDEX, code="charter.path_missing")
-    _require_fragment(
-        policy_index,
-        "../agent-charter/README.md",
-        code="charter.policy_library_route_missing",
-        detail=f"policy library does not route contributors to {index_path.as_posix()}",
+        detail=f"Change Guidance principles lack their non-authority boundary: {principles_path.as_posix()}",
     )
     for policy, document in POLICY_REGISTRY.items():
         policy_text = _read_file(root, document.path, code="charter.path_missing")
@@ -264,12 +280,6 @@ def _validate_charter_tree(root: Path) -> None:
             document.index_link,
             code="charter.index_link_missing",
             detail=f"charter index does not link to {document.path.as_posix()}",
-        )
-        _require_fragment(
-            policy_index,
-            f"]({document.path.name})",
-            code="charter.policy_library_link_missing",
-            detail=f"policy library does not link to {document.path.as_posix()}",
         )
         _require_fragment(
             policy_text,
@@ -307,6 +317,15 @@ def _validate_charter_tree(root: Path) -> None:
         detail=f"change-admission policy lacks the bounded-program route: {change_admission_path.as_posix()}",
     )
 
+    openspec_readme = _read_file(root, OPEN_SPEC_README_PATH, code="guidance.openspec_root_missing")
+    for fragment in ("config.yaml", "specs/", "changes/", "change-guidance/README.md", "governance/"):
+        _require_fragment(
+            openspec_readme,
+            fragment,
+            code="guidance.openspec_root_route_missing",
+            detail=f"OpenSpec root navigation lacks {fragment!r}: {OPEN_SPEC_README_PATH.as_posix()}",
+        )
+
 
 def _validate_focus_gate(root: Path) -> None:
     guide = _read_file(root, GUIDE_PATH, code="guide.missing")
@@ -335,9 +354,9 @@ def _validate_focus_gate(root: Path) -> None:
     focus_gate = guide[begin:end]
     _require_fragment(
         focus_gate,
-        "agent-charter/README.md",
+        "change-guidance/README.md",
         code="guide.focus_gate_link_missing",
-        detail=f"focus gate does not link to the charter index: {GUIDE_PATH.as_posix()}",
+        detail=f"focus gate does not link to Change Guidance: {GUIDE_PATH.as_posix()}",
     )
     _require_fragment(
         focus_gate,
@@ -378,9 +397,9 @@ def _validate_authoring_pointer(root: Path) -> None:
         )
     _require_fragment(
         config,
-        "openspec/agent-charter/README.md",
+        "openspec/change-guidance/README.md",
         code="config.charter_pointer_missing",
-        detail=f"OpenSpec configuration lacks the charter pointer: {CONFIG_PATH.as_posix()}",
+        detail=f"OpenSpec configuration lacks the Change Guidance pointer: {CONFIG_PATH.as_posix()}",
     )
     _require_fragment(
         config,
@@ -1192,7 +1211,7 @@ def _validate_active_changes(root: Path) -> None:
 def validate(root: Path) -> list[str]:
     if not root.is_dir():
         raise ContractViolation("root.missing", f"project root is not a directory: {root}")
-    _validate_charter_tree(root)
+    _validate_change_guidance_tree(root)
     _validate_focus_gate(root)
     _validate_claude_guide(root)
     _validate_authoring_pointer(root)
@@ -1213,7 +1232,7 @@ def main() -> int:
         return 1
     for warning in warnings:
         print(warning, file=sys.stderr)
-    print("Agent charter governance passed.")
+    print("Change Guidance governance passed.")
     return 0
 
 

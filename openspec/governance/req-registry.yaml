@@ -109,16 +109,16 @@ AIC-002: agent-interaction-charter — Failure and recovery projections identify
 AIC-003: agent-interaction-charter — Agent interaction changes carry an explicit interaction contract and deterministic evidence at the lowest responsible seam [DEPRECATED: superseded by establish-deep-research-agent-charter]
 
 # deep-research-agent-charter
-DRC-001: deep-research-agent-charter — A canonical Deep Research charter makes the agent-owned scope, source-of-truth hierarchy, and policy boundaries discoverable without treating upstream DeerFlow guidance as local product authority
+DRC-001: deep-research-agent-charter — Canonical Deep Research Change Guidance makes the agent-owned scope, source-of-truth hierarchy, and policy boundaries discoverable without treating upstream DeerFlow guidance as local product authority
 DRC-002: deep-research-agent-charter — The authoritative agent module guide and its Claude Code import entrypoint select one primary causal owner, its active specification, its evidence seam, and only necessary adjacent or public DeerFlow interfaces
 DRC-003: deep-research-agent-charter — Charter policies require participant outcomes for people and AI consumers to derive from shared typed authority while remaining comprehensible, actionable, and safely redacted
 DRC-004: deep-research-agent-charter — Agent-affecting OpenSpec changes declare one primary module or causal owner, bounded adjacent contracts, exclusions, and an evidence seam through a mechanically checkable admission rule rather than a second runtime authority
-DRC-005: deep-research-agent-charter — The charter index defines how durable principles, focused policies, capability specifications, operational playbooks, and current runtime facts evolve without duplicating ownership
-DRC-006: deep-research-agent-charter — Distinct bounded entry documents route coding agents, Claude Code, human operators, and OpenSpec authors without turning default context into a project manual
+DRC-005: deep-research-agent-charter — The Change Guidance route defines how durable principles, focused policies, capability specifications, operational playbooks, and current runtime facts evolve without duplicating ownership
+DRC-006: deep-research-agent-charter — Distinct bounded entry documents route coding agents, Claude Code, human operators, and OpenSpec authors through Change Guidance without turning default context into a project manual
 DRC-007: deep-research-agent-charter — A routed human-interaction-integrity policy guides review of semantic subjects, interpretation and graph authority, visible controls, adapter binding, recovery, and deterministic transcript evidence without becoming a runtime controller
 DRC-008: deep-research-agent-charter — A routed node-agent-workflow-integrity policy records bounded node cognition, tool enforcement, deterministic candidate admission, failure ownership, and proof seams without granting runtime authority
-DRC-009: deep-research-agent-charter — A cross-cutting control-placement policy in the unified library structurally records deterministic control ownership, closed posture, human-decision composition, and handoff evidence without runtime authority
-DRC-010: deep-research-agent-charter — Selected control-placement reviews retain bounded advisory operation guidance and local integration evidence without creating task, archive, or semantic-review authority
+DRC-009: deep-research-agent-charter — A cross-cutting control-placement policy in the Change Guidance library structurally records deterministic control ownership, closed posture, human-decision composition, and handoff evidence without runtime authority
+DRC-010: deep-research-agent-charter — Selected control-placement reviews retain bounded advisory operation guidance and local closeout-evidence integration without creating task, archive, or semantic-review authority
 DRC-011: deep-research-agent-charter — Downstream agent entry documents route from the canonical Deep Research Harness root while preserving their bounded information-map role
 
 # deep-research-harness-run-bundles
@@ -133,7 +133,7 @@ DRH-008: deep-research-harness-run-bundles — Bundle-local State writes validat
 
 # selected-change-closeout-evidence
 SCC-001: selected-change-closeout-evidence — A caller-declared selected OpenSpec change boundary is verified only as a clean committed Git base..head range and records no semantic-clearance claim
-SCC-002: selected-change-closeout-evidence — A verified boundary can retain only task-led review-required or evidence-limited inconclusive closeout records without task, runtime, or native archive authority
+SCC-002: selected-change-closeout-evidence — The governed closeout-evidence command can retain only task-led review-required or evidence-limited inconclusive records without task, runtime, or native archive authority
 SCC-003: selected-change-closeout-evidence — Deterministic zero-API fixtures prove valid committed-boundary records and every closed missing-boundary rejection without task or archive side effects
 
 # research-fake-cli-onboarding
@@ -238,7 +238,7 @@ PRS-005: project-structure — Run-experience contracts occupy canonical domain 
 PRS-006: project-structure — Run-session contracts, runtime-owned manifest/trace stores, and the registered project-local generated-output ignore policy occupy canonical downstream ownership paths
 PRS-007: project-structure — Local configuration profile resolution and its committed templates occupy canonical project-owned tooling paths without upstream source changes
 PRS-008: project-structure — The agent interaction charter occupies a canonical OpenSpec policy path with synchronized governance bootstrap pointers [DEPRECATED: superseded by establish-deep-research-agent-charter]
-PRS-009: project-structure — The Deep Research agent charter tree, bounded local information map, focus gate, and Claude Code compatibility entrypoint occupy canonical project-owned governance paths while root AGENTS.md and CLAUDE.md remain unchanged
+PRS-009: project-structure — The Deep Research Change Guidance tree, governance closeout-evidence route, bounded local information map, focus gate, and Claude Code compatibility entrypoint occupy canonical project-owned paths while root AGENTS.md and CLAUDE.md remain unchanged
 PRS-010: project-structure — The human-interaction domain contract and its focused deterministic tests occupy the existing domain ownership layer without runtime, graph, or adapter imports
 PRS-011: project-structure — The project structure registry registers the agents-owned final-prompt renderer, graph-owned canonical prompt-case registry, prompt-dump script, and focused deterministic tests while excluding generated prompt Markdown from required structural paths and preserving its ignored local-review boundary
 PRS-012: project-structure — Node-agent capability declarations, local resources, and deterministic evidence paths occupy registered downstream ownership locations without reverse or upstream placement

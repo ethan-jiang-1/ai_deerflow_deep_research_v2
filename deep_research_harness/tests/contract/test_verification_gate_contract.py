@@ -36,7 +36,7 @@ def test_makefile_exposes_exact_non_mutating_verify_composition() -> None:
         "\tpython3 ../openspec/governance/check_project_specs.py ..\n"
         "\tpython3 ../openspec/governance/check_project_architecture.py .." in text
     )
-    assert "\tpython3 ../openspec/governance/check_agent_charter.py .." in text
+    assert "\tpython3 ../openspec/governance/check_change_guidance.py .." in text
     assert "verify: export UV_NO_SYNC := 1" in text
     assert (
         "verify: governance lock-check lint test-assets test-req-coverage test-fast test-integration test-workflow"

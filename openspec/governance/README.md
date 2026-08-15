@@ -14,10 +14,10 @@
 | `check_project_reqs.py` | 需求 registry 一致性是否通过？ | 脚本 docstring |
 | `check_project_specs.py` | main spec 结构是否有效？ | 脚本 docstring |
 | `check_project_architecture.py` | 结构治理是否通过？ | 脚本 docstring |
-| `check_agent_charter.py` | charter / policy 路由 / Focus Card 是否通过？ | 脚本 docstring |
+| `check_change_guidance.py` | Change Guidance / policy 路由 / Focus Card 是否通过？ | 脚本 docstring |
 | `check_project_req_coverage.py` | 每条 requirement 是否有测试证据？ | 脚本 docstring |
 | `test-evidence-policy.md` | 测试证据的 authority、lifecycle、synchronized-change？ | [test-evidence-policy.md](test-evidence-policy.md)；批准语义由 `evaluation-hardening` main spec 拥有 |
-| `agent-charter/README.md` | 先按什么原则、再选哪个 policy？ | [agent-charter/README.md](../agent-charter/README.md) |
+| `change-guidance/README.md` | 先按什么原则、再选哪个 policy？ | [change-guidance/README.md](../change-guidance/README.md) |
 
 ## Checker 命令
 
@@ -27,7 +27,7 @@
 python3 openspec/governance/check_project_reqs.py
 python3 openspec/governance/check_project_specs.py
 python3 openspec/governance/check_project_architecture.py
-python3 openspec/governance/check_agent_charter.py
+python3 openspec/governance/check_change_guidance.py
 python3 openspec/governance/check_project_req_coverage.py
 ```
 

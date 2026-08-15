@@ -115,7 +115,7 @@ classification` field, written bare (no backticks, no punctuation inside the val
 with a short rationale. The closed values are `cognitive-program`,
 `human-decision`, `deterministic-guardrail`, and `wiring`; this policy owns the
 canonical values and the substantive cognitive-hypothesis and deterministic-owner
-requirements. The charter checker mechanically enforces presence, closed-value
+requirements. The Change Guidance checker mechanically enforces presence, closed-value
 membership, and a non-empty rationale without judging which classification is
 semantically true for a change.
 

@@ -6,9 +6,9 @@
 > and deterministic owner
 > authority: guidance only; never runtime control, permission, or current-state truth
 
-Use this policy through the [Agent Charter policy route](../agent-charter/README.md#policy-route)
+Use this policy through the [Change Guidance policy route](../README.md#policy-route)
 to locate a changed decision or fact before it turns into a competing controller. It
-is cross-cutting review guidance alongside the Charter-routed policies; it does not
+is cross-cutting review guidance alongside the Change Guidance-routed policies; it does not
 replace Node Agent Review, Workflow Outcome Review, human-interaction-integrity,
 authority-and-projections, or control-and-recovery.
 
@@ -54,5 +54,5 @@ This policy creates no runtime route, state write, permission, retry, model role
 lifecycle action, schema, or evaluator. It does not scan source, infer applicability,
 or judge review prose. It remains separate from the delivered, caller-declared
 Git-verified closeout-evidence interface in
-`openspec/guardrails/selected_change_closeout.py`; neither surface creates a semantic
+`openspec/governance/closeout-evidence/selected_change_closeout.py`; neither surface creates a semantic
 evaluator, automatic task writer, archive coordinator, or archive blocker.

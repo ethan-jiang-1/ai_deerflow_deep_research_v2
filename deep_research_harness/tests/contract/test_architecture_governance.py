@@ -126,6 +126,51 @@ path = "openspec/governance/test-evidence-policy.md"
 kind = "file"
 owner = "PRS-004"
 
+[[required_paths]]
+path = "openspec/README.md"
+kind = "file"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/change-guidance"
+kind = "directory"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/change-guidance/README.md"
+kind = "file"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/change-guidance/principles.md"
+kind = "file"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/change-guidance/node-edit-map.md"
+kind = "file"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/change-guidance/policies"
+kind = "directory"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/governance/closeout-evidence"
+kind = "directory"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/governance/closeout-evidence/README.md"
+kind = "file"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/governance/closeout-evidence/selected_change_closeout.py"
+kind = "file"
+owner = "PRS-009"
+
 [imports]
 domain = ["stdlib", "pydantic"]
 engine = ["domain"]
@@ -258,6 +303,17 @@ class ArchitectureGovernanceContractTests(unittest.TestCase):
         _write(self.root, MANIFEST_PATH, VALID_MANIFEST)
         _write(self.root, "openspec/governance/req-registry.yaml", REGISTRY_TEXT)
         _write(self.root, "openspec/governance/test-evidence-policy.md", "# Test Evidence Governance Policy\n")
+        _write(self.root, "openspec/README.md", "# OpenSpec\n")
+        _write(self.root, "openspec/change-guidance/README.md", "# Change Guidance\n")
+        _write(self.root, "openspec/change-guidance/principles.md", "# Principles\n")
+        _write(self.root, "openspec/change-guidance/node-edit-map.md", "# Node Edit Map\n")
+        (self.root / "openspec/change-guidance/policies").mkdir()
+        _write(self.root, "openspec/governance/closeout-evidence/README.md", "# Closeout Evidence\n")
+        _write(
+            self.root,
+            "openspec/governance/closeout-evidence/selected_change_closeout.py",
+            "#!/usr/bin/env python3\n",
+        )
         _write(self.root, ACTIVE_SPEC_PATH, SPEC_TEXT)
         _write(self.root, GUIDE_PATH, f"# Agent Guide\n\n{VALID_GENERATED_BLOCK}\nOperational text.\n")
         _write(

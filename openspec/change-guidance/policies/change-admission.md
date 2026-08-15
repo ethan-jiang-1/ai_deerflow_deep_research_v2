@@ -42,13 +42,13 @@ Use this order:
 1. If the statement changes observable behavior, a command, state schema,
    permission, route, or retry contract, write or modify the owning capability delta.
 2. If it is a recurring design question with a specific trigger across capabilities,
-   add or revise a focused policy and route it from the charter index.
+   add or revise a focused policy and route it from the Change Guidance index.
 3. If it is durable product posture spanning those policies, revise
-   [`agent-charter/charter.md`](../agent-charter/charter.md).
+   [`principles.md`](../principles.md).
 4. If it is a procedure for an operator after behavior already exists, write a
    scoped operational document instead.
 
-No policy or charter text can be used as a shortcut around an owning requirement,
+No policy or Change Guidance text can be used as a shortcut around an owning requirement,
 test, or runtime authority.
 
 ## Evidence And Review
@@ -60,7 +60,7 @@ the primary module first, then only named adjacent contracts.
 
 ## Boundary
 
-The deterministic charter checker verifies only the permanent navigation and Focus
+The deterministic Change Guidance checker verifies only the permanent navigation and Focus
 Card shape. It cannot certify that a proposed module owner, prose explanation, or
 architecture decision is semantically correct. That judgment remains with review,
 the owning specification, and executable evidence.

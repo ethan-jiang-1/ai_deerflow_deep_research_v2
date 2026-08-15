@@ -1,4 +1,4 @@
-# Deep Research Concept Map
+# Deep Research Node Edit Map
 
 > role: one-page terminology map from a node symptom to its correct first edit
 > scope: `deep_research_harness/` LLM-Bearing Node work and its OpenSpec admission

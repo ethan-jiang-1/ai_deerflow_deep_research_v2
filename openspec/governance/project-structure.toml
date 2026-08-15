@@ -855,87 +855,92 @@ kind = "file"
 owner = "PRS-004"
 
 [[required_paths]]
-path = "openspec/agent-charter"
+path = "openspec/README.md"
+kind = "file"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/change-guidance"
 kind = "directory"
 owner = "PRS-009"
 
 [[required_paths]]
-path = "openspec/agent-charter/README.md"
+path = "openspec/change-guidance/README.md"
 kind = "file"
 owner = "PRS-009"
 
 [[required_paths]]
-path = "openspec/agent-charter/charter.md"
+path = "openspec/change-guidance/principles.md"
 kind = "file"
 owner = "PRS-009"
 
 [[required_paths]]
-path = "openspec/policies"
+path = "openspec/change-guidance/node-edit-map.md"
+kind = "file"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/change-guidance/policies"
 kind = "directory"
 owner = "PRS-009"
 
 [[required_paths]]
-path = "openspec/policies/README.md"
+path = "openspec/change-guidance/policies/local-context.md"
 kind = "file"
 owner = "PRS-009"
 
 [[required_paths]]
-path = "openspec/policies/local-context.md"
+path = "openspec/change-guidance/policies/authority-and-projections.md"
 kind = "file"
 owner = "PRS-009"
 
 [[required_paths]]
-path = "openspec/policies/authority-and-projections.md"
+path = "openspec/change-guidance/policies/participant-outcomes.md"
 kind = "file"
 owner = "PRS-009"
 
 [[required_paths]]
-path = "openspec/policies/participant-outcomes.md"
+path = "openspec/change-guidance/policies/human-interaction-integrity.md"
 kind = "file"
 owner = "PRS-009"
 
 [[required_paths]]
-path = "openspec/policies/human-interaction-integrity.md"
+path = "openspec/change-guidance/policies/node-agent-workflow-integrity.md"
 kind = "file"
 owner = "PRS-009"
 
 [[required_paths]]
-path = "openspec/policies/node-agent-workflow-integrity.md"
+path = "openspec/change-guidance/policies/control-and-recovery.md"
 kind = "file"
 owner = "PRS-009"
 
 [[required_paths]]
-path = "openspec/policies/control-and-recovery.md"
+path = "openspec/change-guidance/policies/workflow-outcome-review.md"
 kind = "file"
 owner = "PRS-009"
 
 [[required_paths]]
-path = "openspec/policies/workflow-outcome-review.md"
+path = "openspec/change-guidance/policies/change-admission.md"
 kind = "file"
 owner = "PRS-009"
 
 [[required_paths]]
-path = "openspec/policies/change-admission.md"
+path = "openspec/change-guidance/policies/agent-information-map.md"
 kind = "file"
 owner = "PRS-009"
 
 [[required_paths]]
-path = "openspec/policies/agent-information-map.md"
+path = "openspec/change-guidance/policies/control-placement.md"
 kind = "file"
 owner = "PRS-009"
 
 [[required_paths]]
-path = "openspec/policies/control-placement.md"
+path = "openspec/governance/check_change_guidance.py"
 kind = "file"
 owner = "PRS-009"
 
 [[required_paths]]
-path = "openspec/governance/check_agent_charter.py"
-kind = "file"
-owner = "PRS-009"
-
-[[required_paths]]
-path = "deep_research_harness/tests/contract/test_agent_charter_governance.py"
+path = "deep_research_harness/tests/contract/test_change_guidance_governance.py"
 kind = "file"
 owner = "PRS-009"
 
@@ -945,17 +950,17 @@ kind = "file"
 owner = "PRS-009"
 
 [[required_paths]]
-path = "openspec/guardrails"
+path = "openspec/governance/closeout-evidence"
 kind = "directory"
 owner = "PRS-009"
 
 [[required_paths]]
-path = "openspec/guardrails/README.md"
+path = "openspec/governance/closeout-evidence/README.md"
 kind = "file"
 owner = "PRS-009"
 
 [[required_paths]]
-path = "openspec/guardrails/selected_change_closeout.py"
+path = "openspec/governance/closeout-evidence/selected_change_closeout.py"
 kind = "file"
 owner = "PRS-009"
 

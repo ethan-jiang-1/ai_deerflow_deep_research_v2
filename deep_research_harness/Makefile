@@ -41,7 +41,7 @@ governance:
 	python3 ../openspec/governance/check_project_reqs.py ..
 	python3 ../openspec/governance/check_project_specs.py ..
 	python3 ../openspec/governance/check_project_architecture.py ..
-	python3 ../openspec/governance/check_agent_charter.py ..
+	python3 ../openspec/governance/check_change_guidance.py ..
 
 verify: export UV_NO_SYNC := 1
 verify: governance lock-check lint test-assets test-req-coverage test-fast test-integration test-workflow

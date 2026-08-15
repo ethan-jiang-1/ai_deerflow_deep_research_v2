@@ -18,7 +18,8 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-COMMAND = REPO_ROOT / "openspec/guardrails/selected_change_closeout.py"
+COMMAND = REPO_ROOT / "openspec/governance/closeout-evidence/selected_change_closeout.py"
+RETIRED_COMMAND = REPO_ROOT / "openspec/guardrails/selected_change_closeout.py"
 CHANGE_NAME = "active-change"
 TASK_LABEL = "Implement follow-up"
 
@@ -128,7 +129,9 @@ def test_verify_boundary_emits_exact_committed_range_summary(tmp_path: Path) -> 
             "sha256": hashlib.sha256(exact_diff).hexdigest(),
         },
     }
+    assert not RETIRED_COMMAND.exists()
     assert not (root / "openspec/changes" / CHANGE_NAME / "guardrail-evidence").exists()
+    assert not (root / "openspec/changes" / CHANGE_NAME / "closeout-evidence").exists()
 
 
 @pytest.mark.parametrize(
@@ -184,7 +187,7 @@ def test_record_review_requires_task_led_findings_or_a_stated_limitation(tmp_pat
     attestation = _attestation(root, base_commit, head_commit)
     tasks_path = root / "openspec/changes" / CHANGE_NAME / "tasks.md"
     original_tasks = tasks_path.read_text(encoding="utf-8")
-    output = root / "openspec/changes" / CHANGE_NAME / "guardrail-evidence/review-required.json"
+    output = root / "openspec/changes" / CHANGE_NAME / "closeout-evidence/review-required.json"
 
     receipt = _receipt(
         _run(
@@ -219,7 +222,7 @@ def test_record_review_rejects_semantic_or_incomplete_payloads(
     attestation = _attestation(root, base_commit, head_commit)
     tasks_path = root / "openspec/changes" / CHANGE_NAME / "tasks.md"
     original_tasks = tasks_path.read_text(encoding="utf-8")
-    rejected_output = root / "openspec/changes" / CHANGE_NAME / "guardrail-evidence" / f"{condition}.json"
+    rejected_output = root / "openspec/changes" / CHANGE_NAME / "closeout-evidence" / f"{condition}.json"
 
     rejected = _receipt(_run(root, "record-review", attestation, review=review, output=rejected_output))
 
@@ -246,7 +249,7 @@ def test_record_review_rejects_escaping_paths_and_rechecks_before_write(tmp_path
     }
     assert not outside_output.exists()
 
-    # A path under the change root but outside guardrail-evidence/ (e.g. a change
+    # A path under the change root but outside closeout-evidence/ (e.g. a change
     # artifact such as tasks.md) must not become the review-record write target.
     tasks_path = root / "openspec/changes" / CHANGE_NAME / "tasks.md"
     original_tasks = tasks_path.read_text(encoding="utf-8")
@@ -260,7 +263,7 @@ def test_record_review_rejects_escaping_paths_and_rechecks_before_write(tmp_path
 
     _receipt(_run(root, "verify-boundary", attestation))
     (root / "state-changed-after-receipt.txt").write_text("dirty\n", encoding="utf-8")
-    record_output = root / "openspec/changes" / CHANGE_NAME / "guardrail-evidence/stale.json"
+    record_output = root / "openspec/changes" / CHANGE_NAME / "closeout-evidence/stale.json"
     stale = _receipt(_run(root, "record-review", attestation, review=review, output=record_output))
     assert stale == {
         "schema_version": "selected-change-closeout/v1",
@@ -278,7 +281,7 @@ def test_record_review_ignores_prose_containing_checkbox_marker(tmp_path: Path) 
         encoding="utf-8",
     )
     attestation = _attestation(root, base_commit, head_commit)
-    output = root / "openspec/changes" / CHANGE_NAME / "guardrail-evidence/review.json"
+    output = root / "openspec/changes" / CHANGE_NAME / "closeout-evidence/review.json"
 
     # The old parser would have extracted "marker is not a task." from the prose
     # line; the anchored parser ignores it, so referencing it is not a valid task.
@@ -327,3 +330,4 @@ def test_invalid_attestations_do_not_run_git_or_native_archive_or_touch_tasks(tm
     assert not calls_path.exists()
     assert tasks_path.read_text(encoding="utf-8") == original_tasks
     assert not (root / "openspec/changes" / CHANGE_NAME / "guardrail-evidence").exists()
+    assert not (root / "openspec/changes" / CHANGE_NAME / "closeout-evidence").exists()

@@ -1,4 +1,4 @@
-# Selected Change Closeout Guardrail
+# Selected Change Closeout Evidence
 
 `selected_change_closeout.py` records limited, local evidence for an explicitly
 declared selected OpenSpec change. It is a standard-library command, not an OpenSpec
@@ -20,7 +20,7 @@ Both operations require an attestation JSON file with non-empty fields:
 Run commands from the planning home as your current working directory:
 
 ```sh
-python3 openspec/guardrails/selected_change_closeout.py verify-boundary \
+python3 openspec/governance/closeout-evidence/selected_change_closeout.py verify-boundary \
   --attestation /path/to/attestation.json
 ```
 
@@ -32,17 +32,17 @@ and SHA-256 of `git diff --binary base head`. It writes nothing. A rejected requ
 prints `missing-boundary` with a closed condition and no diff or coverage claim.
 
 To retain a local review record, provide the attestation again, a review payload, and
-an explicit output under the selected change's dedicated `guardrail-evidence/`
+an explicit output under the selected change's dedicated `closeout-evidence/`
 subdirectory:
 
 ```sh
-python3 openspec/guardrails/selected_change_closeout.py record-review \
+python3 openspec/governance/closeout-evidence/selected_change_closeout.py record-review \
   --attestation /path/to/attestation.json \
   --review /path/to/review.json \
-  --output openspec/changes/example-change/guardrail-evidence/review.json
+  --output openspec/changes/example-change/closeout-evidence/review.json
 ```
 
-The resolved `--output` must live under `<active change root>/guardrail-evidence/`;
+The resolved `--output` must live under `<active change root>/closeout-evidence/`;
 pointing it at a change artifact such as `tasks.md` or `proposal.md` is rejected, so a
 review record can never overwrite a change artifact.
 
@@ -73,7 +73,7 @@ selected change's `tasks.md`. Alternatively, an evidence-limited record is:
 ```
 
 `record-review` validates the payload and output containment (under
-`guardrail-evidence/`), then re-verifies the attestation immediately before its only
+`closeout-evidence/`), then re-verifies the attestation immediately before its only
 write. It never edits `tasks.md`, invokes or
 blocks native `openspec archive`, infers an undeclared worktree boundary, or emits an
 approval, clearance, or semantic-pass status. A later session must issue a new

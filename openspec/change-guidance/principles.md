@@ -1,4 +1,4 @@
-# Deep Research Agent Charter
+# Deep Research Change Guidance Principles
 
 > role: local product constitution for Deep Research design and change admission
 > scope: `deep_research_harness/` and its OpenSpec governance; root DeerFlow guidance remains an upstream constraint
@@ -10,7 +10,7 @@ Deep Research is the downstream product owned by `deep_research_harness/`. DeerF
 runtime, leveraged through the upstream `deerflow/` gitlink. Ordinary downstream work
 neither modifies nor source-browses that gitlink. The root repository guides establish
 upstream facts and boundaries; they are not the default place to design a local Deep
-Research change. This charter neither edits nor overrides root `AGENTS.md` or `CLAUDE.md`.
+Research change. This guidance neither edits nor overrides root `AGENTS.md` or `CLAUDE.md`.
 
 ## Principles
 
@@ -55,7 +55,7 @@ requires it. Documentation is a navigation aid, not proof that a control path wo
 
 Keep durable project posture here. Put repeatable, triggered design rules in a focused
 policy. Put observable behavior in an owning specification. Put operational steps in
-a scoped runbook. This separation keeps the charter useful without turning it into a
+a scoped runbook. This separation keeps Change Guidance useful without turning it into a
 parallel architecture or runtime protocol.
 
 ### 7. Cognition Proposes; Deterministic Owners Decide
@@ -88,7 +88,7 @@ never a node's product identity.
 
 ## Non-Authority Boundary
 
-This charter does not grant a mutation right, create a waiver, define a provider
+This guidance does not grant a mutation right, create a waiver, define a provider
 response, or make a retained record authoritative. A conflict is resolved by the
 owning accepted specification, active delta, typed contract, or current runtime
 authority. Changing those facts requires the normal governed change path.

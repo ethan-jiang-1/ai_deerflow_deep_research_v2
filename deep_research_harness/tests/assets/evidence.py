@@ -1988,19 +1988,19 @@ EVIDENCE_CLAIMS = (
     ),
     _correctness_claim(
         "charter-node-agent-workflow-integrity",
-        "tests/contract/test_agent_charter_governance.py::test_node_agent_and_workflow_outcome_reviews_remain_independent",
+        "tests/contract/test_change_guidance_governance.py::test_node_agent_and_workflow_outcome_reviews_remain_independent",
         StableSeam.DOMAIN_ENGINE,
         requirement_ids=("DRC-008",),
     ),
     _correctness_claim(
         "charter-control-placement",
-        "tests/contract/test_agent_charter_governance.py::test_control_placement_and_existing_reviews_remain_independent",
+        "tests/contract/test_change_guidance_governance.py::test_control_placement_and_existing_reviews_remain_independent",
         StableSeam.DOMAIN_ENGINE,
         requirement_ids=("DRC-009",),
     ),
     _correctness_claim(
         "charter-operation-guidance",
-        "tests/contract/test_agent_charter_governance.py::test_config_requires_advisory_operation_guidance_boundary",
+        "tests/contract/test_change_guidance_governance.py::test_config_requires_advisory_operation_guidance_boundary",
         StableSeam.DOMAIN_ENGINE,
         requirement_ids=("DRC-010",),
     ),

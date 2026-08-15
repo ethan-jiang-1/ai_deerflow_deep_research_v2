@@ -1,4 +1,4 @@
-"""Deterministic contracts for the Deep Research Agent Charter gate.
+"""Deterministic contracts for the Deep Research Change Guidance gate.
 
 @impl DRC-001
 @impl DRC-002
@@ -24,10 +24,15 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-CHECKER = REPO_ROOT / "openspec" / "governance" / "check_agent_charter.py"
-CHARTER_ROOT = Path("openspec/agent-charter")
+CHECKER = REPO_ROOT / "openspec" / "governance" / "check_change_guidance.py"
+CHARTER_ROOT = Path("openspec/change-guidance")
 LEGACY_CHARTER_ROOT = Path("openspec/governance/agent-charter")
-POLICY_ROOT = Path("openspec/policies")
+RETIRED_GUIDANCE_ROOTS = (
+    Path("openspec/agent-charter"),
+    Path("openspec/policies"),
+    Path("openspec/guardrails"),
+)
+POLICY_ROOT = CHARTER_ROOT / "policies"
 CLAUDE_GUIDE_PATH = Path("deep_research_harness/CLAUDE.md")
 README_PATH = Path("deep_research_harness/README.md")
 DOCS_INDEX_PATH = Path("deep_research_harness/docs/README.md")
@@ -93,7 +98,7 @@ ARCHIVE_GUIDANCE = (
 )
 OPERATION_GUIDANCE_ADVISORY_BOUNDARY = "does not execute commands, create or complete tasks, or block native operations"
 CLOSEOUT_EVIDENCE_GUIDANCE = (
-    "openspec/guardrails/selected_change_closeout.py verifies only caller-declared committed ranges"
+    "openspec/governance/closeout-evidence/selected_change_closeout.py verifies only caller-declared committed ranges"
 )
 CONTROL_PLACEMENT_REVIEW_COLUMNS = (
     "Changed decision or fact",
@@ -274,20 +279,26 @@ def _program_focus(
 
 
 def _project(root: Path) -> None:
-    links = "\n".join(f"- [policy](../policies/{name}.md)" for name in POLICY_NAMES)
+    links = "\n".join(f"- [policy](policies/{name}.md)" for name in POLICY_NAMES)
     _write(
         root,
         CHARTER_ROOT / "README.md",
-        "# Deep Research Agent Charter\n\n"
+        "# Deep Research Change Guidance\n\n"
         "## Start Here\n\n"
-        "Read `deep_research_harness/AGENTS.md` and `charter.md`.\n\n"
+        "Read `deep_research_harness/AGENTS.md` and `principles.md`.\n\n"
         "## Policy Route\n\n"
         f"{links}\n",
     )
     _write(
         root,
-        CHARTER_ROOT / "charter.md",
-        "# Deep Research Agent Charter\n\n> authority: guidance only; never runtime control\n\n## Product Boundary\n",
+        CHARTER_ROOT / "principles.md",
+        "# Deep Research Change Guidance\n\n> authority: guidance only; never runtime control\n\n## Product Boundary\n",
+    )
+    _write(root, CHARTER_ROOT / "node-edit-map.md", "# Node Edit Map\n")
+    _write(
+        root,
+        "openspec/README.md",
+        "# OpenSpec\n\nconfig.yaml\nspecs/\nchanges/\nchange-guidance/README.md\ngovernance/\n",
     )
     for name in POLICY_NAMES:
         extra = ""
@@ -314,18 +325,10 @@ def _project(root: Path) -> None:
         )
     _write(
         root,
-        POLICY_ROOT / "README.md",
-        "# OpenSpec Policies\n\n"
-        "Read [the Agent Charter](../agent-charter/README.md) to select a policy.\n\n"
-        + "\n".join(f"- [policy]({name}.md)" for name in POLICY_NAMES)
-        + "\n",
-    )
-    _write(
-        root,
         "deep_research_harness/AGENTS.md",
         "# Deep Research\n\n"
         f"{FOCUS_BEGIN}\n"
-        "Read `../openspec/agent-charter/README.md`.\n"
+        "Read `../openspec/change-guidance/README.md`.\n"
         "Choose one primary module and record `## Change Focus`.\n\n"
         f"{CONTEXT_EXPANSION_SENTENCE}\n\n"
         f"{PROGRAM_ROUTE_ANCHOR} registered Workstream Focus records.\n\n"
@@ -351,7 +354,7 @@ def _project(root: Path) -> None:
         "not a project manual\n"
         "rules:\n"
         "  proposal:\n"
-        '    - "Use openspec/agent-charter/README.md and `## Change Focus` '
+        '    - "Use openspec/change-guidance/README.md and `## Change Focus` '
         "with Primary module / causal owner and Triggered review policies. "
         f'{CONTEXT_EXPANSION_SENTENCE}"\n'
         f'    - "{PROGRAM_ROUTE_ANCHOR} registered Workstream Focus records."\n'
@@ -403,13 +406,13 @@ def _assert_error(root: Path, code: str) -> None:
     assert code in result.stderr
 
 
-def test_complete_charter_and_focus_card_pass(tmp_path: Path) -> None:
+def test_complete_change_guidance_and_focus_card_pass(tmp_path: Path) -> None:
     _project(tmp_path)
 
     result = _run(tmp_path)
 
     assert result.returncode == 0, result.stderr
-    assert "agent charter governance passed" in result.stdout.lower()
+    assert "change guidance governance passed" in result.stdout.lower()
 
 
 def test_complete_program_focus_with_registered_workstreams_passes(tmp_path: Path) -> None:
@@ -697,7 +700,7 @@ def test_missing_policy_fails_with_its_path(tmp_path: Path, policy_name: str) ->
     _project(tmp_path)
     (tmp_path / POLICY_PATHS[policy_name]).unlink()
 
-    _assert_error(tmp_path, "charter.path_missing")
+    _assert_error(tmp_path, "guidance.policy_members_mismatch")
 
 
 def test_missing_index_link_fails(tmp_path: Path) -> None:
@@ -705,24 +708,18 @@ def test_missing_index_link_fails(tmp_path: Path) -> None:
     _replace(
         tmp_path,
         CHARTER_ROOT / "README.md",
-        "(../policies/local-context.md)",
-        "(../policies/other.md)",
+        "(policies/local-context.md)",
+        "(policies/other.md)",
     )
 
     _assert_error(tmp_path, "charter.index_link_missing")
 
 
-@pytest.mark.parametrize("policy_name", POLICY_NAMES)
-def test_missing_policy_library_index_link_fails(tmp_path: Path, policy_name: str) -> None:
+def test_second_policy_index_fails_closed(tmp_path: Path) -> None:
     _project(tmp_path)
-    _replace(
-        tmp_path,
-        POLICY_ROOT / "README.md",
-        f"({policy_name}.md)",
-        "(other.md)",
-    )
+    _write(tmp_path, POLICY_ROOT / "README.md", "# Duplicate policy index\n")
 
-    _assert_error(tmp_path, "charter.policy_library_link_missing")
+    _assert_error(tmp_path, "guidance.policy_index_present")
 
 
 def test_legacy_charter_tree_does_not_substitute_for_the_canonical_tree(tmp_path: Path) -> None:
@@ -734,14 +731,43 @@ def test_legacy_charter_tree_does_not_substitute_for_the_canonical_tree(tmp_path
     result = _run(tmp_path)
 
     assert result.returncode == 1, result.stdout
-    assert (CHARTER_ROOT / "README.md").as_posix() in result.stderr
+    assert "guidance.retired_tree_present" in result.stderr
 
 
 def test_duplicate_legacy_charter_tree_fails_closed(tmp_path: Path) -> None:
     _project(tmp_path)
     _write(tmp_path, LEGACY_CHARTER_ROOT / "README.md", "# Legacy Charter\n")
 
-    _assert_error(tmp_path, "charter.legacy_tree_present")
+    _assert_error(tmp_path, "guidance.retired_tree_present")
+
+
+@pytest.mark.parametrize("retired_root", RETIRED_GUIDANCE_ROOTS)
+def test_retired_guidance_roots_fail_closed(tmp_path: Path, retired_root: Path) -> None:
+    _project(tmp_path)
+    _write(tmp_path, retired_root / "legacy.md", "# Retired route\n")
+
+    _assert_error(tmp_path, "guidance.retired_tree_present")
+
+
+def test_duplicate_guidance_tree_fails_closed(tmp_path: Path) -> None:
+    _project(tmp_path)
+    _write(tmp_path, "openspec/agent-charter/README.md", "# Duplicate Guidance\n")
+
+    _assert_error(tmp_path, "guidance.retired_tree_present")
+
+
+def test_extra_guidance_member_fails_closed(tmp_path: Path) -> None:
+    _project(tmp_path)
+    _write(tmp_path, CHARTER_ROOT / "unregistered.md", "# Extra guidance\n")
+
+    _assert_error(tmp_path, "guidance.root_members_mismatch")
+
+
+def test_extra_policy_member_fails_closed(tmp_path: Path) -> None:
+    _project(tmp_path)
+    _write(tmp_path, POLICY_ROOT / "unregistered.md", "# Extra policy\n")
+
+    _assert_error(tmp_path, "guidance.policy_members_mismatch")
 
 
 def test_missing_focus_gate_fails(tmp_path: Path) -> None:
@@ -1080,7 +1106,7 @@ def test_selected_cross_cutting_policy_requires_an_available_document(tmp_path: 
         ),
     )
 
-    _assert_error(tmp_path, "charter.path_missing")
+    _assert_error(tmp_path, "guidance.policy_members_mismatch")
 
 
 def test_selected_cross_cutting_policy_with_a_complete_review_record_passes(tmp_path: Path) -> None:

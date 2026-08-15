@@ -76,9 +76,9 @@ def test_current_node_language_has_no_retired_identity_or_capability_contract() 
     assert _retired_identity_violations() == set()
 
 
-def test_charter_keeps_only_its_explicit_retired_term_supersession_note() -> None:
-    charter = ROOT / "openspec" / "agent-charter" / "concepts.md"
-    text = charter.read_text(encoding="utf-8")
+def test_node_edit_map_keeps_only_its_explicit_retired_term_supersession_note() -> None:
+    node_edit_map = ROOT / "openspec" / "change-guidance" / "node-edit-map.md"
+    text = node_edit_map.read_text(encoding="utf-8")
 
     assert text.count("Phase" + " Agent") == 1
     assert "superseded by node-agent /" in text

@@ -21,7 +21,7 @@ copying it into another default reading surface.
 | `openspec/config.yaml` | OpenSpec author | State the product boundary, truth discipline, and change-authoring route | Full DeerFlow reference material, runtime facts, roadmap, or design history |
 
 An ordinary coding change starts with the focus gate in `deep_research_harness/AGENTS.md`, not by
-loading the README, every charter policy, or all of `openspec/config.yaml`. A policy
+loading the README, every Change Guidance policy, or all of `openspec/config.yaml`. A policy
 or deeper document is read only when its trigger or the change's Focus Card admits
 it.
 
@@ -29,7 +29,7 @@ it.
 
 Line count is the primary deterministic attention budget. It measures the material a
 reader must traverse before reaching a routing decision without pretending that words
-or prose quality are mechanically comparable. The charter checker issues a warning
+or prose quality are mechanically comparable. The Change Guidance checker issues a warning
 before it fails a hard budget.
 
 | Surface | Warning | Hard failure |
@@ -58,7 +58,7 @@ existing owner and leave a brief pointer:
 - required observable behavior stays in the owning OpenSpec capability spec/delta;
 - current runtime facts stay in code, typed contracts, tests, and retained runtime
   authorities that own them;
-- stable cross-capability principles stay in [`agent-charter/charter.md`](../agent-charter/charter.md);
+- stable cross-capability principles stay in [`principles.md`](../principles.md);
 - recurring review rules with a narrow trigger stay in a policy; and
 - product orientation and quick start remain in the human-facing README; detailed
   architecture, operations, and test/evidence reference move to one scoped document

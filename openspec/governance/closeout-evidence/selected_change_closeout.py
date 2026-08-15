@@ -168,7 +168,7 @@ def _unchecked_task_labels(change_root: Path) -> set[str]:
 
 
 def _validate_review(review: Any, change_root: Path, output: Path) -> tuple[dict[str, object] | None, dict[str, str] | None]:
-    evidence_root = change_root / "guardrail-evidence"
+    evidence_root = change_root / "closeout-evidence"
     if not output.is_relative_to(evidence_root):
         return None, _result("invalid-review", "output-path-outside-evidence")
     if not isinstance(review, dict):
