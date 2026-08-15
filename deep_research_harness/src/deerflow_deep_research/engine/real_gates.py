@@ -12,7 +12,7 @@ from typing import Any
 from deerflow_deep_research.domain.failure_codes import FailureCode
 from deerflow_deep_research.domain.gate import Failure, GateDefinition, GateRule, PhaseVerdict
 from deerflow_deep_research.domain.synthesis import WAVE2_GATE_PREVIEW_KEY, Wave2GatePreview
-from deerflow_deep_research.domain.wave1 import WAVE1_GATE_REVIEW_KEY, OpenQuestionState, Wave1GateReview
+from deerflow_deep_research.domain.wave1 import WAVE1_GATE_REVIEW_KEY, Wave1GateReview
 from deerflow_deep_research.domain.work_units import WORK_UNIT_GATE_VIEW_KEY, WorkUnitGateView
 from deerflow_deep_research.engine.work_units.kernel import WorkUnitCompletionRule
 
@@ -105,28 +105,6 @@ def _wave1_review_presence_rule() -> GateRule:
     )
 
 
-def _wave1_open_question_rule() -> GateRule:
-    def evaluate(state: Mapping[str, Any]) -> Failure | None:
-        review = _wave1_structural_review(state)
-        if review is None:
-            return None
-        for row in review.rows:
-            if OpenQuestionState.TARGETED_SEARCH in row.open_question_states:
-                return Failure(
-                    code=FailureCode.MISSING_EVIDENCE,
-                    rule_name="wave1_open_question_disposition",
-                    description="accepted work retains a targeted-search open question",
-                    ref=row.work_id,
-                )
-        return None
-
-    return GateRule(
-        name="wave1_open_question_disposition",
-        evaluate=evaluate,
-        failure_code=FailureCode.MISSING_EVIDENCE,
-    )
-
-
 def _wave_route_map() -> dict[PhaseVerdict, str]:
     return {
         PhaseVerdict.PASS: "pass",
@@ -210,7 +188,6 @@ def build_wave1_real_gate_def() -> GateDefinition:
             _work_unit_completion_rule(),
             _wave1_new_source_floor_rule(),
             _wave1_review_presence_rule(),
-            _wave1_open_question_rule(),
         ),
         default_budget=5,
         route_map=_wave_route_map(),

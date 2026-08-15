@@ -83,7 +83,7 @@ class GateResult:
     attempt: int = 1
     remaining_budget: int = 0
     new_generation: int | None = None
-    fingerprint: tuple[tuple[str, str], ...] = ()
+    fingerprint: tuple[tuple[str, str, str | None], ...] = ()
     consecutive: int = 1
 
     def __post_init__(self) -> None:

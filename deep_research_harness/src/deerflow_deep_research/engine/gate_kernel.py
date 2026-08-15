@@ -64,7 +64,7 @@ def _derive_verdict(
 def _compute_consecutive(
     *,
     phase: str,
-    fingerprint: tuple[tuple[str, str], ...],
+    fingerprint: tuple[tuple[str, str, str | None], ...],
     previous_feedback: Any,  # deserialized GateResult dict or None
 ) -> int:
     """Compare current fingerprint against the previous evaluation of the same phase."""
@@ -128,7 +128,8 @@ def evaluate_gate(
     verdict, degraded = _derive_verdict(failures_tuple, remaining_budget=budget)
 
     # 5. Build failure fingerprint
-    fingerprint = tuple((f.code.value, f.rule_name) for f in failures_tuple)
+    # A repair tied to a different work item is progress, not repeated failure.
+    fingerprint = tuple((f.code.value, f.rule_name, f.ref) for f in failures_tuple)
 
     # 6. Fatigue detection
     previous_feedback = state.get("latest_gate_feedback")

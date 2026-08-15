@@ -79,7 +79,6 @@ def test_real_wave1_review_gate_passes_only_with_floor_reviews_and_allowed_quest
         pytest.param(_review(new_urls=1), id="source-floor"),
         pytest.param(_review(source_review=False), id="source-review-missing"),
         pytest.param(_review(claim_review=False), id="claim-review-missing"),
-        pytest.param(_review(questions=(OpenQuestionState.TARGETED_SEARCH,)), id="targeted-search-question"),
     ],
 )
 def test_real_wave1_review_gate_routes_repair_for_each_repairable_review_failure(review) -> None:
@@ -87,6 +86,17 @@ def test_real_wave1_review_gate_routes_repair_for_each_repairable_review_failure
 
     assert result.verdict.value == "repair"
     assert result.route == "repair"
+
+
+def test_real_wave1_review_gate_defers_targeted_questions_to_synthesis() -> None:
+    result = evaluate_gate(
+        _state(**{WAVE1_GATE_REVIEW_KEY: _review(questions=(OpenQuestionState.TARGETED_SEARCH,))}),
+        "wave1",
+        build_wave1_real_gate_def(),
+    )
+
+    assert result.verdict.value == "pass"
+    assert result.route == "pass"
 
 
 def test_real_wave1_review_rules_noop_while_structural_completion_is_absent() -> None:

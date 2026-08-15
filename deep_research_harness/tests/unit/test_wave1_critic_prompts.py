@@ -177,6 +177,9 @@ class TestWave1LocalCriticPrompts:
         assert load_node_agent_capability(request.capability_ref).posture.kind == "forbidden"
         assert "https://example.com/accepted" in request.objective
         assert "decision-ready but uncertainty-aware" in request.objective
+        assert "high, medium, low, or untrusted" in request.objective
+        assert "primary, secondary, or peripheral" in request.objective
+        assert "same order as sources" in request.objective
         assert "gate outcome" in request.objective
         for forbidden in (
             "candidate-body-sentinel",

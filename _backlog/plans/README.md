@@ -19,6 +19,8 @@
 
 | Plan | 类型 | 下一步 |
 |------|------|--------|
+| [runtime-operator-logs-and-live-trace.md](runtime-operator-logs-and-live-trace.md) | 设计 / 复盘 | 建立 OpenSpec change，先锁定安全日志契约和无副作用的实时投影 seam |
+| [narrow-scripted-real-workflow-debug-path.md](narrow-scripted-real-workflow-debug-path.md) | 设计 / 复盘 | 建立 operator-only 的窄 scripted-real workflow change，并先写全三波 action proof |
 
 **Next available plan ID: CLS-041**（移入 `_closed_plans/` 时分配）
 

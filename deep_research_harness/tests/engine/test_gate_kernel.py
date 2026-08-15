@@ -388,6 +388,25 @@ class TestFatigue:
         res2 = evaluate_gate(s2, "wave0", gd2)
         assert res2.consecutive == 1  # reset
 
+    def test_different_failed_reference_resets_fatigue(self) -> None:
+        first_rule = _mk_rule("source_review", FailureCode.MISSING_EVIDENCE, ref="g0_wave1_w0000")
+        first = evaluate_gate(_state(), "wave1", _gate_def(phase="wave1", rules=(first_rule,), default_budget=5))
+
+        next_state = _state(
+            gate_attempts_by_phase={"wave1": 1},
+            repair_budget_by_phase={"wave1": 4},
+            latest_gate_feedback=first.model_dump(),
+        )
+        second_rule = _mk_rule("source_review", FailureCode.MISSING_EVIDENCE, ref="g0_wave1_w0004")
+        second = evaluate_gate(
+            next_state,
+            "wave1",
+            _gate_def(phase="wave1", rules=(second_rule,), default_budget=5),
+        )
+
+        assert second.consecutive == 1
+        assert second.verdict is PhaseVerdict.REPAIR
+
     def test_successful_evaluation_resets_prior_failure_fatigue(self) -> None:
         failing = _gate_def(rules=(_mk_rule("source_floor", FailureCode.WORK_FAILED),), default_budget=5)
         first = evaluate_gate(_state(), "wave0", failing)
