@@ -1,6 +1,6 @@
 # demo-pipeline Specification
 
-> req: DPL-001, DPL-002, DPL-003, DPL-004, DPL-005, DPL-006, DPL-007, DPL-008, DPL-009, DPL-010, DPL-011, DPL-012
+> req: DPL-001, DPL-002, DPL-003, DPL-004, DPL-005, DPL-006, DPL-007, DPL-008, DPL-009, DPL-010, DPL-011, DPL-012, DPL-013
 
 ## Purpose
 
@@ -445,3 +445,26 @@ authority. (`DPL-003`, `DPL-005`, `DPL-008`)
   guidance
 - **THEN** every zero-credential execution route is described as fixture-graph proof
   and no route names or invokes a full-fake/no-graph lifecycle
+
+### Requirement: All-real standalone demos isolate fresh process runs
+
+Each all-real standalone demo adapter construction SHALL derive a fresh trusted local
+scope for that process's new Run Bundle admission. A retained Bundle from an earlier
+all-real demo process SHALL remain contained and inspectable only through its supported
+typed lifecycle/observation route, but it SHALL not be selected, resumed, cancelled,
+or deleted by the new demo process. Fixture-graph and fixed local-session demo profiles
+SHALL retain their existing stable scopes. The adapter SHALL not accept a user-supplied
+scope, path, session, or checkpoint identity. (`DPL-013`)
+
+#### Scenario: An earlier all-real Bundle remains active
+
+- **WHEN** a prior all-real demo process leaves an available active Bundle in its
+  retained local root and a later all-real demo process starts
+- **THEN** the later process receives a fresh trusted scope and can admit a distinct
+  Run without mutating or reopening the earlier Bundle
+
+#### Scenario: Fixture profile remains stable
+
+- **WHEN** fixture-graph demo or fixed local-session tooling constructs its adapter
+- **THEN** it retains the configured stable fixture profile scope and does not gain the
+  all-real process-isolation behavior

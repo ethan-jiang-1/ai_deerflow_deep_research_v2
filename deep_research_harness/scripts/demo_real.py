@@ -294,7 +294,8 @@ def render_run_update(update: object) -> tuple[str, ...]:
             lines.append("  说明: 仅 Harness 生命周期边界可继续控制可用 Bundle。")
         return tuple(lines)
     if isinstance(update, Fault):
-        return _failure_lines(update.failure, snapshot=update.snapshot)
+        bundle_lines = _bundle_lines(update.snapshot) if update.snapshot is not None else ()
+        return (*bundle_lines, *_failure_lines(update.failure, snapshot=update.snapshot))
     return ("  研究运行返回了无法安全显示的更新。",)
 
 

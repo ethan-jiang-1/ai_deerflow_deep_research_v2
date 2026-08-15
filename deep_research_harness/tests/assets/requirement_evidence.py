@@ -1287,6 +1287,26 @@ REQUIREMENT_IMPACTS = (
         "a material proposal constraint could otherwise disappear before the person selects the existing control",
     ),
     RequirementImpact(
+        "RER-014",
+        "research-run-experience",
+        StableSeam.RUNTIME_INTEGRATION,
+        (
+            "tests/contract/test_run_experience_contract.py::"
+            "test_available_active_result_projects_a_safe_non_terminal_fault[different-start-conflict]"
+        ),
+        "an available active Bundle could otherwise be presented as an invalid protocol or a false terminal outcome",
+    ),
+    RequirementImpact(
+        "RER-014",
+        "research-run-experience",
+        StableSeam.RUNTIME_INTEGRATION,
+        (
+            "tests/contract/test_run_experience_contract.py::"
+            "test_available_active_result_projects_a_safe_non_terminal_fault[status-observes-active-bundle]"
+        ),
+        "a status result for an active Bundle could otherwise invent a resume prompt or terminal result",
+    ),
+    RequirementImpact(
         "PRS-016",
         "project-structure",
         StableSeam.DOMAIN_ENGINE,
@@ -1345,6 +1365,19 @@ REQUIREMENT_IMPACTS = (
         (
             "operator guidance could otherwise invoke an unselected profile or treat "
             "one diagnostic run as a default decision"
+        ),
+    ),
+    RequirementImpact(
+        "DPL-013",
+        "demo-pipeline",
+        StableSeam.RUNTIME_INTEGRATION,
+        (
+            "tests/unit/test_demo_core.py::"
+            "test_all_real_demo_adapters_use_fresh_scopes_while_fixture_scope_remains_stable"
+        ),
+        (
+            "a later all-real demo could otherwise select an earlier process's active Bundle "
+            "through its stable local scope"
         ),
     ),
     RequirementImpact(

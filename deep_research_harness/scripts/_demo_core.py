@@ -377,12 +377,13 @@ class DemoAdapter:
         profile_key = hashlib.sha256(
             f"{root.resolve()}:{profile_kind}:{_DEMO_RETAINED_DATA_SCOPE_REVISION}".encode()
         ).hexdigest()[:16]
+        real_scope_token = f"-{secrets.token_hex(8)}" if model_profile is not None else ""
         self._bundle_lifecycle = BundleLifecycle(workspace_host_path=workspace)
         self._envelope = TrustedRuntimeEnvelope(
             effective_user_id="demo-user",
-            # A stable local profile lets an operator reopen the same Bundle through
-            # its lifecycle scope. Bundle ids remain independently generated.
-            outer_thread_id=f"demo-thread-{profile_key}",
+            # Fixture profiles retain a stable scope. Each all-real standalone demo
+            # gets an independent trusted scope and never discovers prior processes.
+            outer_thread_id=f"demo-thread-{profile_key}{real_scope_token}",
             outer_run_id=f"demo-run-{secrets.token_hex(4)}",
             app_config=DemoAppConfig(models=(model_profile.model_config,) if model_profile is not None else ()),
             workspace_host_path=workspace,

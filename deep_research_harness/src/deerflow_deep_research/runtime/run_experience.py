@@ -139,6 +139,11 @@ _FAILURE_COPY: dict[RunFailureCode, tuple[str, str, bool]] = {
     RunFailureCode.BUNDLE_UNAVAILABLE: ("当前 Run Bundle 已不可用。", FRESH_START_NEXT_ACTION, False),
     RunFailureCode.CHECKPOINT_INCONSISTENT: ("研究检查点状态不一致。", "不要继续当前运行；请提供诊断引用。", False),
     RunFailureCode.RESEARCH_BLOCKED: ("研究流程被安全地阻止。", "根据提示检查前提条件或提供诊断引用。", False),
+    RunFailureCode.RESEARCH_ACTIVE: (
+        "当前 Run Bundle 仍在执行。",
+        "可查询该 Run Bundle，或在需要时通过生命周期控制显式取消。",
+        False,
+    ),
     RunFailureCode.PROTOCOL_INVALID_RESULT: (
         "研究运行返回了无法安全解释的结果。",
         "不要继续当前运行；请提供诊断引用。",
@@ -464,6 +469,10 @@ class ResearchRunExperience:
                 pending_input=control.pending_input,
                 elapsed_seconds=elapsed_seconds,
             )
+            if control.code is ResultCode.ACTIVE_BUNDLE_EXISTS or control.status is LifecycleStatus.ACTIVE:
+                self._pending_request = None
+                self._last_awaiting_input = None
+                return self._fault(RunFailureCode.RESEARCH_ACTIVE, snapshot=snapshot, source=control)
             if control.status is LifecycleStatus.SUSPENDED:
                 prompt = self._suspended_prompt(control, request)
                 if request is not None:

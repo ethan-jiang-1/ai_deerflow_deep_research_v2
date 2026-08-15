@@ -310,6 +310,7 @@ RER-010: research-run-experience — Shared prompt views derive HITL1 proposal s
 RER-011: research-run-experience — The runtime binds generic visible-control selection only against its current pending request and advertised typed action while preserving direct typed answer transport compatibility and rejecting stale or unadvertised controls
 RER-012: research-run-experience — Shared confirmation prompts render every bounded typed proposal constraint before acceptance without exposing raw model/user text or lifecycle authority
 RER-013: research-run-experience — Shared run experience projects Bundle-owned outcomes and legal actions without authorizing recovery
+RER-014: research-run-experience — Available active Bundle lifecycle results project as a bounded non-terminal fault without inventing terminal, resume, or cancellation authority
 
 # retired: research-run-session
 RUS-001: research-run-session — A canonical durable local run bundle manifests research identity, safe artifact references, retention state, and authoritative checkpoint binding without becoming a lifecycle controller [DEPRECATED]
@@ -583,3 +584,4 @@ DPL-009: demo-pipeline — Configured real-demo web reads have bounded transient
 DPL-010: demo-pipeline — Demo pipeline obtains Deep Research identity, status, and legal actions only from the shared Bundle lifecycle result
 DPL-011: demo-pipeline — All-real demo admission resolves one explicit credential-backed registered model profile before graph or Bundle creation and exposes only safe identity and revision to the Bundle Journal
 DPL-012: demo-pipeline — An explicit all-real calibration procedure records fresh Bundle-local diagnostic evidence for comparison without qualifying a model or changing a default
+DPL-013: demo-pipeline — Each all-real standalone demo process admits a fresh trusted local scope without discovering or controlling prior demo Bundles

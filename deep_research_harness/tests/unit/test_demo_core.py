@@ -7,6 +7,7 @@
 @impl DPL-005
 @impl DPL-009
 @impl DPL-010
+@impl DPL-013
 """
 
 from __future__ import annotations
@@ -230,6 +231,30 @@ def test_explicit_real_demo_profile_is_single_safe_runtime_configuration(_script
     )
     assert [model.name for model in adapter._envelope.app_config.models] == ["deepseek-v4-flash"]
     assert adapter._envelope.execution_profile == profile.evidence
+
+
+def test_all_real_demo_adapters_use_fresh_scopes_while_fixture_scope_remains_stable(
+    _scripts_path,
+    _real_demo_environ,
+    tmp_path,
+):
+    from _demo_core import DemoAdapter
+
+    real_root = tmp_path / "real-runs"
+    fixture_root = tmp_path / "fixture-runs"
+    real_environ = {**_real_demo_environ, "DEERFLOW_DEMO_MODEL": "deepseek-v4-pro"}
+    first_real = DemoAdapter.for_real(bundle_root=real_root, environ=real_environ)
+    second_real = DemoAdapter.for_real(bundle_root=real_root, environ=real_environ)
+    first_fixture = DemoAdapter(bundle_root=fixture_root)
+    second_fixture = DemoAdapter(bundle_root=fixture_root)
+    try:
+        assert first_real._envelope.outer_thread_id != second_real._envelope.outer_thread_id
+        assert first_fixture._envelope.outer_thread_id == second_fixture._envelope.outer_thread_id
+    finally:
+        first_real.close()
+        second_real.close()
+        first_fixture.close()
+        second_fixture.close()
 
 
 @pytest.mark.asyncio

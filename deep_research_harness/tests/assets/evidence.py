@@ -2423,10 +2423,37 @@ EVIDENCE_CLAIMS = (
         requirement_ids=("RER-012",),
     ),
     _correctness_claim(
+        "run-experience-active-bundle-start-conflict-projection",
+        (
+            "tests/contract/test_run_experience_contract.py::"
+            "test_available_active_result_projects_a_safe_non_terminal_fault[different-start-conflict]"
+        ),
+        StableSeam.RUNTIME_INTEGRATION,
+        requirement_ids=("RER-014",),
+    ),
+    _correctness_claim(
+        "run-experience-active-bundle-status-projection",
+        (
+            "tests/contract/test_run_experience_contract.py::"
+            "test_available_active_result_projects_a_safe_non_terminal_fault[status-observes-active-bundle]"
+        ),
+        StableSeam.RUNTIME_INTEGRATION,
+        requirement_ids=("RER-014",),
+    ),
+    _correctness_claim(
         "demo-explicit-real-profile-admission",
         "tests/unit/test_demo_core.py::test_explicit_real_demo_profile_is_single_safe_runtime_configuration",
         StableSeam.RUNTIME_INTEGRATION,
         requirement_ids=("DPL-011",),
+    ),
+    _correctness_claim(
+        "all-real-demo-fresh-scope-admission",
+        (
+            "tests/unit/test_demo_core.py::"
+            "test_all_real_demo_adapters_use_fresh_scopes_while_fixture_scope_remains_stable"
+        ),
+        StableSeam.RUNTIME_INTEGRATION,
+        requirement_ids=("DPL-013",),
     ),
     _correctness_claim(
         "demo-real-calibration-procedure",

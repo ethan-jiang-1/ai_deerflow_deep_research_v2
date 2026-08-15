@@ -46,6 +46,7 @@ class RunFailureCode(StrEnum):
     BUNDLE_UNAVAILABLE = "bundle.unavailable"
     CHECKPOINT_INCONSISTENT = "checkpoint.inconsistent"
     RESEARCH_BLOCKED = "research.blocked"
+    RESEARCH_ACTIVE = "research.active"
     PROTOCOL_INVALID_RESULT = "protocol.invalid_result"
     LOCAL_INTERRUPTED = "local.interrupted"
     INTERNAL_UNEXPECTED = "internal.unexpected"

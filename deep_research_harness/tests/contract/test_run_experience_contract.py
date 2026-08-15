@@ -5,6 +5,7 @@
 @impl RER-006
 @impl RER-007
 @impl RER-013
+@impl RER-014
 @impl RUI-007
 @impl REG-012
 @impl RER-004
@@ -150,6 +151,26 @@ def _completed() -> dict[str, object]:
     ).model_dump(mode="json", exclude_none=True)
 
 
+def _active(
+    *,
+    action: LifecycleAction,
+    code: ResultCode,
+) -> dict[str, object]:
+    return BundleControlResult(
+        action=action,
+        code=code,
+        availability=BundleAvailability.AVAILABLE,
+        durability=Durability.RESTART_DURABLE,
+        bundle_id=BUNDLE_ID,
+        status=LifecycleStatus.ACTIVE,
+        phase=LogicalPhase.HITL1,
+        generation=0,
+        refinement=BundleRefinementProjection(disposition="none"),
+        legal_next_action=LegalNextAction.STATUS,
+        execution_trace=("bootstrap", "hitl1"),
+    ).model_dump(mode="json", exclude_none=True)
+
+
 @pytest.mark.asyncio
 async def test_start_projects_one_bundle_local_pending_request() -> None:
     transport = ReplayTransport([_suspension()])
@@ -279,6 +300,46 @@ async def test_unavailable_result_clears_the_local_handle_and_offers_only_a_fres
     assert update.snapshot.bundle_id is None
     assert "独立的新研究运行" in update.failure.next_action
     assert transport.calls == [("start", None, None), ("status", BUNDLE_ID, None)]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("action", "code"),
+    (
+        pytest.param(LifecycleAction.START, ResultCode.ACTIVE_BUNDLE_EXISTS, id="different-start-conflict"),
+        pytest.param(LifecycleAction.STATUS, ResultCode.STATUS_OK, id="status-observes-active-bundle"),
+    ),
+)
+async def test_available_active_result_projects_a_safe_non_terminal_fault(
+    action: LifecycleAction,
+    code: ResultCode,
+) -> None:
+    publisher = RecordingObservationPublisher()
+    results = [_active(action=action, code=code)]
+    if action is LifecycleAction.STATUS:
+        results.insert(0, _suspension())
+    experience = ResearchRunExperience(
+        transport=ReplayTransport(results),
+        mode="fixture",
+        observation_publisher=publisher,
+    )
+
+    if action is LifecycleAction.START:
+        update = await experience.handle(StartRun(question="Compare storage options"))
+    else:
+        await experience.handle(StartRun(question="Compare storage options"))
+        update = await experience.handle(StatusRun())
+
+    assert isinstance(update, Fault)
+    assert update.failure.code.value == "research.active"
+    assert update.failure.code.value != "protocol.invalid_result"
+    assert update.snapshot is not None
+    assert update.snapshot.bundle_id == BUNDLE_ID
+    assert update.snapshot.lifecycle_phase == "hitl1"
+    assert update.snapshot.durability == "restart_durable"
+    assert update.snapshot.observation is not None
+    assert update.snapshot.observation.bundle_id == BUNDLE_ID
+    assert publisher.facts[-1].status == "active"
 
 
 @pytest.mark.asyncio

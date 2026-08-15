@@ -24,6 +24,7 @@ from deerflow_deep_research.domain.profile import RequestLanguage, derive_compar
 from deerflow_deep_research.domain.run_experience import (
     AnswerRun,
     FailureCertainty,
+    Fault,
     ProviderObservation,
     ReadinessCheck,
     ReadinessReport,
@@ -306,6 +307,33 @@ def test_cli_deduplicates_returned_only_waiting_heartbeat(capsys: pytest.Capture
     observer(waiting)
 
     assert capsys.readouterr().out.count("waiting for lifecycle result") == 1
+
+
+def test_cli_renders_a_fault_bundle_without_exposing_raw_lifecycle_details() -> None:
+    update = Fault(
+        snapshot=RunSnapshot(
+            bundle_id=run_updates.BUNDLE_ID,
+            durability="restart_durable",
+            lifecycle_phase="hitl1",
+        ),
+        failure=RunFailure(
+            code=RunFailureCode.PROTOCOL_INVALID_RESULT,
+            phase="hitl1",
+            certainty=FailureCertainty.DIRECT,
+            message="raw lifecycle payload must not be displayed",
+            next_action="Query the selected Bundle through lifecycle control.",
+            retryable=False,
+            journal_record_created=False,
+            diagnostic_location="unavailable",
+        ),
+    )
+
+    rendered = "\n".join(demo_real.render_run_update(update))
+
+    assert f"Run Bundle: {run_updates.BUNDLE_ID}" in rendered
+    assert "持久性: restart_durable" in rendered
+    assert "raw lifecycle payload" not in rendered
+    assert "可恢复当前运行" not in rendered
 
 
 def test_cli_renders_one_safe_fresh_start_and_matching_read_only_diagnosis() -> None:
