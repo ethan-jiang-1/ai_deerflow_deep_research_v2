@@ -21,7 +21,7 @@
 
 新的分析或设计应在此创建，完成后再移入归档。
 
-**Next available plan ID: CLS-039**（移入 `_closed_plans/` 时分配）
+**Next available plan ID: CLS-040**（移入 `_closed_plans/` 时分配）
 
 ## 已归档（移至 `_done/_closed_plans/`）
 

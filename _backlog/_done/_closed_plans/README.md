@@ -57,5 +57,6 @@ plan 完成后从 `_backlog/plans/` 通过 `git mv` 移入本目录：
 | CLS-036 | 2026-08-12 | [openspec-extension-readme-restructure.md](openspec-extension-readme-restructure.md) | OpenSpec 治理分层收口：SCC closeout 契约经 `selected-change-closeout-evidence` 修复并归档，governance README 改为纯导航索引，ID 约定迁至 req-registry；两项完成后关闭。 |
 | CLS-037 | 2026-08-13 | [alignment-audit-2026-08-12/](alignment-audit-2026-08-12/alignment-audit-00-current-state.md) | 七阶段 Harness/OpenSpec/CONTEXT 对齐审计完成；A-002 gitlink detector 随后完成，A-004-T01 外部 OpenSpec 工具限制已暂停，A-009 保持条件触发的可选 hardening。 |
 | CLS-038 | 2026-08-15 | [deep-research-post-migration-convergence/](deep-research-post-migration-convergence/) | 迁移后收敛审计的54个Candidate经00--07八个OpenSpec changes全部关闭；最终复审记录authority/surface/recovery/guard、residual allowlist、验证基线和未运行外部证据。 |
+| CLS-039 | 2026-08-15 | [openspec-support-topology-simplification.md](openspec-support-topology-simplification.md) | OpenSpec 支持拓扑收敛已通过 `simplify-openspec-support-topology` 实现、同步主规格、归档并提交为 `188bba5`；治理与 focused gate 通过，full verify 的三项基线 metadata selector 失败不归因于该 change。 |
 
-**Next available plan ID: CLS-039**
+**Next available plan ID: CLS-040**
