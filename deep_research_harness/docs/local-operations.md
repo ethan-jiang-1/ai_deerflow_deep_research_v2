@@ -23,6 +23,7 @@ Run commands from `deep_research_harness/`. Use the root README's
 | Start the fixture visualizer | `make demo-tui-fixture` |
 | Open the standalone local workbench | `make session-workbench` |
 | Inspect one retained observation | `make demo-sessions DEMO_ARGS="inspect <bundle-id>"` |
+| Run the operator-only scripted-real workflow debug | `make debug-scripted-real-workflow` |
 
 The demo targets ignore a foreign active `VIRTUAL_ENV` and use the locked project
 environment. A retained observation command is read-only: it does not discover a
@@ -32,6 +33,20 @@ Run `make install` before any local demo, retained-observation, workbench, or pr
 all-real launcher entry. It prepares the complete local optional dependency set; these
 ordinary entries never synchronize it themselves. Run `make lock-check` separately
 when checking that dependency metadata agrees with the tracked lockfile.
+
+`make debug-scripted-real-workflow` is an operator-only local debug command, not a
+product command or a `make verify` substitute. It runs the complete production
+control path (real node adapters, prompts, parsers, work-unit ledger, gates,
+routes, and persistence) against a fixed narrow scripted external world: a
+template scripted chat model and two scripted web tools. It reads no `.env`, makes
+no network call, requires no credentials, and completes in well under ten seconds.
+Its output labels the run `composition=all_real_adapters` and
+`authenticity=scripted_real_workflow`, reports per-wave action counters, the
+Bundle id, and the Event Journal entry, and states the boundary: it proves
+production control-path integration for fixed legal inputs only — not live model
+comprehension, web availability, coverage breadth, or the targeted/rerun/
+provider-recovery branches. The baseline fails loudly on any missing or surplus
+scripted model or tool call, or if the run enters `targeted_evidence` or `rerun`.
 
 ## Run Bundle Lifecycle
 

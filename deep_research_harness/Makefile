@@ -1,4 +1,4 @@
-.PHONY: install entry-preflight governance verify lock-check format lint test test-fast test-integration test-workflow test-live test-unit test-contract test-viability test-durability test-blocking-io test-postgres test-assets test-req-coverage test-intake test-retained-observation test-work-unit test-strict-checkpoint test-duration-policy benchmark-fast prompt-dump prompt-dump-check profile-setup profile-preflight profiles profile-init profile-check profile-dev demo demo-scripted demo-fixture-graph demo-real demo-real-embedded-smoke demo-real-scripted demo-tui demo-tui-embedded-smoke demo-tui-fixture demo-sessions session-workbench
+.PHONY: install entry-preflight governance verify lock-check format lint test test-fast test-integration test-workflow test-live test-unit test-contract test-viability test-durability test-blocking-io test-postgres test-assets test-req-coverage test-intake test-retained-observation test-work-unit test-strict-checkpoint test-duration-policy benchmark-fast prompt-dump prompt-dump-check profile-setup profile-preflight profiles profile-init profile-check profile-dev demo demo-scripted demo-fixture-graph demo-real demo-real-embedded-smoke demo-real-scripted demo-tui demo-tui-embedded-smoke demo-tui-fixture demo-sessions session-workbench debug-scripted-real-workflow
 
 DEMO_ARGS ?=
 LOCAL_ENV_ARG := $(if $(wildcard .env),--env-file .env,)
@@ -92,6 +92,12 @@ demo-sessions: entry-preflight
 # Workbench, or a generic recovery client, and accepts no profile/path authority.
 session-workbench: entry-preflight
 	PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) --extra operations --extra demo-tui python scripts/session_workbench.py $(DEMO_ARGS)
+
+# Operator-only scripted-real workflow debug: real production adapters, gates,
+# ledger, and persistence with a scripted model and scripted web tools. Zero
+# .env, zero network, zero credentials, under 10 seconds. Not a demo-real mode.
+debug-scripted-real-workflow: entry-preflight
+	PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) --extra operations python scripts/debug_scripted_real_workflow.py $(DEMO_ARGS)
 
 lock-check:
 	uv lock --check

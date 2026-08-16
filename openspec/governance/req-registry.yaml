@@ -51,6 +51,7 @@ prefixes:
   NRI: node-agent-reader-interface
   NPC: node-prompt-catalog
   PRS: project-structure
+  SCR: scripted-real-workflow-debug
   RCF: research-confirmation
   RED: research-demo-tui
   REG: research-graph-lifecycle
@@ -597,3 +598,10 @@ DPL-010: demo-pipeline — Demo pipeline obtains Deep Research identity, status,
 DPL-011: demo-pipeline — All-real demo admission resolves one explicit credential-backed registered model profile before graph or Bundle creation and exposes only safe identity and revision to the Bundle Journal
 DPL-012: demo-pipeline — An explicit all-real calibration procedure records fresh Bundle-local diagnostic evidence for comparison without qualifying a model or changing a default
 DPL-013: demo-pipeline — Each all-real standalone demo process admits a fresh trusted local scope without discovering or controlling prior demo Bundles
+
+PRS-019: project-structure — The scripted-real debug launcher, fixture scenario/composition modules, and contract tests live at registered canonical harness paths without production-package discovery of the scenario scripts
+SCR-001: scripted-real-workflow-debug — An operator-only composition root combines all-real adapters and gates with scripted model/tool capabilities through the recipe seam, labeled scripted_real_workflow, without demo-real flags, env, or credentials
+SCR-002: scripted-real-workflow-debug — The fixed narrow baseline drives one bounded action per wave: one topic plan, one Wave0 intake, one Wave1 extraction with at least two new sources plus two critic reviews, one backed Wave2 finding with no searchable gaps, a passing readiness critic, and one composer layout
+SCR-003: scripted-real-workflow-debug — Script exhaustion is strict: missing responses, surplus model/tool calls, skipped wave actions, or entering targeted/rerun fail the command
+SCR-004: scripted-real-workflow-debug — Completion output labels composition, authenticity, zero-network/zero-credential assertions, per-wave counters, Bundle id, Journal entry, wall time, and the proved/unproved boundary
+SCR-005: scripted-real-workflow-debug — A dedicated Make target exposes the operator-only debug command with a CLI contract of zero env, zero network, strict exhaustion, and a sub-10-second wall time

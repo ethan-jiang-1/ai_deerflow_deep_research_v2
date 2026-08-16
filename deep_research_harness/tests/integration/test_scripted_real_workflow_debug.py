@@ -1,0 +1,77 @@
+"""Scripted-real three-wave action proof against the production control path.
+
+The external model's responses are scripted; every production node adapter,
+prompt, parser, work-unit ledger, gate, route, and persistence path is real.
+A passed case therefore proves each real Wave0/Wave1/Wave2 action actually
+occurred under a fixed narrow budget — not model judgment, web availability,
+or live provider behavior.
+
+@impl SCR-002
+@impl SCR-003
+"""
+
+from __future__ import annotations
+
+import asyncio
+import sys
+import time
+from pathlib import Path
+
+import pytest
+
+
+@pytest.fixture
+def _scripts_path() -> str:
+    scripts = str(Path(__file__).resolve().parents[2] / "scripts")
+    if scripts not in sys.path:
+        sys.path.insert(0, scripts)
+    return scripts
+
+
+def _await(coro: object) -> object:
+    return asyncio.run(coro)  # type: ignore[arg-type]
+
+
+def test_scripted_real_baseline_proves_every_wave_action(tmp_path: Path, _scripts_path: str) -> None:
+    """SCR-002/SCR-003: the fixed baseline drives and proves one bounded action per wave."""
+
+    from debug_scripted_real_workflow import ScriptedRealRun, run_scripted_real_workflow
+
+    started_at = time.monotonic()
+    result = _await(run_scripted_real_workflow(workspace=tmp_path, run_id="proof-baseline"))
+    assert isinstance(result, ScriptedRealRun)
+    elapsed = time.monotonic() - started_at
+
+    # Per-wave counters exactly match the declared baseline budget.
+    assert result.model_calls == 11, f"expected 11 model calls, saw {result.model_calls}: {result.consumed}"
+    assert result.web_search_calls == 2, f"expected 2 web_search calls, saw {result.web_search_calls}"
+    assert result.web_fetch_calls == 0, f"expected 0 web_fetch calls, saw {result.web_fetch_calls}"
+
+    # Terminal projection is a real completed research run that never entered
+    # the targeted-evidence or rerun branches.
+    assert result.terminal_status == "completed"
+    for phase in (
+        "hitl1",
+        "topic_planning",
+        "wave0",
+        "wave1",
+        "wave2_synthesis",
+        "hitl2",
+        "readiness",
+        "final_delivery",
+    ):
+        assert phase in result.execution_trace, f"{phase} missing from {result.execution_trace}"
+    assert "targeted_evidence" not in result.execution_trace
+    assert "rerun" not in result.execution_trace
+
+    # Durable evidence: accepted work-unit records, both Wave1 critic review
+    # artifacts, a published report and citation-map pair with a backed claim.
+    assert result.record_count >= 2, f"expected at least 2 accepted records, saw {result.record_count}"
+    assert {"source-diagnostic.json", "claim-verifier.json"} <= set(result.wave1_review_artifacts), (
+        result.wave1_review_artifacts
+    )
+    assert result.final_artifacts_published
+    assert result.backed_claim_count >= 1, "no citation claim with a backing reference"
+
+    # The baseline wall-time contract: a timeout is a test failure, not a skip.
+    assert elapsed < 10.0, f"wall time {elapsed:.2f}s exceeded the 10s contract"
