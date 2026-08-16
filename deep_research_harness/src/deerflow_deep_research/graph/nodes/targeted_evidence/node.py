@@ -13,9 +13,22 @@ from deerflow_deep_research.domain.critics import ClaimVerifierResult, SourceDia
 from deerflow_deep_research.domain.lifecycle import make_attempt_id
 from deerflow_deep_research.domain.node_spec import NodeBuildDependencies
 from deerflow_deep_research.domain.state import node_state_update
+from deerflow_deep_research.domain.work_units import WORK_UNIT_GATE_VIEW_KEY, WorkUnitGateView
 
 from .materializer import materialize_claim_verifier, materialize_source_diagnostic
 from .subgraph import dispatch_critic, materialize_gap_intents, run_gap_workers
+
+
+def _empty_drained_gate_view() -> WorkUnitGateView:
+    """Canonical empty view for a gap-less visit; nothing is planned or reconciled."""
+
+    return WorkUnitGateView(
+        drained=True,
+        planned_work_ids=(),
+        terminal_attempt_by_work_id={},
+        accepted_record_by_work_id={},
+        failure_summaries=(),
+    )
 
 
 def build_real(dependencies: NodeBuildDependencies):
@@ -28,9 +41,19 @@ def build_real(dependencies: NodeBuildDependencies):
         bundle_id = state["bundle_id"]
 
         if gap_intents:
-            base = await run_gap_workers(state, gap_intents, dependencies)
+            component_result = await run_gap_workers(state, gap_intents, dependencies)
+            base = {
+                **node_state_update("targeted_evidence"),
+                **component_result.parent_update,
+                WORK_UNIT_GATE_VIEW_KEY: component_result.gate_view,
+            }
         else:
-            base = node_state_update("targeted_evidence")
+            # The shared component's plan bound requires 1..32 intents, so a gap-less
+            # visit returns the canonical empty drained view directly.
+            base = {
+                **node_state_update("targeted_evidence"),
+                WORK_UNIT_GATE_VIEW_KEY: _empty_drained_gate_view(),
+            }
 
         if work_items:
             results = await dispatch_critic(

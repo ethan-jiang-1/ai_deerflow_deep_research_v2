@@ -45,13 +45,16 @@ from deerflow_deep_research.domain.synthesis import (
     SynthesisResult,
     Wave2GatePreview,
 )
+from deerflow_deep_research.domain.wave1 import Wave1OpenQuestionRef
 from deerflow_deep_research.graph.builder import _node_wrapper
 from deerflow_deep_research.graph.implementation_map import AdapterKind, NodeAdapter
 from deerflow_deep_research.graph.nodes.gate_adapter import real_wave2_gate_def
 from deerflow_deep_research.graph.nodes.wave2_synthesis import NODE_SPEC
+from deerflow_deep_research.graph.nodes.wave2_synthesis.node import _validate_synthesis_semantics
 from deerflow_deep_research.graph.nodes.wave2_synthesis.prompts import (
     build_synthesis_prompt,
     build_synthesis_repair_prompt,
+    parse_synthesis_output,
 )
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
 from deerflow_deep_research.runtime.work_unit_storage import WorkUnitStoreError
@@ -71,26 +74,28 @@ def _synthesis_json(
     *,
     backing_refs: tuple[str, ...] = (SUBMISSION_REF,),
     gaps: tuple[dict[str, object], ...] = (),
+    resolved_questions: tuple[str, ...] = (),
 ) -> str:
-    return json.dumps(
-        {
-            "schema_version": 1,
-            "findings": [
-                {
-                    "finding_id": "finding:grid-storage",
-                    "statement": "Storage duration changes project economics.",
-                    "priority": 1,
-                    "affected_topics": ["storage"],
-                    "backing_refs": list(backing_refs),
-                    "confidence": "high",
-                    "search_required": False,
-                }
-            ],
-            "relations": [],
-            "gaps": gaps,
-            "summary": "One supported cross-topic finding.",
-        }
-    )
+    payload = {
+        "schema_version": 1,
+        "findings": [
+            {
+                "finding_id": "finding:grid-storage",
+                "statement": "Storage duration changes project economics.",
+                "priority": 1,
+                "affected_topics": ["storage"],
+                "backing_refs": list(backing_refs),
+                "confidence": "high",
+                "search_required": False,
+            }
+        ],
+        "relations": [],
+        "gaps": gaps,
+        "summary": "One supported cross-topic finding.",
+    }
+    if resolved_questions:
+        payload["resolved_questions"] = list(resolved_questions)
+    return json.dumps(payload)
 
 
 class _Capabilities:
@@ -213,6 +218,10 @@ class _SynthesisStore:
 
     async def write_synthesis(self, result: SynthesisResult) -> None:
         await self.delegate.write_synthesis(result)
+
+    async def read_wave1_open_questions(self, accepted_refs: tuple[str, ...]) -> tuple[tuple[str, str], ...]:
+        assert accepted_refs == (SUBMISSION_REF,)
+        return ()
 
 
 class _DeleteBundleBeforeSynthesisStore(_SynthesisStore):
@@ -459,7 +468,7 @@ async def test_real_synthesis_persists_searchable_gap_and_returns_typed_preview(
     assert update[WAVE2_GATE_PREVIEW_KEY] == Wave2GatePreview(searchable_gap_ids=("gap:storage-cost",))
     artifact = tmp_path / bundle_host_relative_root(BUNDLE) / "synthesis" / "findings.json"
     payload = json.loads(artifact.read_text(encoding="utf-8"))
-    assert payload["gaps"] == [gap]
+    assert payload["gaps"] == [{**gap, "source_questions": []}]
 
 
 @pytest.mark.parametrize(
@@ -745,3 +754,166 @@ async def test_real_synthesis_malformed_output_fails_without_artifact(tmp_path: 
     with pytest.raises(ValueError, match="synthesis_output_json_invalid"):
         await NODE_SPEC.real_factory(_dependencies(tmp_path, _Capabilities(result)))(_state())
     assert not (tmp_path / bundle_host_relative_root(BUNDLE) / "synthesis" / "findings.json").exists()
+
+
+class _QuestionStore(_SynthesisStore):
+    """Synthesis store whose accepted open-question read is scripted."""
+
+    def __init__(self, delegate: WorkUnitStore, *, questions: tuple[tuple[str, str], ...] = ()) -> None:
+        super().__init__(delegate)
+        self._questions = questions
+
+    async def read_wave1_open_questions(self, accepted_refs: tuple[str, ...]) -> tuple[tuple[str, str], ...]:
+        assert accepted_refs == (SUBMISSION_REF,)
+        return self._questions
+
+
+QUESTION_REF = Wave1OpenQuestionRef(question_id="q:w1_cost", work_id="g0_wave1_w0000")
+QUESTION_TEXT = "Which deployment context has the lower operating cost?"
+
+
+def _question_state() -> dict[str, object]:
+    return _state() | {"wave1_open_questions": (QUESTION_REF,)}
+
+
+def _covered_gap(*question_ids: str, gap_id: str = "gap:storage-cost") -> dict[str, object]:
+    return {
+        "gap_id": gap_id,
+        "description": QUESTION_TEXT,
+        "priority": 1,
+        "affected_topics": ["storage"],
+        "search_required": True,
+        "source_questions": list(question_ids),
+    }
+
+
+async def test_real_synthesis_disposes_a_projected_question_into_one_searchable_gap(tmp_path: Path) -> None:
+    """@impl WSN-009"""
+
+    capabilities = _Capabilities(
+        NodeExecutionResult(
+            finish_reason=NodeFinishReason.SUCCESS,
+            summary=_synthesis_json(gaps=(_covered_gap("q:w1_cost"),)),
+        )
+    )
+    dependencies = _dependencies(tmp_path, capabilities)
+    assert isinstance(dependencies.synthesis_bundle, _SynthesisStore)
+    dependencies = replace(
+        dependencies,
+        synthesis_bundle=_QuestionStore(
+            dependencies.synthesis_bundle.delegate, questions=(("q:w1_cost", QUESTION_TEXT),)
+        ),
+    )
+
+    update = await NODE_SPEC.real_factory(dependencies)(_question_state())
+
+    assert update[WAVE2_GATE_PREVIEW_KEY] == Wave2GatePreview(searchable_gap_ids=("gap:storage-cost",))
+    assert "q:w1_cost" in capabilities.requests[0].objective
+    assert QUESTION_TEXT in capabilities.requests[0].objective
+
+
+async def test_real_synthesis_fails_closed_when_projected_text_is_unresolvable(tmp_path: Path) -> None:
+    """@impl WSN-009"""
+
+    capabilities = _Capabilities(
+        NodeExecutionResult(finish_reason=NodeFinishReason.SUCCESS, summary=_synthesis_json())
+    )
+    dependencies = _dependencies(tmp_path, capabilities)
+    assert isinstance(dependencies.synthesis_bundle, _SynthesisStore)
+    dependencies = replace(
+        dependencies,
+        synthesis_bundle=_QuestionStore(dependencies.synthesis_bundle.delegate, questions=()),
+    )
+
+    with pytest.raises(ValueError, match="synthesis_question_coverage_invalid"):
+        await NODE_SPEC.real_factory(dependencies)(_question_state())
+
+    assert capabilities.requests == []
+
+
+def test_synthesis_coverage_validator_rejects_missing_duplicate_cross_and_foreign_ids() -> None:
+    """@impl WSN-009"""
+
+    evidence = (
+        SynthesisEvidence(
+            submission_ref=SUBMISSION_REF,
+            phase="wave1",
+            result_contract="wave1.evidence-extraction",
+            content="{}",
+        ),
+    )
+
+    missing = parse_synthesis_output(_synthesis_json(gaps=(_covered_gap(),)))
+    with pytest.raises(ValueError, match="synthesis_question_coverage_invalid"):
+        _validate_synthesis_semantics(missing, (SUBMISSION_REF,), evidence, open_question_ids=("q:w1_cost",))
+
+    duplicated = parse_synthesis_output(
+        _synthesis_json(gaps=(_covered_gap("q:w1_cost"), _covered_gap("q:w1_cost", gap_id="gap:other")))
+    )
+    with pytest.raises(ValueError, match="synthesis_question_coverage_invalid"):
+        _validate_synthesis_semantics(duplicated, (SUBMISSION_REF,), evidence, open_question_ids=("q:w1_cost",))
+
+    cross_referenced = parse_synthesis_output(
+        _synthesis_json(gaps=(_covered_gap("q:w1_cost"),), resolved_questions=("q:w1_cost",))
+    )
+    with pytest.raises(ValueError, match="synthesis_question_coverage_invalid"):
+        _validate_synthesis_semantics(
+            cross_referenced, (SUBMISSION_REF,), evidence, open_question_ids=("q:w1_cost",)
+        )
+
+    foreign = parse_synthesis_output(_synthesis_json(gaps=(_covered_gap("q:w1_foreign"),)))
+    with pytest.raises(ValueError, match="synthesis_question_coverage_invalid"):
+        _validate_synthesis_semantics(foreign, (SUBMISSION_REF,), evidence, open_question_ids=("q:w1_cost",))
+
+    covered = parse_synthesis_output(_synthesis_json(gaps=(_covered_gap("q:w1_cost"),)))
+    _validate_synthesis_semantics(covered, (SUBMISSION_REF,), evidence, open_question_ids=("q:w1_cost",))
+
+    resolved = parse_synthesis_output(_synthesis_json(resolved_questions=("q:w1_cost",)))
+    _validate_synthesis_semantics(resolved, (SUBMISSION_REF,), evidence, open_question_ids=("q:w1_cost",))
+
+    no_projection = parse_synthesis_output(_synthesis_json(gaps=(_covered_gap("q:w1_anything"),)))
+    _validate_synthesis_semantics(no_projection, (SUBMISSION_REF,), evidence, open_question_ids=())
+
+
+def test_legacy_synthesis_artifacts_default_the_new_question_fields() -> None:
+    """@impl WSN-009"""
+
+    legacy_payload = json.loads(
+        _synthesis_json(
+            gaps=({key: value for key, value in _covered_gap().items() if key != "source_questions"},)
+        )
+    )
+    legacy = SynthesisResult.model_validate(legacy_payload)
+    assert legacy.resolved_questions == ()
+    assert legacy.gaps[0].source_questions == ()
+
+
+async def test_real_synthesis_repairs_question_coverage_once(tmp_path: Path) -> None:
+    """@impl WSN-009"""
+
+    class _QuestionCoverageRepairCapabilities:
+        def __init__(self) -> None:
+            self.requests: list[object] = []
+
+        async def run_agent(self, *, context: NodeAgentContext, request: object) -> NodeExecutionResult:
+            self.requests.append(request)
+            gap = _covered_gap("q:w1_cost") if len(self.requests) == 2 else _covered_gap()
+            return NodeExecutionResult(
+                finish_reason=NodeFinishReason.SUCCESS,
+                summary=_synthesis_json(gaps=(gap,)),
+            )
+
+    capabilities = _QuestionCoverageRepairCapabilities()
+    dependencies = _dependencies(tmp_path, capabilities)  # type: ignore[arg-type]
+    assert isinstance(dependencies.synthesis_bundle, _SynthesisStore)
+    dependencies = replace(
+        dependencies,
+        synthesis_bundle=_QuestionStore(
+            dependencies.synthesis_bundle.delegate, questions=(("q:w1_cost", QUESTION_TEXT),)
+        ),
+    )
+
+    update = await NODE_SPEC.real_factory(dependencies)(_question_state())
+
+    assert len(capabilities.requests) == 2
+    assert update[WAVE2_GATE_PREVIEW_KEY] == Wave2GatePreview(searchable_gap_ids=("gap:storage-cost",))

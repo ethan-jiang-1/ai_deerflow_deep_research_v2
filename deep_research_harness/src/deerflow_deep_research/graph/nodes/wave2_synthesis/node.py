@@ -19,6 +19,7 @@ from deerflow_deep_research.domain.synthesis import (
     SynthesisEvidence,
     build_wave2_gate_preview,
 )
+from deerflow_deep_research.domain.wave1 import Wave1OpenQuestionRef
 from deerflow_deep_research.domain.workflow_outcomes import (
     InvocationFailure,
     derive_provider_diagnostic_reference,
@@ -67,10 +68,24 @@ def _evidence_aliases(evidence: tuple[SynthesisEvidence, ...]) -> dict[str, str]
     return aliases
 
 
+def _question_ref_id(ref: object) -> str:
+    """Project one projected question id whether it round-tripped as a model or a dict."""
+
+    if isinstance(ref, Wave1OpenQuestionRef):
+        return ref.question_id
+    if isinstance(ref, Mapping):
+        question_id = ref.get("question_id")
+        if isinstance(question_id, str):
+            return question_id
+    raise ValueError("wave1_open_question_projection_invalid")
+
+
 def _validate_synthesis_semantics(
     output,
     accepted_refs: tuple[str, ...],
     evidence: tuple[SynthesisEvidence, ...],
+    *,
+    open_question_ids: tuple[str, ...] = (),
 ):
     accepted = set(accepted_refs)
     aliases = _evidence_aliases(evidence)
@@ -84,6 +99,22 @@ def _validate_synthesis_semantics(
             raise ValueError("synthesis_finding_backing_refs_required")
         if not backing_refs <= accepted:
             raise ValueError("synthesis_finding_backing_ref_invalid")
+    if open_question_ids:
+        expected = set(open_question_ids)
+        gap_covered: set[str] = set()
+        for gap in output.gaps:
+            if not gap.search_required:
+                if gap.source_questions:
+                    raise ValueError("synthesis_question_coverage_invalid")
+                continue
+            if gap_covered & set(gap.source_questions):
+                raise ValueError("synthesis_question_coverage_invalid")
+            gap_covered |= set(gap.source_questions)
+        resolved = set(output.resolved_questions)
+        if gap_covered & resolved:
+            raise ValueError("synthesis_question_coverage_invalid")
+        if (gap_covered | resolved) != expected:
+            raise ValueError("synthesis_question_coverage_invalid")
     normalized_findings = tuple(
         finding.model_copy(update={"backing_refs": tuple(aliases.get(ref, ref) for ref in finding.backing_refs)})
         for finding in output.findings
@@ -133,12 +164,23 @@ def build_real(dependencies: NodeBuildDependencies):
         topic_registry = state.get("topic_registry") or ()
         wave0_refs = tuple(state.get("accepted_submission_refs") or ())
         wave1_refs = ()  # Wave1 refs are in the same ledger; for now, all accepted refs
+        open_question_ids = tuple(_question_ref_id(ref) for ref in (state.get("wave1_open_questions") or ()))
+        open_question_pairs: tuple[tuple[str, str], ...] = ()
+        if open_question_ids:
+            resolved_texts = await dependencies.synthesis_bundle.read_wave1_open_questions(wave0_refs)
+            text_by_id = dict(resolved_texts)
+            if any(question_id not in text_by_id for question_id in open_question_ids):
+                raise ValueError("synthesis_question_coverage_invalid")
+            open_question_pairs = tuple(
+                (question_id, text_by_id[question_id]) for question_id in open_question_ids
+            )
         evidence = await dependencies.synthesis_bundle.read_synthesis_evidence(wave0_refs)
         request = build_synthesis_prompt(
             topic_registry=topic_registry,
             wave0_refs=wave0_refs,
             wave1_refs=wave1_refs,
             evidence=evidence,
+            open_questions=open_question_pairs,
         )
         outcome = await invoke_and_normalize(
             lambda: dependencies.capabilities.run_agent(context=dependencies.agent_context, request=request),
@@ -148,7 +190,9 @@ def build_real(dependencies: NodeBuildDependencies):
             return _exhausted_update(outcome.problem, state=state, dependencies=dependencies)
         result = outcome.result
         try:
-            output = _validate_synthesis_semantics(parse_synthesis_output(result.summary), wave0_refs, evidence)
+            output = _validate_synthesis_semantics(
+                parse_synthesis_output(result.summary), wave0_refs, evidence, open_question_ids=open_question_ids
+            )
         except ValueError as initial_error:
             validation_category = _synthesis_validation_category(initial_error)
             repair_outcome = await invoke_and_normalize(
@@ -165,7 +209,9 @@ def build_real(dependencies: NodeBuildDependencies):
             if isinstance(repair_outcome, InvocationFailure):
                 return _exhausted_update(repair_outcome.problem, state=state, dependencies=dependencies)
             repaired = repair_outcome.result
-            output = _validate_synthesis_semantics(parse_synthesis_output(repaired.summary), wave0_refs, evidence)
+            output = _validate_synthesis_semantics(
+                parse_synthesis_output(repaired.summary), wave0_refs, evidence, open_question_ids=open_question_ids
+            )
         await materialize_synthesis(output, dependencies.synthesis_bundle)
         return node_state_update(
             "wave2_synthesis",

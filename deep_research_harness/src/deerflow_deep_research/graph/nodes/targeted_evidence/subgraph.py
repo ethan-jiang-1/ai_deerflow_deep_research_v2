@@ -24,7 +24,6 @@ from deerflow_deep_research.domain.critics import (
     SourceDiagnosticResult,
 )
 from deerflow_deep_research.domain.node_spec import PolicyRef
-from deerflow_deep_research.domain.state import node_state_update
 from deerflow_deep_research.domain.targeted import TargetedSourceIntakeResult, TargetedSourceMeta
 from deerflow_deep_research.domain.work_units import (
     Attempt,
@@ -258,7 +257,7 @@ async def run_gap_workers(state: dict, gap_intents: tuple, dependencies: Any) ->
         event_recorder=dependencies.event_recorder,
         observation_projection=dependencies.observation_projection,
     )
-    return {**node_state_update("targeted_evidence"), **result.parent_update}
+    return result
 
 
 def _parse_targeted_output_for_gap(text: str, *, gap_id: str):

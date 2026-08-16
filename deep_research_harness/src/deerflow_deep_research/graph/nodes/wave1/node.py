@@ -72,6 +72,7 @@ def build_real(dependencies: NodeBuildDependencies):
             dependencies.work_units,
             gate_view=result.gate_view,
             policy=WAVE1_REAL_POLICY,
+            event_recorder=dependencies.event_recorder,
         )
         return {
             **node_state_update("wave1"),

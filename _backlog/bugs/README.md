@@ -1,6 +1,6 @@
 # Active Bugs — 活跃 bug 列表
 
-> 最后更新: 2026-08-16 | `_backlog/bugs/` — 活跃 bug 在此
+> 最后更新: 2026-08-16（BUG-028/029 关闭） | `_backlog/bugs/` — 活跃 bug 在此
 >
 > **bug 编号权威在 `_done/_fixed_bugs/`，新 bug = 最大编号 + 1。** 本文件只列活跃 bug。
 
@@ -18,8 +18,6 @@
 | ID | 严重级别 | 发现 | 标题 |
 | --- | --- | --- | --- |
 
-| [BUG-028](BUG-028-wave1-targeted-search-has-no-repair-path.md) | P1 | 2026-08-15 | Wave1 `targeted_search` 没有真正的修复路径 |
-| [BUG-029](BUG-029-invalid-critic-output-is-silently-suppressed.md) | P1 | 2026-08-15 | 非法 critic 输出被静默丢弃 |
 
 **Next available bug ID: BUG-032**
 

@@ -189,6 +189,7 @@ class RunEvent(FrozenRunObservationContract):
     validation_code: str | None = Field(default=None, pattern=_VALIDATION_CODE_PATTERN)
     validation_stage: Literal["initial", "repair", "post_candidate"] | None = None
     validation_codes: tuple[str, ...] = Field(default=(), max_length=MAX_LIST_ENTRIES)
+    critic_kind: Literal["source_diagnostic", "claim_verifier"] | None = None
     response_shape: FinalResponseShape | None = None
     failure_category: str | None = Field(default=None, pattern=_VALIDATION_CODE_PATTERN)
     worker_failure_category: (
@@ -236,6 +237,14 @@ class RunEvent(FrozenRunObservationContract):
             raise ValueError("journal_validation_response_shape_unexpected")
         elif self.validation_stage is not None or self.validation_codes:
             raise ValueError("journal_validation_fields_unexpected")
+        if self.critic_kind is not None:
+            if (
+                self.category is not RunEventCategory.VALIDATION
+                or self.schema_version != 3
+                or self.phase != "wave1"
+                or self.validation_stage != "post_candidate"
+            ):
+                raise ValueError("journal_critic_kind_unexpected")
         if self.execution_profile is not None and self.category is not RunEventCategory.ADMISSION:
             raise ValueError("journal_execution_profile_unexpected")
         if self.budget_stop_reason is not None:

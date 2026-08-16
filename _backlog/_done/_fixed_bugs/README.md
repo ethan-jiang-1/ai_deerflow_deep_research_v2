@@ -45,6 +45,8 @@ bug 修完后从 `_backlog/bugs/` 通过 `git mv` 移入本目录：
 | BUG-025 | 2026-08-16 | 进行中的 Bundle 被投影为 `protocol.invalid_result` |
 | BUG-026 | 2026-08-16 | Gate fatigue 没有区分失败的工作单元 |
 | BUG-027 | 2026-08-16 | Wave1 SourceDiagnostic 提示词漏掉枚举契约 |
+| BUG-028 | 2026-08-16 | Wave1 `targeted_search` 没有真正的修复路径 |
+| BUG-029 | 2026-08-16 | 非法 critic 输出被静默丢弃 |
 | BUG-030 | 2026-08-16 | 真机 demo 长时间运行没有实时人类可读轨迹 |
 
 **Next available bug ID: BUG-032**

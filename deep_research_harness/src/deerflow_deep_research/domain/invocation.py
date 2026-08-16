@@ -64,6 +64,7 @@ class RunEventRecorderProtocol(Protocol):
         attempt_id: str | None = None,
         validation_stage: str | None = None,
         validation_codes: tuple[str, ...] = (),
+        critic_kind: str | None = None,
         response_shape: FinalResponseShape | None = None,
         failure_category: str | None = None,
         worker_failure_category: str | None = None,

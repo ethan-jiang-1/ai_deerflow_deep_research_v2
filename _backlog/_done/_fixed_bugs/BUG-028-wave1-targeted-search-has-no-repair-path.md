@@ -1,6 +1,6 @@
 # BUG-028: Wave1 `targeted_search` 没有真正的修复路径
 
-> 严重级别: P1 | 发现: 2026-08-15 | 状态: 活跃
+> 严重级别: P1 | 发现: 2026-08-15 | 状态: 已修复（2026-08-16，change `wave1-question-handoff-and-critic-observability`）
 
 ## 症状
 
@@ -33,3 +33,7 @@ question_floor_and_review_integrity`（@impl WON-004）保持红色（期望 rep
 基线（已归档 change）也实测：wave1 submission 不进入 accepted refs（延后到 synthesis 的现状），且
 synthesis 一旦投影可检索 gap，路由进 targeted_evidence 会抛 `work_unit_gate_view_inconsistent`。
 本卡是这两条红线的唯一 owner，修复 change 落地前不要关闭。
+
+---
+
+**关闭记录（2026-08-16）**：经 change `wave1-question-handoff-and-critic-observability` 修复。

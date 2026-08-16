@@ -130,6 +130,46 @@ def test_v3_validation_contract_rejects_impossible_shape_and_stage_pairs() -> No
         )
 
 
+def test_v3_critic_kind_is_closed_to_wave1_post_candidate_validation_facts() -> None:
+    base = {
+        "schema_version": 3,
+        "sequence": 3,
+        "timestamp": datetime.now(UTC),
+        "category": RunEventCategory.VALIDATION,
+        "generation": 0,
+        "phase": "wave1",
+        "work_id": "work-1",
+        "attempt_id": "work-1_a00",
+        "validation_stage": "post_candidate",
+        "validation_codes": ("wave1_claim_verifier_output_json_invalid",),
+    }
+
+    accepted = RunEvent(**{**base, "critic_kind": "claim_verifier"})
+    assert accepted.critic_kind == "claim_verifier"
+
+    with pytest.raises(ValueError, match="journal_critic_kind_unexpected"):
+        RunEvent(**{**base, "phase": "wave0", "critic_kind": "source_diagnostic"})
+    with pytest.raises(ValueError, match="journal_critic_kind_unexpected"):
+        RunEvent(
+            **{
+                **base,
+                "critic_kind": "source_diagnostic",
+                "validation_stage": "initial",
+                "response_shape": FinalResponseShape.PROSE,
+            }
+        )
+    with pytest.raises(ValueError, match="journal_critic_kind_unexpected"):
+        RunEvent(
+            schema_version=3,
+            sequence=4,
+            timestamp=datetime.now(UTC),
+            category=RunEventCategory.NODE,
+            generation=0,
+            phase="wave1",
+            critic_kind="claim_verifier",
+        )
+
+
 @pytest.mark.asyncio
 async def test_v3_journal_retains_redacted_shape_and_post_candidate_facts(tmp_path: Path) -> None:
     bundle_root = tmp_path / "bundle"

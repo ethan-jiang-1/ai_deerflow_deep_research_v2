@@ -75,3 +75,48 @@ def test_scripted_real_baseline_proves_every_wave_action(tmp_path: Path, _script
 
     # The baseline wall-time contract: a timeout is a test failure, not a skip.
     assert elapsed < 10.0, f"wall time {elapsed:.2f}s exceeded the 10s contract"
+
+
+def test_scripted_real_repair_targeted_named_case_proves_the_bounded_loop(
+    tmp_path: Path, _scripts_path: str
+) -> None:
+    """BUG-028/BUG-029 named case: question handoff, critic fact, bounded blocked terminal."""
+
+    import json
+
+    from debug_scripted_real_workflow import ScriptedRealRun, run_scripted_real_workflow
+
+    started_at = time.monotonic()
+    result = _await(
+        run_scripted_real_workflow(
+            workspace=tmp_path, run_id="proof-repair-targeted", scenario="repair-targeted"
+        )
+    )
+    assert isinstance(result, ScriptedRealRun)
+    elapsed = time.monotonic() - started_at
+
+    assert result.model_calls == 16, f"expected 17 model calls, saw {result.model_calls}: {result.consumed}"
+    assert result.web_search_calls == 4, f"expected 4 web_search calls, saw {result.web_search_calls}"
+    assert result.web_fetch_calls == 0
+    assert result.terminal_status == "blocked"
+    trace = result.execution_trace
+    assert "targeted_evidence" in trace, trace
+    assert trace[-1] == "wave2_synthesis", trace
+    assert "rerun" not in trace
+    assert result.record_count >= 4, f"expected >=4 accepted records, saw {result.record_count}"
+
+    events = [
+        json.loads(line)
+        for line in Path(result.journal_path).read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    critic_facts = [
+        event
+        for event in events
+        if event.get("category") == "validation"
+        and event.get("critic_kind") == "source_diagnostic"
+        and "wave1_source_diagnostic_output_json_invalid" in event.get("validation_codes", ())
+    ]
+    assert critic_facts, "no journal fact for the invalid source-diagnostic critic"
+
+    assert elapsed < 10.0, f"wall time {elapsed:.2f}s exceeded the 10s contract"

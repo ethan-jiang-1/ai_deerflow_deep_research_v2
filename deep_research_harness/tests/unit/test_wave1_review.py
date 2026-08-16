@@ -17,6 +17,7 @@ from deerflow_deep_research.graph.nodes.wave1.review import (
     Wave1CriticKind,
     Wave1SourceDiagnosticAssignment,
     Wave1SourceObservation,
+    _canonical_critic_code,
     materialize_wave1_review_artifact,
     read_wave1_review_artifact,
 )
@@ -248,3 +249,21 @@ async def test_read_artifact_requires_canonical_exact_identity_and_assignment_bi
             assignment=assignment,
             bundle=BUNDLE,
         )
+
+
+def test_canonical_critic_code_keeps_closed_codes_and_falls_back() -> None:
+    """The critic-boundary Journal fact retains only closed canonical codes."""
+
+    assert _canonical_critic_code(ValueError("wave1_claim_verifier_output_json_invalid")) == (
+        "wave1_claim_verifier_output_json_invalid"
+    )
+    assert _canonical_critic_code(ValueError("wave1_claim_verifier_coverage_invalid")) == (
+        "wave1_claim_verifier_coverage_invalid"
+    )
+    assert _canonical_critic_code(ValueError("wave1_review_assignment_kind_invalid")) == (
+        "wave1_review_assignment_kind_invalid"
+    )
+    assert _canonical_critic_code(
+        ValueError("1 validation error for ClaimVerifierResult\nclaims\n  Field required")
+    ) == "wave1_review_output_invalid"
+    assert _canonical_critic_code(ValueError("unexpected detail")) == "wave1_review_output_invalid"

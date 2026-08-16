@@ -111,6 +111,20 @@ def _dependencies(tmp_path: Path, capabilities: _Capabilities) -> NodeBuildDepen
         uploads_root=str(tmp_path / "uploads"),
         outputs_root=str(tmp_path / "outputs"),
     )
+    _publish_bundle(tmp_path)
+    store = WorkUnitStore(
+        workspace_host_path=tmp_path,
+        bundle=BUNDLE,
+        clock=lambda: datetime.now(UTC),
+        monotonic=time.monotonic,
+        lock_sleep=time.sleep,
+        token_factory=lambda: "6" * 32,
+        fault_hook=None,
+    )
+    controller = WorkUnitControllerDependencies(
+        store=store,
+        resolver=RuntimeWorkUnitDependencyResolver(graph_context, _Resolver(graph_context, capabilities), store),
+    )
     return NodeBuildDependencies(
         graph_context=graph_context,
         agent_context=NodeAgentContext(
@@ -122,6 +136,7 @@ def _dependencies(tmp_path: Path, capabilities: _Capabilities) -> NodeBuildDepen
             policy_name="skeleton-targeted-evidence",
         ),
         capabilities=capabilities,
+        work_units=controller,
     )
 
 
@@ -686,3 +701,39 @@ async def test_targeted_failed_repair_publishes_no_partial_authority(
     )
     assert not any("/cache/" in path or path.endswith("/result.json") for path in files)
     assert not any(path.endswith("/evidence/submissions.jsonl") for path in files)
+
+
+async def test_targeted_node_returns_the_reconciled_gate_view_for_a_gap_visit(tmp_path: Path) -> None:
+    """@impl TEL-007"""
+
+    from deerflow_deep_research.domain.work_units import WORK_UNIT_GATE_VIEW_KEY, WorkUnitGateView
+
+    store, run, state = _targeted_harness(tmp_path, _Capabilities(_targeted_summary()))
+
+    update = await run(state)
+
+    assert WORK_UNIT_GATE_VIEW_KEY in update
+    view = update[WORK_UNIT_GATE_VIEW_KEY]
+    assert isinstance(view, WorkUnitGateView)
+    assert view.drained is True
+    assert len(view.accepted_record_by_work_id) == 1
+    records = await store.load_records()
+    assert tuple(view.accepted_record_by_work_id.values()) == (records[0].record_hash,)
+
+
+async def test_targeted_node_returns_a_drained_gate_view_for_an_empty_gap_visit(tmp_path: Path) -> None:
+    """@impl TEL-007"""
+
+    from deerflow_deep_research.domain.work_units import WORK_UNIT_GATE_VIEW_KEY, WorkUnitGateView
+
+    _store, run, state = _targeted_harness(tmp_path, _Capabilities(_targeted_summary()))
+    state = {**state, "unresolved_gaps": ()}
+
+    update = await run(state)
+
+    assert WORK_UNIT_GATE_VIEW_KEY in update
+    view = update[WORK_UNIT_GATE_VIEW_KEY]
+    assert isinstance(view, WorkUnitGateView)
+    assert view.drained is True
+    assert view.planned_work_ids == ()
+    assert view.accepted_record_by_work_id == {}

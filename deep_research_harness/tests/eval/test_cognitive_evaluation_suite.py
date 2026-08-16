@@ -1319,6 +1319,10 @@ async def test_wave2_cognitive_program_production_scenarios_record_only_declared
             self.write_count += 1
             await self._delegate.write_synthesis(result)
 
+        async def read_wave1_open_questions(self, accepted_refs: tuple[str, ...]) -> tuple[tuple[str, str], ...]:
+            assert accepted_refs == self._accepted_submission_refs
+            return ()
+
     class ObservedBridge:
         def __init__(self, delegate: RuntimeNodeAgentBridge) -> None:
             self.delegate = delegate

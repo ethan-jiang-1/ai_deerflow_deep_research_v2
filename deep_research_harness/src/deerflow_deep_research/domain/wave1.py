@@ -35,6 +35,7 @@ MAX_QUESTION_CHARS = 500
 WAVE1_MINIMUM_NEW_SOURCE_URLS = 2
 WAVE1_GATE_REVIEW_KEY = "__wave1_gate_review__"
 WAVE1_REVIEW_SCHEMA_VERSION = 1
+MAX_WAVE1_OPEN_QUESTION_PROJECTION = 64
 
 
 class Wave1SemanticViolation(ValueError):
@@ -357,6 +358,18 @@ class Wave1SourceIntakeResult(_FrozenModel):
         return self
 
 
+class Wave1OpenQuestionRef(_FrozenModel):
+    """Ids-only ref of one targeted-search open question for the synthesis handoff.
+
+    Deliberately carries no question text: the checkpointed projection stays bounded
+    under ``MAX_CHECKPOINT_STATE_BYTES``, and the owning synthesis node resolves text
+    from the accepted Wave1 result documents.
+    """
+
+    question_id: str = Field(pattern=re.compile(r"^q:w1_[a-zA-Z0-9_-]{1,64}$"))
+    work_id: str = Field(pattern=r"^[A-Za-z0-9:_-]{1,128}$")
+
+
 class Wave1GateReviewRow(_FrozenModel):
     """Bounded facts about one accepted Wave1 work item for gate evaluation."""
 
@@ -366,6 +379,14 @@ class Wave1GateReviewRow(_FrozenModel):
     source_diagnostic_present: bool
     claim_verifier_present: bool
     open_question_states: tuple[OpenQuestionState, ...] = ()
+    open_questions: Annotated[tuple[Wave1OpenQuestionRef, ...], Field(max_length=MAX_OPEN_QUESTIONS)] = ()
+
+    @model_validator(mode="after")
+    def validate_open_question_refs(self) -> Wave1GateReviewRow:
+        ids = tuple(ref.question_id for ref in self.open_questions)
+        if ids != tuple(sorted(ids)) or len(ids) != len(set(ids)):
+            raise ValueError("wave1_gate_review_open_questions_invalid")
+        return self
 
 
 class Wave1GateReview(_FrozenModel):
@@ -468,6 +489,7 @@ __all__ = [
     "WAVE1_GATE_REVIEW_KEY",
     "WAVE1_MINIMUM_NEW_SOURCE_URLS",
     "WAVE1_REVIEW_SCHEMA_VERSION",
+    "MAX_WAVE1_OPEN_QUESTION_PROJECTION",
     "Wave1ClaimVerifierAssignment",
     "Wave1CriticKind",
     "Wave1ReviewArtifact",
@@ -478,6 +500,7 @@ __all__ = [
     "Wave1SourceRef",
     "Wave1GateReview",
     "Wave1GateReviewRow",
+    "Wave1OpenQuestionRef",
     "Wave1WorkerOutput",
     "Wave1WorkerSource",
     "canonicalize_wave0_urls",

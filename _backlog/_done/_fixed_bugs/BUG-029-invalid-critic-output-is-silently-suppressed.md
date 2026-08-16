@@ -1,6 +1,6 @@
 # BUG-029: 非法 critic 输出被静默丢弃
 
-> 严重级别: P1 | 发现: 2026-08-15 | 状态: 活跃
+> 严重级别: P1 | 发现: 2026-08-15 | 状态: 已修复（2026-08-16，change `wave1-question-handoff-and-critic-observability`）
 
 ## 症状
 
@@ -30,3 +30,7 @@ diagnostic reference。
 `except ValueError: continue`，无有界诊断事件；runtime-observability 三件套已归档
 （event recorder 与 Journal 基础设施可用），但尚未覆盖该 critic 校验失败路径。BUG-027
 （枚举契约）已结案，本卡承接其"非法结果可诊断性"部分。
+
+---
+
+**关闭记录（2026-08-16）**：经 change `wave1-question-handoff-and-critic-observability` 修复。

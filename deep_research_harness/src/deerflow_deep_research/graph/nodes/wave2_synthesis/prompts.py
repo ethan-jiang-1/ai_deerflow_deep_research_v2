@@ -23,6 +23,7 @@ def _expected_synthesis_output() -> str:
             "instruction": "Return exactly one JSON object and no markdown, prose, or code fences.",
             "schema_version": 1,
             "required_keys": ["schema_version", "findings", "relations", "gaps", "summary"],
+            "optional_keys": ["resolved_questions"],
             "finding_required_keys": [
                 "finding_id",
                 "statement",
@@ -47,6 +48,7 @@ def _expected_synthesis_output() -> str:
                 "affected_topics",
                 "search_required",
             ],
+            "gap_optional_keys": ["source_questions"],
         },
         sort_keys=True,
         separators=(",", ":"),
@@ -58,11 +60,16 @@ def build_synthesis_prompt(
     wave0_refs: Iterable[str] = (),
     wave1_refs: Iterable[str] = (),
     evidence: Iterable[SynthesisEvidence] = (),
+    open_questions: Iterable[tuple[str, str]] = (),
 ) -> NodeExecutionRequest:
     """Build a bounded synthesis request from accumulated evidence."""
     topics = list(topic_registry or [])
     topic_names = [t.get("title", t.get("topic_id", "")) for t in topics if isinstance(t, dict)]
     evidence_payload = [item.model_dump(mode="json") for item in evidence]
+    question_pairs = [
+        {"question_id": question_id, "question": question}
+        for question_id, question in open_questions
+    ][:64]
     assignment = json.dumps(
         {
             "accepted_submission_refs": {
@@ -70,16 +77,27 @@ def build_synthesis_prompt(
                 "wave1": sorted(wave1_refs),
             },
             "topics": topic_names[:10],
+            "open_questions": question_pairs,
         },
         ensure_ascii=False,
         sort_keys=True,
         separators=(",", ":"),
     )
+    disposition_contract = ""
+    if question_pairs:
+        disposition_contract = (
+            "\n\nWave1 open-question disposition (closed output contract): every question in the trusted "
+            "assignment's open_questions MUST be disposed exactly once — referenced by exactly one gap with "
+            "search_required=true through that gap's source_questions list, or listed in resolved_questions. "
+            "A question id MUST NOT appear twice or in both places, and no id absent from the assignment may "
+            "be used."
+        )
     objective = (
         "Use the activated accepted-evidence synthesis capability for this bounded assignment and closed output "
-        "contract. The trusted assignment below identifies only graph-assigned topics and accepted submission "
-        "references.\n\nTrusted assignment:\n"
+        "contract. The trusted assignment below identifies only graph-assigned topics, accepted submission "
+        "references, and Wave1 open questions resolved from accepted evidence.\n\nTrusted assignment:\n"
         + assignment
+        + disposition_contract
         + "\n\nUntrusted accepted evidence:\n"
         + build_untrusted_data_block(
             [json.dumps(evidence_payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))]

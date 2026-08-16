@@ -47,10 +47,12 @@ from deerflow_deep_research.domain.run_observation import FinalResponseShape, Ru
 from deerflow_deep_research.domain.state import (
     WORK_UNIT_GATE_PREVIEW_FIELDS,
     BundleLocalState,
+    WriterRole,
+    apply_research_update,
     merge_trace,
     preview_work_unit_update,
 )
-from deerflow_deep_research.domain.wave1 import OpenQuestionState
+from deerflow_deep_research.domain.wave1 import OpenQuestionState, Wave1GateReviewRow, Wave1OpenQuestionRef
 from deerflow_deep_research.domain.work_units import (
     WORK_UNIT_GATE_VIEW_KEY,
     SubmissionValidationCode,
@@ -60,7 +62,7 @@ from deerflow_deep_research.engine.gate_kernel import evaluate_gate
 from deerflow_deep_research.graph.builder import _node_wrapper
 from deerflow_deep_research.graph.components import work_units as work_unit_component
 from deerflow_deep_research.graph.implementation_map import AdapterKind, NodeAdapter
-from deerflow_deep_research.graph.nodes.gate_adapter import real_wave1_gate_def
+from deerflow_deep_research.graph.nodes.gate_adapter import evaluate_gate_for_node, real_wave1_gate_def
 from deerflow_deep_research.graph.nodes.wave1 import NODE_SPEC
 from deerflow_deep_research.graph.nodes.wave1 import node as wave1_node
 from deerflow_deep_research.graph.nodes.wave1 import subgraph as wave1_subgraph
@@ -114,6 +116,7 @@ class ScriptedWave1Capabilities:
         invocation_results: tuple[NodeExecutionResult, ...] = (),
         source_diagnostic_failure: bool = False,
         source_diagnostic_foreign: bool = False,
+        source_diagnostic_invocation_failure: NodeExecutionResult | None = None,
         claim_verifier_failure: bool = False,
     ) -> None:
         self.contexts: list[NodeAgentContext] = []
@@ -127,6 +130,7 @@ class ScriptedWave1Capabilities:
         self.invocation_results = list(invocation_results)
         self.source_diagnostic_failure = source_diagnostic_failure
         self.source_diagnostic_foreign = source_diagnostic_foreign
+        self.source_diagnostic_invocation_failure = source_diagnostic_invocation_failure
         self.claim_verifier_failure = claim_verifier_failure
 
     async def run_agent(self, *, context, request):
@@ -136,6 +140,8 @@ class ScriptedWave1Capabilities:
         self.requests.append(request)
         capability_id = request.capability_ref.capability_id if request.capability_ref is not None else None
         if capability_id == "wave1-source-diagnostic":
+            if self.source_diagnostic_invocation_failure is not None:
+                return self.source_diagnostic_invocation_failure
             if self.source_diagnostic_failure:
                 return NodeExecutionResult(finish_reason=NodeFinishReason.SUCCESS, summary="not-json")
             source_ids = tuple(re.findall(r'"source_id":"([^"]+)"', request.objective))
@@ -354,7 +360,9 @@ def _apply_result(state: dict, result: dict) -> dict:
     return next_state
 
 
-async def _run_real_wave1_until_review(tmp_path, capabilities: ScriptedWave1Capabilities):
+async def _run_real_wave1_until_review(
+    tmp_path, capabilities: ScriptedWave1Capabilities, *, event_recorder=None
+):
     seed = await build_live_seed_bundle(tmp_path, bundle=BUNDLE, include_wave1=False, now=NOW)
     graph_context = GraphContextView(
         research_scope_id=BUNDLE_ID,
@@ -386,8 +394,22 @@ async def _run_real_wave1_until_review(tmp_path, capabilities: ScriptedWave1Capa
         controller,
         gate_view=result.gate_view,
         policy=wave1_subgraph.WAVE1_REAL_POLICY,
+        event_recorder=event_recorder,
     )
     return controller, result, review
+
+
+class _CriticEventRecorder:
+    def __init__(self) -> None:
+        self.events: list[dict[str, object]] = []
+
+    async def record(self, **event: object) -> None:
+        self.events.append(dict(event))
+
+
+class _RaisingCriticEventRecorder:
+    async def record(self, **event: object) -> None:
+        raise OSError("journal unavailable")
 
 
 async def test_wave1_reuses_shared_kernel_with_distinct_fixture_scope_and_content(tmp_path) -> None:
@@ -950,6 +972,106 @@ async def test_wave1_claim_verifier_invalid_result_retries_only_that_critic(tmp_
     ]
 
 
+async def test_invalid_critic_result_records_a_bounded_post_candidate_validation_fact(tmp_path) -> None:
+    """@impl WON-012
+    @impl REJ-008
+    """
+
+    capabilities = ScriptedWave1Capabilities(claim_verifier_failure=True)
+    recorder = _CriticEventRecorder()
+    _controller, _result, review = await _run_real_wave1_until_review(
+        tmp_path, capabilities, event_recorder=recorder
+    )
+
+    assert review.rows[0].source_diagnostic_present is True
+    assert review.rows[0].claim_verifier_present is False
+    validation = [event for event in recorder.events if event.get("category") == RunEventCategory.VALIDATION]
+    assert len(validation) == 1
+    fact = validation[0]
+    assert fact["phase"] == "wave1"
+    assert fact["validation_stage"] == "post_candidate"
+    assert fact["critic_kind"] == "claim_verifier"
+    assert fact["validation_codes"] == ("wave1_claim_verifier_output_json_invalid",)
+    assert fact["work_id"] == review.rows[0].work_id
+    assert str(fact["attempt_id"]).startswith(f"{review.rows[0].work_id}_a")
+
+
+async def test_critic_invocation_failure_records_a_closed_model_tool_fact(tmp_path) -> None:
+    """@impl WON-012"""
+
+    payload = {
+        "schema_version": 1,
+        "sources": [
+            {
+                "source_id": "source:alpha",
+                "canonical_url": "https://example.invalid/alpha",
+                "title": "Alpha",
+            },
+            {
+                "source_id": "source:beta",
+                "canonical_url": "https://example.invalid/beta",
+                "title": "Beta",
+            },
+        ],
+        "claims": [
+            {
+                "claim_id": "claim:w1_bounded",
+                "statement": "The sources support one bounded claim.",
+                "support_refs": ["source:alpha", "source:beta"],
+                "counter_refs": [],
+            }
+        ],
+    }
+    capabilities = ScriptedWave1Capabilities(
+        provider_payload=payload,
+        invocation_results=(NodeExecutionResult(finish_reason=NodeFinishReason.SUCCESS, summary=json.dumps(payload)),),
+        source_diagnostic_invocation_failure=NodeExecutionResult(
+            finish_reason=NodeFinishReason.FAILED,
+            summary="raw provider body must not be retained",
+            problem=NodeProblem(
+                code=RunFailureCode.PROVIDER_UNAVAILABLE,
+                phase="wave1",
+                certainty=FailureCertainty.DIRECT,
+                provider_observation=ProviderObservation(
+                    configured_service_label="wave1-critic-model",
+                    response_kind="no_response",
+                ),
+            ),
+        ),
+    )
+    recorder = _CriticEventRecorder()
+    _controller, _result, review = await _run_real_wave1_until_review(
+        tmp_path, capabilities, event_recorder=recorder
+    )
+
+    assert review.rows[0].source_diagnostic_present is False
+    assert review.rows[0].claim_verifier_present is True
+    model_tool = [event for event in recorder.events if event.get("category") == RunEventCategory.MODEL_TOOL]
+    assert len(model_tool) == 1
+    fact = model_tool[0]
+    assert fact["phase"] == "wave1"
+    assert fact["outcome"] == "failed"
+    assert fact["failure_category"] == "invocation.failed"
+    assert fact["provider_category"] == "provider.unavailable"
+    assert fact["work_id"] == review.rows[0].work_id
+    assert str(fact["attempt_id"]).startswith(f"{review.rows[0].work_id}_a")
+
+
+async def test_critic_observation_failure_never_changes_dispatch_behavior(tmp_path) -> None:
+    """@impl WON-012"""
+
+    capabilities = ScriptedWave1Capabilities(claim_verifier_failure=True)
+    _controller, _result, review = await _run_real_wave1_until_review(tmp_path, capabilities)
+    assert review.rows[0].claim_verifier_present is False
+
+    capabilities = ScriptedWave1Capabilities(claim_verifier_failure=True)
+    _controller, _result, review = await _run_real_wave1_until_review(
+        tmp_path, capabilities, event_recorder=_RaisingCriticEventRecorder()
+    )
+    assert review.rows[0].source_diagnostic_present is True
+    assert review.rows[0].claim_verifier_present is False
+
+
 async def test_real_wave1_review_gate_enforces_question_floor_and_review_integrity(tmp_path) -> None:
     """@impl WON-004"""
 
@@ -996,8 +1118,13 @@ async def test_real_wave1_review_gate_enforces_question_floor_and_review_integri
     )
 
     question_result = evaluate_gate(gate_state, "wave1", real_wave1_gate_def())
-    assert question_result.route == "repair"
+    assert question_result.route == "pass"
     assert review.rows[0].open_question_states == (OpenQuestionState.TARGETED_SEARCH,)
+
+    adapter_update = evaluate_gate_for_node(gate_state, "wave1", real_wave1_gate_def())
+    assert adapter_update["wave1_open_questions"] == (
+        Wave1OpenQuestionRef(question_id="q:w1_more-evidence", work_id=review.rows[0].work_id),
+    )
 
     exhausted_review = Wave1GateReview(rows=(review.rows[0].model_copy(update={"distinct_new_url_count": 1}),))
     exhausted_result = evaluate_gate(
@@ -1018,6 +1145,57 @@ async def test_real_wave1_review_gate_enforces_question_floor_and_review_integri
             policy=wave1_subgraph.WAVE1_REAL_POLICY,
         )
     assert len(await controller.store.load_records()) == len(records)
+
+
+async def test_wave1_gate_adapter_projects_clears_and_bounds_open_questions(tmp_path) -> None:
+    """@impl WON-013"""
+
+    capabilities = ScriptedWave1Capabilities()
+    controller, result, review = await _run_real_wave1_until_review(tmp_path, capabilities)
+    assert review.rows[0].open_questions == ()
+    gate_state = (
+        _state()
+        | result.parent_update
+        | {WORK_UNIT_GATE_VIEW_KEY: result.gate_view, WAVE1_GATE_REVIEW_KEY: review}
+    )
+
+    cleared = evaluate_gate_for_node(gate_state, "wave1", real_wave1_gate_def())
+    assert cleared["wave1_open_questions"] == ()
+
+    prior = (Wave1OpenQuestionRef(question_id="q:w1_prior", work_id="g0_wave1_w9999"),)
+    preserved = evaluate_gate_for_node(
+        gate_state | {"wave1_open_questions": prior}, "wave1", real_wave1_gate_def()
+    )
+    assert preserved["wave1_open_questions"] == prior
+
+    with pytest.raises(ValueError, match="writer_not_authorized"):
+        apply_research_update(
+            gate_state,
+            {"wave1_open_questions": (Wave1OpenQuestionRef(question_id="q:w1_x", work_id="w"),)},
+            writer=WriterRole.CONTROLLER,
+        )
+
+    def row(work_id: str, question_count: int) -> Wave1GateReviewRow:
+        return review.rows[0].model_copy(
+            update={
+                "work_id": work_id,
+                "accepted_record_hash": review.rows[0].accepted_record_hash,
+                "open_questions": tuple(
+                    Wave1OpenQuestionRef(question_id=f"q:w1_overflow_{work_id[-4:]}_{index:02d}", work_id=work_id)
+                    for index in range(question_count)
+                ),
+            }
+        )
+
+    oversized = Wave1GateReview(
+        rows=tuple(row(f"g0_wave1_w{index:04d}", 13) for index in range(5))
+    )
+    with pytest.raises(ValueError, match="wave1_open_question_projection_overflow"):
+        evaluate_gate_for_node(
+            _state() | {WAVE1_GATE_REVIEW_KEY: oversized},
+            "wave1",
+            real_wave1_gate_def(),
+        )
 
 
 async def test_real_wave1_wrapper_consumes_the_private_review_before_state_reduction(tmp_path) -> None:

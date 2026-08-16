@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import re
 from collections.abc import Sequence
 from dataclasses import dataclass
 
@@ -20,16 +21,23 @@ from deerflow_deep_research.domain.bundle import (
     bundle_work_spec_path,
 )
 from deerflow_deep_research.domain.critics import ClaimVerifierResult, SourceDiagnosticResult
-from deerflow_deep_research.domain.invocation import WorkUnitControllerDependencies
+from deerflow_deep_research.domain.invocation import (
+    RunEventRecorderProtocol,
+    WorkUnitControllerDependencies,
+)
 from deerflow_deep_research.domain.lifecycle import LogicalPhase
 from deerflow_deep_research.domain.node_spec import PolicyRef
+from deerflow_deep_research.domain.run_experience import RunFailureCode
+from deerflow_deep_research.domain.run_observation import RunEventCategory
 from deerflow_deep_research.domain.wave1 import (
     WAVE1_GATE_REVIEW_KEY,
     WAVE1_REVIEW_SCHEMA_VERSION,
+    OpenQuestionState,
     Wave1ClaimVerifierAssignment,
     Wave1CriticKind,
     Wave1GateReview,
     Wave1GateReviewRow,
+    Wave1OpenQuestionRef,
     Wave1ReviewArtifact,
     Wave1SourceDiagnosticAssignment,
     Wave1SourceIntakeResult,
@@ -80,6 +88,52 @@ def _assignment_hash(kind: Wave1CriticKind, assignment: _FrozenModel) -> str:
 
 def _review_cache_name(kind: Wave1CriticKind) -> str:
     return f"review/{kind.value.replace('_', '-')}.json"
+
+
+def _canonical_critic_code(error: ValueError) -> str:
+    """Keep only a closed Wave1 critic-boundary code, never exception detail."""
+
+    candidate = str(error)
+    if re.fullmatch(r"^wave1_[a-z0-9_]+$", candidate):
+        return candidate
+    return "wave1_review_output_invalid"
+
+
+def _critic_provider_category(problem: object) -> str | None:
+    """Project the existing closed provider category from a normalized failure."""
+
+    code = getattr(problem, "code", None)
+    if code is RunFailureCode.PROVIDER_TIMEOUT:
+        return "provider.timeout"
+    if code is RunFailureCode.PROVIDER_UNAVAILABLE:
+        return "provider.unavailable"
+    if code is RunFailureCode.PROVIDER_AUTHENTICATION_FAILED:
+        return "provider.authentication_failed"
+    return None
+
+
+async def _observe_critic_failure(
+    recorder: RunEventRecorderProtocol | None,
+    *,
+    work_id: str,
+    attempt_id: str,
+    category: RunEventCategory,
+    **fields: object,
+) -> None:
+    """Best-effort bounded observation; never changes critic control flow."""
+
+    if recorder is None:
+        return
+    try:
+        await recorder.record(
+            category=category,
+            phase="wave1",
+            work_id=work_id,
+            attempt_id=attempt_id,
+            **fields,  # type: ignore[arg-type]
+        )
+    except Exception:
+        return
 
 
 def _source_assignment(document: Wave1SourceIntakeResult) -> Wave1SourceDiagnosticAssignment:
@@ -353,6 +407,7 @@ async def _dispatch_missing_reviews(
     missing: tuple[Wave1CriticKind, ...],
     bundle: RunBundleRef,
     policy: PolicyRef,
+    event_recorder: RunEventRecorderProtocol | None,
 ) -> None:
     spec = await _load_spec_for_record(controller, work.record, bundle=bundle)
     attempt = Attempt(
@@ -402,6 +457,15 @@ async def _dispatch_missing_reviews(
             phase="wave1",
         )
         if isinstance(outcome, InvocationFailure):
+            await _observe_critic_failure(
+                event_recorder,
+                work_id=work.record.work_id,
+                attempt_id=work.record.attempt_id,
+                category=RunEventCategory.MODEL_TOOL,
+                outcome="failed",
+                failure_category="invocation.failed",
+                provider_category=_critic_provider_category(outcome.problem),
+            )
             continue
         try:
             critic_result = parser(outcome.result.summary)
@@ -411,7 +475,16 @@ async def _dispatch_missing_reviews(
                 assignment=assignment,
                 result=critic_result,
             )
-        except ValueError:
+        except ValueError as error:
+            await _observe_critic_failure(
+                event_recorder,
+                work_id=work.record.work_id,
+                attempt_id=work.record.attempt_id,
+                category=RunEventCategory.VALIDATION,
+                validation_stage="post_candidate",
+                validation_codes=(_canonical_critic_code(error),),
+                critic_kind=kind.value,
+            )
             continue
         await writer.write_source(_review_cache_name(kind), canonical_json_bytes(artifact))
 
@@ -421,6 +494,7 @@ async def build_wave1_gate_review(
     *,
     gate_view: WorkUnitGateView,
     policy: PolicyRef,
+    event_recorder: RunEventRecorderProtocol | None = None,
 ) -> Wave1GateReview:
     """Dispatch only missing local critics, then construct the frozen review projection."""
 
@@ -467,6 +541,7 @@ async def build_wave1_gate_review(
                 missing=missing,
                 bundle=bundle,
                 policy=policy,
+                event_recorder=event_recorder,
             )
             source_artifact = await read_wave1_review_artifact(
                 controller.store,
@@ -490,6 +565,16 @@ async def build_wave1_gate_review(
                 source_diagnostic_present=source_artifact is not None,
                 claim_verifier_present=claim_artifact is not None,
                 open_question_states=tuple(question.state for question in work.document.open_questions),
+                open_questions=tuple(
+                    sorted(
+                        (
+                            Wave1OpenQuestionRef(question_id=question.question_id, work_id=record.work_id)
+                            for question in work.document.open_questions
+                            if question.state is OpenQuestionState.TARGETED_SEARCH
+                        ),
+                        key=lambda ref: ref.question_id,
+                    )
+                ),
             )
         )
     review = Wave1GateReview(rows=tuple(rows))

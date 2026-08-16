@@ -58,6 +58,7 @@ from deerflow_deep_research.domain.lifecycle import (
 )
 from deerflow_deep_research.domain.run_experience import TerminalIncidentProjection
 from deerflow_deep_research.domain.topics import MAX_TOPICS
+from deerflow_deep_research.domain.wave1 import Wave1OpenQuestionRef
 from deerflow_deep_research.domain.work_units import (
     ATTEMPT_ID_RE,
     MAX_PARENT_ACCEPTED_REFS,
@@ -1137,6 +1138,7 @@ def apply_research_update(
         "latest_incident": frozenset({WriterRole.CONTROLLER, WriterRole.GATE}),
         "latest_gate_feedback": frozenset({WriterRole.GATE}),
         "unresolved_gaps": frozenset({WriterRole.GATE}),
+        "wave1_open_questions": frozenset({WriterRole.GATE}),
         "gate_attempts_by_phase": frozenset({WriterRole.GATE}),
         "repair_budget_by_phase": frozenset({WriterRole.GATE}),
         "route": frozenset({WriterRole.GATE}),
@@ -1261,6 +1263,7 @@ class ResearchGraphState:
     # quality
     latest_gate_feedback: Any = None
     unresolved_gaps: tuple[str, ...] = ()
+    wave1_open_questions: tuple[Wave1OpenQuestionRef, ...] = ()
     degraded_decisions: tuple[str, ...] = ()
     # delivery
     synthesis_ref: ContentRef | None = None
@@ -1481,6 +1484,7 @@ class ResearchState(TypedDict, total=False):
     # quality
     latest_gate_feedback: Any
     unresolved_gaps: tuple[str, ...]
+    wave1_open_questions: tuple[Wave1OpenQuestionRef, ...]
     degraded_decisions: tuple[str, ...]
     # delivery
     synthesis_ref: ContentRef
@@ -1676,6 +1680,9 @@ OWNERSHIP_TABLE: tuple[FieldOwnership, ...] = (
         "last_write_wins",
     ),
     FieldOwnership("unresolved_gaps", WriterRole.GATE, (WriterRole.CONTROLLER, WriterRole.GATE), "last_write_wins"),
+    FieldOwnership(
+        "wave1_open_questions", WriterRole.GATE, (WriterRole.CONTROLLER, WriterRole.GATE), "last_write_wins"
+    ),
     FieldOwnership("degraded_decisions", WriterRole.GATE, (WriterRole.CONTROLLER, WriterRole.GATE), "last_write_wins"),
     FieldOwnership("synthesis_ref", WriterRole.CONTROLLER, (WriterRole.CONTROLLER, WriterRole.GATE), "last_write_wins"),
     FieldOwnership("decision_brief_ref", WriterRole.CONTROLLER, (WriterRole.CONTROLLER,), "last_write_wins"),

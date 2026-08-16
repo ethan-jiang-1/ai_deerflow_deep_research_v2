@@ -353,10 +353,20 @@ def _local_envelope(workspace: Path) -> tuple[TrustedRuntimeEnvelope, tuple[str,
     return envelope, (user_id, thread_id)
 
 
-def build_world(workspace: Path, *, run_id: str) -> _ScriptedWorld:
+def build_world(workspace: Path, *, run_id: str, scenario: str = "baseline") -> _ScriptedWorld:
     """Compose the all-real recipe with scripted capabilities on a local sandbox."""
 
     del run_id
+    if scenario == "repair-targeted":
+        model_script = baseline.REPAIR_TARGETED_SCRIPT
+        search_responses = baseline.REPAIR_TARGETED_SEARCH_RESPONSES
+        fetch_responses = baseline.REPAIR_TARGETED_FETCH_RESPONSES
+    elif scenario == "baseline":
+        model_script = baseline.MODEL_SCRIPT
+        search_responses = baseline.WEB_SEARCH_RESPONSES
+        fetch_responses = baseline.WEB_FETCH_RESPONSES
+    else:
+        raise ValueError(f"unknown_scripted_real_scenario:{scenario}")
     envelope, identity = _local_envelope(workspace)
     set_sandbox_provider(_RegisteredLocalProvider(envelope.parent_sandbox))
 
@@ -377,9 +387,9 @@ def build_world(workspace: Path, *, run_id: str) -> _ScriptedWorld:
             fault_hook=None,
         )
 
-    model = TemplateScriptedModel(templates=list(baseline.MODEL_SCRIPT))
-    search = _ScriptedWebTool("web_search", baseline.WEB_SEARCH_RESPONSES)
-    fetch = _ScriptedWebTool("web_fetch", baseline.WEB_FETCH_RESPONSES)
+    model = TemplateScriptedModel(templates=list(model_script))
+    search = _ScriptedWebTool("web_search", search_responses)
+    fetch = _ScriptedWebTool("web_fetch", fetch_responses)
     recipe = ResearchGraphRecipe.all_real(
         work_unit_store_factory=create_store,
         node_agent_bridge_factory=_ScriptedBridgeFactory(model, search, fetch),
@@ -395,7 +405,7 @@ def build_world(workspace: Path, *, run_id: str) -> _ScriptedWorld:
     )
 
 
-async def _drive(world: _ScriptedWorld) -> dict[str, Any]:
+async def _drive(world: _ScriptedWorld, *, expected_code: str) -> dict[str, Any]:
     question = HumanMessage(content=baseline.BASELINE_QUESTION, id="scripted-real-start")
     start_call = _tool_call("start", "scripted-real-start-call")
     started = await run_deep_research(
@@ -441,12 +451,14 @@ async def _drive(world: _ScriptedWorld) -> dict[str, Any]:
         completed = resumed
     if not isinstance(completed, dict):
         raise AssertionError(f"resume did not produce a terminal result: {completed}")
-    if completed.get("code") != "completed":
-        raise AssertionError(f"baseline did not complete: {completed}")
+    if completed.get("code") != expected_code:
+        raise AssertionError(f"scripted run did not complete ({expected_code}): {completed}")
     return completed
 
 
-async def _observe(world: _ScriptedWorld, completed: dict[str, Any]) -> ScriptedRealRun:
+async def _observe(
+    world: _ScriptedWorld, completed: dict[str, Any], *, allow_targeted_evidence: bool
+) -> ScriptedRealRun:
     lifecycle = BundleLifecycle(workspace_host_path=world.envelope.workspace_host_path)
     bundle = await lifecycle.resolve(
         scope=(world.envelope.effective_user_id, world.envelope.outer_thread_id),
@@ -456,8 +468,10 @@ async def _observe(world: _ScriptedWorld, completed: dict[str, Any]) -> Scripted
         raise AssertionError(f"selected bundle unavailable: {completed.get('bundle_id')}")
     state = await lifecycle.read_state(bundle)
     trace = tuple(state.execution_trace or ())
-    if "targeted_evidence" in trace or "rerun" in trace:
+    if not allow_targeted_evidence and ("targeted_evidence" in trace or "rerun" in trace):
         raise AssertionError(f"baseline entered an out-of-scope branch: {trace}")
+    if "rerun" in trace:
+        raise AssertionError(f"scripted run entered the out-of-scope rerun branch: {trace}")
     journal_path = str(
         Path(world.envelope.workspace_host_path) / bundle_host_relative_root(bundle) / "diagnostics" / "events.jsonl"
     )
@@ -503,37 +517,57 @@ async def _observe(world: _ScriptedWorld, completed: dict[str, Any]) -> Scripted
     )
 
 
-async def run_scripted_real_workflow(*, workspace: Path, run_id: str = "baseline") -> ScriptedRealRun:
-    """Run the fixed narrow baseline through the all-real production control path."""
+async def run_scripted_real_workflow(
+    *, workspace: Path, run_id: str = "baseline", scenario: str = "baseline"
+) -> ScriptedRealRun:
+    """Run one fixed narrow scenario through the all-real production control path."""
 
     started_at = time.monotonic()
-    world = build_world(workspace, run_id=run_id)
+    world = build_world(workspace, run_id=run_id, scenario=scenario)
     try:
-        completed = await _drive(world)
-        result = await _observe(world, completed)
+        completed = await _drive(
+            world, expected_code="completed" if scenario == "baseline" else "blocked"
+        )
+        result = await _observe(world, completed, allow_targeted_evidence=scenario != "baseline")
         result.wall_seconds = time.monotonic() - started_at
-        if result.model_calls != baseline.EXPECTED_MODEL_CALLS:
+        expected_model_calls = (
+            baseline.EXPECTED_MODEL_CALLS
+            if scenario == "baseline"
+            else baseline.EXPECTED_REPAIR_TARGETED_MODEL_CALLS
+        )
+        expected_search_calls = (
+            baseline.EXPECTED_WEB_SEARCH_CALLS
+            if scenario == "baseline"
+            else baseline.EXPECTED_REPAIR_TARGETED_SEARCH_CALLS
+        )
+        expected_fetch_calls = (
+            baseline.EXPECTED_WEB_FETCH_CALLS
+            if scenario == "baseline"
+            else baseline.EXPECTED_REPAIR_TARGETED_FETCH_CALLS
+        )
+        if result.model_calls != expected_model_calls:
             raise AssertionError(
-                f"baseline model-call budget violated: {result.model_calls} != {baseline.EXPECTED_MODEL_CALLS} "
+                f"scripted model-call budget violated: {result.model_calls} != {expected_model_calls} "
                 f"(consumed: {result.consumed})"
             )
-        if result.web_search_calls != baseline.EXPECTED_WEB_SEARCH_CALLS:
+        if result.web_search_calls != expected_search_calls:
             raise AssertionError(
-                f"baseline web_search budget violated: "
-                f"{result.web_search_calls} != {baseline.EXPECTED_WEB_SEARCH_CALLS}"
+                f"scripted web_search budget violated: "
+                f"{result.web_search_calls} != {expected_search_calls}"
             )
-        if result.web_fetch_calls != baseline.EXPECTED_WEB_FETCH_CALLS:
+        if result.web_fetch_calls != expected_fetch_calls:
             raise AssertionError(
-                f"baseline web_fetch budget violated: {result.web_fetch_calls} != {baseline.EXPECTED_WEB_FETCH_CALLS}"
+                f"scripted web_fetch budget violated: {result.web_fetch_calls} != {expected_fetch_calls}"
             )
         if result.record_count < 2:
-            raise AssertionError(f"baseline accepted fewer than 2 work-unit records: {result.record_count}")
+            raise AssertionError(f"scripted run accepted fewer than 2 work-unit records: {result.record_count}")
         if {"source-diagnostic.json", "claim-verifier.json"} - set(result.wave1_review_artifacts):
-            raise AssertionError(f"baseline missing Wave1 critic review artifacts: {result.wave1_review_artifacts}")
-        if not result.final_artifacts_published:
-            raise AssertionError("baseline did not publish the final report and citation-map pair")
-        if result.backed_claim_count < 1:
-            raise AssertionError("baseline citation map has no claim with a backing reference")
+            raise AssertionError(f"scripted run missing Wave1 critic review artifacts: {result.wave1_review_artifacts}")
+        if scenario == "baseline":
+            if not result.final_artifacts_published:
+                raise AssertionError("baseline did not publish the final report and citation-map pair")
+            if result.backed_claim_count < 1:
+                raise AssertionError("baseline citation map has no claim with a backing reference")
         return result
     finally:
         reset_sandbox_provider()

@@ -15,6 +15,7 @@ from deerflow_deep_research.domain.work_units import CONTENT_HASH_RE, _FrozenMod
 
 FINDING_ID_RE = re.compile(r"^finding:[a-zA-Z0-9_-]{1,64}$")
 GAP_ID_RE = re.compile(r"^gap:[a-zA-Z0-9_-]{1,64}$")
+QUESTION_ID_RE = re.compile(r"^q:w1_[a-zA-Z0-9_-]{1,64}$")
 MAX_FINDINGS = 128
 MAX_RELATIONS = 64
 MAX_SYNTHESIS_EVIDENCE_ENTRY_BYTES = 24 * 1024
@@ -68,6 +69,16 @@ class GapRecord(_FrozenModel):
     priority: int = Field(ge=1, le=5)
     affected_topics: Annotated[tuple[str, ...], Field(max_length=16)] = ()
     search_required: bool = False
+    source_questions: Annotated[tuple[str, ...], Field(max_length=16)] = ()
+
+    @model_validator(mode="after")
+    def validate_source_questions(self) -> GapRecord:
+        ids = self.source_questions
+        if any(not QUESTION_ID_RE.fullmatch(value) for value in ids):
+            raise ValueError("synthesis_gap_source_question_invalid")
+        if ids != tuple(sorted(ids)) or len(ids) != len(set(ids)):
+            raise ValueError("synthesis_gap_source_question_invalid")
+        return self
 
 
 class Wave2GatePreview(_FrozenModel):
@@ -99,6 +110,16 @@ class SynthesisResult(_FrozenModel):
     relations: Annotated[tuple[CrossTopicRelation, ...], Field(max_length=MAX_RELATIONS)] = ()
     gaps: Annotated[tuple[GapRecord, ...], Field(max_length=32)] = ()
     summary: str = Field(default="", max_length=8000)
+    resolved_questions: Annotated[tuple[str, ...], Field(max_length=64)] = ()
+
+    @model_validator(mode="after")
+    def validate_resolved_questions(self) -> SynthesisResult:
+        ids = self.resolved_questions
+        if any(not QUESTION_ID_RE.fullmatch(value) for value in ids):
+            raise ValueError("synthesis_resolved_question_invalid")
+        if ids != tuple(sorted(ids)) or len(ids) != len(set(ids)):
+            raise ValueError("synthesis_resolved_question_invalid")
+        return self
 
     @model_validator(mode="before")
     @classmethod
@@ -248,3 +269,5 @@ class SynthesisBundleStoreProtocol(Protocol):
     async def read_synthesis_evidence(self, accepted_refs: tuple[str, ...]) -> tuple[SynthesisEvidence, ...]: ...
 
     async def write_synthesis(self, result: SynthesisResult) -> None: ...
+
+    async def read_wave1_open_questions(self, accepted_refs: tuple[str, ...]) -> tuple[tuple[str, str], ...]: ...

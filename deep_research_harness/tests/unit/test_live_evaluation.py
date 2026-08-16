@@ -558,6 +558,7 @@ async def test_focused_targeted_setup_publishes_one_gap_without_phase_gate(monke
             "priority": 1,
             "affected_topics": ("storage",),
             "search_required": True,
+            "source_questions": (),
         },
     )
 

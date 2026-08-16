@@ -171,6 +171,7 @@ class RunObservationStore:
         attempt_id: str | None = None,
         validation_stage: str | None = None,
         validation_codes: tuple[str, ...] = (),
+        critic_kind: str | None = None,
         response_shape: FinalResponseShape | None = None,
         failure_category: str | None = None,
         worker_failure_category: str | None = None,
@@ -202,6 +203,7 @@ class RunObservationStore:
                     attempt_id,
                     validation_stage,
                     validation_codes,
+                    critic_kind,
                     response_shape,
                     failure_category,
                     worker_failure_category,
@@ -434,6 +436,7 @@ class RunObservationStore:
         attempt_id: str | None,
         validation_stage: str | None,
         validation_codes: tuple[str, ...],
+        critic_kind: str | None,
         response_shape: FinalResponseShape | None,
         failure_category: str | None,
         worker_failure_category: str | None,
@@ -466,6 +469,7 @@ class RunObservationStore:
                 attempt_id=attempt_id,
                 validation_stage=validation_stage,  # type: ignore[arg-type]
                 validation_codes=validation_codes,
+                critic_kind=critic_kind,  # type: ignore[arg-type]
                 response_shape=response_shape,
                 failure_category=failure_category,
                 worker_failure_category=worker_failure_category,  # type: ignore[arg-type]

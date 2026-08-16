@@ -43,7 +43,7 @@ from deerflow_deep_research.domain.bundle import (
     is_evidence_staging_name,
     run_bundle_root,
 )
-from deerflow_deep_research.domain.lifecycle import WorkUnitStorageReason
+from deerflow_deep_research.domain.lifecycle import LogicalPhase, WorkUnitStorageReason
 from deerflow_deep_research.domain.state import ContentRef
 from deerflow_deep_research.domain.synthesis import (
     MAX_SYNTHESIS_EVIDENCE_ENTRY_BYTES,
@@ -51,6 +51,7 @@ from deerflow_deep_research.domain.synthesis import (
     SynthesisEvidence,
     SynthesisResult,
 )
+from deerflow_deep_research.domain.wave1 import OpenQuestionState, Wave1SourceIntakeResult
 from deerflow_deep_research.domain.work_units import (
     MAX_RESULT_BYTES,
     MAX_SUBMISSION_LEDGER_BYTES,
@@ -366,6 +367,31 @@ class WorkUnitStore:
             )
             remaining_bytes -= len(bounded)
         return tuple(evidence)
+
+    async def read_wave1_open_questions(self, accepted_refs: tuple[str, ...]) -> tuple[tuple[str, str], ...]:
+        """Read verbatim targeted-search question texts from accepted Wave1 documents."""
+
+        records = await self.load_records()
+        records_by_hash = {record.record_hash: record for record in records}
+        entries: list[tuple[str, str, str]] = []
+        for accepted_ref in accepted_refs:
+            try:
+                record = records_by_hash[accepted_ref]
+            except KeyError as exc:
+                raise ValueError("synthesis_accepted_record_missing") from exc
+            if record.phase is not LogicalPhase.WAVE1:
+                continue
+            raw = await self.read_canonical_bytes(record.result_ref, max_bytes=MAX_RESULT_BYTES)
+            try:
+                document = Wave1SourceIntakeResult.model_validate_json(raw)
+            except ValueError as exc:
+                raise ValueError("wave1_open_question_read_invalid") from exc
+            for question in document.open_questions:
+                if question.state is OpenQuestionState.TARGETED_SEARCH:
+                    entries.append((record.work_id, question.question_id, question.question))
+        return tuple(
+            (question_id, question) for _work_id, question_id, question in sorted(entries)
+        )
 
     async def publish_final(self, report: bytes, citation_map: bytes) -> tuple[ContentRef, ContentRef]:
         if not isinstance(report, bytes) or not report or len(report) > MAX_FINAL_ARTIFACT_BYTES:
