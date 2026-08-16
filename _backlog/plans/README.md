@@ -19,10 +19,9 @@
 
 | Plan | 类型 | 下一步 |
 |------|------|--------|
-| [architecture-guard-import-authority-drift.md](architecture-guard-import-authority-drift.md) | 设计 / 复盘 | 止血已随 `feb5549` 完成；下一步开独立 change 把 import matrix 收编回 `project-structure.toml` 单一权威（方向 B） |
 | [narrow-scripted-real-workflow-debug-path.md](narrow-scripted-real-workflow-debug-path.md) | 设计 / 复盘 | 建立 operator-only 的窄 scripted-real workflow change，并先写全三波 action proof |
 
-**Next available plan ID: CLS-042**（移入 `_closed_plans/` 时分配）
+**Next available plan ID: CLS-043**（移入 `_closed_plans/` 时分配）
 
 ## 已归档（移至 `_done/_closed_plans/`）
 

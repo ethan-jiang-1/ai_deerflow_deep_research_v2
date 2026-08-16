@@ -60,5 +60,6 @@ plan 完成后从 `_backlog/plans/` 通过 `git mv` 移入本目录：
 | CLS-039 | 2026-08-15 | [openspec-support-topology-simplification.md](openspec-support-topology-simplification.md) | OpenSpec 支持拓扑收敛已通过 `simplify-openspec-support-topology` 实现、同步主规格、归档并提交为 `188bba5`；治理与 focused gate 通过，full verify 的三项基线 metadata selector 失败不归因于该 change。 |
 | CLS-040 | 2026-08-15 | [node-cognitive-program-authoring-and-legacy-vocabulary-retirement.md](node-cognitive-program-authoring-and-legacy-vocabulary-retirement.md) | LLM-node cognitive-program-first authoring 与旧外来术语清理已通过 `harden-cognitive-node-authoring-and-retire-legacy-vocabulary` 完成、同步主规格并归档；产品上下文变更随后消除了最后的全量验证阻塞。 |
 | CLS-041 | 2026-08-16 | [runtime-operator-logs-and-live-trace.md](runtime-operator-logs-and-live-trace.md) | DeerFlow-native 运行时可观测性链全部落地：三条记录（instrument 标准日志 → add-deerflow-native-live-event-projection 事件投影 → wire-harness-observability-entrypoints 公共 Gateway 转发/双入口切换/stderr 捕获）均已实施、同步主规格并归档；真实 Gateway 转发探针证明 `deep_research.progress.v1` 到达公开 SSE `custom` 通道。 |
+| CLS-042 | 2026-08-16 | [architecture-guard-import-authority-drift.md](architecture-guard-import-authority-drift.md) | 架构守卫 import matrix 权威源漂移（checker 硬编码 vs toml）已根治：止血随 `feb5549` 完成，方向 B（拆分内层方向不变量 + 外部 namespace whitelist）经 `consolidate-import-matrix-authority` 实现、同步主规格、归档并提交 `2fb5459`；关联的 submodule 锁 commit 措辞与 harness 多义随后在 `8817ba4` 修正。 |
 
-**Next available plan ID: CLS-042**
+**Next available plan ID: CLS-043**
