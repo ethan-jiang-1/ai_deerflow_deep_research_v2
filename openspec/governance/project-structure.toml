@@ -994,6 +994,9 @@ path = "_backlog/_done/_closed_plans/policy-gate-injection-layer/05-operation-gu
 kind = "file"
 owner = "PRS-009"
 
+# Import-boundary keys: the six import layers (including `nodes`, the graph-owned
+# node-package import sub-layer). External namespaces are TOML-authorized per layer;
+# internal-layer import directions are fixed and enforced by the checker.
 [imports]
 domain = ["stdlib", "pydantic"]
 engine = ["domain"]

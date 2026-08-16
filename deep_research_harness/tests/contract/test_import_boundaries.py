@@ -382,3 +382,28 @@ def test_manifest_node_shape_rejects_export_leakage(project_root: Path) -> None:
 def test_components_cannot_be_top_level_nodes(project_root: Path) -> None:
     _write(project_root, "deep_research_harness/src/deerflow_deep_research/graph/nodes/components/__init__.py")
     _assert_error(project_root, "node.package_confusion")
+
+
+def test_whitelisted_namespace_assignment_is_toml_only(project_root: Path) -> None:
+    manifest = project_root / "openspec/governance/project-structure.toml"
+    manifest.write_text(
+        manifest.read_text(encoding="utf-8").replace(
+            'runtime = ["domain", "graph", "agents", "deerflow", "httpx", "httpx_sse", "langchain", "langgraph", "openai"]',
+            'runtime = ["domain", "graph", "agents", "deerflow", "httpx", "httpx_sse", "langchain", "langgraph", "openai", "pydantic"]',
+        ),
+        encoding="utf-8",
+    )
+    result = _run_checker(project_root)
+    assert result.returncode == 0, result.stderr
+
+
+def test_unknown_external_namespace_is_rejected_by_whitelist(project_root: Path) -> None:
+    manifest = project_root / "openspec/governance/project-structure.toml"
+    manifest.write_text(
+        manifest.read_text(encoding="utf-8").replace(
+            'runtime = ["domain", "graph", "agents", "deerflow", "httpx", "httpx_sse", "langchain", "langgraph", "openai"]',
+            'runtime = ["domain", "graph", "agents", "deerflow", "httpx", "httpx_sse", "langchain", "langgraph", "openai", "bogus_ns"]',
+        ),
+        encoding="utf-8",
+    )
+    _assert_error(project_root, "imports.namespace")

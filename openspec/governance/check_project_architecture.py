@@ -34,14 +34,32 @@ REQ_HEADER_RE = re.compile(r"^> req:\s*(.+)$", re.MULTILINE)
 PACKAGE_NAME = "deerflow_deep_research"
 FIXTURE_PACKAGE_NAME = "deerflow_deep_research_fixtures"
 CANONICAL_HARNESS_ROOT = PurePosixPath("deep_research_harness")
+# Import-boundary layers: the six keys of the `[imports]` table. `nodes` is the
+# graph-owned node-package import sub-layer, not one of the five ownership layers
+# (`runtime`, `domain`, `engine`, `agents`, `graph`).
 INTERNAL_LAYERS = {"domain", "engine", "agents", "graph", "nodes", "runtime"}
-REQUIRED_IMPORT_POLICY = {
-    "domain": {"stdlib", "pydantic"},
+# Non-weakenable internal-layer import directions, owned by PRS-002. The `[imports]`
+# table cannot add an internal layer to a layer that these rules exclude.
+REQUIRED_INTERNAL_IMPORT_POLICY = {
+    "domain": set(),
     "engine": {"domain"},
-    "agents": {"domain", "deerflow", "langchain"},
-    "graph": {"domain", "engine", "nodes", "langgraph"},
-    "nodes": {"domain", "engine", "langgraph"},
-    "runtime": {"domain", "graph", "agents", "deerflow", "httpx", "httpx_sse", "langchain", "langgraph", "openai"},
+    "agents": {"domain"},
+    "graph": {"domain", "engine", "nodes"},
+    "nodes": {"domain", "engine"},
+    "runtime": {"domain", "graph", "agents"},
+}
+# Closed set of legal external top-level namespaces. External namespaces are
+# TOML-authorized per layer; this whitelist only answers "is this external namespace
+# real at all". Internal layers are validated separately above.
+TOP_LEVEL_NAMESPACE_WHITELIST = {
+    "stdlib",
+    "pydantic",
+    "deerflow",
+    "langchain",
+    "langgraph",
+    "httpx",
+    "httpx_sse",
+    "openai",
 }
 REQUIRED_NODE_FILES = {"__init__.py", "node.py", "contracts.py"}
 REQUIRED_NODE_FORBIDDEN_FILES = {"fake.py"}
@@ -335,11 +353,18 @@ def load_manifest(root: Path) -> StructureManifest:
             "manifest.schema",
             "imports must define domain, engine, agents, graph, nodes, and runtime",
         )
-    for layer, required_policy in REQUIRED_IMPORT_POLICY.items():
-        if set(imports[layer]) != required_policy:
+    for layer, required_internal in REQUIRED_INTERNAL_IMPORT_POLICY.items():
+        internal = set(imports[layer]) & INTERNAL_LAYERS
+        if internal != required_internal:
             raise ContractViolation(
                 "imports.policy",
-                f"imports.{layer} must match the project-structure requirement: {sorted(required_policy)}",
+                f"imports.{layer} must keep its internal-layer import directions: {sorted(required_internal)}",
+            )
+        unknown = (set(imports[layer]) - INTERNAL_LAYERS) - TOP_LEVEL_NAMESPACE_WHITELIST
+        if unknown:
+            raise ContractViolation(
+                "imports.namespace",
+                f"imports.{layer} names an unknown external namespace: {sorted(unknown)}",
             )
 
     node_packages = _expect_mapping(data.get("node_packages"), "node_packages")

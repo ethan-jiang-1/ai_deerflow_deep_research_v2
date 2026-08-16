@@ -20,6 +20,25 @@ The registry is subordinate to the owning spec. It contains enumerable facts,
 not a second prose architecture. This policy defines ownership and update rules
 only; it must not contain an independent directory tree or import matrix.
 
+## Import Matrix Authority
+
+The per-layer import matrix splits into two authorities:
+
+- **Internal-layer import directions** (which internal layer each layer may import) are a
+  fixed, non-weakenable constraint encoded in `check_project_architecture.py` as
+  `REQUIRED_INTERNAL_IMPORT_POLICY`. The `[imports]` table cannot add an internal layer to a
+  layer that the owning spec excludes.
+- **External namespaces** are authorized per layer solely by the `[imports]` table in
+  `project-structure.toml`, checked against a closed top-level-namespace whitelist in the
+  checker. Assigning an already-whitelisted namespace to a layer is a TOML-only edit; a
+  genuinely new namespace needs a one-time whitelist entry.
+
+The checker therefore does not hard-code a per-layer external-namespace set. The `[imports]`
+table has six import-boundary keys (`domain`, `engine`, `agents`, `graph`, `nodes`,
+`runtime`) where `nodes` is the graph-owned node-package import sub-layer; the five
+ownership layers (`runtime`, `domain`, `engine`, `agents`, `graph`) are a distinct
+vocabulary.
+
 ## Lifecycle
 
 Before `openspec/specs/project-structure/spec.md` exists, exactly one active

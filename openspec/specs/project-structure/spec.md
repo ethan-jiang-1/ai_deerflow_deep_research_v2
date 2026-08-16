@@ -198,8 +198,24 @@ only layer allowed to bind graph execution to raw DeerFlow context, request-bund
 and the embedded-agent factory.
 Production downstream code SHALL not import `app.*`; and generic shared modules named `utils`,
 `helpers`, or `common` SHALL be rejected. The existing direct-provider-classifier exception
-remains limited to `httpx` and `openai` in `runtime/node_agent_bridge.py`; those packages SHALL
-be mechanically rejected from every other production layer.
+SHALL remain limited to `httpx` and `openai` in `runtime/node_agent_bridge.py`; the
+structured-SSE Gateway observer in `runtime/gateway_observer.py` SHALL be the only other
+runtime module permitted to import `httpx` and `httpx_sse`; those packages SHALL be
+mechanically rejected from every other production layer.
+
+The per-layer import matrix SHALL separate internal-layer import directions from external
+namespaces. Internal-layer import directions — which internal layers each layer MAY import —
+SHALL be a fixed, non-weakenable constraint enforced by the architecture checker; the
+`[imports]` table SHALL NOT be able to add an internal layer to a layer that the
+import-direction rules above exclude. External namespaces — packages outside the internal
+layers — SHALL be authorized by the `[imports]` table for per-layer assignment and by a
+closed top-level-namespace whitelist for namespace legality; a genuinely new external
+namespace SHALL require a one-time entry in that whitelist, while assigning an
+already-whitelisted namespace to a layer SHALL require only a TOML edit. The checker SHALL
+NOT hard-code a per-layer external-namespace set. The import-boundary keys SHALL be `domain`,
+`engine`, `agents`, `graph`, `nodes`, and `runtime`, where `nodes` is the graph-owned
+node-package import sub-layer; this does not change the five documented production ownership
+layers (`runtime`, `domain`, `engine`, `agents`, `graph`).
 
 #### Scenario: Valid one-way fixture dependency passes
 - **WHEN** the contract scans a fixture adapter importing documented production contracts and a
@@ -234,6 +250,28 @@ be mechanically rejected from every other production layer.
   `langgraph.types.interrupt`
 - **THEN** the import is accepted as a graph-owned HITL interrupt boundary, while other
   LangGraph imports from ordinary production node modules remain rejected
+
+#### Scenario: Internal-layer import directions are non-weakenable
+- **WHEN** the `[imports]` table adds an internal layer (for example `runtime`) to a layer
+  whose import-direction rules exclude it (for example `domain`)
+- **THEN** the architecture checker rejects the manifest
+
+#### Scenario: External namespace assignment is single-source
+- **WHEN** an already-whitelisted external namespace is assigned to a declared layer in the
+  `[imports]` table
+- **THEN** the architecture checker accepts it for those layers without editing any per-layer
+  set in checker source, and checker source contains no per-layer external-namespace set
+
+#### Scenario: A genuinely new external namespace requires a one-time whitelist entry
+- **WHEN** an external namespace not present in the closed whitelist is added to the
+  `[imports]` table
+- **THEN** the architecture checker rejects the manifest until that namespace is added to the
+  whitelist
+
+#### Scenario: Import-boundary layers remain distinct from ownership layers
+- **WHEN** architecture governance validates the `[imports]` table
+- **THEN** it requires the six import-boundary keys (including `nodes`) while the documented
+  production ownership layers remain five (`runtime`, `domain`, `engine`, `agents`, `graph`)
 
 ### Requirement: Top-level nodes expose one stable production surface
 

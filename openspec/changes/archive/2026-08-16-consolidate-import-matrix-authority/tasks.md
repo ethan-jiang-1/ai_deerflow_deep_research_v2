@@ -1,0 +1,27 @@
+## 1. Red-Before-Green Tests
+
+- [x] 1.1 Add a red-before-green test in `deep_research_harness/tests/contract/test_import_boundaries.py` proving that assigning an already-whitelisted external namespace (e.g. `pydantic`) to a layer that does not currently list it (e.g. `runtime`) in a copied `project-structure.toml` is accepted by the checker with a TOML-only edit. Done when it fails against today's fused `REQUIRED_IMPORT_POLICY` comparison. Verify: `cd deep_research_harness && UV_OFFLINE=1 uv run --no-sync --extra operations python -m pytest tests/contract/test_import_boundaries.py -q`
+- [x] 1.2 Add a regression test proving an unknown external namespace (e.g. `bogus_ns`) in `[imports]` is rejected by the checker, and record that its reason is now the namespace whitelist rather than a per-layer mismatch. Done when it passes before and after the checker change.
+- [x] 1.3 Confirm `test_manifest_cannot_weaken_domain_boundary` is preserved: adding `runtime` to the `domain` entry of `[imports]` must stay rejected. Done when this existing test is read and its assertion (internal-direction non-weakenability) is mapped to the new assertion in task 2.2.
+
+## 2. Checker Implementation
+
+- [x] 2.1 In `openspec/governance/check_project_architecture.py`, replace `REQUIRED_IMPORT_POLICY` with `REQUIRED_INTERNAL_IMPORT_POLICY` (per layer, the exact internal-layer set: `domain` → none; `engine` → `{domain}`; `agents` → `{domain}`; `graph` → `{domain, engine, nodes}`; `nodes` → `{domain, engine}`; `runtime` → `{domain, graph, agents}`) and a `TOP_LEVEL_NAMESPACE_WHITELIST` of `INTERNAL_LAYERS` plus `stdlib`, `pydantic`, `deerflow`, `langchain`, `langgraph`, `httpx`, `httpx_sse`, `openai`.
+- [x] 2.2 Replace the exact-set comparison at lines 338-343 with two checks: (a) `set(imports[layer]) & INTERNAL_LAYERS == REQUIRED_INTERNAL_IMPORT_POLICY[layer]` for every layer; (b) every non-internal value in `[imports]` is in `TOP_LEVEL_NAMESPACE_WHITELIST`. Done when tasks 1.1-1.3 all pass.
+- [x] 2.3 Annotate/rename `INTERNAL_LAYERS` as the import-boundary layer set and document that `nodes` is the graph-owned node-package import sub-layer, distinct from the five `ownership_layers`. Done when the checker source states the distinction inline.
+
+## 3. Policy And Registry Landing
+
+- [x] 3.1 Update `openspec/governance/architecture-policy.md` so the "must not contain an independent import matrix" rule is operational: name the split (fixed internal-direction constraint + external-namespace whitelist), state the five ownership layers versus six import-boundary keys, and point to the checker as the enforcer. Done when the policy text matches the checker behavior.
+- [x] 3.2 If needed, add a clarifying comment (no behavioral change) to the `[imports]` table in `project-structure.toml` recording that external namespaces are TOML-authorized and internal directions are fixed. Done when the TOML still passes `check_project_architecture.py`.
+
+## 4. Verification
+
+- [x] 4.1 Run `python3 openspec/governance/check_project_architecture.py` — must pass (exit 0).
+- [x] 4.2 Run `cd deep_research_harness && UV_OFFLINE=1 make verify` — the deterministic gate passes. (`uv` is blocked by the sandbox cache path, so the verify core was reproduced via `.venv/bin/python -m pytest`: 2793 passed, 3 pre-existing failures unrelated to this change — two `uv` sandbox-cache denials in `test_demo_commands` / `test_live_architecture_contract` and one `.gitignore:165 skills/` rule already ignoring `.agents/skills/` in `test_repository_delivery`.)
+- [x] 4.3 Run `openspec validate consolidate-import-matrix-authority --strict` and `git diff HEAD --check`; record `git status --porcelain=v1 --untracked-files=all`, `git ls-files --stage deerflow`, `git submodule status -- deerflow`, `git -C deerflow status --porcelain=v1 --untracked-files=all`, and review `git diff --submodule=short`. Done when the change makes no `deerflow/` source or gitlink mutation.
+
+## 5. Control Placement Review Obligations
+
+- [x] 5.1 Apply-agent plan review: the current apply agent re-reads the `## Control Placement Review`, compares the approved split-scope (fixed internal direction + external-namespace whitelist) with the working tree, and adds every actionable mismatch as an unchecked ordinary task before target edits. Done when the apply record names the internal-direction invariant and external-namespace authority and lists any added correction tasks. Apply record: `REQUIRED_INTERNAL_IMPORT_POLICY` enforces the internal-direction invariant (preserved `test_manifest_cannot_weaken_domain_boundary`); `TOP_LEVEL_NAMESPACE_WHITELIST` plus the TOML `[imports]` table own external-namespace authorization; no actionable mismatch required an added correction task.
+- [x] 5.2 Archive-agent closeout review: the current archive agent compares final tasks, diff, and evidence with the approved scope and records that no per-layer external-namespace set was re-introduced and the internal-direction invariant remains enforced. Done when the closeout record states those two facts and lists any actionable mismatch as an unchecked task. Closeout record: no per-layer external-namespace set was re-introduced (`REQUIRED_IMPORT_POLICY` is gone; only `REQUIRED_INTERNAL_IMPORT_POLICY` + `TOP_LEVEL_NAMESPACE_WHITELIST` remain); the internal-direction invariant remains enforced (`test_manifest_cannot_weaken_domain_boundary` still passes against the `imports.policy` assertion); no actionable mismatch required an added task.
