@@ -54,7 +54,7 @@ class PreparationContext:
     config_path: Path
     extensions_path: Path
     deer_flow_home: Path
-    expected_config_version: int
+    baseline_config_version: int
     environment: dict[str, str]
 
 
@@ -155,19 +155,17 @@ def _extensions_target(root: Path, env: Mapping[str, str]) -> Path:
     raise PrepareError("extensions_target_missing", "extensions target does not exist")
 
 
-def _read_config_version(path: Path, *, expected: bool = False) -> int:
+def _read_config_version(path: Path) -> int:
     try:
         content = path.read_text(encoding="utf-8")
     except OSError as exc:
         raise PrepareError("config_version_missing", "config version source is unavailable") from exc
     match = _VERSION_PATTERN.search(content)
     if match is None:
-        code = "config_example_invalid" if expected else "config_version_missing"
-        raise PrepareError(code, "config_version is missing")
+        raise PrepareError("config_version_missing", "config_version is missing")
     raw = match.group(1).strip()
     if not raw.isdecimal():
-        code = "config_example_invalid" if expected else "config_version_invalid"
-        raise PrepareError(code, "config_version must be a decimal integer")
+        raise PrepareError("config_version_invalid", "config_version must be a decimal integer")
     return int(raw)
 
 
@@ -199,12 +197,13 @@ def resolve_preparation_context(
     effective["DEER_FLOW_CONFIG_PATH"] = str(app_target)
     effective["DEER_FLOW_EXTENSIONS_CONFIG_PATH"] = str(extensions_path)
 
-    expected_version = _read_config_version(root / "config.example.yaml", expected=True)
-    actual_version = _read_config_version(app_target)
-    if actual_version < expected_version:
-        raise PrepareError("config_version_older", "config is older than this checkout")
-    if actual_version > expected_version:
-        raise PrepareError("config_version_newer", "config is newer than this checkout")
+    baseline_version = _read_config_version(root / "config.yaml")
+    selected_version = _read_config_version(app_target)
+    if selected_version != baseline_version:
+        raise PrepareError(
+            "config_version_mismatch",
+            "selected profile config_version does not match the current local configuration",
+        )
 
     return PreparationContext(
         project_root=root,
@@ -215,7 +214,7 @@ def resolve_preparation_context(
         config_path=app_target,
         extensions_path=extensions_path,
         deer_flow_home=home,
-        expected_config_version=expected_version,
+        baseline_config_version=baseline_version,
         environment=effective,
     )
 

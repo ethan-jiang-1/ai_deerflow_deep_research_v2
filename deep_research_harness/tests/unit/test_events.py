@@ -573,7 +573,10 @@ def _observation_source_violations(sources: dict[str, str]) -> set[str]:
             violations.add("raw_writer_capture")
         if ".writer(" in source and path != "runtime/events.py":
             violations.add("raw_writer_invocation")
-        if "deep_research.progress" in source and path != "runtime/events.py":
+        if "deep_research.progress" in source and path not in {
+            "runtime/events.py",
+            "runtime/gateway_observer.py",
+        }:
             violations.add("event_type_boundary")
         if path == "runtime/events.py" and (
             source.count("deep_research.progress") != 1 or 'LIVE_EVENT_TYPE = "deep_research.progress.v1"' not in source

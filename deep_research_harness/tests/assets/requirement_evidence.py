@@ -1361,7 +1361,10 @@ REQUIREMENT_IMPACTS = (
         "DPL-012",
         "demo-pipeline",
         StableSeam.PUBLIC_ENTRY,
-        "tests/contract/test_demo_commands.py::test_real_demo_calibration_documents_an_explicit_observational_procedure",
+        (
+            "tests/contract/test_demo_commands.py::"
+            "test_embedded_smoke_calibration_documents_an_explicit_observational_procedure"
+        ),
         (
             "operator guidance could otherwise invoke an unselected profile or treat "
             "one diagnostic run as a default decision"
@@ -1591,6 +1594,131 @@ REQUIREMENT_IMPACTS = (
         StableSeam.RUNTIME_INTEGRATION,
         "tests/unit/test_runtime_adapter.py::test_adapt_keeps_trace_binding_with_deerflow_logging",
         "untrusted trace correlation could cross the runtime boundary as identity or recovery authority",
+    ),
+    RequirementImpact(
+        "GOO-001",
+        "gateway-operator-observer",
+        StableSeam.RUNTIME_INTEGRATION,
+        (
+            "tests/unit/test_gateway_observer.py::"
+            "test_observer_creates_one_fresh_thread_then_reuses_only_its_public_thread_for_follow_up"
+        ),
+        (
+            "a caller or prior turn could choose the thread instead of the current observer owning "
+            "fresh-start and follow-up use"
+        ),
+    ),
+    RequirementImpact(
+        "GOO-001",
+        "gateway-operator-observer",
+        StableSeam.RUNTIME_INTEGRATION,
+        "tests/unit/test_gateway_observer.py::test_http_client_uses_only_fixed_public_thread_and_stream_shapes",
+        "the observer could drift to a proxy, private API, caller-selected origin, or non-public request envelope",
+    ),
+    RequirementImpact(
+        "GOO-002",
+        "gateway-operator-observer",
+        StableSeam.RUNTIME_INTEGRATION,
+        (
+            "tests/unit/test_gateway_observer.py::"
+            "test_valid_custom_progress_stays_withheld_while_only_typed_tool_result_returns"
+        ),
+        (
+            "a valid but unproven custom event could bypass the forwarding proof and become a "
+            "lifecycle or presentation authority"
+        ),
+    ),
+    RequirementImpact(
+        "GOO-002",
+        "gateway-operator-observer",
+        StableSeam.RUNTIME_INTEGRATION,
+        (
+            "tests/live/test_gateway_forwarding_proof.py::"
+            "test_gateway_forwarding_proof"
+        ),
+        (
+            "nested forwarding is unproven until a bounded configured-Gateway probe receives a "
+            "predecessor-owned progress event on the public SSE custom channel with matching "
+            "thread/run/Bundle correlation"
+        ),
+        escalation_rationale=(
+            "the deterministic decoder fixtures cannot prove that the reflected tool's "
+            "predecessor-owned event actually reaches the public SSE custom channel, so one "
+            "bounded live probe is the only smallest sufficient proof"
+        ),
+    ),
+    RequirementImpact(
+        "GOO-002",
+        "gateway-operator-observer",
+        StableSeam.RUNTIME_INTEGRATION,
+        "tests/unit/test_gateway_observer.py::test_end_or_assistant_prose_cannot_manufacture_a_lifecycle_result",
+        "outer stream end or assistant prose could be mistaken for a typed Deep Research outcome",
+    ),
+    RequirementImpact(
+        "GOO-003",
+        "gateway-operator-observer",
+        StableSeam.PUBLIC_ENTRY,
+        (
+            "tests/contract/test_local_profiles.py::"
+            "test_gateway_observer_readiness_uses_only_the_validated_profile_environment_and_check_mode"
+        ),
+        (
+            "observer readiness could mutate configuration, inspect credentials, or admit a profile "
+            "without its selected public entry check"
+        ),
+    ),
+    RequirementImpact(
+        "GOO-003",
+        "gateway-operator-observer",
+        StableSeam.PUBLIC_ENTRY,
+        (
+            "tests/contract/test_local_profiles.py::"
+            "test_profile_child_capture_is_owner_only_unique_and_announced_before_child_start"
+        ),
+        (
+            "process logging could leak permissions, race concurrent launches, or alter the Gateway "
+            "child command and inherited stderr"
+        ),
+    ),
+    RequirementImpact(
+        "DPL-004",
+        "demo-pipeline",
+        StableSeam.PUBLIC_ENTRY,
+        (
+            "tests/integration/test_gateway_demo_real.py::"
+            "test_default_real_cli_requires_profile_and_rejects_scripted_before_profile_or_gateway_work"
+        ),
+        "Gateway-default scripted policy or a missing profile could open a public turn before explicit admission",
+    ),
+    RequirementImpact(
+        "DPL-004",
+        "demo-pipeline",
+        StableSeam.PUBLIC_ENTRY,
+        (
+            "tests/integration/test_gateway_demo_real.py::"
+            "test_default_real_cli_uses_only_ready_profile_gateway_transport_without_local_provider_or_graph"
+        ),
+        (
+            "the default CLI could silently retain local provider preflight or construct an embedded "
+            "graph instead of the ready Gateway path"
+        ),
+    ),
+    RequirementImpact(
+        "RED-001",
+        "research-demo-tui",
+        StableSeam.PUBLIC_ENTRY,
+        ("tests/integration/test_gateway_demo_tui.py::test_gateway_tui_requires_profile_before_client_or_local_graph"),
+        "the real TUI could create a client or local graph before its selected Gateway profile is ready",
+    ),
+    RequirementImpact(
+        "RED-001",
+        "research-demo-tui",
+        StableSeam.PUBLIC_ENTRY,
+        (
+            "tests/integration/test_gateway_demo_tui.py::"
+            "test_gateway_tui_hides_cancel_disables_reentry_and_never_renders_fault_as_completion"
+        ),
+        "Gateway TUI controls or a transport fault could create a local cancellation or synthetic completion claim",
     ),
 )
 

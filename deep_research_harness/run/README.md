@@ -1,15 +1,16 @@
 # Run
 
 From `deep_research_harness/`, run `bash run/real-research.sh`. From this directory, run
-`bash real-research.sh`. The launcher starts the standalone all-real research CLI from
+`bash real-research.sh`. The launcher starts the explicit embedded-smoke all-real research CLI from
 any working directory. It exports one explicit selector: callers can supply
 `DEERFLOW_DEMO_MODEL`, or the launcher deliberately exports its configured
-`deepseek-v4-flash` policy before composing the real demo.
+`deepseek-v4-flash` policy before composing the embedded smoke demo. It does not use
+Gateway history, trace correlation, SSE liveness, or custom-event forwarding.
 
 The launcher requires `deep_research_harness/.env` to provide `DEEPSEEK_API_KEY` and `TAVILY_API_KEY`.
 Set `DEEP_RESEARCH_QUESTION` to replace the default question, or set `DEERFLOW_DEMO_MODEL` to another configured model name.
 
-## Bounded Real-Demo Calibration
+## Embedded Smoke Calibration
 
 Use the direct scripted demo from `deep_research_harness/` when collecting bounded
 profile-comparison evidence, so each candidate is explicit:

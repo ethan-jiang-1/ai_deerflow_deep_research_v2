@@ -11,57 +11,100 @@ human-input integration.
 
 ### Requirement: Standalone TUI demo traverses fixture-graph and all-real lifecycle modes through the shared experience
 
-The Textual demo SHALL use one owned `DemoAdapter` and the shared
-`ResearchRunExperience` Module. Default mode SHALL obtain its all-real recipe,
-demo-local bridge, and graph executor from the same shared demo runtime composition
-boundary used by the real CLI; it SHALL not dispatch without that executor into a
-no-graph fallback. `--fixture` SHALL select the fixed fixture graph without a model,
-Tavily, Gateway, root configuration, or network. Both modes SHALL retain
-graph-owned free-text HITL-1, explicit graph cancellation, and a truthful selected-mode
-label. Current HITL2 is an autonomous graph continuation, not an advertised choice.
+The Textual demo SHALL use one shared `ResearchRunExperience` presentation contract
+in every supported mode. Default real mode SHALL require one valid explicit `--profile`
+label that resolves to a ready local Gateway profile and obtain lifecycle results and
+live transport observations through the public Gateway adapter; it SHALL not construct
+`DemoAdapter`, `DemoLifecycleTransport`, an all-real recipe, or a local graph executor.
+`--fixture` SHALL retain the existing fixed fixture graph without a model, Tavily,
+Gateway, root configuration, or network. An explicit embedded-smoke mode MAY retain the
+current local all-real recipe/executor, but it SHALL be visibly labelled embedded smoke
+and SHALL retain the local model/Tavily preflight without any Gateway observability
+claim.
+
+Gateway real mode SHALL submit the question and each explicit follow-up as public turns
+to the configured `deep-research` Agent. It MAY retain only the Gateway-created thread
+id for the current TUI process and SHALL not directly select a Bundle or Deep Research
+lifecycle action. Gateway mode SHALL forward only entered text or a value from a
+currently displayed selected control. It SHALL not render or dispatch the local cancel
+button, and closing or interrupting the local TUI SHALL not claim that the Gateway Run
+was cancelled. Fixture and embedded-smoke modes retain graph-owned free-text HITL-1 and
+explicit graph cancellation.
 
 The TUI SHALL render `Ready`, `Working`, `AwaitingInput`, `Terminal`, and `Fault`
-`RunUpdate` values. Its question view SHALL show only the focused composer after
-preflight passes. It SHALL disable re-entry while a shared `Working` update is active
-and retain a contained fixed safe fault view for unexpected UI failures. It SHALL show
-only whitelisted run-update fields, semantic prompt text, safe diagnostic references,
-and graph-owned advertised choices when another specified interaction exists; it SHALL
-not display raw payloads, exception/configuration text, environment values, client
-objects, or machine brief JSON.
+`RunUpdate` values plus bounded Gateway transport observations. Its question view SHALL
+show only the focused composer after the selected mode's preflight passes. It SHALL
+disable re-entry while a shared `Working` update or public Gateway turn is active and
+retain a contained fixed safe fault view for unexpected UI failures. It SHALL show only
+whitelisted run-update fields, approved progress-event fields, safe assistant text,
+semantic prompt text, safe diagnostic references, and graph-owned advertised choices.
+It SHALL not display raw SSE payloads, tool arguments, non-Deep-Research tool results,
+exception/configuration text, environment values, client objects, or machine brief JSON.
 
-The tracker SHALL use only the shared verified returned trace delta and actual
-observed activity. It SHALL not infer stage from start/resume, option presence,
-request shape, or a private phase list; it SHALL not claim streaming or node-internal
-progress without a real observed event. A missing all-real executor or absent
-graph-backed final-delivery evidence SHALL leave the TUI in its bounded fault or
-non-completed terminal state; it SHALL not display completed research. (`RED-001`)
+The tracker SHALL use only shared verified returned trace facts and actual approved
+Gateway progress events. It SHALL not infer stage from request submission, stream end,
+option presence, request shape, heartbeat, gap, or a private phase list; it SHALL not
+claim node-internal progress without a received approved event. Missing Gateway
+readiness, absent/invalid reflected lifecycle result, or missing embedded graph-backed
+final-delivery evidence SHALL leave the TUI in its bounded fault or non-completed state
+and SHALL not display completed research. (`RED-001`)
 
 #### Scenario: User completes the deterministic fixture-graph visual path
 - **WHEN** a user launches `--fixture`, submits a question and HITL-1 response
-- **THEN** the shell visibly identifies fixture-graph mode and completes without credentials,
-  network, or a HITL2 choice control while every UI state came from shared `RunUpdate`
-  values
+- **THEN** the shell visibly identifies fixture-graph mode and completes without
+  credentials, network, or a HITL2 choice control while every UI lifecycle state came
+  from shared `RunUpdate` values
 
 #### Scenario: User starts the all-real visual path
-- **WHEN** a user launches default mode with a supported model key and `TAVILY_API_KEY`
-- **THEN** it passes shared preflight, starts the all-real recipe, and presents a
-  returned bootstrap-plus-HITL-1 state as an `AwaitingInput` scope prompt
+- **WHEN** a user launches default real mode with a selected ready local Gateway
+  profile
+- **THEN** it passes profile/Gateway preflight, creates a public Gateway thread for
+  the configured `deep-research` Agent, and constructs no local all-real graph runtime
+
+#### Scenario: Gateway TUI requires a selected profile
+- **WHEN** a user launches default real mode without `--profile` or with an invalid or
+  unready profile label
+- **THEN** the TUI remains in its bounded preflight fault state and makes no health,
+  thread, or stream request
+
+#### Scenario: Gateway real TUI does not require local provider credentials
+- **WHEN** the selected Gateway profile is ready but the TUI process has no local
+  `DEERFLOW_DEMO_MODEL` or `TAVILY_API_KEY`
+- **THEN** default real mode may start because those provider prerequisites belong to
+  the Gateway, while embedded-smoke mode still requires them
+
+#### Scenario: Gateway TUI does not invent a cancellation turn
+- **WHEN** a Gateway-real TUI displays a pending input
+- **THEN** it does not render or dispatch the local cancel button; an operator may only
+  send cancellation by entering an explicit user turn for the configured Agent, and a
+  window close or interrupt claims no Gateway cancellation
 
 #### Scenario: Real TUI cannot use a synthetic completion
-- **WHEN** the default real TUI cannot obtain its all-real graph composition
-- **THEN** it shows the bounded startup fault and does not report completed research
+- **WHEN** the Gateway turn ends without a validated typed Deep Research lifecycle
+  result
+- **THEN** the TUI shows a bounded unknown/fault outcome and does not report completed
+  research from assistant prose, elapsed time, or the SSE `end` record
 
 #### Scenario: Processing does not fabricate node progress
-- **WHEN** a lifecycle call is unresolved
+- **WHEN** a lifecycle call or Gateway turn is unresolved
 - **THEN** re-entry is disabled, local elapsed waiting may advance, and tracker phases
-  do not change until a shared observed event or returned trace proves it
+  do not change until a shared returned fact or approved received progress event proves
+  them
 
 #### Scenario: Startup presents one action
-- **WHEN** either mode passes preflight and reaches question entry
+- **WHEN** any supported mode passes its applicable preflight and reaches question
+  entry
 - **THEN** only the focused research composer is actionable
 
+#### Scenario: Embedded real mode remains smoke-only
+- **WHEN** a developer explicitly selects embedded-smoke mode
+- **THEN** the TUI identifies the direct local graph route and makes no claim about
+  Gateway run history, Console data, trace correlation, SSE liveness, or nested custom
+  event forwarding
+
 #### Scenario: Unexpected lifecycle error stays inside the TUI
-- **WHEN** an unexpected UI or adapter exception escapes normal shared fault projection
+- **WHEN** an unexpected UI, Gateway adapter, or lifecycle projection exception escapes
+  normal shared fault projection
 - **THEN** the application remains open with a fixed bounded safe fault view
 
 ### Requirement: Demo remains bounded and explicitly non-product

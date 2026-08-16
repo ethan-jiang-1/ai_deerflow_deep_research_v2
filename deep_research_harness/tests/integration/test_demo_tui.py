@@ -267,7 +267,7 @@ async def test_tui_explicit_cancel_uses_shared_cancel_intent(
 @pytest.mark.asyncio
 async def test_tui_preflight_failure_shows_safe_fault_before_question(monkeypatch: pytest.MonkeyPatch) -> None:
     _install_scripted(monkeypatch, report=_failed_report(), updates=[])
-    app = DeepResearchDemoTUI(mode="real")
+    app = DeepResearchDemoTUI(mode="embedded_smoke")
     async with app.run_test() as pilot:
         await _wait_for(app, pilot, Fault)
         assert app.query_one("#composer").disabled is True
@@ -279,7 +279,7 @@ async def test_tui_preflight_failure_shows_safe_fault_before_question(monkeypatc
 @pytest.mark.asyncio
 async def test_tui_real_route_obtains_the_fixed_all_real_runtime(monkeypatch: pytest.MonkeyPatch) -> None:
     runtime_modes = _install_scripted(monkeypatch, report=_ready_report("real"), updates=[run_updates.awaiting_hitl1()])
-    app = DeepResearchDemoTUI(mode="real")
+    app = DeepResearchDemoTUI(mode="embedded_smoke")
 
     async with app.run_test() as pilot:
         await _wait_for(app, pilot, demo_tui.Ready)
@@ -297,7 +297,7 @@ async def test_tui_runtime_construction_fault_cannot_present_fixture_completion(
         raise RuntimeError("demo_runtime_unavailable")
 
     monkeypatch.setattr(demo_tui, "build_demo_runtime", fail_runtime)
-    app = DeepResearchDemoTUI(mode="real")
+    app = DeepResearchDemoTUI(mode="embedded_smoke")
     async with app.run_test() as pilot:
         await _wait_for(app, pilot, Fault)
         assert app.last_view.heading == "Research could not continue"

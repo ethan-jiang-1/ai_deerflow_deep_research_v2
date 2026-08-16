@@ -70,7 +70,7 @@ engine = ["domain"]
 agents = ["domain", "deerflow", "langchain"]
 graph = ["domain", "engine", "nodes", "langgraph"]
 nodes = ["domain", "engine", "langgraph"]
-runtime = ["domain", "graph", "agents", "deerflow", "httpx", "langchain", "langgraph", "openai"]
+runtime = ["domain", "graph", "agents", "deerflow", "httpx", "httpx_sse", "langchain", "langgraph", "openai"]
 
 [node_packages]
 root = "deep_research_harness/src/deerflow_deep_research/graph/nodes"
@@ -309,6 +309,25 @@ def test_raw_provider_classifier_imports_are_limited_to_node_agent_bridge(projec
 
 def test_raw_provider_classifier_imports_fail_outside_node_agent_bridge(project_root: Path) -> None:
     _write(project_root, "deep_research_harness/src/deerflow_deep_research/runtime/adapter.py", "import httpx\n")
+
+    _assert_error(project_root, "import.external")
+
+
+def test_gateway_observer_may_import_only_its_public_http_sse_dependencies(project_root: Path) -> None:
+    _write(
+        project_root,
+        "deep_research_harness/src/deerflow_deep_research/runtime/gateway_observer.py",
+        "import httpx\nfrom httpx_sse import aconnect_sse\n",
+    )
+
+    result = _run_checker(project_root)
+
+    assert result.returncode == 0, result.stderr
+
+
+@pytest.mark.parametrize("statement", ["import httpx_sse\n", "from httpx_sse import aconnect_sse\n"])
+def test_structured_sse_imports_fail_outside_gateway_observer(project_root: Path, statement: str) -> None:
+    _write(project_root, "deep_research_harness/src/deerflow_deep_research/runtime/adapter.py", statement)
 
     _assert_error(project_root, "import.external")
 

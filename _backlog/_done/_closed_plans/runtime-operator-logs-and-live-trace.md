@@ -1,6 +1,6 @@
 # Plan: DeerFlow-native runtime observability and live trace
 
-> Type: delivery plan | Revised: 2026-08-16 | Status: one archived baseline, two active Changes
+> Type: delivery plan | Revised: 2026-08-16 | Status: all three records archived, chain complete
 
 ## Alignment Rule
 
@@ -14,8 +14,8 @@ There are exactly three records in this delivery chain:
 | Order | OpenSpec record | State | Exact role |
 | --- | --- | --- | --- |
 | 0 | `instrument-deep-research-runtime-observability` | archived | Implemented safe standard-log baseline; retain it and do not roll it back |
-| 1 | `add-deerflow-native-live-event-projection` | active | Admit one compatible published DeerFlow pin and add safe runtime custom-event emission as one indivisible archive unit |
-| 2 | `wire-harness-observability-entrypoints` | active | Prove public Gateway forwarding, cut over both real entrypoints, and add profile-owned physical `stderr` capture |
+| 1 | `add-deerflow-native-live-event-projection` | archived | Added safe current-pin runtime custom-event emission through public injected `ToolRuntime.stream_writer`; no dependency upgrade |
+| 2 | `wire-harness-observability-entrypoints` | archived | Proved public Gateway forwarding, cut over both real entrypoints, and added profile-owned physical `stderr` capture |
 
 The implementation/archive order is therefore:
 
@@ -25,10 +25,9 @@ archived instrument-deep-research-runtime-observability
   -> apply and archive wire-harness-observability-entrypoints
 ```
 
-There is no separate `1A/1B/1C` sequence and no future uncreated Change.
-`upgrade-deerflow-custom-event-api` is redundant: its public-API preflight, published
-candidate selection, gitlink/lock mutation, regression gate, and rollback obligations
-belong to Change 1.
+There is no separate `1A/1B/1C` sequence, no future uncreated Change, and no pending
+dependency upgrade. The former `upgrade-deerflow-custom-event-api` planning record was
+removed. Change 1 proved and used the current public injected writer instead.
 
 ## Architecture Decision
 
@@ -89,69 +88,52 @@ It owns exactly:
 It does not own a DeerFlow pin change, runtime custom event, Gateway forwarding,
 CLI/TUI observer, heartbeat/gap presentation, or physical file capture.
 
-## Active Change 1
+## Archived Change 1
 
 ### `add-deerflow-native-live-event-projection`
 
-Change 1 owns the complete dependency-plus-runtime unit. A dependency-only upgrade has
-no independent product outcome and MUST NOT archive separately.
+Change 1 was implemented, synced, archived, and committed at the unchanged DeerFlow
+pin. It introduced no dependency-only unit and no framework upgrade.
 
 It owns exactly:
 
-1. Record the current DeerFlow nested `HEAD`, root index gitlink, registry lock,
-   complete root status/untracked-path list, binary `HEAD` diff, and clean
-   nested-worktree evidence; refuse to overwrite a path that was already untracked.
-2. Add a downstream public import/signature/behavior contract for
-   `get_current_trace_id`, `emit_custom_event`, `aemit_custom_event`, and public
-   `ToolRuntime.stream_writer`. Use normal imports and `inspect.signature` to prove one
-   positional mapping payload plus explicit `writer=` binding without variadic
-   fallback, then use a recording writer with a non-empty typed payload; do not inspect
-   DeerFlow source or package paths.
-3. Demonstrate the expected missing custom-event module at the current pin.
-4. Refresh `origin/ethan` once, freeze its resolved full tip hash, build that tip's
-   oldest-first first-parent snapshot sequence, and retain only hashes whose Git
-   ancestry contains the current pin. For each eligible published snapshot in order,
-   run the public contract while detached and before any root index or registry
-   mutation; never default to the remote tip merely because it is newer.
-5. For each public-preflight-passing candidate, provisionally synchronize nested
-   `HEAD`, the root `deerflow` index gitlink, and
-   `openspec/governance/project-structure.toml` lock to the identical candidate. Run
-   architecture and the full downstream regression gate only in that synchronized
-   state. On failure, restore all three records, prove the prior boundary, and continue
-   to the next eligible snapshot; admit the first candidate that passes both stages.
-6. At trusted `ToolRuntime` adaptation, reduce the public writer immediately to an
+1. Prove the unchanged DeerFlow nested `HEAD`, root index gitlink, and registry lock at
+   `66b9e7f21212490cf92fafac137542b9deb06615`, plus the public
+   `ToolRuntime.stream_writer` and `get_current_trace_id()` call shapes, without
+   source/package browsing.
+2. At trusted `ToolRuntime` adaptation, reduce the public writer immediately to an
    opaque project-owned custom-event sink. After Bundle admission, bind only that sink
    plus trusted Bundle/thread/run correlation into the non-checkpointed observation
    projection passed to fact owners; never expose or directly call the raw writer.
-7. Derive live visibility only inside `runtime/events.py` from the exact closed
+3. Derive live visibility only inside `runtime/events.py` from the exact closed
    operation/outcome predicate: `node` started/completed/failed; `gate`
    completed/rejected/cancelled/stopped/blocked/failed; `attempt` started/failed;
    `submit` completed; `retry` retrying; `exhaustion` failed; and `validation`
    rejected. Producers cannot supply a `live_visible` flag, event type, or sink choice;
    all other material facts stay log-only.
-8. Attempt one event with exact discriminator
+4. Attempt one event with exact discriminator
    `"type": "deep_research.progress.v1"` for each accepted fact through DeerFlow's
-   public synchronous or awaited asynchronous helper in addition to its existing
+   predecessor-owned opaque sink in addition to its existing
    standard log. The live payload never uses log-only `event_type`; always requires
    `type`, `phase`, `operation`, `outcome`, and admitted `bundle_id`; requires
    `attempt_id` for node/gate, `work_id` plus `attempt_id` for
    attempt/submit/retry/exhaustion, `count` for retry, and `code` for rejected
    validation; and permits validation work/attempt ids and trusted outer correlation
    only when available.
-9. Attach only admitted Bundle and trusted outer thread/run correlation; do not supply
+5. Attach only admitted Bundle and trusted outer thread/run correlation; do not supply
    application `trace_id`, raw content, caller correlation, Journal sequence, State,
    persistence, or recovery claims.
-10. Keep log and event attempts independent and best-effort. Logger failure does not
-    suppress an otherwise valid event attempt; helper exception does not suppress the
-    original standard log. A helper exception attempts one separate bounded log-only
+6. Keep log and event attempts independent and best-effort. Logger failure does not
+    suppress an otherwise valid event attempt; writer exception does not suppress the
+    original standard log. A writer exception attempts one separate bounded log-only
     observation with the original safe phase/correlation plus `operation=live_event`,
     `outcome=degraded`, and `code=observation_degraded`, without exception text or a
     recursive event. Missing consumer, duplicate/reordered/lost delivery, or subscriber
     failure changes no producer result, Journal, State, route, retry, terminal
     disposition, or lifecycle action; `CancelledError` still propagates without being
     reclassified as degradation.
-11. Replace the absolute custom-event source ban only with a narrow allowlist for
-    writer capture at `runtime/runtime_adapter.py`, approved helper use and the closed
+7. Replace the absolute custom-event source ban only with a narrow allowlist for
+    writer capture at `runtime/runtime_adapter.py`, opaque sink use and the closed
     predicate inside `runtime/events.py`, and the exact event type. Retain bans on
     direct writer calls/exposure, producer event controls, `get_stream_writer`,
     `ProgressEmitter`, unsafe fields, private Gateway stores, compatibility wrappers,
@@ -162,28 +144,20 @@ Change 1 explicitly does not own Gateway SSE forwarding, the SSE channel name,
 heartbeat/gap behavior, CLI/TUI rendering, physical log capture, private RunJournal
 access, Bundle Journal changes, or lifecycle/retry/route changes.
 
-### Change 1 archive and rollback
+### Change 1 archive result
 
-- Archive only when the public import/signature/recording-writer behavior contract,
-  synchronized nested `HEAD`/root index/registry lock, full downstream regression
-  gate, event adapter, closed owner predicate, source guards, and no-side-effect
-  evidence all pass.
-- If either dependency admission or runtime event evidence fails before archive,
-  restore nested `HEAD`, root index gitlink, and registry lock to the recorded prior
-  hash and remove only this Change's implementation, test, guard, and newly created
-  application files, including the public-API contract that is red on the restored
-  pin. Preserve the recorded root baseline and every unrelated/user modification; do
-  not use a broad reset or checkout. Rerun architecture governance plus focused
-  log-only/status evidence to prove convergence to the exact prior boundary.
-- Do not leave or archive a partial dependency-only upgrade.
-- Successful Change 1 archive publishes only the runtime emission contract; it makes
-  no Gateway delivery claim.
+- Archived in commit `3edba72` after focused, fast, workflow, governance, strict
+  OpenSpec, and diff gates passed. The two known full-suite failures were reproduced
+  at baseline and recorded in the archived verification evidence.
+- Nested `HEAD`, root gitlink, registry lock, package metadata, and `uv.lock` remained
+  unchanged. Successful Change 1 archive publishes only the runtime emission contract;
+  it makes no Gateway delivery claim.
 
 ## Active Change 2
 
 ### `wire-harness-observability-entrypoints`
 
-Change 2 starts only after Change 1 archives. It consumes the predecessor event
+Change 2 is now the only active Change. It consumes the archived predecessor event
 contract without redefining its schema or fact owners.
 
 It owns exactly:
@@ -247,9 +221,10 @@ fallback.
 The current execution signal is precise:
 
 - [x] Keep archived `instrument-deep-research-runtime-observability`; no rollback.
-- [ ] Apply and archive `add-deerflow-native-live-event-projection` as one
-  dependency-plus-runtime unit.
-- [ ] Apply and archive `wire-harness-observability-entrypoints` after Change 1.
+- [x] Apply and archive `add-deerflow-native-live-event-projection` at the unchanged
+  current pin.
+- [x] Apply and archive `wire-harness-observability-entrypoints` as the only remaining
+  Change.
 - [x] Remove the redundant open `upgrade-deerflow-custom-event-api` planning record
   after confirming its useful obligations are present in Change 1.
 

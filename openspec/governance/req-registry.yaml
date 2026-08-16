@@ -587,7 +587,7 @@ WOU-012: work-unit-kernel — Shared submit validation records only rejected can
 DPL-001: demo-pipeline — A shared demo core module provides DemoAdapter, synthetic tool-call helpers, phase metadata, and graph-backed infrastructure for all demo scripts; credential-free execution is the fixed fixture graph
 DPL-002: demo-pipeline — Phase progress display reads execution_trace from DeepResearchControlResult and renders completed phases with → and suspended phases with ⏸
 DPL-003: demo-pipeline — Named fixture and all-real demo factories construct their fixed recipes and executors explicitly, without a mode selector, no-graph lifecycle, or a production fixture fallback
-DPL-004: demo-pipeline — The default real CLI uses one selected ready public Gateway profile with shared typed presentation and scripted mode while local model/Tavily graph composition remains explicit embedded smoke only
+DPL-004: demo-pipeline — The default real CLI uses one selected ready public Gateway profile with shared typed presentation and rejects Gateway-default --scripted; automatic policy and local model/Tavily graph composition remain explicit embedded smoke only
 DPL-005: demo-pipeline — Makefile provides fixed fixture-graph and all-real CLI/TUI demos plus demo-sessions and session-workbench with DEMO_ARGS passthrough and no full-fake/no-graph command surface
 DPL-006: demo-pipeline — Demo command targets select or clearly reject a foreign active environment before user onboarding
 DPL-007: demo-pipeline — Local demo runs retain inspectable run bundles through an explicit bounded retention policy instead of deleting all artifacts on process exit

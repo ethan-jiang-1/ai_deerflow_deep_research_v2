@@ -842,6 +842,15 @@ EVIDENCE_CLAIMS = (
         seam=StableSeam.RUNTIME_INTEGRATION,
         authenticity=AuthenticityLevel.LIVE_REAL_DEPENDENCIES,
     ),
+    TestEvidenceClaim(
+        claim_id="live-gateway-forwarding-proof",
+        selector="tests/live/test_gateway_forwarding_proof.py::test_gateway_forwarding_proof",
+        expected_selection=FocusedSelection.LIVE,
+        requirement_ids=("GOO-002",),
+        asset_class=AssetClass.LIVE_BEHAVIORAL_EVALUATION,
+        seam=StableSeam.RUNTIME_INTEGRATION,
+        authenticity=AuthenticityLevel.LIVE_REAL_DEPENDENCIES,
+    ),
     *(
         TestEvidenceClaim(
             claim_id=f"cal-live-{case_id.removeprefix('calibrate-')}",
@@ -2457,7 +2466,10 @@ EVIDENCE_CLAIMS = (
     ),
     _correctness_claim(
         "demo-real-calibration-procedure",
-        "tests/contract/test_demo_commands.py::test_real_demo_calibration_documents_an_explicit_observational_procedure",
+        (
+            "tests/contract/test_demo_commands.py::"
+            "test_embedded_smoke_calibration_documents_an_explicit_observational_procedure"
+        ),
         StableSeam.PUBLIC_ENTRY,
         requirement_ids=("DPL-012",),
     ),
@@ -2654,6 +2666,87 @@ EVIDENCE_CLAIMS = (
         "tests/unit/test_runtime_adapter.py::test_adapt_keeps_trace_binding_with_deerflow_logging",
         StableSeam.RUNTIME_INTEGRATION,
         requirement_ids=("RTO-003", "RUI-002"),
+    ),
+    _correctness_claim(
+        "gateway-observer-public-turn-ownership",
+        (
+            "tests/unit/test_gateway_observer.py::"
+            "test_observer_creates_one_fresh_thread_then_reuses_only_its_public_thread_for_follow_up"
+        ),
+        StableSeam.RUNTIME_INTEGRATION,
+        requirement_ids=("GOO-001",),
+    ),
+    _correctness_claim(
+        "gateway-observer-public-http-shape",
+        "tests/unit/test_gateway_observer.py::test_http_client_uses_only_fixed_public_thread_and_stream_shapes",
+        StableSeam.RUNTIME_INTEGRATION,
+        requirement_ids=("GOO-001",),
+    ),
+    _correctness_claim(
+        "gateway-observer-withheld-progress",
+        (
+            "tests/unit/test_gateway_observer.py::"
+            "test_valid_custom_progress_stays_withheld_while_only_typed_tool_result_returns"
+        ),
+        StableSeam.RUNTIME_INTEGRATION,
+        requirement_ids=("GOO-002",),
+    ),
+    _correctness_claim(
+        "gateway-observer-no-terminal-inference",
+        "tests/unit/test_gateway_observer.py::test_end_or_assistant_prose_cannot_manufacture_a_lifecycle_result",
+        StableSeam.RUNTIME_INTEGRATION,
+        requirement_ids=("GOO-002",),
+    ),
+    _correctness_claim(
+        "gateway-profile-observer-readiness",
+        (
+            "tests/contract/test_local_profiles.py::"
+            "test_gateway_observer_readiness_uses_only_the_validated_profile_environment_and_check_mode"
+        ),
+        StableSeam.PUBLIC_ENTRY,
+        requirement_ids=("GOO-003",),
+    ),
+    _correctness_claim(
+        "gateway-profile-stderr-capture",
+        (
+            "tests/contract/test_local_profiles.py::"
+            "test_profile_child_capture_is_owner_only_unique_and_announced_before_child_start"
+        ),
+        StableSeam.PUBLIC_ENTRY,
+        requirement_ids=("GOO-003",),
+    ),
+    _correctness_claim(
+        "gateway-real-cli-preflight",
+        (
+            "tests/integration/test_gateway_demo_real.py::"
+            "test_default_real_cli_requires_profile_and_rejects_scripted_before_profile_or_gateway_work"
+        ),
+        StableSeam.PUBLIC_ENTRY,
+        requirement_ids=("DPL-004",),
+    ),
+    _correctness_claim(
+        "gateway-real-cli-cutover",
+        (
+            "tests/integration/test_gateway_demo_real.py::"
+            "test_default_real_cli_uses_only_ready_profile_gateway_transport_without_local_provider_or_graph"
+        ),
+        StableSeam.PUBLIC_ENTRY,
+        requirement_ids=("DPL-004",),
+    ),
+    _correctness_claim(
+        "gateway-real-tui-preflight",
+        ("tests/integration/test_gateway_demo_tui.py::test_gateway_tui_requires_profile_before_client_or_local_graph"),
+        StableSeam.PUBLIC_ENTRY,
+        requirement_ids=("RED-001",),
+    ),
+    _correctness_claim(
+        "gateway-real-tui-control-boundary",
+        (
+            "tests/integration/test_gateway_demo_tui.py::"
+            "test_gateway_tui_hides_cancel_disables_reentry_and_never_renders_fault_as_completion"
+        ),
+        StableSeam.PUBLIC_ENTRY,
+        requirement_ids=("RED-001",),
     ),
 )
 

@@ -13,7 +13,9 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+from collections.abc import Mapping
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Literal
 
 from _demo_core import (
@@ -30,6 +32,7 @@ from _terminal_failure_presentation import (
     is_provider_diagnostic,
     provider_terminal_details,
 )
+from local_profiles import ProfileError, validate_observer_profile
 from rich.table import Table
 from rich.text import Text
 from textual import work
@@ -43,6 +46,8 @@ from deerflow_deep_research.domain.run_experience import (
     CancelRun,
     FailureCertainty,
     Fault,
+    ReadinessCheck,
+    ReadinessReport,
     Ready,
     RunFailure,
     RunFailureCode,
@@ -51,6 +56,11 @@ from deerflow_deep_research.domain.run_experience import (
     StartRun,
     Terminal,
     Working,
+)
+from deerflow_deep_research.runtime.gateway_observer import (
+    GatewayObserver,
+    GatewayTransportObservation,
+    HttpGatewayPublicClient,
 )
 from deerflow_deep_research.runtime.run_experience import ResearchRunExperience
 
@@ -166,6 +176,49 @@ def _presentation_fault() -> Fault:
             journal_record_created=False,
             diagnostic_location="unavailable",
         )
+    )
+
+
+def _gateway_readiness_report(profile: str | None) -> ReadinessReport:
+    if profile is None:
+        return _gateway_readiness_failure(
+            summary="A selected local Gateway profile is required.",
+            detail="Select one ready local profile before starting the Gateway observer.",
+            next_action="Restart with --profile <name> after profile checks pass.",
+        )
+    try:
+        validate_observer_profile(Path(__file__).resolve().parents[1], profile)
+    except ProfileError:
+        return _gateway_readiness_failure(
+            summary="The selected local Gateway profile is not ready.",
+            detail="The selected profile needs its Gateway observer prerequisites corrected.",
+            next_action="Correct the selected profile, restart its Gateway, then start a new observer turn.",
+        )
+    return ReadinessReport(
+        mode="real",
+        ready=True,
+        summary="Selected local Gateway profile is ready.",
+        checks=(ReadinessCheck(name="environment", ready=True, detail="selected local Gateway profile"),),
+        durability_note="Gateway history remains owned by the configured Gateway; this TUI retains no local session.",
+    )
+
+
+def _gateway_readiness_failure(*, summary: str, detail: str, next_action: str) -> ReadinessReport:
+    return ReadinessReport(
+        mode="real",
+        ready=False,
+        summary=summary,
+        checks=(ReadinessCheck(name="environment", ready=False, detail=detail, next_action=next_action),),
+        failure=RunFailure(
+            code=RunFailureCode.CONFIGURATION_ENVIRONMENT_INVALID,
+            certainty=FailureCertainty.DIRECT,
+            message=summary,
+            next_action=next_action,
+            retryable=False,
+            journal_record_created=False,
+            diagnostic_location="unavailable",
+        ),
+        durability_note="No Gateway thread or Deep Research Run was created.",
     )
 
 
@@ -318,15 +371,47 @@ class DeepResearchDemoTUI(App[None]):
     _WORKER_GROUP = "research-lifecycle"
     _EXAMPLE_QUESTION = "Compare renewable-energy storage approaches"
 
-    def __init__(self, *, mode: Literal["fixture", "real"] = "real") -> None:
+    def __init__(
+        self,
+        *,
+        mode: Literal["fixture", "gateway", "embedded_smoke"] = "gateway",
+        profile: str | None = None,
+    ) -> None:
         super().__init__()
         self.mode = mode
+        self.profile = profile
         self._adapter: DemoAdapter | None = None
-        self._transport = DemoLifecycleTransport()
+        self._gateway_transport: GatewayObserver | None = None
+        if self.mode == "gateway":
+            report = _gateway_readiness_report(profile)
+            self._gateway_transport = (
+                GatewayObserver(
+                    client=HttpGatewayPublicClient(),
+                    transport_observer=self._gateway_transport_observer,
+                    withheld_candidate_observer=self._gateway_progress_observer,
+                )
+                if report.ready
+                else None
+            )
+            transport = self._gateway_transport
+
+            def readiness_provider() -> ReadinessReport:
+                return report
+
+            experience_mode = "real"
+        else:
+            transport = DemoLifecycleTransport()
+            embedded_smoke = self.mode == "embedded_smoke"
+
+            def readiness_provider() -> ReadinessReport:
+                return demo_readiness_report(mode="real" if embedded_smoke else "fixture")
+
+            experience_mode = "real" if self.mode == "embedded_smoke" else "fixture"
+        self._transport = transport
         self._experience = ResearchRunExperience(
-            transport=self._transport,
-            mode=mode,
-            readiness_provider=lambda: demo_readiness_report(mode=mode),
+            transport=transport,
+            mode=experience_mode,
+            readiness_provider=readiness_provider,
         )
         self.last_update: RunUpdate | None = None
         self.last_view: TuiRenderedUpdate | None = None
@@ -342,7 +427,11 @@ class DeepResearchDemoTUI(App[None]):
             yield Button("Cancel", id="cancel", variant="error")
 
     def on_mount(self) -> None:
-        mode_label = "fixture-graph" if self.mode == "fixture" else "all-real"
+        mode_label = {
+            "fixture": "fixture-graph",
+            "gateway": "local Gateway observer",
+            "embedded_smoke": "embedded smoke",
+        }[self.mode]
         self.query_one("#banner", Static).update(Text(f"Deep Research · {mode_label} demo", style="bold cyan"))
         self._render_view(
             TuiRenderedUpdate(
@@ -359,8 +448,11 @@ class DeepResearchDemoTUI(App[None]):
         )
         self._initialize()
 
-    def on_unmount(self) -> None:
+    async def on_unmount(self) -> None:
         self._close_adapter()
+        if self._gateway_transport is not None:
+            transport, self._gateway_transport = self._gateway_transport, None
+            await transport.aclose()
 
     def _close_adapter(self) -> None:
         if self._adapter is None:
@@ -374,10 +466,13 @@ class DeepResearchDemoTUI(App[None]):
         if not report.ready:
             self.apply_run_update(Fault(failure=report.failure or _presentation_fault().failure))
             return
+        if self.mode == "gateway":
+            self.apply_run_update(Ready(report=report))
+            return
         adapter: DemoAdapter | None = None
         try:
-            adapter = DemoAdapter.for_real() if self.mode == "real" else DemoAdapter()
-            if self.mode == "real":
+            adapter = DemoAdapter.for_real() if self.mode == "embedded_smoke" else DemoAdapter()
+            if self.mode == "embedded_smoke":
                 self._transport.bind(runtime=build_demo_runtime(mode="real", adapter=adapter))
             else:
                 self._transport.bind(runtime=build_demo_runtime(mode="fixture_graph", adapter=adapter))
@@ -412,8 +507,9 @@ class DeepResearchDemoTUI(App[None]):
             pipeline.update(_pipeline_tracker(view.completed_trace, view.pending_phase))
         composer.disabled = not view.accepts_input
         composer.placeholder = view.placeholder
-        cancel.display = view.show_cancel
-        cancel.disabled = not view.show_cancel
+        cancel_allowed = view.show_cancel and self.mode != "gateway"
+        cancel.display = cancel_allowed
+        cancel.disabled = not cancel_allowed
         accept.display = bool(
             isinstance(self.last_update, AwaitingInput)
             and any(control.id == "accept_current_proposal" for control in self.last_update.prompt.visible_controls)
@@ -440,6 +536,34 @@ class DeepResearchDemoTUI(App[None]):
             return
         self._dispatch(SelectControlRun(control_id="accept_current_proposal"))
 
+    def _gateway_transport_observer(self, observation: GatewayTransportObservation) -> None:
+        if observation.kind == "assistant_text" and observation.detail:
+            detail = observation.detail
+        else:
+            detail = {
+                "heartbeat": "Gateway liveness observed.",
+                "gap": "Gateway stream gap observed; no research outcome was inferred.",
+                "error": "Gateway reported a transport error; no research outcome was inferred.",
+                "end": "Gateway turn ended; awaiting a validated lifecycle result.",
+                "custom_invalid": "Gateway custom record was ignored.",
+            }.get(observation.kind)
+        if detail:
+            self.query_one("#log", RichLog).write(Text(detail))
+
+    def _gateway_progress_observer(self, candidate: Mapping[str, object]) -> None:
+        """Render only predecessor-approved progress fields as a bounded projection."""
+
+        phase = candidate.get("phase")
+        operation = candidate.get("operation")
+        outcome = candidate.get("outcome")
+        bundle_id = candidate.get("bundle_id")
+        if not (phase or operation or outcome):
+            return
+        label = " ".join(part for part in (str(phase), str(operation), str(outcome)) if part)
+        scope = str(bundle_id)[:24] if isinstance(bundle_id, str) else ""
+        line = f"Deep Research progress: {label}" + (f" (bundle {scope})" if scope else "")
+        self.query_one("#log", RichLog).write(Text(line))
+
     async def on_input_submitted(self, event: Input.Submitted) -> None:
         raw_value = event.value
         value = raw_value.strip()
@@ -455,7 +579,7 @@ class DeepResearchDemoTUI(App[None]):
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "accept":
             self._select_current_proposal()
-        elif event.button.id == "cancel" and isinstance(self.last_update, AwaitingInput):
+        elif event.button.id == "cancel" and self.mode != "gateway" and isinstance(self.last_update, AwaitingInput):
             self._dispatch(CancelRun())
 
 
@@ -470,8 +594,25 @@ def main() -> None:
         ),
     )
     parser.add_argument("--fixture", action="store_true", help="Run the zero-credential fixture graph.")
+    parser.add_argument("--profile", default=None, help="Selected ready local Gateway profile for default real mode.")
+    parser.add_argument(
+        "--embedded-smoke",
+        action="store_true",
+        help="Use the direct local graph smoke route without Gateway history, trace, or SSE claims.",
+    )
     args = parser.parse_args()
-    app = DeepResearchDemoTUI(mode="fixture" if args.fixture else "real")
+    if args.fixture and args.embedded_smoke:
+        parser.error("--fixture and --embedded-smoke cannot be combined")
+    if args.profile is not None and (args.fixture or args.embedded_smoke):
+        parser.error("--profile applies only to the default Gateway observer mode")
+    mode: Literal["fixture", "gateway", "embedded_smoke"]
+    if args.fixture:
+        mode = "fixture"
+    elif args.embedded_smoke:
+        mode = "embedded_smoke"
+    else:
+        mode = "gateway"
+    app = DeepResearchDemoTUI(mode=mode, profile=args.profile)
     try:
         app.run()
     finally:

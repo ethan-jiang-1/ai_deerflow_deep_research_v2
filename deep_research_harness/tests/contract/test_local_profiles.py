@@ -8,15 +8,21 @@
 @impl LCP-006
 @impl PRS-006
 @impl PRS-007
+@impl GOO-003
 """
 
 from __future__ import annotations
 
 import importlib.util
+import inspect
+import io
 import json
+import os
+import stat
 import subprocess
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from ruamel.yaml import YAML
@@ -46,8 +52,8 @@ def agent_project(tmp_path: Path) -> Path:
     agent = root / "deep_research_harness"
     agent.mkdir(parents=True)
     (root / "profiles").mkdir()
-    (root / "scripts").mkdir()
-    (root / "scripts" / "serve.sh").write_text("#!/usr/bin/env bash\n", encoding="utf-8")
+    (root / "deerflow" / "scripts").mkdir(parents=True)
+    (root / "deerflow" / "scripts" / "serve.sh").write_text("#!/usr/bin/env bash\n", encoding="utf-8")
     (root / "config.yaml").write_text(
         "config_version: 19\n"
         "checkpointer:\n"
@@ -243,7 +249,11 @@ def test_launch_uses_standard_environment_without_hook_or_skills_override(agent_
         base_env={"KEEP": "1", "DEER_FLOW_SKILLS_PATH": "/outside/skills"},
     )
 
-    assert observed["argv"] == [str(agent_project.parent / "scripts" / "serve.sh"), "--dev", "--skip-install"]
+    assert observed["argv"] == [
+        str(agent_project.parent / "deerflow" / "scripts" / "serve.sh"),
+        "--dev",
+        "--skip-install",
+    ]
     assert observed["env"]["KEEP"] == "1"
     assert "BASH_ENV" not in observed["env"]
     assert "DEERFLOW_PROFILE_ROOT_ENV" not in observed["env"]
@@ -373,3 +383,265 @@ def test_profile_guide_and_ignore_rules_are_root_owned() -> None:
     assert "*" in ignore
     assert "!.gitignore" in ignore
     assert "!README.md" in ignore
+
+
+def _observer_profile(module, agent_project: Path) -> object:
+    module.initialize_profile(agent_project, "demo")
+    paths = module.profile_paths(agent_project, "demo")
+    paths.config_path.write_text(
+        "config_version: 19\n"
+        "logging:\n"
+        "  enhance:\n"
+        "    enabled: true\n"
+        "    format: json\n"
+        "database:\n"
+        "  backend: sqlite\n"
+        f"  sqlite_dir: {paths.sqlite_dir}\n",
+        encoding="utf-8",
+    )
+    return paths
+
+
+def test_gateway_observer_readiness_uses_only_the_validated_profile_environment_and_check_mode(
+    agent_project: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    module = _module()
+    paths = _observer_profile(module, agent_project)
+    before = (paths.config_path.read_bytes(), paths.extensions_path.read_bytes())
+    calls: list[tuple[Path, dict[str, str], str]] = []
+
+    def execute_configuration(project_root: Path, env: dict[str, str], *, mode: str) -> object:
+        calls.append((project_root, dict(env), mode))
+        return SimpleNamespace(runtime_config_ready=True, entry_status="ready")
+
+    monkeypatch.setattr(
+        module,
+        "_configuration_module",
+        lambda: SimpleNamespace(execute_configuration=execute_configuration),
+    )
+    seen_health: list[str] = []
+
+    result = module.validate_observer_profile(
+        agent_project,
+        "demo",
+        health_checker=lambda url: seen_health.append(url) is None,
+    )
+
+    assert result.name == "demo"
+    assert result.ready is True
+    assert calls == [
+        (
+            agent_project.parent,
+            {
+                "DEER_FLOW_PROJECT_ROOT": str(agent_project.parent),
+                "DEER_FLOW_CONFIG_PATH": str(paths.config_path),
+                "DEER_FLOW_EXTENSIONS_CONFIG_PATH": str(paths.extensions_path),
+                "DEER_FLOW_HOME": str(paths.home_dir),
+            },
+            "check",
+        )
+    ]
+    assert seen_health == ["http://127.0.0.1:8001/health"]
+    assert (paths.config_path.read_bytes(), paths.extensions_path.read_bytes()) == before
+
+
+@pytest.mark.parametrize(
+    ("logging_body", "code"),
+    [
+        ("logging:\n  enhance:\n    enabled: false\n    format: json\n", "profile_observer_logging"),
+        ("logging:\n  enhance:\n    enabled: true\n    format: text\n", "profile_observer_logging"),
+        ("logging: {}\n", "profile_observer_logging"),
+    ],
+)
+def test_gateway_observer_readiness_requires_restart_scoped_json_logging(
+    agent_project: Path, logging_body: str, code: str
+) -> None:
+    module = _module()
+    paths = _observer_profile(module, agent_project)
+    paths.config_path.write_text(
+        f"config_version: 19\n{logging_body}database:\n  backend: sqlite\n  sqlite_dir: {paths.sqlite_dir}\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(module.ProfileError, match=code) as error:
+        module.validate_observer_profile(
+            agent_project,
+            "demo",
+            entry_checker=lambda _root, _env: (True, "ready"),
+            health_checker=lambda _url: pytest.fail("health must not run"),
+        )
+
+    assert "restart" in error.value.detail.lower()
+    for forbidden in (str(paths.config_path), str(paths.home_dir), "TOP_SECRET"):
+        assert forbidden not in error.value.detail
+
+
+def test_gateway_observer_readiness_rejects_ephemeral_history_before_entry_or_health(agent_project: Path) -> None:
+    module = _module()
+    paths = _observer_profile(module, agent_project)
+    paths.config_path.write_text(
+        "config_version: 19\nlogging:\n  enhance:\n    enabled: true\n    format: json\ndatabase:\n  backend: memory\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(module.ProfileError, match="profile_observer_durable_history"):
+        module.validate_observer_profile(
+            agent_project,
+            "demo",
+            entry_checker=lambda _root, _env: pytest.fail("entry must not run"),
+            health_checker=lambda _url: pytest.fail("health must not run"),
+        )
+
+
+@pytest.mark.parametrize("entry_status", ["unknown", "not_ready"])
+def test_gateway_observer_readiness_denies_unknown_or_unready_entry_without_gateway_work(
+    agent_project: Path, entry_status: str
+) -> None:
+    module = _module()
+    paths = _observer_profile(module, agent_project)
+    before = (paths.config_path.read_bytes(), paths.extensions_path.read_bytes())
+    checker_calls: list[tuple[Path, dict[str, str]]] = []
+
+    def entry_checker(project_root: Path, env: dict[str, str]) -> tuple[bool, str]:
+        checker_calls.append((project_root, dict(env)))
+        return True, entry_status
+
+    with pytest.raises(module.ProfileError, match="profile_observer_entry") as error:
+        module.validate_observer_profile(
+            agent_project,
+            "demo",
+            entry_checker=entry_checker,
+            health_checker=lambda _url: pytest.fail("health must not run"),
+        )
+
+    assert checker_calls and checker_calls[0][0] == agent_project.parent
+    assert set(checker_calls[0][1]) == {
+        "DEER_FLOW_PROJECT_ROOT",
+        "DEER_FLOW_CONFIG_PATH",
+        "DEER_FLOW_EXTENSIONS_CONFIG_PATH",
+        "DEER_FLOW_HOME",
+    }
+    assert (paths.config_path.read_bytes(), paths.extensions_path.read_bytes()) == before
+    assert "unknown" not in error.value.detail
+    assert "not_ready" not in error.value.detail
+
+
+def test_gateway_observer_readiness_uses_no_proxy_or_caller_selected_origin(agent_project: Path) -> None:
+    module = _module()
+    _observer_profile(module, agent_project)
+    seen_health: list[str] = []
+
+    with pytest.raises(module.ProfileError, match="profile_observer_health"):
+        module.validate_observer_profile(
+            agent_project,
+            "demo",
+            entry_checker=lambda _root, _env: (True, "ready"),
+            health_checker=lambda url: seen_health.append(url) and False,
+        )
+
+    assert seen_health == ["http://127.0.0.1:8001/health"]
+    assert "origin" not in inspect.signature(module.validate_observer_profile).parameters
+    assert ":2026" not in SCRIPT_PATH.read_text(encoding="utf-8")
+
+
+def test_profile_child_capture_is_owner_only_unique_and_announced_before_child_start(agent_project: Path) -> None:
+    module = _module()
+    events: list[str] = []
+    child_calls: list[tuple[list[str], dict[str, str], object]] = []
+
+    class Child:
+        stderr = io.BytesIO(b"gateway stderr\n")
+        returncode = 7
+
+        def wait(self) -> int:
+            return self.returncode
+
+    def popen(argv: list[str], **kwargs: object) -> Child:
+        child_calls.append((argv, kwargs["env"], kwargs["stderr"]))
+        events.append("child")
+        return Child()
+
+    code = module._run_profile_child(
+        ["serve.sh", "--dev", "--skip-install"],
+        {"KEEP": "1"},
+        agent_project,
+        popen_factory=popen,
+        stderr_writer=lambda _chunk: events.append("stderr"),
+        announce=lambda _path: events.append("announce"),
+    )
+
+    assert code == 7
+    assert events.index("announce") < events.index("child")
+    assert child_calls == [(["serve.sh", "--dev", "--skip-install"], {"KEEP": "1"}, module.subprocess.PIPE)]
+    logs = sorted((agent_project / ".deep-research-demo-runs/logs").glob("*.stderr.log"))
+    assert len(logs) == 1
+    assert logs[0].read_bytes() == b"gateway stderr\n"
+    assert stat.S_IMODE(logs[0].stat().st_mode) == 0o600
+    assert stat.S_IMODE(logs[0].parent.stat().st_mode) == 0o700
+
+
+def test_profile_capture_rejects_symlinked_log_root_and_preserves_child_execution(
+    agent_project: Path, tmp_path: Path
+) -> None:
+    module = _module()
+    capture_parent = agent_project / ".deep-research-demo-runs"
+    capture_parent.mkdir()
+    (capture_parent / "logs").symlink_to(tmp_path / "outside")
+    invoked: list[object] = []
+
+    class Child:
+        stderr = None
+        returncode = 0
+
+        def wait(self) -> int:
+            return self.returncode
+
+    def popen(_argv: list[str], **kwargs: object) -> Child:
+        invoked.append(kwargs["stderr"])
+        return Child()
+
+    assert (
+        module._run_profile_child(["serve.sh"], {}, agent_project, popen_factory=popen, announce=lambda _path: None)
+        == 0
+    )
+    assert invoked == [None]
+
+
+def test_profile_capture_rotates_and_never_deletes_the_active_file(
+    agent_project: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    module = _module()
+    monkeypatch.setattr(module, "_CAPTURE_MAX_BYTES", 4)
+    monkeypatch.setattr(module, "_CAPTURE_MAX_INACTIVE_FILES", 1)
+    first = module._open_stderr_capture(agent_project)
+    first.write(b"abcdef")
+    active_path = first.path
+    log_root = active_path.parent
+    retained = log_root / "older.stderr.log"
+    retained.write_bytes(b"old")
+    os.chmod(retained, 0o600)
+
+    module._retain_inactive_captures(log_root, active_path=active_path)
+
+    assert active_path.exists()
+    assert any(candidate.name.startswith(active_path.name + ".") for candidate in log_root.iterdir())
+    first.close()
+
+
+def test_profile_capture_failure_keeps_child_exit_and_signal_status(
+    agent_project: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    module = _module()
+    monkeypatch.setattr(module, "_open_stderr_capture", lambda _root: (_ for _ in ()).throw(OSError("unavailable")))
+
+    class Child:
+        stderr = None
+        returncode = -15
+
+        def wait(self) -> int:
+            return self.returncode
+
+    assert (
+        module._run_profile_child(["serve.sh"], {}, agent_project, popen_factory=lambda *_args, **_kwargs: Child())
+        == 143
+    )

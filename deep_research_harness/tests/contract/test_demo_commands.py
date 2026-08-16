@@ -47,7 +47,8 @@ def test_demo_commands_keep_fixture_and_real_dependency_boundaries() -> None:
     readme = (AGENT_ROOT / "README.md").read_text(encoding="utf-8")
     operations = (AGENT_ROOT / "docs/local-operations.md").read_text(encoding="utf-8")
 
-    assert "demo-fixture-graph demo-real demo-real-scripted demo-tui demo-tui-fixture" in makefile
+    assert "demo-fixture-graph demo-real demo-real-embedded-smoke demo-real-scripted demo-tui" in makefile
+    assert "demo-tui-embedded-smoke demo-tui-fixture" in makefile
     assert "ENTRY_RUN = PYTHONDONTWRITEBYTECODE=1 env -u VIRTUAL_ENV uv run --locked --no-sync" in makefile
     assert (
         "install:\n\tenv -u VIRTUAL_ENV uv sync --locked --extra operations --extra demo-tui --extra demo-real"
@@ -69,14 +70,14 @@ def test_demo_commands_keep_fixture_and_real_dependency_boundaries() -> None:
     real_cli = " ".join(
         (
             "$(ENTRY_RUN) $(LOCAL_ENV_ARG) --extra operations --extra demo-real",
-            "python scripts/demo_real.py $(DEMO_ARGS)",
+            'python scripts/demo_real.py --profile "$(PROFILE)" $(DEMO_ARGS)',
         )
     )
     assert real_cli in makefile
     real_tui = " ".join(
         (
             "$(ENTRY_RUN) $(LOCAL_ENV_ARG) --extra operations --extra demo-real --extra demo-tui",
-            "python scripts/demo_tui.py $(DEMO_ARGS)",
+            'python scripts/demo_tui.py --profile "$(PROFILE)" $(DEMO_ARGS)',
         )
     )
     assert real_tui in makefile
@@ -96,8 +97,11 @@ def test_demo_commands_keep_fixture_and_real_dependency_boundaries() -> None:
         "session-workbench",
     ):
         assert FIXTURE_PYTHONPATH in _target_body(makefile, target)
-    for target in ("demo-real", "demo-real-scripted", "demo-tui"):
+    for target in ("demo-real", "demo-real-embedded-smoke", "demo-real-scripted", "demo-tui"):
         assert FIXTURE_PYTHONPATH not in _target_body(makefile, target)
+    assert "--embedded-smoke" in _target_body(makefile, "demo-real-embedded-smoke")
+    assert "--embedded-smoke --scripted" in _target_body(makefile, "demo-real-scripted")
+    assert "--embedded-smoke" in _target_body(makefile, "demo-tui-embedded-smoke")
     assert "make demo-tui-fixture" in readme
     assert "make demo-fixture-graph" not in readme
     assert "full fake" not in readme.lower()
@@ -121,8 +125,10 @@ def test_make_commands_scope_fixture_source_to_fixture_children() -> None:
 
     real_targets = {
         "demo-real": "demo_real.py",
+        "demo-real-embedded-smoke": "demo_real.py",
         "demo-real-scripted": "demo_real.py",
         "demo-tui": "demo_tui.py",
+        "demo-tui-embedded-smoke": "demo_tui.py",
     }
     for target, script in real_targets.items():
         command = _dry_run_command(target, script)
@@ -211,12 +217,12 @@ def test_retained_observation_documentation_uses_the_canonical_inspection_comman
         assert retired not in document
 
 
-def test_real_research_launcher_selects_a_configured_flash_model() -> None:
+def test_embedded_smoke_launcher_selects_a_configured_flash_model() -> None:
     launcher = REAL_RESEARCH_LAUNCHER.read_text(encoding="utf-8")
 
     assert "DEERFLOW_DEMO_MODEL=${DEERFLOW_DEMO_MODEL:-deepseek-v4-flash}" in launcher
     assert 'cd "$project_root"' in launcher
-    assert 'python scripts/demo_real.py --scripted --question "$question"' in launcher
+    assert 'python scripts/demo_real.py --embedded-smoke --scripted --question "$question"' in launcher
     assert "make entry-preflight" in launcher
     assert (
         "env -u VIRTUAL_ENV PYTHONDONTWRITEBYTECODE=1 uv run --locked --no-sync "
@@ -224,60 +230,38 @@ def test_real_research_launcher_selects_a_configured_flash_model() -> None:
     ) in launcher
 
 
-def test_real_entries_reject_an_unselected_profile_before_adapter_or_bundle_composition() -> None:
-    """@impl DPL-011
-
-    The resolver is exercised with credentials but no selector. The entry-source
-    assertions then keep that preflight on the only path before adapter creation,
-    which is the first code able to create a local Bundle lifecycle.
+def test_default_real_entries_require_profile_gateway_preflight_before_any_embedded_composition() -> None:
+    """@impl DPL-004
+    @impl RED-001
     """
-
-    import sys
-
-    scripts = str(AGENT_ROOT / "scripts")
-    if scripts not in sys.path:
-        sys.path.insert(0, scripts)
-    from _demo_core import demo_readiness_report
-
-    report = demo_readiness_report(
-        mode="real",
-        environ={"DEEPSEEK_API_KEY": "test-key", "TAVILY_API_KEY": "test-web-key"},
-    )
-    assert report.ready is False
-    assert report.failure is not None
-    assert report.failure.code.value == "configuration.model_missing"
-    assert report.failure.journal_record_created is False
-
     cli = (AGENT_ROOT / "scripts" / "demo_real.py").read_text(encoding="utf-8")
     tui = (AGENT_ROOT / "scripts" / "demo_tui.py").read_text(encoding="utf-8")
-    for source, preflight, rejection, adapter in (
-        (
-            cli,
-            "report = await experience.preflight()",
-            "if not report.ready:\n        return 2",
-            "adapter = DemoAdapter.for_real()",
-        ),
-        (
-            tui,
-            "report = await self._experience.preflight()",
-            "if not report.ready:\n            self.apply_run_update",
-            'adapter = DemoAdapter.for_real() if self.mode == "real" else DemoAdapter()',
-        ),
-    ):
-        assert source.index(preflight) < source.index(rejection) < source.index(adapter)
+
+    cli_gateway = cli[cli.index("async def _run_gateway_demo") : cli.index("async def _run_embedded_smoke")]
+    assert "_gateway_readiness_report(profile)" in cli_gateway
+    assert "if not report.ready:\n        return 2" in cli_gateway
+    for forbidden in ("DemoAdapter", "DemoLifecycleTransport", "build_demo_runtime", "demo_readiness_report"):
+        assert forbidden not in cli_gateway
+    assert "async def _run_embedded_smoke" in cli
+    assert "--embedded-smoke" in cli
+
+    assert 'mode: Literal["fixture", "gateway", "embedded_smoke"]' in tui
+    assert 'if self.mode == "gateway":' in tui
+    assert "validate_observer_profile" in tui
+    assert 'cancel_allowed = view.show_cancel and self.mode != "gateway"' in tui
+    assert "--embedded-smoke" in tui
 
     launcher = REAL_RESEARCH_LAUNCHER.read_text(encoding="utf-8")
     assert "DEERFLOW_DEMO_MODEL=${DEERFLOW_DEMO_MODEL:-deepseek-v4-flash}" in launcher
     assert "export DEERFLOW_DEMO_MODEL" in launcher
 
 
-def test_real_demo_calibration_documents_an_explicit_observational_procedure() -> None:
+def test_embedded_smoke_calibration_documents_an_explicit_observational_procedure() -> None:
     """@impl DPL-012"""
 
     calibration_command = "DEERFLOW_DEMO_MODEL=<profile> make demo-real-scripted"
     inspection_command = 'make demo-sessions DEMO_ARGS="inspect <bundle-id>"'
     documents = (
-        AGENT_ROOT / "README.md",
         AGENT_ROOT / "docs" / "local-operations.md",
         AGENT_ROOT / "run" / "README.md",
     )
@@ -285,7 +269,7 @@ def test_real_demo_calibration_documents_an_explicit_observational_procedure() -
     for path in documents:
         document = path.read_text(encoding="utf-8")
         normalized = " ".join(document.split())
-        assert "## Bounded Real-Demo Calibration" in document
+        assert "## Embedded Smoke Calibration" in document
         assert calibration_command in document
         assert inspection_command in document
         assert "fresh Run Bundle" in normalized

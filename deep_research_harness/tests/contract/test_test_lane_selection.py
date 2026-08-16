@@ -64,6 +64,7 @@ def test_live_tests_are_selected_only_by_the_live_lane() -> None:
         "tests/live/test_canaries.py::test_live_prefix_canary[live-one-gap-targeted-evidence]",
         "tests/live/test_preflight.py::test_live_model_preflight",
         "tests/live/test_preflight.py::test_live_web_preflight",
+        "tests/live/test_gateway_forwarding_proof.py::test_gateway_forwarding_proof",
     }
     calibration_live = {
         "tests/live/test_intake_planning_live_calibration.py::test_live_intake_and_planning_calibration["

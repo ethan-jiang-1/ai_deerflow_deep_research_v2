@@ -17,9 +17,10 @@ Run commands from `deep_research_harness/`. Use the root README's
 | Initialize, check, or start the demo profile | `make profile-init PROFILE=demo`, `make profile-check PROFILE=demo`, `make profile-dev PROFILE=demo` |
 | Run the interactive zero-credential demo | `make demo` |
 | Run the deterministic non-interactive demo | `make demo-scripted` |
-| Run an interactive all-real demo | `DEERFLOW_DEMO_MODEL=<profile> make demo-real` |
-| Run a non-interactive all-real demo | `DEERFLOW_DEMO_MODEL=<profile> make demo-real-scripted` |
-| Start the Textual real or fixture visualizer | `DEERFLOW_DEMO_MODEL=<profile> make demo-tui`, `make demo-tui-fixture` |
+| Start the local Gateway profile, then run the real CLI | `make profile-dev PROFILE=demo`, then `make demo-real PROFILE=demo` |
+| Start the Textual Gateway visualizer | `make demo-tui PROFILE=demo` |
+| Run explicit direct local graph smoke | `make demo-real-embedded-smoke`, `make demo-real-scripted`, or `make demo-tui-embedded-smoke` |
+| Start the fixture visualizer | `make demo-tui-fixture` |
 | Open the standalone local workbench | `make session-workbench` |
 | Inspect one retained observation | `make demo-sessions DEMO_ARGS="inspect <bundle-id>"` |
 
@@ -122,23 +123,76 @@ add `src_fake` only to the selected child process. The production package and re
 runtime neither import nor discover that package. These routes execute the fixed fixture recipe;
 they are deterministic composition proof, not product research results.
 
-`make demo-real`, `make demo-real-scripted`, and `make demo-tui` require one of
-`DEEPSEEK_API_KEY`, `ANTHROPIC_API_KEY`, or `OPENAI_API_KEY`, plus `TAVILY_API_KEY`.
-The real commands load `.env` when present and accept explicitly exported credentials.
-They use the shared typed Bundle lifecycle result, so their displays do not derive an
-id, infer lifecycle state from output files, or create a second controller.
+`make demo-real PROFILE=<name>` and `make demo-tui PROFILE=<name>` are the default
+real observer routes. Start the selected profile Gateway first with
+`make profile-dev PROFILE=<name>`. The observer profile must pass its JSON logging,
+durable SQLite history, public entry, and direct local Gateway health checks before it
+creates a thread. Model and web credentials belong to that launched Gateway profile;
+the CLI and TUI do not require local `DEERFLOW_DEMO_MODEL` or `TAVILY_API_KEY` values.
+They use only public Gateway turns and returned typed lifecycle results, so assistant
+text, heartbeat, gaps, and stream end do not create a result or a second controller.
 
 For example:
 
 ```bash
-DEERFLOW_DEMO_MODEL=<profile> make demo-real DEMO_ARGS='--question "Compare battery storage costs"'
+make profile-dev PROFILE=demo
+make demo-real PROFILE=demo DEMO_ARGS='--question "Compare battery storage costs"'
 ```
 
-The CLI and TUI show progress only after a returned typed update. A local Ctrl-C stops
-the presentation process; it is not a claim that the Bundle was cancelled. Use a
-returned legal `cancel` action when the run must be stopped.
+The Gateway TUI does not expose a local cancel button. A local Ctrl-C or window close
+stops only the presentation process and makes no Gateway cancellation claim. Enter an
+explicit ordinary-language user turn when the configured Agent should consider a
+cancellation request.
 
-## Bounded Real-Demo Calibration
+`make demo-real-embedded-smoke`, `make demo-real-scripted`, and
+`make demo-tui-embedded-smoke` retain the direct local all-real graph only for
+explicit smoke work. They retain local model/Tavily preflight and do not claim Gateway
+history, Console data, trace correlation, SSE liveness, or custom-event forwarding.
+
+## Gateway Observer Operations
+
+The default real CLI/TUI routes observe the profile-launched Gateway at
+`http://127.0.0.1:8001` through the public thread-create and
+`POST /api/threads/{thread_id}/runs/stream` interfaces. The observer renders only
+predecessor-approved progress fields (`phase`, `operation`, `outcome`, and a bounded
+`bundle_id` reference) from validated `deep_research.progress.v1` candidates; it never
+displays raw SSE payloads, tool arguments, or non-Deep-Research tool results.
+
+Process logs: the profile launcher tees the launched Gateway process's existing
+`stderr` bytes to an owner-only rotating family below
+`deep_research_harness/.deep-research-demo-runs/logs/`. Each launch prints its absolute
+base path before starting the Gateway, for example:
+
+```bash
+make profile-dev PROFILE=demo
+# Gateway stderr capture: .../deep_research_harness/.deep-research-demo-runs/logs/gateway-<pid>-<ts>-<nonce>.stderr.log
+tail -f deep_research_harness/.deep-research-demo-runs/logs/gateway-*.stderr.log
+```
+
+The tee preserves normal `stderr` and DeerFlow's own logging; capture failure disables
+only the file side and never changes the Gateway or any Run outcome. Log files are
+`0600`/`0700`, bounded per process and retained for a bounded number of inactive
+launches; an active process file is never deleted.
+
+Correlation route for an observed run:
+
+1. Process `stderr` lines carry DeerFlow's `trace_id`; the public stream response header
+   `X-Trace-Id` is the same trace correlation for the observed turn.
+2. SSE `metadata` carries the public `run_id`; the observer retains it as the safe
+   process-local run correlation.
+3. A validated `deep_research.progress.v1` candidate on the public `custom` channel
+   carries the same `outer_run_id` plus the Bundle `bundle_id`.
+4. Bundle inspection (e.g. `make demo-sessions DEMO_ARGS="inspect <bundle-id>"`) reads
+   the returned Bundle's local Event Journal.
+
+These surfaces have distinct roles and none is a second authority: `stderr` is
+operational capture; SSE `custom` is a best-effort live projection; Gateway history
+(public run stores/Console) is the durable outer-run record; and Bundle inspection is
+the returned Bundle's own evidence. Only a validated returned typed Deep Research
+result produces lifecycle presentation, and `end`, heartbeat, gap, assistant prose, or
+elapsed time never manufacture a lifecycle outcome.
+
+## Embedded Smoke Calibration
 
 Choose one registered, credential-backed profile for each bounded calibration run:
 
@@ -147,7 +201,8 @@ DEERFLOW_DEMO_MODEL=<profile> make demo-real-scripted
 make demo-sessions DEMO_ARGS="inspect <bundle-id>"
 ```
 
-The scripted command keeps its existing fixed question and creates a fresh Run Bundle.
+The explicitly labelled embedded-smoke scripted command keeps its fixed question and
+creates a fresh Run Bundle in the local smoke runtime.
 Use the printed Bundle id only with the read-only inspection command, then compare the
 redacted profile identity/revision, phase, failure category, budget-stop reason, and
 validation codes. Repeat manually with another explicit profile when a comparison is

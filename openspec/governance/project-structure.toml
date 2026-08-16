@@ -205,6 +205,11 @@ kind = "file"
 owner = "PRS-005"
 
 [[required_paths]]
+path = "deep_research_harness/src/deerflow_deep_research/runtime/gateway_observer.py"
+kind = "file"
+owner = "PRS-005"
+
+[[required_paths]]
 path = "deep_research_harness/src/deerflow_deep_research/runtime/bundle_control.py"
 kind = "file"
 owner = "PRS-006"
@@ -715,6 +720,11 @@ kind = "directory"
 owner = "PRS-001"
 
 [[required_paths]]
+path = "deep_research_harness/tests/unit/test_gateway_observer.py"
+kind = "file"
+owner = "PRS-005"
+
+[[required_paths]]
 path = "deep_research_harness/tests/unit/test_node_cognitive_control_program.py"
 kind = "file"
 owner = "PRS-011"
@@ -990,7 +1000,7 @@ engine = ["domain"]
 agents = ["domain", "deerflow", "langchain"]
 graph = ["domain", "engine", "nodes", "langgraph"]
 nodes = ["domain", "engine", "langgraph"]
-runtime = ["domain", "graph", "agents", "deerflow", "httpx", "langchain", "langgraph", "openai"]
+runtime = ["domain", "graph", "agents", "deerflow", "httpx", "httpx_sse", "langchain", "langgraph", "openai"]
 
 [node_packages]
 root = "deep_research_harness/src/deerflow_deep_research/graph/nodes"

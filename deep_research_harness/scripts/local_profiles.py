@@ -11,15 +11,22 @@
 from __future__ import annotations
 
 import argparse
+import fcntl
+import importlib.util
 import io
 import json
 import os
 import re
-import shutil
 import stat
+import subprocess
 import sys
+import time
+import urllib.error
+import urllib.request
+import uuid
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
+from io import BufferedWriter
 from pathlib import Path
 from typing import Any
 
@@ -28,6 +35,9 @@ from ruamel.yaml import YAML
 _PROFILE_NAME = re.compile(r"^[a-z][a-z0-9-]{0,31}$")
 _DOTENV_ASSIGNMENT = re.compile(r"^(?:export[ \t]+)?([A-Za-z_][A-Za-z0-9_]*)=(.*)$")
 _EMPTY_EXTENSIONS = {"mcpServers": {}, "skills": {}}
+PUBLIC_GATEWAY_HEALTH_URL = "http://127.0.0.1:8001/health"
+_CAPTURE_MAX_BYTES = 10 * 1024 * 1024
+_CAPTURE_MAX_INACTIVE_FILES = 8
 _DOTENV_SELECTOR_KEYS = frozenset(
     {
         "DEER_FLOW_CONFIG_PATH",
@@ -77,6 +87,14 @@ class ProfileValidation:
 
 
 @dataclass(frozen=True)
+class ObserverProfileReadiness:
+    """Safe selected-profile fact admitted to the Gateway observer entrypoints."""
+
+    name: str
+    ready: bool = True
+
+
+@dataclass(frozen=True)
 class ProfileListEntry:
     name: str
     ready: bool
@@ -84,6 +102,10 @@ class ProfileListEntry:
 
 
 Executor = Callable[[list[str], dict[str, str]], None]
+EntryChecker = Callable[[Path, Mapping[str, str]], tuple[bool, str]]
+HealthChecker = Callable[[str], bool]
+StderrWriter = Callable[[bytes], None]
+CaptureAnnouncer = Callable[[Path], None]
 
 
 def _agent_root(value: Path) -> Path:
@@ -333,6 +355,85 @@ def validate_profile(project_root: Path, name: str) -> ProfileValidation:
     return ProfileValidation(name=paths.name, paths=paths, environment=environment, storage_kind=storage_kind)
 
 
+def _configuration_module() -> Any:
+    module_name = "deep_research_profile_configure"
+    module = sys.modules.get(module_name)
+    if module is not None:
+        return module
+    source = Path(__file__).with_name("configure.py")
+    spec = importlib.util.spec_from_file_location(module_name, source)
+    if spec is None or spec.loader is None:
+        raise ProfileError("profile_observer_entry", "run the selected profile configuration check")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def _configuration_entry_check(project_root: Path, environment: Mapping[str, str]) -> tuple[bool, str]:
+    """Assess only the selected profile's public entry through configure check mode."""
+
+    try:
+        result = _configuration_module().execute_configuration(project_root, dict(environment), mode="check")
+    except Exception as exc:
+        raise ProfileError("profile_observer_entry", "run the selected profile configuration check") from exc
+    return bool(getattr(result, "runtime_config_ready", False)), str(getattr(result, "entry_status", ""))
+
+
+def _gateway_health_reachable(url: str) -> bool:
+    try:
+        request = urllib.request.Request(url, method="GET")
+        with urllib.request.urlopen(request, timeout=0.5) as response:
+            return 200 <= response.status < 300
+    except (OSError, urllib.error.URLError):
+        return False
+
+
+def _observer_logging_ready(data: Mapping[str, Any]) -> bool:
+    logging = data.get("logging")
+    if not isinstance(logging, Mapping):
+        return False
+    enhance = logging.get("enhance")
+    return isinstance(enhance, Mapping) and enhance.get("enabled") is True and enhance.get("format") == "json"
+
+
+def validate_observer_profile(
+    project_root: Path,
+    name: str,
+    *,
+    entry_checker: EntryChecker | None = None,
+    health_checker: HealthChecker | None = None,
+) -> ObserverProfileReadiness:
+    """Admit a selected profile for the fixed local public Gateway observer only."""
+
+    profile = validate_profile(project_root, name)
+    config, _ = _load_yaml(profile.paths.config_path)
+    if not _observer_logging_ready(config):
+        raise ProfileError(
+            "profile_observer_logging",
+            "enable JSON enhanced logging in the selected profile and restart the Gateway",
+        )
+    if profile.storage_kind != "sqlite":
+        raise ProfileError(
+            "profile_observer_durable_history",
+            "select isolated local SQLite history before starting the Gateway observer",
+        )
+    try:
+        runtime_config_ready, entry_status = (entry_checker or _configuration_entry_check)(
+            profile.paths.project_root,
+            dict(profile.environment),
+        )
+    except ProfileError:
+        raise
+    except Exception as exc:
+        raise ProfileError("profile_observer_entry", "run the selected profile configuration check") from exc
+    if not runtime_config_ready or entry_status != "ready":
+        raise ProfileError("profile_observer_entry", "run the selected profile configuration check")
+    if not (health_checker or _gateway_health_reachable)(PUBLIC_GATEWAY_HEALTH_URL):
+        raise ProfileError("profile_observer_health", "start the selected profile Gateway and retry the observer")
+    return ObserverProfileReadiness(name=profile.name)
+
+
 def list_profiles(agent_root: Path) -> tuple[ProfileListEntry, ...]:
     """List known profile labels without exposing profile locations."""
 
@@ -374,23 +475,188 @@ def format_profile_list(entries: Sequence[ProfileListEntry]) -> str:
     return "\n".join(lines)
 
 
-def _default_executor(argv: list[str], env: dict[str, str]) -> None:
-    if os.name != "nt":
-        os.execvpe(argv[0], argv, env)
+def _capture_log_root(agent_root: Path) -> Path:
+    root = _agent_root(agent_root)
+    run_root = root / ".deep-research-demo-runs"
+    log_root = run_root / "logs"
+    for directory in (run_root, log_root):
+        directory.mkdir(mode=0o700, exist_ok=True)
+        status = directory.lstat()
+        if stat.S_ISLNK(status.st_mode) or not stat.S_ISDIR(status.st_mode):
+            raise OSError("process log directories must not be symlinks")
+        os.chmod(directory, 0o700)
+    return log_root
 
-    bash = shutil.which("bash")
-    if bash is None:
-        git = shutil.which("git")
-        if git is not None:
-            candidate = Path(git).resolve().parents[1] / "bin" / "bash.exe"
-            if candidate.is_file():
-                bash = str(candidate)
-    if bash is None:
-        raise ProfileError(
-            "profile_launcher_unavailable",
-            "Git Bash is required for local profile startup on Windows",
-        )
-    os.execvpe(bash, [bash, *argv], env)
+
+def _open_capture_file(log_root: Path, name: str) -> tuple[Path, BufferedWriter]:
+    path = log_root / name
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_CLOEXEC", 0)
+    flags |= getattr(os, "O_NOFOLLOW", 0)
+    descriptor = os.open(path, flags, 0o600)
+    try:
+        os.fchmod(descriptor, 0o600)
+        fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        return path, os.fdopen(descriptor, "ab", buffering=0)
+    except Exception:
+        os.close(descriptor)
+        raise
+
+
+def _capture_name() -> str:
+    return f"gateway-{os.getpid()}-{time.time_ns()}-{uuid.uuid4().hex}.stderr.log"
+
+
+def _is_capture_file(path: Path) -> bool:
+    name = path.name
+    return name.endswith(".stderr.log") or ".stderr.log." in name
+
+
+def _retain_inactive_captures(log_root: Path, *, active_path: Path) -> None:
+    """Keep a bounded inactive capture set without touching live process files."""
+
+    active = active_path.resolve(strict=False)
+    candidates: list[Path] = []
+    for candidate in log_root.iterdir():
+        if not _is_capture_file(candidate):
+            continue
+        status = candidate.lstat()
+        if stat.S_ISLNK(status.st_mode) or not stat.S_ISREG(status.st_mode):
+            continue
+        candidates.append(candidate)
+    candidates.sort(key=lambda candidate: candidate.stat().st_mtime_ns, reverse=True)
+
+    retained = 0
+    for candidate in candidates:
+        if candidate.resolve(strict=False) == active or candidate.name.startswith(f"{active.name}."):
+            continue
+        if retained < _CAPTURE_MAX_INACTIVE_FILES:
+            retained += 1
+            continue
+        descriptor = os.open(candidate, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+        try:
+            try:
+                fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                retained += 1
+                continue
+            candidate.unlink()
+        finally:
+            os.close(descriptor)
+
+
+class _StderrCapture:
+    """One locked process log whose rotation never changes child execution."""
+
+    def __init__(self, log_root: Path, path: Path, handle: BufferedWriter) -> None:
+        self._log_root = log_root
+        self.path = path
+        self._handle = handle
+        self._closed = False
+
+    def write(self, chunk: bytes) -> None:
+        if self._closed:
+            raise OSError("stderr capture is closed")
+        self._handle.write(chunk)
+        if self.path.stat().st_size > _CAPTURE_MAX_BYTES:
+            self._rotate()
+
+    def _rotate(self) -> None:
+        self._handle.close()
+        rotated = self.path.with_name(f"{self.path.name}.{time.time_ns()}-{uuid.uuid4().hex}")
+        os.replace(self.path, rotated)
+        path, handle = _open_capture_file(self._log_root, self.path.name)
+        self.path = path
+        self._handle = handle
+        _retain_inactive_captures(self._log_root, active_path=self.path)
+
+    def close(self) -> None:
+        if self._closed:
+            return
+        self._closed = True
+        self._handle.close()
+
+
+def _open_stderr_capture(agent_root: Path) -> _StderrCapture:
+    log_root = _capture_log_root(agent_root)
+    for _ in range(8):
+        try:
+            path, handle = _open_capture_file(log_root, _capture_name())
+        except FileExistsError:
+            continue
+        capture = _StderrCapture(log_root, path, handle)
+        try:
+            _retain_inactive_captures(log_root, active_path=path)
+        except Exception:
+            capture.close()
+            raise
+        return capture
+    raise OSError("could not allocate a unique stderr capture")
+
+
+def _write_inherited_stderr(chunk: bytes) -> None:
+    stream = getattr(sys.stderr, "buffer", None)
+    if stream is not None:
+        stream.write(chunk)
+        stream.flush()
+        return
+    sys.stderr.write(chunk.decode("utf-8", errors="replace"))
+    sys.stderr.flush()
+
+
+def _announce_capture(path: Path) -> None:
+    print(f"Gateway stderr capture: {path}", file=sys.stderr, flush=True)
+
+
+def _normal_exit_code(returncode: int) -> int:
+    return returncode if returncode >= 0 else 128 + abs(returncode)
+
+
+def _run_profile_child(
+    argv: list[str],
+    env: dict[str, str],
+    agent_root: Path,
+    *,
+    popen_factory: Callable[..., Any] = subprocess.Popen,
+    stderr_writer: StderrWriter = _write_inherited_stderr,
+    announce: CaptureAnnouncer = _announce_capture,
+) -> int:
+    """Launch Gateway unchanged while making an advisory stderr capture when possible."""
+
+    capture: _StderrCapture | None = None
+    try:
+        capture = _open_stderr_capture(agent_root)
+        announce(capture.path)
+    except Exception:
+        if capture is not None:
+            try:
+                capture.close()
+            except OSError:
+                pass
+        capture = None
+
+    child = popen_factory(argv, env=env, stderr=subprocess.PIPE if capture is not None else None)
+    try:
+        if capture is not None and child.stderr is not None:
+            while chunk := child.stderr.read(64 * 1024):
+                try:
+                    stderr_writer(chunk)
+                except Exception:
+                    pass
+                try:
+                    capture.write(chunk)
+                except Exception:
+                    try:
+                        capture.close()
+                    except OSError:
+                        pass
+                    capture = None
+    finally:
+        if capture is not None:
+            try:
+                capture.close()
+            except OSError:
+                pass
+    return _normal_exit_code(child.wait())
 
 
 def _validate_root_dotenv(path: Path) -> None:
@@ -429,8 +695,8 @@ def launch_profile(
     *,
     executor: Executor | None = None,
     base_env: Mapping[str, str] | None = None,
-) -> None:
-    """Exec the existing local-dev launcher only after profile validation succeeds."""
+) -> int:
+    """Launch the unchanged local-dev server after profile validation succeeds."""
 
     result = validate_profile(project_root, name)
     _validate_root_dotenv(result.paths.project_root / ".env")
@@ -439,8 +705,15 @@ def launch_profile(
     environment.pop("DEER_FLOW_SKILLS_PATH", None)
     environment.pop("BASH_ENV", None)
     environment.pop("DEERFLOW_PROFILE_ROOT_ENV", None)
-    argv = [str(result.paths.project_root / "scripts" / "serve.sh"), "--dev", "--skip-install"]
-    (executor or _default_executor)(argv, environment)
+    argv = [
+        str(result.paths.project_root / "deerflow" / "scripts" / "serve.sh"),
+        "--dev",
+        "--skip-install",
+    ]
+    if executor is not None:
+        executor(argv, environment)
+        return 0
+    return _run_profile_child(argv, environment, result.paths.agent_root)
 
 
 def _run_cli(argv: Sequence[str] | None = None) -> int:
@@ -470,7 +743,7 @@ def _run_cli(argv: Sequence[str] | None = None) -> int:
                 raise ProfileError("profile_name_invalid", "provide a profile name")
             if args.launcher_args:
                 raise ProfileError("profile_command_invalid", "profile launch accepts no launcher arguments")
-            launch_profile(args.agent_root, args.profile)
+            return launch_profile(args.agent_root, args.profile)
     except ProfileError as exc:
         print(f"{exc.code}: {exc.detail}", file=sys.stderr)
         return 1

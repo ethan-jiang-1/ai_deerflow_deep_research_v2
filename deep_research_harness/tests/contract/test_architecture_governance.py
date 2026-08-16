@@ -188,7 +188,7 @@ engine = ["domain"]
 agents = ["domain", "deerflow", "langchain"]
 graph = ["domain", "engine", "nodes", "langgraph"]
 nodes = ["domain", "engine", "langgraph"]
-runtime = ["domain", "graph", "agents", "deerflow", "httpx", "langchain", "langgraph", "openai"]
+runtime = ["domain", "graph", "agents", "deerflow", "httpx", "httpx_sse", "langchain", "langgraph", "openai"]
 
 [node_packages]
 root = "deep_research_harness/src/deerflow_deep_research/graph/nodes"

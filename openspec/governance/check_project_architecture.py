@@ -41,7 +41,7 @@ REQUIRED_IMPORT_POLICY = {
     "agents": {"domain", "deerflow", "langchain"},
     "graph": {"domain", "engine", "nodes", "langgraph"},
     "nodes": {"domain", "engine", "langgraph"},
-    "runtime": {"domain", "graph", "agents", "deerflow", "httpx", "langchain", "langgraph", "openai"},
+    "runtime": {"domain", "graph", "agents", "deerflow", "httpx", "httpx_sse", "langchain", "langgraph", "openai"},
 }
 REQUIRED_NODE_FILES = {"__init__.py", "node.py", "contracts.py"}
 REQUIRED_NODE_FORBIDDEN_FILES = {"fake.py"}
@@ -724,8 +724,15 @@ def _external_allowed(
 ) -> bool:
     if module_root in sys.stdlib_module_names or module_root == "__future__":
         return True
-    if module_root in {"httpx", "openai"}:
+    if module_root == "openai":
         return layer == "runtime" and relative == PurePosixPath("runtime/node_agent_bridge.py")
+    if module_root == "httpx":
+        return layer == "runtime" and relative in {
+            PurePosixPath("runtime/node_agent_bridge.py"),
+            PurePosixPath("runtime/gateway_observer.py"),
+        }
+    if module_root == "httpx_sse":
+        return layer == "runtime" and relative == PurePosixPath("runtime/gateway_observer.py")
     allowed = set(manifest.imports.get(layer, ())) - INTERNAL_LAYERS - {"stdlib"}
     if layer == "tool":
         allowed = {"langchain", "pydantic"}

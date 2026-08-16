@@ -19,10 +19,10 @@
 
 | Plan | 类型 | 下一步 |
 |------|------|--------|
-| [runtime-operator-logs-and-live-trace.md](runtime-operator-logs-and-live-trace.md) | 设计 / 复盘 | 建立 OpenSpec change，先锁定安全日志契约和无副作用的实时投影 seam |
+| [architecture-guard-import-authority-drift.md](architecture-guard-import-authority-drift.md) | 设计 / 复盘 | 先在活跃 observability change 内止血（同步 checker 的 `REQUIRED_IMPORT_POLICY` 加 `httpx_sse`），再开独立 change 把 import matrix 收编回 `project-structure.toml` 单一权威 |
 | [narrow-scripted-real-workflow-debug-path.md](narrow-scripted-real-workflow-debug-path.md) | 设计 / 复盘 | 建立 operator-only 的窄 scripted-real workflow change，并先写全三波 action proof |
 
-**Next available plan ID: CLS-041**（移入 `_closed_plans/` 时分配）
+**Next available plan ID: CLS-042**（移入 `_closed_plans/` 时分配）
 
 ## 已归档（移至 `_done/_closed_plans/`）
 
@@ -53,6 +53,7 @@
 | deep-research-demo-full-pipeline.md | CLS-008 | 2026-07-19 |
 | deerflow-native-deep-research-graph.md | CLS-009 | 2026-07-19 |
 | deep-research-spec-gates-and-coverage.md | CLS-010 | 2026-07-19 |
+| runtime-operator-logs-and-live-trace.md | CLS-041 | 2026-08-16 |
 
 ---
 

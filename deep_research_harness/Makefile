@@ -1,4 +1,4 @@
-.PHONY: install entry-preflight governance verify lock-check format lint test test-fast test-integration test-workflow test-live test-unit test-contract test-viability test-durability test-blocking-io test-postgres test-assets test-req-coverage test-intake test-retained-observation test-work-unit test-strict-checkpoint test-duration-policy benchmark-fast prompt-dump prompt-dump-check profile-setup profile-preflight profiles profile-init profile-check profile-dev demo demo-scripted demo-fixture-graph demo-real demo-real-scripted demo-tui demo-tui-fixture demo-sessions session-workbench
+.PHONY: install entry-preflight governance verify lock-check format lint test test-fast test-integration test-workflow test-live test-unit test-contract test-viability test-durability test-blocking-io test-postgres test-assets test-req-coverage test-intake test-retained-observation test-work-unit test-strict-checkpoint test-duration-policy benchmark-fast prompt-dump prompt-dump-check profile-setup profile-preflight profiles profile-init profile-check profile-dev demo demo-scripted demo-fixture-graph demo-real demo-real-embedded-smoke demo-real-scripted demo-tui demo-tui-embedded-smoke demo-tui-fixture demo-sessions session-workbench
 
 DEMO_ARGS ?=
 LOCAL_ENV_ARG := $(if $(wildcard .env),--env-file .env,)
@@ -59,20 +59,27 @@ demo-scripted: entry-preflight
 demo-fixture-graph: entry-preflight
 	PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) --extra operations python scripts/demo_fixture_graph.py $(DEMO_ARGS)
 
-# Real-mode CLI — full 11-phase pipeline with actual LLM + Tavily web tools.
-# Requires one model credential plus TAVILY_API_KEY.
+# Default real CLI: selected local Gateway observer. The launched profile owns provider credentials.
 demo-real: entry-preflight
-	$(ENTRY_RUN) $(LOCAL_ENV_ARG) --extra operations --extra demo-real python scripts/demo_real.py $(DEMO_ARGS)
+	test -n "$(PROFILE)" || { echo "Usage: make demo-real PROFILE=demo"; exit 2; }
+	$(ENTRY_RUN) $(LOCAL_ENV_ARG) --extra operations --extra demo-real python scripts/demo_real.py --profile "$(PROFILE)" $(DEMO_ARGS)
 
-# Non-interactive real-mode for CI (requires credentials).
+# Explicit direct local graph smoke route. It makes no Gateway history, trace, liveness, or forwarding claim.
+demo-real-embedded-smoke: entry-preflight
+	$(ENTRY_RUN) $(LOCAL_ENV_ARG) --extra operations --extra demo-real python scripts/demo_real.py --embedded-smoke $(DEMO_ARGS)
+
+# Explicit non-interactive embedded smoke route; retained for local calibration only.
 demo-real-scripted: entry-preflight
-	$(ENTRY_RUN) $(LOCAL_ENV_ARG) --extra operations --extra demo-real python scripts/demo_real.py --scripted $(DEMO_ARGS)
+	$(ENTRY_RUN) $(LOCAL_ENV_ARG) --extra operations --extra demo-real python scripts/demo_real.py --embedded-smoke --scripted $(DEMO_ARGS)
 
-# Standalone real-mode TUI. Requires model + Tavily credentials.
-# This is not the production DeerFlow Terminal Workbench or generic
-# human-input integration.
+# Default real TUI: selected local Gateway observer. This is not the production Terminal Workbench.
 demo-tui: entry-preflight
-	$(ENTRY_RUN) $(LOCAL_ENV_ARG) --extra operations --extra demo-real --extra demo-tui python scripts/demo_tui.py $(DEMO_ARGS)
+	test -n "$(PROFILE)" || { echo "Usage: make demo-tui PROFILE=demo"; exit 2; }
+	$(ENTRY_RUN) $(LOCAL_ENV_ARG) --extra operations --extra demo-real --extra demo-tui python scripts/demo_tui.py --profile "$(PROFILE)" $(DEMO_ARGS)
+
+# Explicit direct local graph smoke visualizer without Gateway observation claims.
+demo-tui-embedded-smoke: entry-preflight
+	$(ENTRY_RUN) $(LOCAL_ENV_ARG) --extra operations --extra demo-real --extra demo-tui python scripts/demo_tui.py --embedded-smoke $(DEMO_ARGS)
 
 # Credential-free Textual fixture-graph route using the same lifecycle presentation shell.
 demo-tui-fixture: entry-preflight

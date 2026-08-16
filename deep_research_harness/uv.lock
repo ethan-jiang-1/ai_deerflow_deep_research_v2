@@ -762,6 +762,7 @@ source = { editable = "." }
 dependencies = [
     { name = "deerflow-harness" },
     { name = "httpx" },
+    { name = "httpx-sse" },
     { name = "langchain" },
     { name = "langgraph" },
     { name = "openai" },
@@ -796,6 +797,7 @@ requires-dist = [
     { name = "deerflow-harness", editable = "../deerflow/backend/packages/harness" },
     { name = "deerflow-harness", extras = ["postgres"], marker = "extra == 'postgres-test'", editable = "../deerflow/backend/packages/harness" },
     { name = "httpx", specifier = ">=0.28,<0.29" },
+    { name = "httpx-sse", specifier = "==0.4.3" },
     { name = "langchain", specifier = ">=1.2.15" },
     { name = "langgraph", specifier = ">=1.1.9" },
     { name = "openai", specifier = ">=2.45,<3" },

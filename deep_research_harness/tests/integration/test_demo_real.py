@@ -160,7 +160,7 @@ def test_cli_collects_safe_question_only_after_preflight(
         demo_real.select_question(question="  ", scripted=False)
 
     monkeypatch.setattr("builtins.input", lambda _prompt: (_ for _ in ()).throw(EOFError))
-    assert asyncio.run(demo_real.run_demo(question=None, scripted=False)) == 130
+    assert asyncio.run(demo_real.run_demo(question=None, scripted=False, embedded_smoke=True)) == 130
     assert not _Adapter.created
 
 
@@ -177,7 +177,7 @@ async def test_cli_follows_only_shared_awaiting_updates_and_preserves_graph_owne
     answers = iter(("profile answer", "not-an-advertised-choice"))
     monkeypatch.setattr("builtins.input", lambda _prompt: next(answers))
 
-    assert await demo_real.run_demo(question="Research storage", scripted=False) == 0
+    assert await demo_real.run_demo(question="Research storage", scripted=False, embedded_smoke=True) == 0
 
     intents = _ScriptedExperience.instances[0].intents
     assert isinstance(intents[0], StartRun)
@@ -195,7 +195,7 @@ async def test_cli_follows_only_shared_awaiting_updates_and_preserves_graph_owne
 async def test_cli_obtains_the_fixed_all_real_runtime_after_preflight(monkeypatch: pytest.MonkeyPatch) -> None:
     runtime_modes = _install_experience(monkeypatch, report=_ready_report(), updates=[run_updates.completed()])
 
-    assert await demo_real.run_demo(question="Compare storage approaches", scripted=False) == 0
+    assert await demo_real.run_demo(question="Compare storage approaches", scripted=False, embedded_smoke=True) == 0
     assert runtime_modes == ["real"]
 
 
@@ -211,7 +211,7 @@ async def test_cli_runtime_construction_fault_cannot_render_full_fake_completion
 
     monkeypatch.setattr(demo_real, "build_demo_runtime", fail_runtime)
 
-    assert await demo_real.run_demo(question="Compare storage approaches", scripted=False) == 1
+    assert await demo_real.run_demo(question="Compare storage approaches", scripted=False, embedded_smoke=True) == 1
     output = capsys.readouterr().out
     assert "本地演示无法启动" in output
     assert "研究流程已完成" not in output
@@ -250,8 +250,8 @@ async def test_scripted_cli_is_stdin_free_and_preserves_explicit_question(
     _install_experience(monkeypatch, report=_ready_report(), updates=[run_updates.completed(), run_updates.completed()])
     monkeypatch.setattr("builtins.input", lambda _prompt: (_ for _ in ()).throw(AssertionError("stdin is forbidden")))
 
-    assert await demo_real.run_demo(question=None, scripted=True) == 0
-    assert await demo_real.run_demo(question="Compare storage costs", scripted=True) == 0
+    assert await demo_real.run_demo(question=None, scripted=True, embedded_smoke=True) == 0
+    assert await demo_real.run_demo(question="Compare storage costs", scripted=True, embedded_smoke=True) == 0
 
     first, second = (instance.intents[0] for instance in _ScriptedExperience.instances)
     assert isinstance(first, StartRun) and first.scripted is True
@@ -277,7 +277,7 @@ async def test_cli_stops_before_question_when_preflight_fails(monkeypatch: pytes
         lambda _prompt: (_ for _ in ()).throw(AssertionError("question must not be asked")),
     )
 
-    assert await demo_real.run_demo(question=None, scripted=False) == 2
+    assert await demo_real.run_demo(question=None, scripted=False, embedded_smoke=True) == 2
     assert not _Adapter.created
     assert _ScriptedExperience.instances[0].intents == []
 
@@ -288,7 +288,7 @@ async def test_cli_propagates_local_cancellation_without_graph_cancel(monkeypatc
     _ScriptedExperience.block_dispatch = True
     _ScriptedExperience.started = asyncio.Event()
 
-    task = asyncio.create_task(demo_real.run_demo(question="Research storage", scripted=False))
+    task = asyncio.create_task(demo_real.run_demo(question="Research storage", scripted=False, embedded_smoke=True))
     await asyncio.wait_for(_ScriptedExperience.started.wait(), timeout=2)
     task.cancel()
     with pytest.raises(asyncio.CancelledError):

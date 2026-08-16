@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Standalone all-real Deep Research CLI demo.
+"""Standalone Deep Research CLI over the configured public Gateway.
 
 The command is a presentation adapter over ``ResearchRunExperience``.  It does
 not parse lifecycle control wire values or construct graph response envelopes.
@@ -17,6 +17,8 @@ from __future__ import annotations
 import argparse
 import asyncio
 import sys
+from collections.abc import Mapping
+from pathlib import Path
 
 from _demo_core import (
     PHASE_META,
@@ -32,17 +34,27 @@ from _terminal_failure_presentation import (
     is_provider_diagnostic,
     provider_terminal_details,
 )
+from local_profiles import ProfileError, validate_observer_profile
 
 from deerflow_deep_research.domain.run_experience import (
     AnswerRun,
     AwaitingInput,
+    FailureCertainty,
     Fault,
+    ReadinessCheck,
     ReadinessReport,
+    RunFailure,
+    RunFailureCode,
     RunUpdate,
     SelectControlRun,
     StartRun,
     Terminal,
     Working,
+)
+from deerflow_deep_research.runtime.gateway_observer import (
+    GatewayObserver,
+    GatewayTransportObservation,
+    HttpGatewayPublicClient,
 )
 from deerflow_deep_research.runtime.run_experience import ResearchRunExperience
 
@@ -62,19 +74,20 @@ def _safe_display(value: object, *, limit: int = 160) -> str:
     return compact if len(compact) <= limit else f"{compact[: limit - 3]}..."
 
 
-def _print_banner() -> None:
+def _print_banner(*, embedded_smoke: bool) -> None:
     print(f"\n{'-' * 50}")
-    print("  DeerFlow Deep Research · standalone real demo")
-    print("  图会按需请求研究范围和决策；本地演示不会承诺跨进程继续。")
+    if embedded_smoke:
+        print("  DeerFlow Deep Research · embedded smoke")
+        print("  直接本地图组合仅用于 smoke；不声明 Gateway history、trace 或 SSE forwarding。")
+    else:
+        print("  DeerFlow Deep Research · local Gateway observer")
+        print("  生命周期仅来自 Gateway 返回的类型化 Deep Research 结果。")
     print(f"{'-' * 50}")
 
 
 def _print_readiness(report: ReadinessReport) -> None:
     if report.ready:
-        if report.mode == "real":
-            print("  模型和网页检索已就绪，可以开始研究。")
-        else:
-            print(f"  {report.summary}")
+        print(f"  {report.summary}")
     else:
         print("  开始前还需要完成一项设置：")
         for check in report.checks:
@@ -318,9 +331,131 @@ def _dispatch_observer():
     return observe
 
 
-async def run_demo(*, question: str | None, scripted: bool) -> int:
-    """Run the standalone journey through the shared run-experience interface."""
-    _print_banner()
+def _gateway_readiness_report(profile: str | None) -> ReadinessReport:
+    if profile is None:
+        return _gateway_readiness_failure(
+            summary="A selected local Gateway profile is required.",
+            detail="Select one ready local profile before starting the Gateway observer.",
+            next_action="Start the command again with --profile <name> after profile checks pass.",
+        )
+    try:
+        validate_observer_profile(Path(__file__).resolve().parents[1], profile)
+    except ProfileError:
+        return _gateway_readiness_failure(
+            summary="The selected local Gateway profile is not ready.",
+            detail="The selected profile needs its Gateway observer prerequisites corrected.",
+            next_action="Correct the selected profile, restart its Gateway, then start a new observer turn.",
+        )
+    return ReadinessReport(
+        mode="real",
+        ready=True,
+        summary="Selected local Gateway profile is ready.",
+        checks=(ReadinessCheck(name="environment", ready=True, detail="selected local Gateway profile"),),
+        durability_note="Gateway history remains owned by the configured Gateway; this CLI retains no local session.",
+    )
+
+
+def _gateway_readiness_failure(*, summary: str, detail: str, next_action: str) -> ReadinessReport:
+    return ReadinessReport(
+        mode="real",
+        ready=False,
+        summary=summary,
+        checks=(ReadinessCheck(name="environment", ready=False, detail=detail, next_action=next_action),),
+        failure=RunFailure(
+            code=RunFailureCode.CONFIGURATION_ENVIRONMENT_INVALID,
+            certainty=FailureCertainty.DIRECT,
+            message=summary,
+            next_action=next_action,
+            retryable=False,
+            journal_record_created=False,
+            diagnostic_location="unavailable",
+        ),
+        durability_note="No Gateway thread or Deep Research Run was created.",
+    )
+
+
+def _gateway_transport_observer(observation: GatewayTransportObservation) -> None:
+    if observation.kind == "assistant_text" and observation.detail:
+        print(f"  Gateway: {_safe_display(observation.detail)}")
+        return
+    detail = {
+        "heartbeat": "Gateway liveness observed.",
+        "gap": "Gateway stream gap observed; no research outcome was inferred.",
+        "error": "Gateway reported a transport error; no research outcome was inferred.",
+        "end": "Gateway turn ended; waiting for a validated lifecycle result.",
+        "custom_invalid": "Gateway custom record was ignored.",
+    }.get(observation.kind)
+    if detail is not None:
+        print(f"  {detail}")
+
+
+def _gateway_progress_observer(candidate: Mapping[str, object]) -> None:
+    """Render only predecessor-approved progress fields as a bounded projection."""
+
+    phase = candidate.get("phase")
+    operation = candidate.get("operation")
+    outcome = candidate.get("outcome")
+    bundle_id = candidate.get("bundle_id")
+    if not (phase or operation or outcome):
+        return
+    label = " ".join(part for part in (str(phase), str(operation), str(outcome)) if part)
+    scope = _safe_display(str(bundle_id), limit=24) if bundle_id is not None else ""
+    print(f"  Deep Research progress: {_safe_display(label)}" + (f" (bundle {scope})" if scope else ""))
+
+
+async def _run_gateway_demo(*, question: str | None, profile: str | None, scripted: bool) -> int:
+    _print_banner(embedded_smoke=False)
+    if scripted:
+        print("  输入错误: Gateway 默认路径不支持 --scripted；自动策略仅属于 embedded smoke。")
+        return 2
+    report = _gateway_readiness_report(profile)
+    _print_readiness(report)
+    if not report.ready:
+        return 2
+    try:
+        selected_question = select_question(question=question, scripted=False)
+    except CliInputError as exc:
+        print(f"  输入错误: {_safe_display(str(exc))}")
+        return 2
+    if selected_question is None:
+        print("  已退出，未启动研究。")
+        return 130
+
+    client = HttpGatewayPublicClient()
+    transport = GatewayObserver(
+        client=client,
+        transport_observer=_gateway_transport_observer,
+        withheld_candidate_observer=_gateway_progress_observer,
+    )
+    experience = ResearchRunExperience(transport=transport, mode="real", readiness_provider=lambda: report)
+    try:
+        await experience.preflight()
+        update = await experience.handle(
+            StartRun(question=selected_question, scripted=False),
+            observer=_dispatch_observer(),
+        )
+        while isinstance(update, AwaitingInput):
+            _print_update(update)
+            answer = _ask_answer(update)
+            if answer is None:
+                print("  已退出，未继续研究。")
+                return 130
+            update = await experience.handle(answer, observer=_dispatch_observer())
+        _print_update(update)
+        return 0 if isinstance(update, Terminal) and update.outcome == "completed" else 1
+    except asyncio.CancelledError:
+        raise
+    except Exception:
+        print("  Gateway observer could not continue; no research completion was inferred.")
+        return 1
+    finally:
+        await transport.aclose()
+
+
+async def _run_embedded_smoke(*, question: str | None, scripted: bool) -> int:
+    """Retain the pre-existing all-real graph only behind explicit smoke selection."""
+
+    _print_banner(embedded_smoke=True)
     transport = DemoLifecycleTransport()
     experience = ResearchRunExperience(
         transport=transport,
@@ -376,16 +511,27 @@ async def run_demo(*, question: str | None, scripted: bool) -> int:
                 adapter.close()
 
 
+async def run_demo(
+    *,
+    question: str | None,
+    scripted: bool,
+    profile: str | None = None,
+    embedded_smoke: bool = False,
+) -> int:
+    """Run the default public Gateway observer or the explicit embedded smoke route."""
+
+    if embedded_smoke:
+        return await _run_embedded_smoke(question=question, scripted=scripted)
+    return await _run_gateway_demo(question=question, profile=profile, scripted=scripted)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Run the standalone all-real Deep Research demo.",
+        description="Run the standalone Deep Research Gateway observer.",
         epilog=(
-            "A local, non-network preflight runs before question entry. HITL prompts describe "
-            "research scope or graph-owned decisions; terminal failures show only a safe category, "
-            "next action, and opaque diagnostic reference. Records live only in the returned "
-            "Run Bundle's Event Journal. Ctrl-C ends this local wait and does not "
-            "claim to cancel the graph. A returned lifecycle record retains an inspectable local bundle; "
-            "inspection is not cross-process resume."
+            "Default real mode requires a selected ready local Gateway profile. It submits only explicit "
+            "user turns and accepts only returned typed Deep Research results. --embedded-smoke is the "
+            "separate direct local graph path and makes no Gateway observation claim."
         ),
     )
     parser.add_argument(
@@ -396,11 +542,26 @@ def main() -> None:
     parser.add_argument(
         "--scripted",
         action="store_true",
-        help="Use the graph-owned automatic policy without stdin after preflight.",
+        help="Use graph-owned automatic policy only with --embedded-smoke.",
+    )
+    parser.add_argument("--profile", default=None, help="Selected ready local Gateway profile for default real mode.")
+    parser.add_argument(
+        "--embedded-smoke",
+        action="store_true",
+        help="Use the direct local graph smoke path without Gateway history, trace, or SSE claims.",
     )
     args = parser.parse_args()
+    if args.embedded_smoke and args.profile is not None:
+        parser.error("--profile applies only to the default Gateway observer mode")
     try:
-        code = asyncio.run(run_demo(question=args.question, scripted=args.scripted))
+        code = asyncio.run(
+            run_demo(
+                question=args.question,
+                scripted=args.scripted,
+                profile=args.profile,
+                embedded_smoke=args.embedded_smoke,
+            )
+        )
     except KeyboardInterrupt:
         code = 130
     if code:

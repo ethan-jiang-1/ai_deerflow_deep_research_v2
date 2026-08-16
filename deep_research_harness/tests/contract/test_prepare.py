@@ -35,7 +35,7 @@ def project(tmp_path: Path) -> tuple[Path, dict[str, str]]:
     (root / "deerflow/backend/packages/harness/deerflow/__init__.py").write_text("", encoding="utf-8")
     (root / "deep_research_harness/src/deerflow_deep_research/__init__.py").write_text("", encoding="utf-8")
     (root / "deerflow/scripts/detect_uv_extras.py").write_text("", encoding="utf-8")
-    (root / "config.example.yaml").write_text("config_version: 19\n", encoding="utf-8")
+    (root / "deerflow/config.example.yaml").write_text("config_version: 17\n", encoding="utf-8")
     (root / "config.yaml").write_text(
         "config_version: 19\n"
         "sandbox:\n"
@@ -119,6 +119,17 @@ def test_implicit_runtime_path_defaults_are_established(project: tuple[Path, dic
     assert context.extensions_path == (root / "extensions_config.json").resolve()
 
 
+def test_root_configuration_is_the_current_version_baseline_not_the_static_example(
+    project: tuple[Path, dict[str, str]],
+) -> None:
+    root, env = project
+
+    context = _module().resolve_preparation_context(root, env)
+
+    assert context.baseline_config_version == 19
+    assert context.config_path == (root / "config.yaml").resolve()
+
+
 def test_root_backend_shadow_disagreement_is_refused(project: tuple[Path, dict[str, str]]) -> None:
     root, _env = project
     (root / "deerflow" / "backend" / "config.yaml").write_text(
@@ -136,20 +147,23 @@ def test_root_backend_shadow_disagreement_is_refused(project: tuple[Path, dict[s
     [
         ("", "config_version_missing"),
         ("config_version: invalid\n", "config_version_invalid"),
-        ("config_version: 18\n", "config_version_older"),
-        ("config_version: 20\n", "config_version_newer"),
+        ("config_version: 18\n", "config_version_mismatch"),
+        ("config_version: 20\n", "config_version_mismatch"),
     ],
 )
-def test_config_version_mismatch_refuses_before_commands_or_fingerprint(
+def test_selected_profile_version_mismatch_refuses_before_commands_or_fingerprint(
     project: tuple[Path, dict[str, str]],
     version_line: str,
     code: str,
 ) -> None:
     root, env = project
-    (root / "config.yaml").write_text(
+    selected = root / "profiles/demo/config.yaml"
+    selected.parent.mkdir(parents=True)
+    selected.write_text(
         version_line + "sandbox:\n  use: deerflow.sandbox.local:LocalSandboxProvider\n",
         encoding="utf-8",
     )
+    env = {**env, "DEER_FLOW_CONFIG_PATH": str(selected)}
     calls: list[object] = []
     module = _module()
 

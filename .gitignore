@@ -161,6 +161,9 @@ venv.bak/
 config.yaml
 config.yaml.bak
 
+# Runtime-materialized profile root (configure.py writes the public skill here)
+skills/
+
 # Spyder project settings
 .spyderproject
 .spyproject

@@ -10,4 +10,4 @@ export DEERFLOW_DEMO_MODEL=${DEERFLOW_DEMO_MODEL:-deepseek-v4-flash}
 cd "$project_root"
 make entry-preflight
 exec env -u VIRTUAL_ENV PYTHONDONTWRITEBYTECODE=1 uv run --locked --no-sync --env-file .env --extra operations --extra demo-real \
-  python scripts/demo_real.py --scripted --question "$question"
+  python scripts/demo_real.py --embedded-smoke --scripted --question "$question"
