@@ -25,3 +25,8 @@ diagnostic reference。
 需要新的 OpenSpec change：在不保存原始模型输出、prompt 或密钥的前提下，写入固定的 critic
 种类、validation stage、闭合错误代码、关联 work/review id 和可选 diagnostic reference。该
 事件只能是观察，不能参与路由或生命周期判定。
+
+2026-08-16 现状同步：`graph/nodes/wave1/review.py::_dispatch_missing_reviews` 仍为
+`except ValueError: continue`，无有界诊断事件；runtime-observability 三件套已归档
+（event recorder 与 Journal 基础设施可用），但尚未覆盖该 critic 校验失败路径。BUG-027
+（枚举契约）已结案，本卡承接其"非法结果可诊断性"部分。

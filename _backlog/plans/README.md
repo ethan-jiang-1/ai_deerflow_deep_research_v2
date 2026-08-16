@@ -19,9 +19,8 @@
 
 | Plan | 类型 | 下一步 |
 |------|------|--------|
-| [narrow-scripted-real-workflow-debug-path.md](narrow-scripted-real-workflow-debug-path.md) | 设计 / 复盘 | 建立 operator-only 的窄 scripted-real workflow change，并先写全三波 action proof |
 
-**Next available plan ID: CLS-043**（移入 `_closed_plans/` 时分配）
+**Next available plan ID: CLS-044**（移入 `_closed_plans/` 时分配）
 
 ## 已归档（移至 `_done/_closed_plans/`）
 

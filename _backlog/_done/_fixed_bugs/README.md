@@ -41,8 +41,13 @@ bug 修完后从 `_backlog/bugs/` 通过 `git mv` 移入本目录：
 | BUG-022 | 2026-08-03 | 真实研究演示的瞬态 Tavily 读取不再首次失败即终止；历史红绿差分证明两次有界恢复。 |
 | BUG-023 | 2026-08-03 | HITL1 brief prompt 不再要求 strict schema 禁止的语言字段；历史 prompt/parser 差分证明契约兼容。 |
 | BUG-024 | 2026-08-11 | Wave0/Wave1 的模型可见闭合输出 envelope 使真实 demo 通过受影响阶段，且 Journal 保留脱敏的结构化失败证据。 |
+| BUG-031 | 2026-08-16 | 缺少窄而真的三波调试路径 |
+| BUG-025 | 2026-08-16 | 进行中的 Bundle 被投影为 `protocol.invalid_result` |
+| BUG-026 | 2026-08-16 | Gate fatigue 没有区分失败的工作单元 |
+| BUG-027 | 2026-08-16 | Wave1 SourceDiagnostic 提示词漏掉枚举契约 |
+| BUG-030 | 2026-08-16 | 真机 demo 长时间运行没有实时人类可读轨迹 |
 
-**Next available bug ID: BUG-025**
+**Next available bug ID: BUG-032**
 
 ---
 

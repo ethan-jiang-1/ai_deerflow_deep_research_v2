@@ -1,6 +1,6 @@
 # BUG-031: 缺少窄而真的三波调试路径
 
-> 严重级别: P1 | 发现: 2026-08-15 | 状态: 活跃
+> 严重级别: P1 | 发现: 2026-08-15 | 状态: 已修复（2026-08-16，change `scripted-real-workflow-debug-path` 已归档）
 
 ## 症状
 
@@ -35,3 +35,12 @@ make demo-scripted
 `_backlog/plans/narrow-scripted-real-workflow-debug-path.md` 规定新的 operator-only debug command
 及其真实性、预算和观测契约。它必须由独立 OpenSpec change 实现，不能作为 `demo-real` 的隐式
 降级开关。
+
+2026-08-16：OpenSpec change `scripted-real-workflow-debug-path` 已实现——
+`make debug-scripted-real-workflow`（`scripts/debug_scripted_real_workflow.py` +
+`src_fake/deerflow_deep_research_fixtures/scripted_real/baseline.py`）在零凭据零网络下
+0.9 秒走完 `bootstrap → hitl1 → topic_planning → wave0 → wave1(2 critics) → wave2 →
+hitl2 → readiness → final_delivery → completed`，11 次模型调用 + 2 次 web_search 严格耗尽。
+三波 action proof（`tests/integration/test_scripted_real_workflow_debug.py`）与 CLI contract
+（`tests/contract/test_scripted_real_debug_command.py`）已就位。本卡保持活跃至 change 归档与
+全量 verify 通过；named case（repair/targeted）待 BUG-028/BUG-029 独立 change 后补。

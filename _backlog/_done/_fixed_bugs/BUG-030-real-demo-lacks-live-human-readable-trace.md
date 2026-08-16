@@ -1,6 +1,6 @@
 # BUG-030: 真机 demo 长时间运行没有实时人类可读轨迹
 
-> 严重级别: P1 | 发现: 2026-08-15 | 状态: 活跃
+> 严重级别: P1 | 发现: 2026-08-15 | 状态: 已修复（2026-08-16）
 
 ## 症状
 
@@ -32,3 +32,10 @@ make demo-real
 `_backlog/plans/runtime-operator-logs-and-live-trace.md` 定义了 Bundle 内人类可读 operator log
 和实时控制台投影的双轨方案。实施前需要一个专属 OpenSpec change，以保持日志、Journal 和
 生命周期权威的边界。
+
+2026-08-16 验证：runtime-observability 三件套已归档（`instrument-deep-research-runtime-observability`
+/ `add-deerflow-native-live-event-projection` / `wire-harness-observability-entrypoints`）；
+默认真实 CLI（Gateway 路由）的 `demo_real.py` 现有 `_gateway_progress_observer` 逐条渲染
+`deep_research.progress.v1`（阶段/校验/gate 事件）与心跳/错误行；`tests/unit/test_gateway_observer.py`
+与 `test_events.py` 68 例通过，CLS-041 记录了公开 SSE `custom` 通道的真实探针成功。
+embedded smoke 仍为明确标注的 result-only 本地校准路由。

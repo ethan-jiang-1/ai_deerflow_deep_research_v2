@@ -1,6 +1,6 @@
 # BUG-027: Wave1 SourceDiagnostic 提示词漏掉枚举契约
 
-> 严重级别: P1 | 发现: 2026-08-15 | 状态: 活跃（修复实现待验证）
+> 严重级别: P1 | 发现: 2026-08-15 | 状态: 已修复（2026-08-16）
 
 ## 症状
 
@@ -26,3 +26,6 @@ SourceDiagnostic 的结构化输出契约要求 `trust_tier` 为 `high`、`mediu
 `graph/nodes/wave1/prompts.py` 已补充允许值和顺序要求，
 `tests/unit/test_wave1_critic_prompts.py` 已补充契约断言。还需跑聚焦测试，并和 BUG-029 一起
 验证非法结果的可诊断性。
+
+2026-08-16 验证：`tests/unit/test_wave1_critic_prompts.py` 10 例全过（枚举与顺序契约断言）。
+"非法结果可诊断性"属于 BUG-029 的新 change（诊断事件），由该卡单独跟踪。

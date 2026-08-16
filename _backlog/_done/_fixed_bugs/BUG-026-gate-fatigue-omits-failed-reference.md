@@ -1,6 +1,6 @@
 # BUG-026: Gate fatigue 没有区分失败的工作单元
 
-> 严重级别: P0 | 发现: 2026-08-15 | 状态: 活跃（修复实现待验证）
+> 严重级别: P0 | 发现: 2026-08-15 | 状态: 已修复（2026-08-16）
 
 ## 症状
 
@@ -25,3 +25,9 @@
 实现已将 fingerprint 扩展为 `(failure_code, rule_name, ref)`，并新增
 `tests/engine/test_gate_kernel.py::test_different_failed_reference_resets_fatigue`。本卡保持活跃，
 直到该测试和相关 Wave1 测试在当前工作树通过。
+
+2026-08-16 验证：`tests/engine/test_gate_kernel.py` 29 例全过（含
+`TestGateFatigue::test_different_failed_reference_resets_fatigue`，fingerprint 含 ref）；
+`tests/integration/test_wave1_work_units.py` 24 例通过，唯一红测
+`test_real_wave1_review_gate_enforces_question_floor_and_review_integrity`（@impl WON-004）
+属 BUG-028 有意移除的 gate rule，由该卡跟踪，与本卡修复无关。

@@ -1,6 +1,6 @@
 # Active Bugs — 活跃 bug 列表
 
-> 最后更新: 2026-08-15 | `_backlog/bugs/` — 活跃 bug 在此
+> 最后更新: 2026-08-16 | `_backlog/bugs/` — 活跃 bug 在此
 >
 > **bug 编号权威在 `_done/_fixed_bugs/`，新 bug = 最大编号 + 1。** 本文件只列活跃 bug。
 
@@ -18,13 +18,8 @@
 | ID | 严重级别 | 发现 | 标题 |
 | --- | --- | --- | --- |
 
-| [BUG-025](BUG-025-active-bundle-projected-as-invalid-result.md) | P0 | 2026-08-15 | 进行中的 Bundle 被投影为 `protocol.invalid_result` |
-| [BUG-026](BUG-026-gate-fatigue-omits-failed-reference.md) | P0 | 2026-08-15 | Gate fatigue 没有区分失败的工作单元 |
-| [BUG-027](BUG-027-wave1-source-diagnostic-enum-contract-omitted.md) | P1 | 2026-08-15 | Wave1 SourceDiagnostic 提示词漏掉枚举契约 |
 | [BUG-028](BUG-028-wave1-targeted-search-has-no-repair-path.md) | P1 | 2026-08-15 | Wave1 `targeted_search` 没有真正的修复路径 |
 | [BUG-029](BUG-029-invalid-critic-output-is-silently-suppressed.md) | P1 | 2026-08-15 | 非法 critic 输出被静默丢弃 |
-| [BUG-030](BUG-030-real-demo-lacks-live-human-readable-trace.md) | P1 | 2026-08-15 | 真机 demo 长时间运行没有实时人类可读轨迹 |
-| [BUG-031](BUG-031-no-narrow-real-workflow-debug-path.md) | P1 | 2026-08-15 | 缺少窄而真的三波调试路径 |
 
 **Next available bug ID: BUG-032**
 

@@ -1,6 +1,6 @@
 # Plan: 窄而真的三波工作流调试路径
 
-> 类型: 设计 / 复盘（postmortem） | 更新: 2026-08-15
+> 类型: 设计 / 复盘（postmortem） | 更新: 2026-08-16
 
 ## 背景 / 现状
 
@@ -123,5 +123,45 @@ command 中串行执行。
 ## 落地关联
 
 本计划解决 BUG-031，并与 BUG-026 至 BUG-030 共用 Event Journal/未来 operator log，但不依赖日志
-计划才能先落地。实施应产生新的 OpenSpec change；已有
-`fix-active-demo-bundle-projection` change 的 scope 只处理活动 Bundle 投影，不应混入这个工作流。
+计划才能先落地。实施已产生 OpenSpec change `scripted-real-workflow-debug-path`（proposal/specs/
+design/tasks 齐全，SCR-001..005 + PRS-019 登记）：2026-08-16 红测先行转绿，
+`make debug-scripted-real-workflow` 落地（0.9 秒基线），三波 action proof 与 CLI contract 就位。
+已有 `fix-active-demo-bundle-projection` change 的 scope 只处理活动 Bundle 投影，没有混入。
+
+## Spike 验证结果（2026-08-16，`tests/integration/spike_scripted_real_workflow.py`）
+
+已用 `ResearchGraphRecipe.all_real(work_unit_store_factory=…, node_agent_bridge_factory=<scripted>)`
++ `BundleGraphExecutor` + 公共控制入口 `run_deep_research(start → HITL1 确认 → resume)` 走通全图：
+
+`bootstrap → hitl1 → hitl1 → topic_planning → wave0 → wave1 → wave2_synthesis → hitl2 → readiness → final_delivery → completed`，
+**11 次模型调用 + 2 次 web_search、0 次 web_fetch、0.70s、零凭据零网络**，全部脚本严格耗尽，
+terminal completed、2 条 work-unit records、final artifacts 发布。
+
+实测发现（预算表按此修正）：
+
+1. **模型响应必须带 `usage_metadata`（total/output tokens）**——`BudgetMiddleware` 无记账即判
+   `usage_unavailable` 失败；脚本模型把 usage 一并固定即可。
+2. **时钟不能冻结**：`AttemptRef` 要求 `created_at <= terminal_at`，且真实 wave0 节点硬编码
+   `clock=lambda: datetime.now(UTC)`。结论：只固定 ID/随机性，时钟用真实时间（或与节点一致的推进时钟）。
+3. **envelope 的 `app_config` 必须是带 local sandbox 配置的真 `AppConfig`**，否则
+   `classify_work_unit_storage` 判 `provider_unrecognized`，bootstrap 存储不可用。
+4. **wave1 语义底线与 plan 表格不同**：`WAVE1_MINIMUM_NEW_SOURCE_URLS = 2`——extraction 必须提出
+   ≥2 个超出 wave0 基线的新来源 URL（原表格"一份新来源"应改为两份）。critic 输出必须与
+   extraction 的 `source_ids`/`claim_id` 对齐（BUG-027 枚举：`trust_tier`/`materiality` 闭合值）。
+5. **wave2 finding 的 `backing_refs` 必须是已接纳 submission ref（`h_`+43 字符 token），且当前工作
+   树（BUG-028 缓解后）wave1 submission 不进入 accepted refs**——finding 需 back 在 wave0 ref 上，
+   否则触发 repair。`gaps` 必须为空：`search_required` gap 会路由进 targeted_evidence，而当前
+   targeted 路径会抛 `work_unit_gate_view_inconsistent`（BUG-028 待修），基线不得进入。
+6. **readiness critic 的 `backing_claim_ids` 必须是已接纳 submission ref**，不是 claim id；verdict
+   `ready_substantive` 且无 blocked 即 `pass`。
+7. **final composer 输出 `conclusion_order`/`uncertainty_order` 是数组**，且只能包含 composer
+   prompt 里给出的 plan 条目 id（`conclusion:N`/`uncertainty:N`），两个列表不得混用。
+8. **真实 hitl2 节点是自主决策**（`recommend_hitl2_route`，不产生人机交互）——plan 的"HITL2 自动通过"
+   即现状，基线只会有一次 HITL1 挂起；spike 保留了未来若 hitl2 恢复人工决策的 proceed 分支。
+9. 脚本模型需要**占位符渲染**：wave2/readiness/composer 的合法 JSON 依赖运行时事实
+   （accepted refs、plan 条目 id），从 prompt 文本中正则提取填充，不能全静态。
+
+对实施顺序的影响：步骤 2 的红测应断言 11 次模型调用 / 2 次 web_search / 0 次 web_fetch /
+2 条记录 / 两条 wave1 review artifact / wave2 finding backing ref ∈ accepted / completed 终态；
+步骤 3 的 scenario catalog 以本次 spike 的 JSON 为最小合法基线（wave1 按 2 个新来源修正）。
+

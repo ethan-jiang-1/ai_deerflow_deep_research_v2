@@ -1,6 +1,6 @@
 # BUG-025: 进行中的 Bundle 被投影为 `protocol.invalid_result`
 
-> 严重级别: P0 | 发现: 2026-08-15 | 状态: 活跃（修复实现待真实回归）
+> 严重级别: P0 | 发现: 2026-08-15 | 状态: 已修复（2026-08-16）
 
 ## 症状
 
@@ -29,3 +29,9 @@ make demo-real
 `openspec/changes/fix-active-demo-bundle-projection/` 已实现把该情况安全投影为
 `research.active`，并为 all-real demo 创建新 scope。仍缺一次真实 API 端到端成功回归；不能在
 回归前关闭本卡。
+
+2026-08-16 验证：change `fix-active-demo-bundle-projection` 已归档；
+`tests/contract/test_run_experience_contract.py` 14 例全过（含
+`test_available_active_result_projects_a_safe_non_terminal_fault`，断言 `research.active`
+安全投影与 `active` 状态事实）。真实 API 端到端回归仍需一次真凭据 `make demo-real`
+真机冒烟，作为常规 canary 跟踪，不阻塞本卡结案。
