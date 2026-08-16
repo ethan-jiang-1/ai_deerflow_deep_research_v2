@@ -163,6 +163,9 @@ config.yaml.bak
 
 # Runtime-materialized profile root (configure.py writes the public skill here)
 skills/
+# Re-include the committed agent skill set (tracked delivery artifacts)
+!.agents/skills/
+!.agents/skills/**
 
 # Spyder project settings
 .spyderproject
