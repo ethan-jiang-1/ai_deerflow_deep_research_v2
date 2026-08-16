@@ -4,7 +4,7 @@
 
 ```
 deep_research_harness/    ★ 你的应用（本仓库的主角，几乎所有工作发生在这里）
-deerflow/                 被 leverage 的外部框架（submodule @ ethan），只用来跑，绝不修改
+deerflow/                 被 leverage 的外部框架（submodule 锁 commit `66b9e7f2`，ethan 分支），只用来跑，绝不修改
 ```
 
 ## 你的工作范围（按优先级）
@@ -17,12 +17,14 @@ deerflow/                 被 leverage 的外部框架（submodule @ ethan），
 
 ## 框架：只 leverage，不修改
 
-**`deerflow/` 是一个 git submodule（指向 ethan 分支），提供运行环境。** 对它：
+**`deerflow/` 是一个 git submodule（锁在 commit `66b9e7f2`，ethan 分支的一个 commit），提供运行环境。** 对它：
 
 - ✅ **用它的 API**——你的应用通过 `import deerflow`（editable 装自 `deerflow/backend/packages/harness`）继承框架能力，有什么用什么。
 - ❌ **不要探索 / 修改它的源码**。它是上游镜像 + 你的研究笔记，不是你的代码。
 - ❌ **不要为了解决问题去翻它内部**——如果某任务要求你读框架源码才能继续，停下来重新界定范围（大概率是你在尝试不该改的东西）。
 - 需要理解它内部怎么工作 → 看 `deerflow/_digest/`（你对它的研究笔记，只读参考）。
+
+> 术语提示：本仓库的 `harness` 默认指 `deep_research_harness/`（你的应用）；`deerflow/backend/packages/harness` 是框架包。两者同名——前者是主角，后者是只读背景板。
 
 ## 运行方式
 

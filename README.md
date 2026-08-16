@@ -6,7 +6,7 @@
 
 ```
 deep_research_harness/    ★ 你的应用（deep research runtime，基于 deerflow 的 API 构建）
-deerflow/                 被 leverage 的框架（submodule @ ethan，含研究笔记 _digest/_faq），只读
+deerflow/                 被 leverage 的框架（submodule 锁 commit `66b9e7f2`，ethan 分支；含研究笔记 _digest/_faq），只读
 openspec/                 设计规格（openspec CLI 管理）
 _backlog/                 任务账本
 .agents/skills/           openspec 技能（Codex 通用入口，项目自有）
@@ -40,4 +40,4 @@ UV_OFFLINE=1 make verify                  # 跑确定性测试 gate
 ## 备注
 
 - `deerflow/` submodule 需 `git clone --recurse-submodules` 或 `git submodule update --init` 才完整。
-- 框架运行时基座：ethan 分支（digest 笔记描述 e5c62cab，submodule 钉在 ethan HEAD）。
+- 框架运行时基座：submodule 锁在 commit `66b9e7f2`（ethan 分支的一个 commit，见 `openspec/governance/project-structure.toml` 的 `upstream_gitlink`）。
