@@ -6,6 +6,9 @@
 from __future__ import annotations
 
 import asyncio
+import secrets
+import time
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -13,11 +16,19 @@ import pytest
 from deerflow_deep_research.domain.run_observation import ExecutionProfileEvidence, ObservationInspectability
 from deerflow_deep_research.runtime.bundle_graph import BundleGraphExecutor
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
+from deerflow_deep_research.runtime.events import RuntimeObservationProjection, make_stream_event_sink
 from deerflow_deep_research.runtime.run_observation import RunObservationStore
 from deerflow_deep_research.runtime.runtime_adapter import TrustedRuntimeEnvelope
+from deerflow_deep_research.runtime.work_unit_store import WorkUnitStore
+from tests.fixtures.recipes import fixture_recipe
 
 
-def _envelope(tmp_path: Path, *, execution_profile: ExecutionProfileEvidence | None) -> TrustedRuntimeEnvelope:
+def _envelope(
+    tmp_path: Path,
+    *,
+    execution_profile: ExecutionProfileEvidence | None,
+    live_event_sink=None,
+) -> TrustedRuntimeEnvelope:
     return TrustedRuntimeEnvelope(
         effective_user_id="journal-user",
         outer_thread_id="journal-thread",
@@ -30,7 +41,7 @@ def _envelope(tmp_path: Path, *, execution_profile: ExecutionProfileEvidence | N
         uploads_virtual_root="/mnt/user-data/uploads",
         outputs_virtual_root="/mnt/user-data/outputs",
         parent_sandbox=None,
-        progress=None,
+        live_event_sink=live_event_sink,
         execution_profile=execution_profile,
     )
 
@@ -84,3 +95,58 @@ async def test_rejected_start_creates_no_bundle_or_profile_journal(tmp_path: Pat
     assert await lifecycle.discover_active(scope=("journal-user", "journal-thread")) is None
     journal_manifests = await asyncio.to_thread(lambda: tuple(tmp_path.rglob("journal-manifest.json")))
     assert not journal_manifests
+
+
+@pytest.mark.asyncio
+async def test_bundle_context_binds_the_trusted_live_sink_after_admission(tmp_path: Path) -> None:
+    lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
+    bundle = await lifecycle.start(
+        scope=("journal-user", "journal-thread"),
+        request_text="Research live observations",
+        implementation_mode="all_real",
+    )
+    payloads: list[object] = []
+
+    async def create(envelope, *, bundle, **_kwargs):
+        return WorkUnitStore(
+            workspace_host_path=envelope.workspace_host_path,
+            bundle=bundle,
+            clock=lambda: datetime(2026, 8, 16, tzinfo=UTC),
+            monotonic=time.monotonic,
+            lock_sleep=time.sleep,
+            token_factory=lambda: secrets.token_hex(16),
+            fault_hook=None,
+        )
+
+    executor = BundleGraphExecutor(recipe=fixture_recipe(work_unit_store_factory=create))
+    context = await executor._context(
+        envelope=_envelope(
+            tmp_path,
+            execution_profile=None,
+            live_event_sink=make_stream_event_sink(payloads.append),
+        ),
+        bundle=bundle,
+    )
+
+    assert isinstance(context.observation_projection, RuntimeObservationProjection)
+    context.observation_projection.emit(
+        {
+            "phase": "wave0",
+            "operation": "node",
+            "outcome": "started",
+            "attempt_id": "attempt-1",
+        },
+        logger=type("Logger", (), {"log": lambda *_args, **_kwargs: None})(),
+    )
+    assert payloads == [
+        {
+            "type": "deep_research.progress.v1",
+            "phase": "wave0",
+            "operation": "node",
+            "outcome": "started",
+            "bundle_id": bundle.bundle_id.value,
+            "attempt_id": "attempt-1",
+            "outer_thread_id": "journal-thread",
+            "outer_run_id": "journal-run",
+        }
+    ]

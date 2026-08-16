@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import logging
 from collections.abc import Callable, Mapping
 from datetime import datetime
 from typing import Any
@@ -21,7 +22,11 @@ from deerflow_deep_research.domain.bundle import (
     bundle_result_path,
     bundle_source_content_path,
 )
-from deerflow_deep_research.domain.invocation import RunEventRecorderProtocol, WorkUnitControllerDependencies
+from deerflow_deep_research.domain.invocation import (
+    RunEventRecorderProtocol,
+    RuntimeObservationProjectionProtocol,
+    WorkUnitControllerDependencies,
+)
 from deerflow_deep_research.domain.node_spec import PolicyRef
 from deerflow_deep_research.domain.run_observation import (
     FinalResponseShape,
@@ -60,6 +65,7 @@ from .prompts import (
 )
 
 WAVE0_REAL_POLICY = PolicyRef(name="real-wave0", version="v1")
+LOGGER = logging.getLogger(__name__)
 _WAVE0_VALIDATION_CODES = frozenset(
     {
         "wave0_worker_output_empty",
@@ -89,9 +95,22 @@ async def _observe_validation(
     stage: str,
     codes: tuple[str, ...],
     response_shape: FinalResponseShape,
+    observation_projection: RuntimeObservationProjectionProtocol | None,
 ) -> None:
     """Publish parser evidence without allowing observation persistence to affect a worker."""
 
+    if observation_projection is not None:
+        fields: dict[str, object] = {
+            "phase": "wave0",
+            "operation": "validation",
+            "outcome": "rejected" if codes else "completed",
+            "bundle_id": spec.bundle_id,
+            "work_id": spec.work_id,
+            "attempt_id": attempt.attempt_id,
+        }
+        if codes:
+            fields["code"] = "validation_rejected"
+        await observation_projection.aemit(fields, logger=LOGGER)
     if event_recorder is None:
         return
     try:
@@ -154,6 +173,7 @@ async def run_wave0_work_units_real(
     clock: Callable[[], datetime],
     fault_hook: Callable[[str], None] | None = None,
     event_recorder: RunEventRecorderProtocol | None = None,
+    observation_projection: RuntimeObservationProjectionProtocol | None = None,
 ) -> WorkUnitComponentResult:
     """Run real Wave0 source intake: one worker per topic through the bridge.
 
@@ -197,6 +217,7 @@ async def run_wave0_work_units_real(
                 stage="initial",
                 codes=(_canonical_validation_code(parse_error),),
                 response_shape=initial_response_shape,
+                observation_projection=observation_projection,
             )
             assignment = build_wave0_assignment_projection(spec, topic_registry)
             repair_outcome = await invoke_and_normalize(
@@ -225,6 +246,7 @@ async def run_wave0_work_units_real(
                     stage="repair",
                     codes=(_canonical_validation_code(repair_error),),
                     response_shape=repair_response_shape,
+                    observation_projection=observation_projection,
                 )
                 raise WorkerAttemptFailure(WorkerFailureCategory.STRUCTURED_OUTPUT) from repair_error
             await _observe_validation(
@@ -234,6 +256,7 @@ async def run_wave0_work_units_real(
                 stage="repair",
                 codes=(),
                 response_shape=repair_response_shape,
+                observation_projection=observation_projection,
             )
         else:
             await _observe_validation(
@@ -243,6 +266,7 @@ async def run_wave0_work_units_real(
                 stage="initial",
                 codes=(),
                 response_shape=initial_response_shape,
+                observation_projection=observation_projection,
             )
         metas: list[Wave0SourceMeta] = []
         source_refs: list[SourceRef] = []
@@ -311,6 +335,7 @@ async def run_wave0_work_units_real(
         fault_hook=fault_hook,
         worker=worker,
         event_recorder=event_recorder,
+        observation_projection=observation_projection,
     )
 
 

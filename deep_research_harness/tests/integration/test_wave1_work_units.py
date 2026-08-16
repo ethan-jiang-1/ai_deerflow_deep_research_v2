@@ -248,6 +248,17 @@ class ScriptedWave1Capabilities:
         )
 
 
+class _ObservationProjection:
+    def __init__(self) -> None:
+        self.events: list[dict[str, object]] = []
+
+    def emit(self, fields: dict[str, object], **_kwargs: object) -> None:
+        self.events.append(dict(fields))
+
+    async def aemit(self, fields: dict[str, object], **_kwargs: object) -> None:
+        self.emit(fields, **_kwargs)
+
+
 class BaseResolver:
     def __init__(self, graph_context: GraphContextView, capabilities=None, *, bundle: RunBundleRef = BUNDLE) -> None:
         self._graph_context = graph_context
@@ -1066,6 +1077,7 @@ async def test_real_wave1_malformed_repair_has_no_artifact_admission(tmp_path) -
         resolver=RuntimeWorkUnitDependencyResolver(graph_context, BaseResolver(graph_context, capabilities), store),
     )
     topics = ({"topic_id": "storage", "title": "Storage", "scope": "Storage economics"},)
+    observation_projection = _ObservationProjection()
 
     result = await wave1_subgraph.run_wave1_work_units_real(
         _state() | {"topic_registry": topics},
@@ -1074,12 +1086,33 @@ async def test_real_wave1_malformed_repair_has_no_artifact_admission(tmp_path) -
         capabilities=capabilities,
         wave0_urls=frozenset(),
         clock=lambda: NOW,
+        observation_projection=observation_projection,
     )
 
     assert len(capabilities.requests) == 2
     assert capabilities.requests[1].tools_enabled is False
     assert capabilities.requests[1].capability_ref is not None
     assert capabilities.requests[1].capability_ref.capability_id == "wave1-evidence-extraction-repair"
+    assert [event for event in observation_projection.events if event["operation"] == "validation"] == [
+        {
+            "phase": "wave1",
+            "operation": "validation",
+            "outcome": "rejected",
+            "bundle_id": BUNDLE_ID,
+            "work_id": "g0_wave1_w0000",
+            "attempt_id": "g0_wave1_w0000_a00",
+            "code": "validation_rejected",
+        },
+        {
+            "phase": "wave1",
+            "operation": "validation",
+            "outcome": "rejected",
+            "bundle_id": BUNDLE_ID,
+            "work_id": "g0_wave1_w0000",
+            "attempt_id": "g0_wave1_w0000_a00",
+            "code": "validation_rejected",
+        },
+    ]
     assert result.parent_update["accepted_submission_refs"] == ()
     assert await store.load_records() == ()
 

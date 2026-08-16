@@ -42,6 +42,7 @@ prefixes:
   DRH: deep-research-harness-run-bundles
   EVC: evidence-critic-nodes
   GAK: gate-kernel
+  GOO: gateway-operator-observer
   HIC: human-interaction-contract
   HIN: hitl1-node
   HIT: hitl2-node
@@ -54,6 +55,7 @@ prefixes:
   RED: research-demo-tui
   REG: research-graph-lifecycle
   RUI: runtime-integration
+  RTO: runtime-observability
   REC: research-cli-onboarding
   REJ: run-event-journal
   RER: research-run-experience
@@ -158,6 +160,11 @@ DER-003: deep-research-delivery-efficiency — Ledger boundary tests prove exact
 DER-004: deep-research-delivery-efficiency — Focused developer verification targets expose one purpose and elapsed time while full verification remains the unchanged release gate
 DER-005: deep-research-delivery-efficiency — Deterministic CI reports its twenty slowest fast-lane tests and rejects an over-budget test without a reviewed bounded waiver
 DER-006: deep-research-delivery-efficiency — Reference fast-lane performance evidence attributes collection, setup, and call time and demonstrates the documented aggregate delivery budget
+
+# gateway-operator-observer
+GOO-001: gateway-operator-observer — The local real observer creates and follows only configured public Gateway turns for the deep-research Agent without embedded graph, private store, caller identity, or lifecycle authority
+GOO-002: gateway-operator-observer — Structured SSE projections admit only safe assistant text, validated typed Deep Research results, predecessor-owned custom progress, and bounded transport facts without lifecycle inference or recovery side effects
+GOO-003: gateway-operator-observer — A ready local profile preflights trace logging, durable history, public entry, and health while its launcher preserves stderr through secure bounded process capture outside Bundle and sandbox state
 
 # local-configuration-profiles
 LCP-001: local-configuration-profiles — A named local profile deterministically selects a paired DeerFlow configuration and extensions file plus its isolated writable runtime and SQLite state roots
@@ -268,7 +275,7 @@ CES-008: cognitive-evaluation-suite — Cognitive Evaluation Bundles remain a se
 CES-009: cognitive-evaluation-suite — The supported Evaluation runtime facade projects domain-owned contracts while the retired runtime contract re-export has no alias, fallback, or compatibility route
 
 # research-demo-tui
-RED-001: research-demo-tui — A standalone Textual demo renders the fixed fixture graph through both HITL requests without Gateway, model, or network dependencies
+RED-001: research-demo-tui — The standalone Textual demo uses shared typed lifecycle presentation for a Gateway-backed real mode and the unchanged credential-free fixed fixture graph without local lifecycle inference
 RED-002: research-demo-tui — The demo remains an explicitly non-product fixture-graph or all-real visualization with deterministic tests and no claim of formal DeerFlow TUI or Web UI integration
 RED-003: research-demo-tui — The Textual demo consumes shared run updates and does not infer lifecycle state or construct graph response envelopes
 RED-004: research-demo-tui — The Textual demo exposes safe failure, diagnostic, durability, and cancellation semantics without raw runtime data
@@ -371,6 +378,11 @@ RUI-009: runtime-integration — Runtime derives and projects one trusted checkp
 RUI-010: runtime-integration — Reflected Deep Research controls use trusted scope and opaque Bundle identity without accepting legacy lifecycle authority
 RUI-011: runtime-integration — Runtime integration cannot make an external checkpoint a Deep Research lifecycle authority
 RUI-012: runtime-integration — Reflected refinement results distinguish submitted admission from same-Bundle round application without exposing private direction or recovery facts
+
+# runtime-observability
+RTO-001: runtime-observability — Each material Deep Research runtime fact has exactly one safe owner-local standard-log projection that cannot affect execution or lifecycle authority
+RTO-002: runtime-observability — Live custom-event transport is deferred pending a separately approved DeerFlow upgrade [DEPRECATED: superseded by log-only observability]
+RTO-003: runtime-observability — Trusted outer thread/run and public trace correlation may join an admitted opaque Bundle only as non-controlling observability projection
 
 # research-graph-lifecycle
 REG-001: research-graph-lifecycle — One explicit topology and complete adapter/gate selection assemble every stable Deep Research phase from registered real-only NodeSpec packages
@@ -575,7 +587,7 @@ WOU-012: work-unit-kernel — Shared submit validation records only rejected can
 DPL-001: demo-pipeline — A shared demo core module provides DemoAdapter, synthetic tool-call helpers, phase metadata, and graph-backed infrastructure for all demo scripts; credential-free execution is the fixed fixture graph
 DPL-002: demo-pipeline — Phase progress display reads execution_trace from DeepResearchControlResult and renders completed phases with → and suspended phases with ⏸
 DPL-003: demo-pipeline — Named fixture and all-real demo factories construct their fixed recipes and executors explicitly, without a mode selector, no-graph lifecycle, or a production fixture fallback
-DPL-004: demo-pipeline — An independent CLI real demo validates supported model and Tavily prerequisites, builds the all-real recipe, and supports scripted non-interactive mode
+DPL-004: demo-pipeline — The default real CLI uses one selected ready public Gateway profile with shared typed presentation and scripted mode while local model/Tavily graph composition remains explicit embedded smoke only
 DPL-005: demo-pipeline — Makefile provides fixed fixture-graph and all-real CLI/TUI demos plus demo-sessions and session-workbench with DEMO_ARGS passthrough and no full-fake/no-graph command surface
 DPL-006: demo-pipeline — Demo command targets select or clearly reject a foreign active environment before user onboarding
 DPL-007: demo-pipeline — Local demo runs retain inspectable run bundles through an explicit bounded retention policy instead of deleting all artifacts on process exit

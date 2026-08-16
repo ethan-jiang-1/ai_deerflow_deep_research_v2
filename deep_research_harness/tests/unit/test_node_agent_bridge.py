@@ -50,6 +50,7 @@ from deerflow_deep_research.graph.nodes.hitl1.capabilities import HITL1_SEMANTIC
 from deerflow_deep_research.graph.nodes.hitl1.prompts import build_brief_prompt
 from deerflow_deep_research.graph.nodes.wave0.capabilities import WAVE0_AUTHORITATIVE_SOURCE_INTAKE
 from deerflow_deep_research.graph.prompt_catalog import prompt_catalog_cases
+from deerflow_deep_research.runtime import events
 from deerflow_deep_research.runtime import node_agent_bridge as bridge_module
 from deerflow_deep_research.runtime.node_agent_bridge import (
     NodeAgentConfigurationError,
@@ -126,7 +127,6 @@ def _envelope(*, parent_sandbox: object = FakeSandbox()) -> TrustedRuntimeEnvelo
         uploads_virtual_root="/mnt/user-data/uploads",
         outputs_virtual_root="/mnt/user-data/outputs",
         parent_sandbox=parent_sandbox,
-        progress=None,
     )
 
 
@@ -149,6 +149,32 @@ def _request() -> NodeExecutionRequest:
         tools_enabled=False,
         capability_ref=HITL1_SEMANTIC_INTAKE,
     )
+
+
+def test_node_agent_observation_projection_uses_only_safe_trusted_correlation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    observations: list[events.SafeObservation] = []
+
+    def record(observation: events.SafeObservation, **_kwargs: object) -> None:
+        observations.append(observation)
+
+    monkeypatch.setattr(bridge_module, "project_observation", record)
+    bridge = RuntimeNodeAgentBridge(envelope=_envelope(), policy=_policy())
+
+    bridge._emit(_context(), operation="run_agent", status="started")
+
+    assert observations == [
+        events.SafeObservation(
+            phase="node_agent",
+            operation="collect.run_agent",
+            outcome=events.ObservationOutcome.STARTED,
+            bundle_id=SELECTED_BUNDLE.bundle_id.value,
+            attempt_id="a1",
+            outer_thread_id="thread-1",
+            outer_run_id="run-1",
+        )
+    ]
 
 
 def _hitl_context(*, node_name: str = "hitl1") -> NodeAgentContext:
@@ -522,20 +548,19 @@ async def test_bridge_records_safe_model_tool_start_and_completion_to_the_shared
     assert all(event["attempt_id"] == "a1" for event in recorder.events)
 
 
-async def test_bridge_records_closed_failure_when_the_live_projection_subscriber_fails() -> None:
-    """@impl REJ-005"""
+async def test_bridge_records_closed_failure_when_the_logger_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """@impl RTO-001 REJ-005"""
 
     recorder = _JournalRecorder()
 
-    class FailingProgress:
-        def emit(self, _event: dict[str, object]) -> None:
-            raise RuntimeError("subscriber disconnected")
+    class FailingLogger:
+        def log(self, *_args: object, **_kwargs: object) -> None:
+            raise RuntimeError("configured log sink unavailable")
 
-    envelope = replace(
-        _envelope(),
-        progress=FailingProgress(),
-        event_recorder_factory=lambda _scope: recorder,
-    )
+    monkeypatch.setattr(bridge_module, "LOGGER", FailingLogger())
+    envelope = replace(_envelope(), event_recorder_factory=lambda _scope: recorder)
     result = await _bridge(
         lambda: (_ for _ in ()).throw(NodeAgentConfigurationError("model_not_configured", "raw secret")),
         envelope=envelope,
@@ -1029,18 +1054,19 @@ async def test_bridge_projects_closed_safe_problem_for_each_runtime_source(
     assert sentinel not in str(recorder.events)
 
 
-async def test_source_failure_progress_event_never_contains_raw_error_text() -> None:
+async def test_source_failure_log_never_contains_raw_error_text(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     sentinel = "provider-body secret=sentinel /Users/alice/private"
-    events: list[dict[str, object]] = []
+    records: list[dict[str, object]] = []
 
-    class Recorder:
-        def emit(self, event: dict[str, object]) -> None:
-            events.append(event)
+    class RecordingLogger:
+        def log(self, _level: int, _message: str, *, extra: dict[str, object]) -> None:
+            records.append(extra)
 
-    envelope = _envelope()
-    object.__setattr__(envelope, "progress", Recorder())
+    monkeypatch.setattr(bridge_module, "LOGGER", RecordingLogger())
     bridge = RuntimeNodeAgentBridge(
-        envelope=envelope,
+        envelope=_envelope(),
         policy=_policy(),
         model_resolver=lambda _envelope: (_ for _ in ()).throw(
             NodeAgentConfigurationError("model_not_configured", sentinel)
@@ -1051,8 +1077,8 @@ async def test_source_failure_progress_event_never_contains_raw_error_text() -> 
     result = await bridge.run_agent(context=_context(), request=_request())
 
     assert result.problem is not None
-    assert events
-    assert sentinel not in str(events)
+    assert records
+    assert sentinel not in str(records)
 
 
 async def test_fresh_runnable_built_per_request() -> None:

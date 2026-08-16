@@ -51,7 +51,6 @@ def _envelope() -> TrustedRuntimeEnvelope:
         uploads_virtual_root="/mnt/user-data/uploads",
         outputs_virtual_root="/mnt/user-data/outputs",
         parent_sandbox=object(),
-        progress=None,
     )
 
 

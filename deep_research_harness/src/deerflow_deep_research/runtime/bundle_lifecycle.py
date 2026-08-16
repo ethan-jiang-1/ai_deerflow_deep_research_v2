@@ -12,6 +12,7 @@ import asyncio
 import base64
 import hashlib
 import json
+import logging
 import os
 import secrets
 import shutil
@@ -64,10 +65,48 @@ from deerflow_deep_research.runtime.bundle_transition import (
     BundleTransitionError,
     BundleTransitionLease,
 )
+from deerflow_deep_research.runtime.events import ObservationOutcome, SafeObservation, project_observation
 
 _STATE_FILENAME = "state.json"
 _GRAPH_FILENAME = "graph.sqlite"
 _STAGING_PREFIX = ".staging-"
+LOGGER = logging.getLogger(__name__)
+
+
+def _lifecycle_outcome(status: LifecycleStatus) -> ObservationOutcome:
+    return {
+        LifecycleStatus.COMPLETED: ObservationOutcome.COMPLETED,
+        LifecycleStatus.STOPPED: ObservationOutcome.STOPPED,
+        LifecycleStatus.CANCELLED: ObservationOutcome.CANCELLED,
+        LifecycleStatus.BLOCKED: ObservationOutcome.BLOCKED,
+    }[status]
+
+
+def _log_lifecycle(
+    bundle: RunBundleRef,
+    *,
+    operation: str,
+    outcome: ObservationOutcome,
+    outer_thread_id: str | None = None,
+    outer_run_id: str | None = None,
+) -> None:
+    try:
+        observation = SafeObservation(
+            phase="lifecycle",
+            operation=operation,
+            outcome=outcome,
+            bundle_id=bundle.bundle_id.value,
+            outer_thread_id=outer_thread_id,
+            outer_run_id=outer_run_id,
+        )
+    except ValueError:
+        observation = SafeObservation(
+            phase="lifecycle",
+            operation=operation,
+            outcome=outcome,
+            bundle_id=bundle.bundle_id.value,
+        )
+    project_observation(observation, logger=LOGGER)
 
 
 class BundleLifecycleError(RuntimeError):
@@ -335,6 +374,8 @@ class BundleLifecycle:
         request_text: str,
         implementation_mode: ImplementationMode,
         start_message_id: str | None = None,
+        log_outer_thread_id: str | None = None,
+        log_outer_run_id: str | None = None,
     ) -> RunBundleRef:
         """Atomically publish a fresh initialized Bundle when no active Bundle exists."""
 
@@ -355,6 +396,13 @@ class BundleLifecycle:
             scope_lease.ensure_live()
             await asyncio.to_thread(self._publish_sync, bundle, initial_state, scope_lease)
             scope_lease.ensure_live()
+            _log_lifecycle(
+                bundle,
+                operation="start",
+                outcome=ObservationOutcome.STARTED,
+                outer_thread_id=log_outer_thread_id,
+                outer_run_id=log_outer_run_id,
+            )
             return bundle
 
     async def discover_active(self, *, scope: tuple[str, str]) -> RunBundleRef | None:
@@ -495,28 +543,41 @@ class BundleLifecycle:
         scope: tuple[str, str],
         bundle_id: BundleId | None = None,
         handle: CurrentBundleHandle | None = None,
+        log_outer_thread_id: str | None = None,
+        log_outer_run_id: str | None = None,
     ) -> BundleLocalState:
         """Apply the one terminal cancel transition to a selected available Bundle."""
 
         bundle = await self._resolve_for_control(scope=scope, bundle_id=bundle_id, handle=handle)
         if bundle is None:
             raise BundleLifecycleError("bundle_unavailable")
-        return await self._mutate_state(
-            bundle,
-            lambda state: (
-                state
-                if not state.is_active
-                else replace(
-                    state,
-                    phase_status=PhaseStatus.TERMINAL,
-                    terminal_status=LifecycleStatus.CANCELLED,
-                    waiting_for=None,
-                    pending_request_id=None,
-                    pending_cursor=None,
-                    pending_request_mode=None,
-                )
-            ),
-        )
+        cancelled = False
+
+        def apply(state: BundleLocalState) -> BundleLocalState:
+            nonlocal cancelled
+            if not state.is_active:
+                return state
+            cancelled = True
+            return replace(
+                state,
+                phase_status=PhaseStatus.TERMINAL,
+                terminal_status=LifecycleStatus.CANCELLED,
+                waiting_for=None,
+                pending_request_id=None,
+                pending_cursor=None,
+                pending_request_mode=None,
+            )
+
+        state = await self._mutate_state(bundle, apply)
+        if cancelled:
+            _log_lifecycle(
+                bundle,
+                operation="cancel",
+                outcome=ObservationOutcome.CANCELLED,
+                outer_thread_id=log_outer_thread_id,
+                outer_run_id=log_outer_run_id,
+            )
+        return state
 
     async def resume(
         self,
@@ -580,6 +641,8 @@ class BundleLifecycle:
         *,
         bundle: RunBundleRef,
         terminal_status: LifecycleStatus = LifecycleStatus.COMPLETED,
+        log_outer_thread_id: str | None = None,
+        log_outer_run_id: str | None = None,
     ) -> BundleLocalState:
         """Runtime-internal terminal transition used by graph completion/cancellation."""
 
@@ -591,16 +654,30 @@ class BundleLifecycle:
         }:
             raise ValueError("terminal_status_invalid")
 
-        return await self._mutate_state(
-            bundle,
-            lambda state: replace(
+        ended = False
+
+        def apply(state: BundleLocalState) -> BundleLocalState:
+            nonlocal ended
+            updated = replace(
                 state,
                 phase_status=PhaseStatus.TERMINAL,
                 terminal_status=terminal_status,
                 waiting_for=None,
                 pending_request_id=None,
-            ),
-        )
+            )
+            ended = updated != state
+            return updated
+
+        state = await self._mutate_state(bundle, apply)
+        if ended:
+            _log_lifecycle(
+                bundle,
+                operation="end",
+                outcome=_lifecycle_outcome(terminal_status),
+                outer_thread_id=log_outer_thread_id,
+                outer_run_id=log_outer_run_id,
+            )
+        return state
 
     async def sync_graph_progress(
         self,
@@ -608,6 +685,8 @@ class BundleLifecycle:
         bundle: RunBundleRef,
         values: dict[str, Any],
         pending: Any | None,
+        log_outer_thread_id: str | None = None,
+        log_outer_run_id: str | None = None,
     ) -> BundleLocalState:
         """Mirror bounded graph progress into the selected Bundle State.
 
@@ -645,7 +724,10 @@ class BundleLifecycle:
 
         graph_round_token = values.get("refinement_round_token")
 
+        terminal_changed = False
+
         def apply(state: BundleLocalState) -> BundleLocalState:
+            nonlocal terminal_changed
             if not self._graph_progress_is_authorized(
                 state=state,
                 generation=generation,
@@ -656,7 +738,7 @@ class BundleLifecycle:
                 return state
             if pending is not None:
                 request = pending.request
-                return replace(
+                updated = replace(
                     state,
                     generation=generation,
                     phase=phase,
@@ -670,7 +752,9 @@ class BundleLifecycle:
                     pending_request_mode=request.mode,
                     execution_trace=trace,
                 )
-            return replace(
+                terminal_changed = updated != state and updated.terminal_status is not None
+                return updated
+            updated = replace(
                 state,
                 generation=generation,
                 phase=phase,
@@ -684,8 +768,19 @@ class BundleLifecycle:
                 pending_request_mode=None,
                 execution_trace=trace,
             )
+            terminal_changed = updated != state and updated.terminal_status is not None
+            return updated
 
-        return await self._mutate_state(bundle, apply)
+        updated = await self._mutate_state(bundle, apply)
+        if terminal_changed and updated.terminal_status is not None and updated.terminal_status is terminal:
+            _log_lifecycle(
+                bundle,
+                operation="terminal_sync",
+                outcome=_lifecycle_outcome(terminal),
+                outer_thread_id=log_outer_thread_id,
+                outer_run_id=log_outer_run_id,
+            )
+        return updated
 
     @staticmethod
     def _graph_progress_is_authorized(

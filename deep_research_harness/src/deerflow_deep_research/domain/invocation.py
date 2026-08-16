@@ -6,8 +6,10 @@
 
 from __future__ import annotations
 
+import logging
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 from deerflow_deep_research.domain.bootstrap import BootstrapBundleStoreProtocol
 from deerflow_deep_research.domain.context import GraphContextView
@@ -76,6 +78,15 @@ class RunEventRecorderProtocol(Protocol):
     ) -> None: ...
 
 
+@runtime_checkable
+class RuntimeObservationProjectionProtocol(Protocol):
+    """A non-checkpointed runtime projection with no control capability."""
+
+    def emit(self, fields: Mapping[str, object], *, logger: logging.Logger | Any) -> None: ...
+
+    async def aemit(self, fields: Mapping[str, object], *, logger: logging.Logger | Any) -> None: ...
+
+
 @dataclass(frozen=True)
 class WorkUnitControllerDependencies:
     store: WorkUnitStoreProtocol
@@ -99,6 +110,7 @@ class GraphInvocationContext:
     publication_bundle: PublicationBundleStoreProtocol | None = None
     final_delivery_bundle: FinalDeliveryBundleStoreProtocol | None = None
     event_recorder: RunEventRecorderProtocol | None = None
+    observation_projection: RuntimeObservationProjectionProtocol | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.graph_context, GraphContextView):
@@ -121,6 +133,11 @@ class GraphInvocationContext:
             raise TypeError("final_delivery_bundle must implement FinalDeliveryBundleStoreProtocol")
         if self.event_recorder is not None and not isinstance(self.event_recorder, RunEventRecorderProtocol):
             raise TypeError("event_recorder must implement RunEventRecorderProtocol")
+        if self.observation_projection is not None and not isinstance(
+            self.observation_projection,
+            RuntimeObservationProjectionProtocol,
+        ):
+            raise TypeError("observation_projection must implement RuntimeObservationProjectionProtocol")
 
 
-__all__ = ["GraphInvocationContext", "NodeDependencyResolver"]
+__all__ = ["GraphInvocationContext", "NodeDependencyResolver", "RuntimeObservationProjectionProtocol"]

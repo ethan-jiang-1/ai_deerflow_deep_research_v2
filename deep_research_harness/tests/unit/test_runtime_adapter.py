@@ -10,7 +10,6 @@ from pathlib import Path
 import pytest
 from deerflow.runtime.user_context import resolve_runtime_user_id
 
-from deerflow_deep_research.runtime.events import make_progress_emitter
 from deerflow_deep_research.runtime.identity import TrustedIdentityError
 from deerflow_deep_research.runtime.runtime_adapter import (
     RuntimeAdapter,
@@ -23,10 +22,18 @@ APP_CONFIG = object()
 
 
 class FakeRuntime:
-    def __init__(self, context: dict, state: dict | None = None, config: dict | None = None) -> None:
+    def __init__(
+        self,
+        context: dict,
+        state: dict | None = None,
+        config: dict | None = None,
+        *,
+        stream_writer: object | None = None,
+    ) -> None:
         self.context = context
         self.state = {} if state is None else state
         self.config = {} if config is None else config
+        self.stream_writer = stream_writer
 
 
 class FakePaths:
@@ -89,7 +96,6 @@ def _adapter(
         sandbox_initializer=initializer,
         paths_provider=lambda: paths,
         fingerprint_verifier=fingerprint_verifier,
-        emitter_factory=lambda: make_progress_emitter(sink=lambda _event: None),
     )
 
 
@@ -111,6 +117,45 @@ async def test_adapt_emits_trusted_envelope_without_research_scope(paths: FakePa
     # RuntimeAdapter stops at the envelope: no research root / node-agent scope.
     assert not any("research" in field for field in type(envelope).__dataclass_fields__)
     assert initializer.calls == 1
+
+
+async def test_adapt_reduces_current_public_writer_to_an_opaque_sink(paths: FakePaths) -> None:
+    payloads: list[object] = []
+
+    def writer(payload: object) -> None:
+        payloads.append(payload)
+
+    runtime = FakeRuntime(_context(), stream_writer=writer)
+
+    envelope = await _adapter(paths, FakeSandboxInitializer()).adapt(runtime)
+
+    assert envelope.live_event_sink is not None
+    assert envelope.live_event_sink is not writer
+    assert callable(getattr(envelope.live_event_sink, "emit", None))
+    assert "stream_writer" not in type(envelope).__dataclass_fields__
+    assert payloads == []
+
+
+async def test_adapt_keeps_missing_writer_as_log_only(paths: FakePaths) -> None:
+    envelope = await _adapter(paths, FakeSandboxInitializer()).adapt(FakeRuntime(_context()))
+
+    assert envelope.live_event_sink is None
+
+
+async def test_adapt_keeps_trace_binding_with_deerflow_logging(
+    paths: FakePaths,
+) -> None:
+    """@impl RTO-003 RUI-002"""
+
+    runtime = FakeRuntime(_context(trace_id="caller-forged"))
+
+    envelope = await _adapter(paths, FakeSandboxInitializer()).adapt(runtime)
+
+    assert envelope.outer_thread_id == "thread-1"
+    assert envelope.outer_run_id == "run-1"
+    assert "trace_id" not in type(envelope).__dataclass_fields__
+    assert "trace_id" not in runtime.state
+    assert "bundle_id" not in type(envelope).__dataclass_fields__
 
 
 async def test_missing_user_id_fails_even_though_default_fallback_exists(paths: FakePaths) -> None:

@@ -66,7 +66,9 @@ def test_invocation_context_contains_only_reduced_context_and_resolver() -> None
         "publication_bundle",
         "final_delivery_bundle",
         "event_recorder",
+        "observation_projection",
     }
+    assert context.observation_projection is None
     assert isinstance(context.dependency_resolver, NodeDependencyResolver)
     with pytest.raises(TypeError):
         GraphInvocationContext(context.graph_context, resolver, fixture_recipe={})

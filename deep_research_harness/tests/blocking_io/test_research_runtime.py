@@ -70,7 +70,6 @@ async def test_fixture_lifecycle_does_not_block_event_loop(tmp_path: Path) -> No
         uploads_virtual_root="/mnt/user-data/uploads",
         outputs_virtual_root="/mnt/user-data/outputs",
         parent_sandbox=object(),
-        progress=None,
     )
     adapter = Adapter(envelope)
 
@@ -147,7 +146,6 @@ async def test_composed_start_persists_policy_once_in_the_selected_bundle_checkp
         uploads_virtual_root="/mnt/user-data/uploads",
         outputs_virtual_root="/mnt/user-data/outputs",
         parent_sandbox=object(),
-        progress=None,
     )
     adapter = Adapter(envelope)
 
@@ -246,7 +244,6 @@ async def test_noninteractive_policy_does_not_compose_graph_work_without_an_exec
         uploads_virtual_root="/mnt/user-data/uploads",
         outputs_virtual_root="/mnt/user-data/outputs",
         parent_sandbox=object(),
-        progress=None,
     )
 
     started = await run_deep_research(

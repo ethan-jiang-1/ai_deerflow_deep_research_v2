@@ -21,6 +21,7 @@ from __future__ import annotations
 import asyncio
 import errno
 import ipaddress
+import logging
 import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
@@ -55,7 +56,12 @@ from deerflow_deep_research.domain.run_experience import (
     RunFailureCode,
 )
 from deerflow_deep_research.domain.run_observation import BudgetStopReason, ProviderTimeoutOrigin, RunEventCategory
-from deerflow_deep_research.runtime.events import build_progress_event
+from deerflow_deep_research.runtime.events import (
+    ObservationCode,
+    ObservationOutcome,
+    SafeObservation,
+    project_observation,
+)
 from deerflow_deep_research.runtime.runtime_adapter import TrustedRuntimeEnvelope
 
 ModelResolver = Callable[[TrustedRuntimeEnvelope], Any]
@@ -77,6 +83,7 @@ _CONNECTION_ERRNOS = frozenset(
 )
 _TRANSIENT_HTTP_STATUSES = frozenset({408, 429, 500, 502, 503, 504})
 _AUTHENTICATION_HTTP_STATUSES = frozenset({401, 403})
+LOGGER = logging.getLogger(__name__)
 _LOGICAL_PHASES = frozenset(
     {
         "bootstrap",
@@ -695,7 +702,6 @@ class RuntimeNodeAgentBridge:
             )
         except Exception:
             return
-        self._emit(context, operation="journal", status=outcome)
 
     @staticmethod
     def _problem(
@@ -830,21 +836,37 @@ class RuntimeNodeAgentBridge:
         return status if isinstance(status, int) and 100 <= status <= 599 else None
 
     def _emit(self, context: NodeAgentContext, *, operation: str, status: str) -> None:
-        emitter = self.envelope.progress
-        if emitter is None:
-            return
+        outcomes = {
+            "started": ObservationOutcome.STARTED,
+            "completed": ObservationOutcome.COMPLETED,
+            "budget_exhausted": ObservationOutcome.STOPPED,
+            "cancelled": ObservationOutcome.CANCELLED,
+            "blocked": ObservationOutcome.BLOCKED,
+            "stopped": ObservationOutcome.STOPPED,
+            "retrying": ObservationOutcome.RETRYING,
+        }
+        codes = {
+            "budget_exhausted": ObservationCode.ATTEMPT_EXHAUSTED,
+            "cancelled": ObservationCode.CANCELLED,
+            "blocked": ObservationCode.BLOCKED,
+            "stopped": ObservationCode.STOPPED,
+            "required_tool_not_called": ObservationCode.TOOL_FAILED,
+        }
+        bundle = context.bundle_context
         try:
-            emitter.emit(
-                build_progress_event(
-                    kind="node_agent",
-                    ref=context.research_scope_id,
-                    operation=f"{context.node_name}.{operation}",
-                    status=status,
-                )
+            observation = SafeObservation(
+                phase="node_agent",
+                operation=f"{context.node_name}.{operation}",
+                outcome=outcomes.get(status, ObservationOutcome.FAILED),
+                bundle_id=(bundle.bundle_id.value if bundle is not None else None),
+                attempt_id=context.attempt_id,
+                code=codes.get(status),
+                outer_thread_id=self.envelope.outer_thread_id,
+                outer_run_id=self.envelope.outer_run_id,
             )
-        except Exception:
-            # A DeerFlow custom-stream subscriber is only a live projection.
+        except ValueError:
             return
+        project_observation(observation, logger=LOGGER)
 
     def _ephemeral_child_state(self, context: NodeAgentContext, user_message: str) -> dict[str, Any]:
         sandbox = self.envelope.parent_sandbox

@@ -59,7 +59,6 @@ def _envelope(user: str = "alice", thread: str = "thread-1", app_config: Any = N
         uploads_virtual_root="/mnt/user-data/uploads",
         outputs_virtual_root="/mnt/user-data/outputs",
         parent_sandbox=object(),
-        progress=None,
     )
 
 

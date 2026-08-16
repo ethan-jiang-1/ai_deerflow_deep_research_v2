@@ -354,7 +354,6 @@ def _envelope(tmp_path: Path, user: str = "alice", thread: str = "thread-1") -> 
         uploads_virtual_root="/mnt/user-data/uploads",
         outputs_virtual_root="/mnt/user-data/outputs",
         parent_sandbox=object(),
-        progress=None,
     )
 
 

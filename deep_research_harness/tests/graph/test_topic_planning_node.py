@@ -154,6 +154,7 @@ def _deps(
     caps: _Caps,
     *,
     recorder: object | None = None,
+    observation_projection: object | None = None,
     request_bundle: _ProfileReader | None = None,
 ) -> NodeBuildDependencies:
     graph = GraphContextView(
@@ -176,6 +177,7 @@ def _deps(
         ),
         capabilities=caps,
         event_recorder=recorder,  # type: ignore[arg-type]
+        observation_projection=observation_projection,  # type: ignore[arg-type]
         request_bundle=request_bundle or _ProfileReader(),
         selected_bundle=selected_bundle,
     )
@@ -425,6 +427,17 @@ class _ValidationRecorder:
         self.calls.append(kwargs)
 
 
+class _ObservationProjection:
+    def __init__(self) -> None:
+        self.calls: list[dict[str, object]] = []
+
+    def emit(self, fields: dict[str, object], **_kwargs: object) -> None:
+        self.calls.append(dict(fields))
+
+    async def aemit(self, fields: dict[str, object], **_kwargs: object) -> None:
+        self.emit(fields, **_kwargs)
+
+
 def _validation_events(recorder: _ValidationRecorder) -> list[dict[str, object]]:
     return [call for call in recorder.calls if call["category"] is RunEventCategory.VALIDATION]
 
@@ -455,9 +468,15 @@ async def test_invalid_initial_topic_plan_then_repair_records_ordered_closed_cod
 
     invalid_draft = "not-json untrusted-draft=keep-out"
     recorder = _ValidationRecorder()
+    observation_projection = _ObservationProjection()
     caps = _Caps(_result(invalid_draft), _result(_covering_plan()))
 
-    result = await topic_planning_node.build_real(_deps(caps, recorder=recorder))(_state())
+    dependencies = _deps(
+        caps,
+        recorder=recorder,
+        observation_projection=observation_projection,
+    )
+    result = await topic_planning_node.build_real(dependencies)(_state())
 
     assert result["route"] == "next"
     assert _validation_events(recorder) == [
@@ -475,6 +494,21 @@ async def test_invalid_initial_topic_plan_then_repair_records_ordered_closed_cod
         },
     ]
     assert invalid_draft not in str(_validation_events(recorder))
+    assert observation_projection.calls == [
+        {
+            "phase": "topic_planning",
+            "operation": "validation",
+            "outcome": "rejected",
+            "bundle_id": BUNDLE_ID,
+            "code": "validation_rejected",
+        },
+        {
+            "phase": "topic_planning",
+            "operation": "validation",
+            "outcome": "completed",
+            "bundle_id": BUNDLE_ID,
+        },
+    ]
 
 
 async def test_invalid_initial_and_repair_topic_plans_record_distinct_validation_facts() -> None:

@@ -39,6 +39,7 @@ from deerflow_deep_research.runtime.bundle_lifecycle import (
     CurrentBundleHandle,
 )
 from deerflow_deep_research.runtime.human_input import HumanInputError, SelectedStartMessage
+from deerflow_deep_research.runtime.runtime_adapter import TrustedRuntimeEnvelope
 
 if TYPE_CHECKING:
     from deerflow_deep_research.runtime.bundle_graph import BundleGraphExecutor
@@ -71,6 +72,20 @@ class BundleControl:
             return None
 
     @staticmethod
+    def _trusted_log_correlation(
+        envelope: Any | None,
+        *,
+        scope: tuple[str, str],
+    ) -> tuple[str | None, str | None]:
+        """Expose current trusted correlation to lifecycle logging only."""
+
+        if not isinstance(envelope, TrustedRuntimeEnvelope):
+            return None, None
+        if envelope.effective_user_id != scope[0] or envelope.outer_thread_id != scope[1]:
+            return None, None
+        return envelope.outer_thread_id, envelope.outer_run_id
+
+    @staticmethod
     def unavailable_wire_result(*, action: LifecycleAction, code: str) -> dict[str, Any]:
         """Project a bounded lifecycle denial from a trusted runtime boundary."""
 
@@ -99,6 +114,7 @@ class BundleControl:
         start_input: StartActionInput | None = None,
     ) -> Any:
         scope = (effective_user_id, outer_thread_id)
+        log_outer_thread_id, log_outer_run_id = self._trusted_log_correlation(envelope, scope=scope)
         try:
             target = self._bundle_id(bundle_id)
         except ValueError:
@@ -110,13 +126,21 @@ class BundleControl:
                 start_message=start_message,
                 envelope=envelope,
                 start_input=start_input,
+                log_outer_thread_id=log_outer_thread_id,
+                log_outer_run_id=log_outer_run_id,
             )
         if action is LifecycleAction.STATUS:
             return (await self._lifecycle.status(scope=scope, bundle_id=target, handle=handle)).model_dump(
                 mode="json", exclude_none=True
             )
         if action is LifecycleAction.CANCEL:
-            return await self._cancel(scope=scope, bundle_id=target, handle=handle)
+            return await self._cancel(
+                scope=scope,
+                bundle_id=target,
+                handle=handle,
+                log_outer_thread_id=log_outer_thread_id,
+                log_outer_run_id=log_outer_run_id,
+            )
         if action is LifecycleAction.RESUME:
             return await self._resume(
                 scope=scope,
@@ -145,6 +169,8 @@ class BundleControl:
         start_message: SelectedStartMessage | None,
         envelope: Any | None,
         start_input: StartActionInput | None,
+        log_outer_thread_id: str | None,
+        log_outer_run_id: str | None,
     ) -> Any:
         if start_message is None:
             return self._unavailable(action=LifecycleAction.START, code=ResultCode.START_MESSAGE_INVALID)
@@ -160,6 +186,8 @@ class BundleControl:
                 request_text=start_message.text,
                 start_message_id=start_message.message_id,
                 implementation_mode=executor.implementation_mode,
+                log_outer_thread_id=log_outer_thread_id,
+                log_outer_run_id=log_outer_run_id,
             )
         except BundleAlreadyActive as exc:
             try:
@@ -270,12 +298,19 @@ class BundleControl:
         scope: tuple[str, str],
         bundle_id: BundleId | None,
         handle: CurrentBundleHandle | None,
+        log_outer_thread_id: str | None,
+        log_outer_run_id: str | None,
     ) -> dict[str, Any]:
         bundle = await self._lifecycle.resolve(scope=scope, bundle_id=bundle_id, handle=handle)
         if bundle is None:
             return self._unavailable(action=LifecycleAction.CANCEL)
         try:
-            state = await self._lifecycle.cancel(scope=scope, bundle_id=bundle.bundle_id)
+            state = await self._lifecycle.cancel(
+                scope=scope,
+                bundle_id=bundle.bundle_id,
+                log_outer_thread_id=log_outer_thread_id,
+                log_outer_run_id=log_outer_run_id,
+            )
             return self._lifecycle.result_for_state(
                 action=LifecycleAction.CANCEL,
                 bundle=bundle,

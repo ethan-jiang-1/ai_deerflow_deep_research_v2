@@ -8,7 +8,8 @@
 from __future__ import annotations
 
 from dataclasses import replace
-from typing import Any
+from types import SimpleNamespace
+from typing import Any, cast
 
 import pytest
 from langgraph.checkpoint.memory import InMemorySaver
@@ -29,9 +30,11 @@ from deerflow_deep_research.domain.node_spec import (
 )
 from deerflow_deep_research.domain.profile import ResearchProfile
 from deerflow_deep_research.domain.state import BUNDLE_STATE_SCHEMA_VERSION, BundleLocalState, ContentRef, ResearchState
+from deerflow_deep_research.graph import builder as builder_module
 from deerflow_deep_research.graph.builder import _node_wrapper, _route
 from deerflow_deep_research.graph.implementation_map import AdapterKind, NodeAdapter
 from deerflow_deep_research.graph.nodes.bootstrap import NODE_SPEC as BOOTSTRAP_SPEC
+from deerflow_deep_research.runtime.events import RuntimeObservationProjection, make_stream_event_sink
 
 _BUNDLE = RunBundleRef(bundle_id=BundleId("b_" + "A" * 43), scope_bucket="s_" + "B" * 43)
 _BUNDLE_ID = _BUNDLE.bundle_id.value
@@ -150,6 +153,7 @@ def _context(
     final_delivery_bundle: _FakeFinalDeliveryStore | None = None,
     resolver_request_bundle: _FakeRequestStore | None = None,
     event_recorder: object | None = None,
+    observation_projection: object | None = None,
 ) -> GraphInvocationContext:
     gc = _graph_context()
     return GraphInvocationContext(
@@ -159,6 +163,7 @@ def _context(
         request_bundle=request_bundle,
         final_delivery_bundle=final_delivery_bundle,
         event_recorder=event_recorder,  # type: ignore[arg-type]
+        observation_projection=observation_projection,  # type: ignore[arg-type]
     )
 
 
@@ -201,6 +206,17 @@ class _JournalRecorder:
 
     async def record(self, **event: object) -> None:
         self.events.append(dict(event))
+
+
+class _ObservationProjection:
+    def __init__(self) -> None:
+        self.events: list[dict[str, object]] = []
+
+    def emit(self, fields: dict[str, object], **_kwargs: object) -> None:
+        self.events.append(dict(fields))
+
+    async def aemit(self, fields: dict[str, object], **_kwargs: object) -> None:
+        self.emit(fields, **_kwargs)
 
 
 def _config() -> dict:
@@ -329,6 +345,132 @@ class TestWrapperFinalDeliveryBundleAttach:
 
 
 class TestWrapperJournalEvents:
+    async def test_wrapper_projects_each_node_boundary_once_without_state_mutation(self) -> None:
+        observation_projection = _ObservationProjection()
+        graph = _compile("fixture")
+
+        result = await graph.ainvoke(
+            _state(),
+            config=_config(),
+            context=_context(None, observation_projection=observation_projection),
+        )
+
+        assert result["route"] == "needs_input"
+        assert observation_projection.events == [
+            {
+                "phase": "bootstrap",
+                "operation": "node",
+                "outcome": "started",
+                "attempt_id": "g0-bootstrap-a1",
+                "bundle_id": _BUNDLE_ID,
+            },
+            {
+                "phase": "bootstrap",
+                "operation": "node",
+                "outcome": "completed",
+                "attempt_id": "g0-bootstrap-a1",
+                "bundle_id": _BUNDLE_ID,
+            },
+        ]
+
+    async def test_wrapper_projects_each_live_node_boundary_once_through_the_runtime_sink(self) -> None:
+        payloads: list[object] = []
+        projection = RuntimeObservationProjection(
+            bundle_id=_BUNDLE_ID,
+            event_sink=make_stream_event_sink(payloads.append),
+        )
+        graph = _compile("fixture")
+
+        result = await graph.ainvoke(
+            _state(),
+            config=_config(),
+            context=_context(None, observation_projection=projection),
+        )
+
+        assert result["route"] == "needs_input"
+        assert [(payload["operation"], payload["outcome"]) for payload in payloads] == [
+            ("node", "started"),
+            ("node", "completed"),
+        ]
+
+    async def test_wrapper_projects_a_gate_verdict_without_changing_its_state_update(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        observation_projection = _ObservationProjection()
+
+        def fixture_factory(_dependencies: NodeBuildDependencies):
+            return lambda _state: {}
+
+        spec = NodeSpec(
+            logical_name="hitl1",
+            phase=NodePhase.ORCHESTRATION,
+            policy=PolicyRef(name="hitl1-profile", version="v1"),
+            contracts=NodeContracts(request_type=_Req, result_type=_Res),
+            real_factory=fixture_factory,
+        )
+        monkeypatch.setattr(builder_module, "evaluate_gate_for_node", lambda *_args: {"route": "accepted"})
+        wrapper = _node_wrapper(
+            "hitl1",
+            spec,
+            NodeAdapter(fixture_factory, AdapterKind.FIXTURE, requires_gate=False),
+            {"hitl1": cast(object, object())},
+        )
+
+        result = await wrapper(
+            _state(),
+            SimpleNamespace(context=_context(None, observation_projection=observation_projection)),
+        )
+
+        assert result == {"route": "accepted"}
+        assert observation_projection.events[-1] == {
+            "phase": "hitl1",
+            "operation": "gate",
+            "outcome": "completed",
+            "attempt_id": "g0-hitl1-a1",
+            "bundle_id": _BUNDLE_ID,
+        }
+
+    async def test_wrapper_uses_async_node_and_sync_gate_live_projections_once(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        payloads: list[object] = []
+        projection = RuntimeObservationProjection(
+            bundle_id=_BUNDLE_ID,
+            event_sink=make_stream_event_sink(payloads.append),
+        )
+
+        def fixture_factory(_dependencies: NodeBuildDependencies):
+            return lambda _state: {}
+
+        spec = NodeSpec(
+            logical_name="hitl1",
+            phase=NodePhase.ORCHESTRATION,
+            policy=PolicyRef(name="hitl1-profile", version="v1"),
+            contracts=NodeContracts(request_type=_Req, result_type=_Res),
+            real_factory=fixture_factory,
+        )
+        monkeypatch.setattr(builder_module, "evaluate_gate_for_node", lambda *_args: {"route": "accepted"})
+        wrapper = _node_wrapper(
+            "hitl1",
+            spec,
+            NodeAdapter(fixture_factory, AdapterKind.FIXTURE, requires_gate=False),
+            {"hitl1": cast(object, object())},
+        )
+
+        result = await wrapper(
+            _state(),
+            SimpleNamespace(context=_context(None, observation_projection=projection)),
+        )
+
+        assert result == {"route": "accepted"}
+        assert [(payload["operation"], payload["outcome"]) for payload in payloads] == [
+            ("node", "started"),
+            ("node", "completed"),
+            ("gate", "completed"),
+        ]
+
     async def test_wrapper_records_node_start_and_completion_without_gaining_control_authority(self) -> None:
         recorder = _JournalRecorder()
         graph = _compile("fixture")

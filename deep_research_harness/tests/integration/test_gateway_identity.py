@@ -31,7 +31,6 @@ except Exception:  # noqa: BLE001 - any import failure means the stack is absent
 pytestmark = pytest.mark.skipif(not _APP_AVAILABLE, reason="real Gateway app stack is unavailable")
 
 if _APP_AVAILABLE:
-    from deerflow_deep_research.runtime.events import make_progress_emitter
     from deerflow_deep_research.runtime.identity import TrustedIdentityError
     from deerflow_deep_research.runtime.runtime_adapter import RuntimeAdapter
 
@@ -88,7 +87,6 @@ def _effective_user_id(context: dict, tmp_path: Path) -> str:
         sandbox_initializer=_fake_sandbox,
         paths_provider=lambda: FakePaths(tmp_path),
         fingerprint_verifier=lambda _app_config: None,
-        emitter_factory=lambda: make_progress_emitter(sink=lambda _event: None),
     )
     return asyncio.run(adapter.adapt(runtime)).effective_user_id
 

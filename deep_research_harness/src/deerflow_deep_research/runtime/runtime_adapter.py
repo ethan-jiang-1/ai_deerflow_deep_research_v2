@@ -15,6 +15,7 @@ registered handler supplies a validated opaque scope id.
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
@@ -22,7 +23,13 @@ from pathlib import Path
 from typing import Any
 
 from deerflow_deep_research.domain.run_observation import ExecutionProfileEvidence
-from deerflow_deep_research.runtime.events import ProgressEmitter, make_progress_emitter
+from deerflow_deep_research.runtime.events import (
+    LiveEventSink,
+    ObservationOutcome,
+    SafeObservation,
+    make_stream_event_sink,
+    project_observation,
+)
 from deerflow_deep_research.runtime.identity import (
     require_context_value,
     require_trusted_user_id,
@@ -37,6 +44,7 @@ UPLOADS_VIRTUAL_ROOT = "/mnt/user-data/uploads"
 OUTPUTS_VIRTUAL_ROOT = "/mnt/user-data/outputs"
 STARTUP_FINGERPRINT_ENV = "DEER_FLOW_DEEP_RESEARCH_STARTUP_FINGERPRINT"
 WORKER_COUNT_ENV = "GATEWAY_WORKERS"
+LOGGER = logging.getLogger(__name__)
 
 
 class RuntimeAdapterError(RuntimeError):
@@ -61,7 +69,7 @@ class TrustedRuntimeEnvelope:
     uploads_virtual_root: str
     outputs_virtual_root: str
     parent_sandbox: Any | None
-    progress: ProgressEmitter
+    live_event_sink: LiveEventSink | None = None
     execution_profile: ExecutionProfileEvidence | None = None
     event_recorder_factory: Callable[[str], Any] | None = None
 
@@ -69,7 +77,6 @@ class TrustedRuntimeEnvelope:
 SandboxInitializer = Callable[[Any], Awaitable[Any]]
 PathsProvider = Callable[[], Any]
 FingerprintVerifier = Callable[[Any], None]
-EmitterFactory = Callable[[], ProgressEmitter]
 
 
 def _default_fingerprint_verifier(app_config: Any) -> None:
@@ -101,35 +108,46 @@ class RuntimeAdapter:
         sandbox_initializer: SandboxInitializer = _default_sandbox_initializer,
         paths_provider: PathsProvider = _default_paths_provider,
         fingerprint_verifier: FingerprintVerifier = _default_fingerprint_verifier,
-        emitter_factory: EmitterFactory = make_progress_emitter,
     ) -> None:
         self._sandbox_initializer = sandbox_initializer
         self._paths_provider = paths_provider
         self._fingerprint_verifier = fingerprint_verifier
-        self._emitter_factory = emitter_factory
 
     async def adapt(self, runtime: Any, *, initialize_parent_sandbox: bool = True) -> TrustedRuntimeEnvelope:
-        user_id = require_trusted_user_id(runtime)
-        thread_id = str(require_context_value(runtime, "thread_id", "thread_missing"))
-        run_id = str(require_context_value(runtime, "run_id", "run_missing"))
-        app_config = require_context_value(runtime, "app_config", "app_config_missing")
+        try:
+            user_id = require_trusted_user_id(runtime)
+            thread_id = str(require_context_value(runtime, "thread_id", "thread_missing"))
+            run_id = str(require_context_value(runtime, "run_id", "run_missing"))
+            app_config = require_context_value(runtime, "app_config", "app_config_missing")
 
-        # Startup-only configuration drift must be caught before any provider or
-        # sandbox access so the nested runtime never pairs with different startup
-        # singletons than the process was launched with.
-        self._fingerprint_verifier(app_config)
+            # Startup-only configuration drift must be caught before any provider or
+            # sandbox access so the nested runtime never pairs with different startup
+            # singletons than the process was launched with.
+            self._fingerprint_verifier(app_config)
 
-        paths = self._paths_provider()
-        host_paths = await asyncio.to_thread(self._resolve_host_paths, paths, thread_id, user_id)
-        self._validate_thread_data(runtime, thread_id)
+            paths = self._paths_provider()
+            host_paths = await asyncio.to_thread(self._resolve_host_paths, paths, thread_id, user_id)
+            self._validate_thread_data(runtime, thread_id)
 
-        parent_sandbox = None
-        if initialize_parent_sandbox:
-            parent_sandbox = await self._sandbox_initializer(runtime)
-            if parent_sandbox is None:
-                raise RuntimeAdapterError("sandbox_unavailable", "parent sandbox initialization returned nothing")
+            parent_sandbox = None
+            if initialize_parent_sandbox:
+                parent_sandbox = await self._sandbox_initializer(runtime)
+                if parent_sandbox is None:
+                    raise RuntimeAdapterError("sandbox_unavailable", "parent sandbox initialization returned nothing")
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            project_observation(
+                SafeObservation(
+                    phase="runtime",
+                    operation="trusted_adaptation",
+                    outcome=ObservationOutcome.REJECTED,
+                ),
+                logger=LOGGER,
+            )
+            raise
 
-        return TrustedRuntimeEnvelope(
+        envelope = TrustedRuntimeEnvelope(
             effective_user_id=user_id,
             outer_thread_id=thread_id,
             outer_run_id=run_id,
@@ -141,8 +159,17 @@ class RuntimeAdapter:
             uploads_virtual_root=UPLOADS_VIRTUAL_ROOT,
             outputs_virtual_root=OUTPUTS_VIRTUAL_ROOT,
             parent_sandbox=parent_sandbox,
-            progress=self._emitter_factory(),
+            live_event_sink=make_stream_event_sink(getattr(runtime, "stream_writer", None)),
         )
+        project_observation(
+            SafeObservation(
+                phase="runtime",
+                operation="trusted_adaptation",
+                outcome=ObservationOutcome.COMPLETED,
+            ),
+            logger=LOGGER,
+        )
+        return envelope
 
     @staticmethod
     def _resolve_host_paths(paths: Any, thread_id: str, user_id: str) -> tuple[Path, Path, Path]:

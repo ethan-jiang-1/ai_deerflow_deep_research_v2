@@ -256,6 +256,7 @@ async def run_gap_workers(state: dict, gap_intents: tuple, dependencies: Any) ->
         clock=lambda: datetime.now(UTC),
         worker=worker,
         event_recorder=dependencies.event_recorder,
+        observation_projection=dependencies.observation_projection,
     )
     return {**node_state_update("targeted_evidence"), **result.parent_update}
 

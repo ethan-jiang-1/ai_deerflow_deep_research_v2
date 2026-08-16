@@ -1564,6 +1564,34 @@ REQUIREMENT_IMPACTS = (
         "tests/unit/test_retained_terminal_result_cutover.py::test_persisted_terminal_without_location_rejects_before_any_projection",
         "a missing terminal location could be guessed by a participant or become an external recovery path",
     ),
+    RequirementImpact(
+        "RTO-001",
+        "runtime-observability",
+        StableSeam.RUNTIME_INTEGRATION,
+        "tests/unit/test_events.py::test_safe_observation_schema_rejects_unsafe_fields",
+        "an owner-local log projection could admit free-form or sensitive fields instead of the closed safe record",
+    ),
+    RequirementImpact(
+        "RTO-003",
+        "runtime-observability",
+        StableSeam.RUNTIME_INTEGRATION,
+        "tests/unit/test_runtime_adapter.py::test_adapt_keeps_trace_binding_with_deerflow_logging",
+        "application trace binding could become a Bundle selector or fabricated durable correlation",
+    ),
+    RequirementImpact(
+        "REJ-005",
+        "run-event-journal",
+        StableSeam.RUNTIME_INTEGRATION,
+        "tests/unit/test_events.py::test_safe_observation_schema_rejects_unsafe_fields",
+        "a raw stream-writer payload could become a second unvalidated Journal-like progress record",
+    ),
+    RequirementImpact(
+        "RUI-002",
+        "runtime-integration",
+        StableSeam.RUNTIME_INTEGRATION,
+        "tests/unit/test_runtime_adapter.py::test_adapt_keeps_trace_binding_with_deerflow_logging",
+        "untrusted trace correlation could cross the runtime boundary as identity or recovery authority",
+    ),
 )
 
 

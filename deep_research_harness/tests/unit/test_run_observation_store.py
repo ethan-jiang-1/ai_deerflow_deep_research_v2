@@ -33,6 +33,7 @@ from deerflow_deep_research.domain.run_observation import (
     RunSummary,
     classify_final_response_shape,
 )
+from deerflow_deep_research.runtime import run_observation
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
 from deerflow_deep_research.runtime.run_observation import (
     BundleRunObservationPublisher,
@@ -468,6 +469,32 @@ async def test_capacity_preserves_diagnostic_anchors_without_renumbering_retaine
         RunEventCategory.ADMISSION,
         RunEventCategory.VALIDATION,
         RunEventCategory.TERMINAL,
+    ]
+
+
+def test_journal_storage_owner_projects_bounded_persistence_degradation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    observations: list[object] = []
+
+    def record(observation: object, **_kwargs: object) -> None:
+        observations.append(observation)
+
+    monkeypatch.setattr(run_observation, "project_observation", record)
+    store = RunObservationStore(bundle_root=tmp_path / "bundle", bundle_id=BUNDLE_ID)
+
+    store._note_bundle_persistence_failure(BUNDLE_ID)
+
+    assert observations == [
+        run_observation.SafeObservation(
+            phase="journal",
+            operation="persistence",
+            outcome=run_observation.ObservationOutcome.DEGRADED,
+            bundle_id=BUNDLE_ID,
+            code=run_observation.ObservationCode.OBSERVATION_DEGRADED,
+            count=1,
+        )
     ]
 
 

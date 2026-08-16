@@ -87,7 +87,6 @@ def local_runtime_envelope(
         uploads_virtual_root="/mnt/user-data/uploads",
         outputs_virtual_root="/mnt/user-data/outputs",
         parent_sandbox=sandbox,
-        progress=None,
     )
 
 

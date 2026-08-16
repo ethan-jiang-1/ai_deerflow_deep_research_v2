@@ -111,6 +111,17 @@ class _JournalRecorder:
         self.events.append(dict(event))
 
 
+class _ObservationProjection:
+    def __init__(self) -> None:
+        self.events: list[dict[str, object]] = []
+
+    def emit(self, fields: dict[str, object], **_kwargs: object) -> None:
+        self.events.append(dict(fields))
+
+    async def aemit(self, fields: dict[str, object], **_kwargs: object) -> None:
+        self.emit(fields, **_kwargs)
+
+
 def _validation_events(recorder: _JournalRecorder) -> list[dict[str, object]]:
     return [event for event in recorder.events if event["category"] is RunEventCategory.VALIDATION]
 
@@ -394,6 +405,7 @@ async def test_real_wave0_valid_initial_parser_observation_is_closed_and_correla
         )
     )
     recorder = _JournalRecorder()
+    observation_projection = _ObservationProjection()
     context, store = _context(tmp_path, capabilities)
     assert context.work_units is not None
 
@@ -403,6 +415,7 @@ async def test_real_wave0_valid_initial_parser_observation_is_closed_and_correla
         topic_registry=({"topic_id": "storage", "title": "Storage", "scope": "Storage economics"},),
         clock=lambda: NOW,
         event_recorder=recorder,
+        observation_projection=observation_projection,
     )
 
     assert [
@@ -418,6 +431,16 @@ async def test_real_wave0_valid_initial_parser_observation_is_closed_and_correla
         ("initial", FinalResponseShape.JSON_OBJECT, (), "g0_wave0_w0000", "g0_wave0_w0000_a00"),
     ]
     assert "https://example.com/storage" not in str(recorder.events)
+    assert [event for event in observation_projection.events if event["operation"] == "validation"] == [
+        {
+            "phase": "wave0",
+            "operation": "validation",
+            "outcome": "completed",
+            "bundle_id": BUNDLE_ID,
+            "work_id": "g0_wave0_w0000",
+            "attempt_id": "g0_wave0_w0000_a00",
+        }
+    ]
     assert len(capabilities.requests) == 1
     assert len(component.parent_update["accepted_submission_refs"]) == 1
     assert len(await store.load_records()) == 1

@@ -393,7 +393,6 @@ class DemoAdapter:
             uploads_virtual_root="/mnt/user-data/uploads",
             outputs_virtual_root="/mnt/user-data/outputs",
             parent_sandbox=sandbox,
-            progress=None,
             execution_profile=self._execution_profile,
         )
         self._observation_publisher = BundleRunObservationPublisher(

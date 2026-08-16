@@ -38,6 +38,7 @@ from deerflow_deep_research.runtime.bundle_lifecycle import (
     BundleLifecycleError,
 )
 from deerflow_deep_research.runtime.bundle_transition import BundleTransitionLease
+from deerflow_deep_research.runtime.events import RuntimeObservationProjection
 from deerflow_deep_research.runtime.human_input import SelectedStartMessage, pending_from_snapshot, project_suspension
 from deerflow_deep_research.runtime.non_interactive import StartActionInput
 from deerflow_deep_research.runtime.projection import RuntimeWorkUnitDependencyResolver
@@ -318,6 +319,7 @@ class BundleGraphExecutor:
                     result = await self._project(
                         lifecycle=lifecycle,
                         bundle=bundle,
+                        envelope=envelope,
                         action=LifecycleAction.START,
                         graph=graph,
                         config=config,
@@ -346,6 +348,7 @@ class BundleGraphExecutor:
                     result = await self._project(
                         lifecycle=lifecycle,
                         bundle=bundle,
+                        envelope=envelope,
                         action=LifecycleAction.START,
                         graph=graph,
                         config=config,
@@ -438,7 +441,13 @@ class BundleGraphExecutor:
             completed = await graph.aget_state(config)
         if completed is None or not completed.values:
             raise BundleLifecycleError("bundle_graph_missing")
-        await lifecycle.sync_graph_progress(bundle=bundle, values=dict(completed.values), pending=None)
+        await lifecycle.sync_graph_progress(
+            bundle=bundle,
+            values=dict(completed.values),
+            pending=None,
+            log_outer_thread_id=getattr(envelope, "outer_thread_id", None),
+            log_outer_run_id=getattr(envelope, "outer_run_id", None),
+        )
         await self._continue_completed_refinement_if_eligible(
             lifecycle=lifecycle,
             bundle=bundle,
@@ -678,6 +687,7 @@ class BundleGraphExecutor:
                 result = await self._project(
                     lifecycle=lifecycle,
                     bundle=bundle,
+                    envelope=envelope,
                     action=LifecycleAction.RESUME,
                     graph=graph,
                     config=config,
@@ -707,6 +717,7 @@ class BundleGraphExecutor:
             return await self._project(
                 lifecycle=lifecycle,
                 bundle=bundle,
+                envelope=None,
                 action=action,
                 graph=graph,
                 config=self._config(bundle),
@@ -769,6 +780,7 @@ class BundleGraphExecutor:
         *,
         lifecycle: BundleLifecycle,
         bundle: RunBundleRef,
+        envelope: Any | None,
         action: LifecycleAction,
         graph: Any,
         config: dict[str, Any],
@@ -779,7 +791,13 @@ class BundleGraphExecutor:
             raise BundleLifecycleError("bundle_graph_missing")
         values = dict(snapshot.values)
         pending = pending_from_snapshot(snapshot)
-        state = await lifecycle.sync_graph_progress(bundle=bundle, values=values, pending=pending)
+        state = await lifecycle.sync_graph_progress(
+            bundle=bundle,
+            values=values,
+            pending=pending,
+            log_outer_thread_id=getattr(envelope, "outer_thread_id", None),
+            log_outer_run_id=getattr(envelope, "outer_run_id", None),
+        )
         result = lifecycle.result_for_state(action=action, bundle=bundle, state=state)
         if pending is not None and state.is_active:
             return project_suspension(pending=pending, result=result, tool_call_id=tool_call_id)
@@ -878,6 +896,12 @@ class BundleGraphExecutor:
                 envelope.event_recorder_factory(bundle.bundle_id.value)
                 if getattr(envelope, "event_recorder_factory", None) is not None
                 else None
+            ),
+            observation_projection=RuntimeObservationProjection(
+                bundle_id=bundle.bundle_id.value,
+                outer_thread_id=getattr(envelope, "outer_thread_id", None),
+                outer_run_id=getattr(envelope, "outer_run_id", None),
+                event_sink=getattr(envelope, "live_event_sink", None),
             ),
         )
 

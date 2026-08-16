@@ -66,6 +66,7 @@ def build_real(dependencies: NodeBuildDependencies):
             topic_filter=topic_filter,
             clock=lambda: datetime.now(UTC),
             event_recorder=dependencies.event_recorder,
+            observation_projection=dependencies.observation_projection,
         )
         review = await build_wave1_gate_review(
             dependencies.work_units,

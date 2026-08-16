@@ -32,6 +32,7 @@ def build_real(dependencies: NodeBuildDependencies):
             topic_filter=topic_filter,
             clock=lambda: datetime.now(UTC),
             event_recorder=dependencies.event_recorder,
+            observation_projection=dependencies.observation_projection,
         )
         return {
             **node_state_update("wave0"),

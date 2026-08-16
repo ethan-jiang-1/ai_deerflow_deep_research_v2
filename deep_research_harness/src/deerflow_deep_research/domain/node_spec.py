@@ -25,7 +25,11 @@ from deerflow_deep_research.domain.enums import NodePhase
 
 if TYPE_CHECKING:
     from deerflow_deep_research.domain.bootstrap import BootstrapBundleStoreProtocol
-    from deerflow_deep_research.domain.invocation import RunEventRecorderProtocol, WorkUnitControllerDependencies
+    from deerflow_deep_research.domain.invocation import (
+        RunEventRecorderProtocol,
+        RuntimeObservationProjectionProtocol,
+        WorkUnitControllerDependencies,
+    )
     from deerflow_deep_research.domain.profile import RequestBundleStoreProtocol
     from deerflow_deep_research.domain.publication import (
         FinalDeliveryBundleStoreProtocol,
@@ -73,11 +77,16 @@ class NodeBuildDependencies:
     publication_bundle: PublicationBundleStoreProtocol | None = None
     final_delivery_bundle: FinalDeliveryBundleStoreProtocol | None = None
     event_recorder: RunEventRecorderProtocol | None = None
+    observation_projection: RuntimeObservationProjectionProtocol | None = None
     max_rerun_generations: int = 2
     full_rerun_policy: Any | None = None
     selected_bundle: SelectedBundleContext | None = None
 
     def __post_init__(self) -> None:
+        if self.observation_projection is not None and not all(
+            callable(getattr(self.observation_projection, name, None)) for name in ("emit", "aemit")
+        ):
+            raise TypeError("observation_projection must expose emit and aemit")
         if self.selected_bundle is None:
             return
         if not isinstance(self.selected_bundle, SelectedBundleContext):

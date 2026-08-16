@@ -2637,6 +2637,24 @@ EVIDENCE_CLAIMS = (
         StableSeam.LIFECYCLE_MIXED_GRAPH,
         requirement_ids=("RER-009",),
     ),
+    _correctness_claim(
+        "runtime-observability-safe-schema",
+        "tests/unit/test_events.py::test_safe_observation_schema_rejects_unsafe_fields",
+        StableSeam.RUNTIME_INTEGRATION,
+        requirement_ids=("RTO-001", "REJ-005"),
+    ),
+    _correctness_claim(
+        "runtime-observability-observer-isolation",
+        "tests/unit/test_events.py::test_safe_observation_isolates_logger_failure_and_propagates_cancellation",
+        StableSeam.RUNTIME_INTEGRATION,
+        requirement_ids=("RTO-001", "REJ-005"),
+    ),
+    _correctness_claim(
+        "runtime-observability-trusted-correlation",
+        "tests/unit/test_runtime_adapter.py::test_adapt_keeps_trace_binding_with_deerflow_logging",
+        StableSeam.RUNTIME_INTEGRATION,
+        requirement_ids=("RTO-003", "RUI-002"),
+    ),
 )
 
 

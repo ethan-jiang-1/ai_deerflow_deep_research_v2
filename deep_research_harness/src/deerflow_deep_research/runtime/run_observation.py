@@ -17,6 +17,7 @@ from __future__ import annotations
 import asyncio
 import fcntl
 import json
+import logging
 import os
 import stat
 import tempfile
@@ -48,6 +49,12 @@ from deerflow_deep_research.domain.run_observation import (
     RunSummary,
     TerminalDiagnosticProjection,
 )
+from deerflow_deep_research.runtime.events import (
+    ObservationCode,
+    ObservationOutcome,
+    SafeObservation,
+    project_observation,
+)
 
 _SUMMARY_FILENAME = "run-summary.json"
 _DIAGNOSTICS_DIRECTORY = "diagnostics"
@@ -56,6 +63,7 @@ _DIAGNOSTIC_FILENAME = "records.jsonl"
 _JOURNAL_MANIFEST_FILENAME = "journal-manifest.json"
 _JOURNAL_LOCK_FILENAME = ".journal.lock"
 _JOURNAL_LOCK_STRIPES = tuple(threading.Lock() for _ in range(64))
+LOGGER = logging.getLogger(__name__)
 
 
 # Stores are short-lived adapters. Keep a process-local failure overlay per contained
@@ -620,6 +628,18 @@ class RunObservationStore:
         )
         self._atomic_write(journal_root / _EVENTS_FILENAME, self._encode_lines(retained))
         self._atomic_write(journal_root / _JOURNAL_MANIFEST_FILENAME, self._encode_model(updated_manifest))
+        if dropped:
+            project_observation(
+                SafeObservation(
+                    phase="journal",
+                    operation="retention",
+                    outcome=ObservationOutcome.DEGRADED,
+                    bundle_id=self._bundle_id,
+                    code=ObservationCode.OBSERVATION_DEGRADED,
+                    count=len(dropped),
+                ),
+                logger=LOGGER,
+            )
         self._clear_pending_bundle_persistence_failures()
         return retained, updated_manifest
 
@@ -699,6 +719,18 @@ class RunObservationStore:
         with _PERSISTENCE_FAILURES_LOCK:
             key = self._journal_failure_key()
             _PERSISTENCE_FAILURES_BY_JOURNAL[key] = _PERSISTENCE_FAILURES_BY_JOURNAL.get(key, 0) + 1
+            count = _PERSISTENCE_FAILURES_BY_JOURNAL[key]
+        project_observation(
+            SafeObservation(
+                phase="journal",
+                operation="persistence",
+                outcome=ObservationOutcome.DEGRADED,
+                bundle_id=self._bundle_id,
+                code=ObservationCode.OBSERVATION_DEGRADED,
+                count=count,
+            ),
+            logger=LOGGER,
+        )
 
     def _pending_bundle_failure_count(self) -> int:
         with _PERSISTENCE_FAILURES_LOCK:

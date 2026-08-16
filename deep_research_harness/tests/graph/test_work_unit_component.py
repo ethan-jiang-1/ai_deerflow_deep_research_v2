@@ -31,6 +31,7 @@ from deerflow_deep_research.graph.components.work_units import (
     run_work_unit_component,
     submit_candidate_if_active,
 )
+from deerflow_deep_research.runtime.events import RuntimeObservationProjection, make_stream_event_sink
 
 BUNDLE = RunBundleRef(
     bundle_id=BundleId("b_" + "A" * 43),
@@ -184,6 +185,17 @@ class _Recorder:
         )
 
 
+class _ObservationProjection:
+    def __init__(self) -> None:
+        self.events: list[dict[str, object]] = []
+
+    def emit(self, fields: dict[str, object], **_kwargs: object) -> None:
+        self.events.append(dict(fields))
+
+    async def aemit(self, fields: dict[str, object], **_kwargs: object) -> None:
+        self.emit(fields, **_kwargs)
+
+
 async def test_component_runs_three_concurrent_workers_and_multiple_refill_batches() -> None:
     result = await run_work_unit_component(
         {},
@@ -230,6 +242,142 @@ async def test_component_emits_submit_event_without_a_post_candidate_fact_on_suc
         (RunEventCategory.SUBMIT, "wave0"),
     ]
     assert all("/" not in (event[2] or "") for event in recorder.events)
+
+
+async def test_component_projects_only_material_attempt_and_submit_logs() -> None:
+    """@impl RTO-001"""
+
+    observation_projection = _ObservationProjection()
+    result = await run_work_unit_component(
+        {},
+        config=WorkUnitComponentConfig(
+            bundle_id=BUNDLE_ID,
+            generation=0,
+            phase="wave0",
+            intents=_intents(1),
+            max_concurrency=1,
+            clock=lambda: NOW,
+            observation_projection=observation_projection,
+        ),
+        worker=_worker,
+        submit=_submitter(),
+    )
+
+    assert result.gate_view.drained
+    assert observation_projection.events == [
+        {
+            "phase": "wave0",
+            "operation": "attempt",
+            "outcome": "started",
+            "bundle_id": BUNDLE_ID,
+            "work_id": "g0_wave0_w0000",
+            "attempt_id": "g0_wave0_w0000_a00",
+        },
+        {
+            "phase": "wave0",
+            "operation": "submit",
+            "outcome": "completed",
+            "bundle_id": BUNDLE_ID,
+            "work_id": "g0_wave0_w0000",
+            "attempt_id": "g0_wave0_w0000_a00",
+        },
+    ]
+
+
+async def test_component_projects_each_live_attempt_and_submit_fact_once() -> None:
+    payloads: list[object] = []
+    projection = RuntimeObservationProjection(
+        bundle_id=BUNDLE_ID,
+        event_sink=make_stream_event_sink(payloads.append),
+    )
+
+    result = await run_work_unit_component(
+        {},
+        config=WorkUnitComponentConfig(
+            bundle_id=BUNDLE_ID,
+            generation=0,
+            phase="wave0",
+            intents=_intents(1),
+            max_concurrency=1,
+            clock=lambda: NOW,
+            observation_projection=projection,
+        ),
+        worker=_worker,
+        submit=_submitter(),
+    )
+
+    assert result.gate_view.drained
+    assert [(payload["operation"], payload["outcome"]) for payload in payloads] == [
+        ("attempt", "started"),
+        ("submit", "completed"),
+    ]
+
+
+async def test_component_projects_closed_retry_and_exhaustion_counts() -> None:
+    """@impl RTO-001"""
+
+    spec = materialize_work_spec(
+        bundle_id=BUNDLE_ID,
+        generation=0,
+        phase="wave0",
+        work_ordinal=0,
+        intent=_intents(1)[0],
+    )
+    retry_attempt = allocate_attempt(spec, attempt_ordinal=1, created_at=NOW)
+    observation_projection = _ObservationProjection()
+
+    async def failed_worker(_spec, _attempt):
+        raise WorkerAttemptFailure(WorkerFailureCategory.STRUCTURED_OUTPUT)
+
+    result = await run_work_unit_component(
+        {},
+        config=WorkUnitComponentConfig(
+            bundle_id=BUNDLE_ID,
+            generation=0,
+            phase="wave0",
+            intents=(),
+            materialized_specs=(spec,),
+            replay_attempts_by_work_id={spec.work_id: retry_attempt},
+            max_concurrency=1,
+            clock=lambda: NOW,
+            observation_projection=observation_projection,
+        ),
+        worker=failed_worker,
+        submit=_submitter(),
+    )
+
+    assert result.gate_view.failure_summaries[0].attempt_id == retry_attempt.attempt_id
+    assert observation_projection.events == [
+        {
+            "phase": "wave0",
+            "operation": "retry",
+            "outcome": "retrying",
+            "bundle_id": BUNDLE_ID,
+            "work_id": spec.work_id,
+            "attempt_id": retry_attempt.attempt_id,
+            "code": "retrying",
+            "count": 1,
+        },
+        {
+            "phase": "wave0",
+            "operation": "attempt",
+            "outcome": "failed",
+            "bundle_id": BUNDLE_ID,
+            "work_id": spec.work_id,
+            "attempt_id": retry_attempt.attempt_id,
+            "code": "tool_failed",
+        },
+        {
+            "phase": "wave0",
+            "operation": "exhaustion",
+            "outcome": "failed",
+            "bundle_id": BUNDLE_ID,
+            "work_id": spec.work_id,
+            "attempt_id": retry_attempt.attempt_id,
+            "code": "attempt_exhausted",
+            "count": 1,
+        },
+    ]
 
 
 async def test_component_records_one_post_candidate_fact_for_submission_rejection() -> None:

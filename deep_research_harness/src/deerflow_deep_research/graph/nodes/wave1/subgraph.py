@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import logging
 import re
 from collections.abc import Callable, Mapping
 from datetime import datetime
@@ -25,7 +26,11 @@ from deerflow_deep_research.domain.bundle import (
     bundle_source_content_path,
 )
 from deerflow_deep_research.domain.context import NodeAgentContext
-from deerflow_deep_research.domain.invocation import RunEventRecorderProtocol, WorkUnitControllerDependencies
+from deerflow_deep_research.domain.invocation import (
+    RunEventRecorderProtocol,
+    RuntimeObservationProjectionProtocol,
+    WorkUnitControllerDependencies,
+)
 from deerflow_deep_research.domain.node_spec import PolicyRef
 from deerflow_deep_research.domain.run_observation import (
     FinalResponseShape,
@@ -69,6 +74,7 @@ from .prompts import (
 )
 
 WAVE1_REAL_POLICY = PolicyRef(name="real-wave1", version="v1")
+LOGGER = logging.getLogger(__name__)
 _WAVE1_VALIDATION_CODE = re.compile(r"^wave1_[a-z0-9_]+$")
 
 
@@ -96,7 +102,20 @@ async def _observe_validation(
     stage: str,
     codes: tuple[str, ...],
     response_shape: FinalResponseShape,
+    observation_projection: RuntimeObservationProjectionProtocol | None,
 ) -> None:
+    if observation_projection is not None:
+        fields: dict[str, object] = {
+            "phase": "wave1",
+            "operation": "validation",
+            "outcome": "rejected" if codes else "completed",
+            "bundle_id": spec.bundle_id,
+            "work_id": spec.work_id,
+            "attempt_id": attempt.attempt_id,
+        }
+        if codes:
+            fields["code"] = "validation_rejected"
+        await observation_projection.aemit(fields, logger=LOGGER)
     if recorder is None:
         return
     try:
@@ -161,6 +180,7 @@ async def _wave1_worker(
     wave0_urls: frozenset[str],
     bundle: RunBundleRef,
     event_recorder: RunEventRecorderProtocol | None,
+    observation_projection: RuntimeObservationProjectionProtocol | None,
 ) -> CandidateResult:
     """Real Wave1 worker: build prompt, run agent, parse output, build candidate."""
     topic = {}
@@ -202,6 +222,7 @@ async def _wave1_worker(
             stage="initial",
             codes=(_canonical_validation_code(initial_error),),
             response_shape=initial_response_shape,
+            observation_projection=observation_projection,
         )
         repair_outcome = await invoke_and_normalize(
             lambda: capabilities.run_agent(  # type: ignore[union-attr]
@@ -230,6 +251,7 @@ async def _wave1_worker(
                 stage="repair",
                 codes=(_canonical_validation_code(repair_error),),
                 response_shape=repair_response_shape,
+                observation_projection=observation_projection,
             )
             raise WorkerAttemptFailure(WorkerFailureCategory.STRUCTURED_OUTPUT) from repair_error
         await _observe_validation(
@@ -239,6 +261,7 @@ async def _wave1_worker(
             stage="repair",
             codes=(),
             response_shape=repair_response_shape,
+            observation_projection=observation_projection,
         )
     else:
         await _observe_validation(
@@ -248,6 +271,7 @@ async def _wave1_worker(
             stage="initial",
             codes=(),
             response_shape=initial_response_shape,
+            observation_projection=observation_projection,
         )
     normalized_sources: list[Wave1SourceRef] = []
     source_refs: list[SourceRef] = []
@@ -346,6 +370,7 @@ async def run_wave1_work_units_real(
     clock: Callable[[], datetime],
     fault_hook: Callable[[str], None] | None = None,
     event_recorder: RunEventRecorderProtocol | None = None,
+    observation_projection: RuntimeObservationProjectionProtocol | None = None,
 ) -> WorkUnitComponentResult:
     """Run real Wave1 evidence extraction through the shared work-unit component."""
     intents = materialize_wave1_intents(topic_registry, topic_filter=topic_filter)
@@ -372,6 +397,7 @@ async def run_wave1_work_units_real(
             wave0_urls=wave0_urls,
             bundle=bundle,
             event_recorder=event_recorder,
+            observation_projection=observation_projection,
         )
 
     return await run_controlled_work_unit_component(
@@ -384,6 +410,7 @@ async def run_wave1_work_units_real(
         fault_hook=fault_hook,
         worker=worker,
         event_recorder=event_recorder,
+        observation_projection=observation_projection,
     )
 
 

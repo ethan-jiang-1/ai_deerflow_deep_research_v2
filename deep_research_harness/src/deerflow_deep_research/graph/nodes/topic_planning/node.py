@@ -12,6 +12,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import secrets
 from collections.abc import Mapping
 from typing import Any
@@ -48,6 +49,7 @@ from deerflow_deep_research.graph.nodes.topic_planning.prompts import (
 
 RETRY_BACKOFF_MILLISECONDS = 1_000
 RETRY_BACKOFF_SECONDS = RETRY_BACKOFF_MILLISECONDS / 1_000
+LOGGER = logging.getLogger(__name__)
 _TOPIC_PLAN_PARSER_CODES = frozenset(
     {
         "topic_plan_empty",
@@ -168,6 +170,29 @@ async def _record_recovery_observation(
     backoff_milliseconds: int | None = None,
     recovery_event_disposition: str | None = None,
 ) -> None:
+    if dependencies.observation_projection is not None:
+        outcome = {
+            RunEventCategory.ATTEMPT: "started",
+            RunEventCategory.RETRY: "retrying",
+            RunEventCategory.EXHAUSTION: "failed",
+        }.get(category)
+        if outcome is not None:
+            fields: dict[str, object] = {
+                "phase": "topic_planning",
+                "operation": category.value,
+                "outcome": outcome,
+            }
+            if dependencies.selected_bundle is not None:
+                fields["bundle_id"] = dependencies.selected_bundle.bundle.bundle_id.value
+            if attempt_id is not None:
+                fields["attempt_id"] = attempt_id
+            if category is RunEventCategory.RETRY:
+                fields["code"] = "retrying"
+            elif category is RunEventCategory.EXHAUSTION:
+                fields["code"] = "attempt_exhausted"
+            if retry_ordinal is not None and retry_ordinal > 0:
+                fields["count"] = retry_ordinal
+            await dependencies.observation_projection.aemit(fields, logger=LOGGER)
     recorder = dependencies.event_recorder
     if recorder is None:
         return
@@ -194,6 +219,17 @@ async def _record_validation_observation(
 ) -> None:
     """Publish parser/materializer evidence without affecting planner control flow."""
 
+    if dependencies.observation_projection is not None:
+        fields: dict[str, object] = {
+            "phase": "topic_planning",
+            "operation": "validation",
+            "outcome": "rejected" if codes else "completed",
+        }
+        if dependencies.selected_bundle is not None:
+            fields["bundle_id"] = dependencies.selected_bundle.bundle.bundle_id.value
+        if codes:
+            fields["code"] = "validation_rejected"
+        await dependencies.observation_projection.aemit(fields, logger=LOGGER)
     recorder = dependencies.event_recorder
     if recorder is None:
         return

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import logging
 from collections.abc import Mapping
 from dataclasses import replace
 from typing import Any
@@ -46,10 +47,13 @@ from deerflow_deep_research.graph.nodes.gate_adapter import (
 from deerflow_deep_research.graph.registry import load_research_node_specs
 from deerflow_deep_research.graph.topology import LOGICAL_NODES
 
+LOGGER = logging.getLogger(__name__)
+
 
 async def _record_node_event(
     context: GraphInvocationContext,
     *,
+    bundle_id: str | None,
     category: RunEventCategory,
     phase: str,
     attempt_id: str,
@@ -57,20 +61,74 @@ async def _record_node_event(
     failure_category: str | None = None,
     worker_failure_category: str | None = None,
 ) -> None:
-    if context.event_recorder is None:
+    if context.observation_projection is not None:
+        fields: dict[str, object] = {
+            "phase": phase,
+            "operation": category.value,
+            "outcome": outcome if outcome in {"started", "completed", "failed"} else "failed",
+            "attempt_id": attempt_id,
+        }
+        if bundle_id is not None:
+            fields["bundle_id"] = bundle_id
+        if failure_category is not None:
+            fields["code"] = "provider_failed" if "provider" in failure_category else "tool_failed"
+        await context.observation_projection.aemit(fields, logger=LOGGER)
+    if context.event_recorder is not None:
+        try:
+            await context.event_recorder.record(
+                category=category,
+                phase=phase,
+                attempt_id=attempt_id,
+                outcome=outcome,
+                failure_category=failure_category,
+                worker_failure_category=worker_failure_category,
+            )
+        except Exception:
+            # Observation must never change graph/checkpoint/route authority.
+            return
+
+
+def _record_gate_verdict(
+    context: GraphInvocationContext,
+    *,
+    bundle_id: str | None,
+    phase: str,
+    attempt_id: str,
+    gate_update: Mapping[str, object],
+) -> None:
+    """Project the closed gate result without exposing its State update."""
+
+    if context.observation_projection is None:
         return
-    try:
-        await context.event_recorder.record(
-            category=category,
-            phase=phase,
-            attempt_id=attempt_id,
-            outcome=outcome,
-            failure_category=failure_category,
-            worker_failure_category=worker_failure_category,
-        )
-    except Exception:
-        # Observation must never change graph/checkpoint/route authority.
-        return
+    route = gate_update.get("route")
+    outcome = {
+        "pass": "completed",
+        "accepted": "completed",
+        "next": "completed",
+        "proceed": "completed",
+        "profile_complete": "completed",
+        "repair": "rejected",
+        "evidence_needed": "rejected",
+        "repair_targeted": "rejected",
+        "repair_synthesis": "rejected",
+        "repair_hitl2": "rejected",
+        "needs_input": "rejected",
+        "revise_view": "rejected",
+        "rerun": "rejected",
+        "cancel": "cancelled",
+        "stop": "stopped",
+        "evidence_blocked": "blocked",
+        "exhausted": "blocked",
+    }.get(route, "failed")
+    fields: dict[str, object] = {
+        "phase": phase,
+        "operation": "gate",
+        "outcome": outcome,
+        "attempt_id": attempt_id,
+    }
+    if bundle_id is not None:
+        fields["bundle_id"] = bundle_id
+    context.observation_projection.emit(fields, logger=LOGGER)
 
 
 def _node_wrapper(
@@ -86,6 +144,7 @@ def _node_wrapper(
         current_attempt = make_attempt_id(state, logical_name)
         await _record_node_event(
             context,
+            bundle_id=(state.get("bundle_id") if isinstance(state.get("bundle_id"), str) else None),
             category=RunEventCategory.NODE,
             phase=logical_name,
             attempt_id=current_attempt,
@@ -105,6 +164,8 @@ def _node_wrapper(
             dependencies = replace(dependencies, work_units=context.work_units)
         if context.event_recorder is not None:
             dependencies = replace(dependencies, event_recorder=context.event_recorder)
+        if context.observation_projection is not None:
+            dependencies = replace(dependencies, observation_projection=context.observation_projection)
         declares_bootstrap = NodeCapability.BOOTSTRAP_BUNDLE in spec.capabilities
         if declares_bootstrap and is_real_adapter:
             # The bootstrap store is a real-adapter filesystem capability. Fixture
@@ -158,6 +219,7 @@ def _node_wrapper(
         )
         await _record_node_event(
             context,
+            bundle_id=(state.get("bundle_id") if isinstance(state.get("bundle_id"), str) else None),
             category=RunEventCategory.TERMINAL if result.get("terminal_status") else RunEventCategory.NODE,
             phase=logical_name,
             attempt_id=current_attempt,
@@ -233,6 +295,13 @@ def _node_wrapper(
                 assert isinstance(final_delivery_gate_view, FinalDeliveryGateView)
                 gate_state = {**gate_state, FINAL_DELIVERY_GATE_VIEW_KEY: final_delivery_gate_view}
             gate_update = evaluate_gate_for_node(gate_state, logical_name, gate_def)
+            _record_gate_verdict(
+                context,
+                bundle_id=(state.get("bundle_id") if isinstance(state.get("bundle_id"), str) else None),
+                phase=logical_name,
+                attempt_id=current_attempt,
+                gate_update=gate_update,
+            )
             overlap = set(result) & set(gate_update)
             if overlap:
                 raise ValueError(f"node_gate_write_conflict:{','.join(sorted(overlap))}")
@@ -248,6 +317,7 @@ def _node_wrapper(
             context = runtime.context
             await _record_node_event(
                 context,
+                bundle_id=(state.get("bundle_id") if isinstance(state.get("bundle_id"), str) else None),
                 category=RunEventCategory.NODE,
                 phase=logical_name,
                 attempt_id=make_attempt_id(state, logical_name),

@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -18,7 +19,11 @@ from langgraph.types import Overwrite, Send
 
 from deerflow_deep_research.domain.bundle import RunBundleRef, bundle_first_work_spec_path, bundle_work_spec_path
 from deerflow_deep_research.domain.failure_codes import FailureCode, get_classification
-from deerflow_deep_research.domain.invocation import RunEventRecorderProtocol, WorkUnitControllerDependencies
+from deerflow_deep_research.domain.invocation import (
+    RunEventRecorderProtocol,
+    RuntimeObservationProjectionProtocol,
+    WorkUnitControllerDependencies,
+)
 from deerflow_deep_research.domain.lifecycle import WorkUnitStorageReason
 from deerflow_deep_research.domain.node_spec import PolicyRef
 from deerflow_deep_research.domain.run_observation import RunEventCategory
@@ -58,6 +63,8 @@ from deerflow_deep_research.engine.work_units.validation import (
     validate_submission_candidate,
 )
 
+LOGGER = logging.getLogger(__name__)
+
 
 class SubmissionValidationFailure(ValueError):
     """Closed validation outcome that the component may convert to a retry."""
@@ -92,6 +99,7 @@ class WorkUnitComponentConfig:
     materialized_specs: tuple[WorkSpec, ...] = ()
     replay_attempts_by_work_id: Mapping[str, Attempt] = field(default_factory=dict)
     event_recorder: RunEventRecorderProtocol | None = None
+    observation_projection: RuntimeObservationProjectionProtocol | None = None
 
     def __post_init__(self) -> None:
         ConcurrencyPolicy(self.max_concurrency)
@@ -107,6 +115,11 @@ class WorkUnitComponentConfig:
             raise ValueError("replay_attempt_spec_missing")
         if self.event_recorder is not None and not isinstance(self.event_recorder, RunEventRecorderProtocol):
             raise TypeError("event_recorder_invalid")
+        if self.observation_projection is not None and not isinstance(
+            self.observation_projection,
+            RuntimeObservationProjectionProtocol,
+        ):
+            raise TypeError("observation_projection_invalid")
 
 
 @dataclass(frozen=True)
@@ -497,23 +510,57 @@ async def run_work_unit_component(
         provider_category: str | None = None,
         retry_count: int | None = None,
     ) -> None:
-        if config.event_recorder is None:
-            return
-        try:
-            await config.event_recorder.record(
-                category=category,
-                phase=config.phase,
-                work_id=work_id,
-                attempt_id=attempt_id,
-                validation_stage=validation_stage,
-                validation_codes=validation_codes,
-                failure_category=failure_category,
-                worker_failure_category=worker_failure_category,
-                provider_category=provider_category,
-                retry_count=retry_count,
+        if config.observation_projection is not None:
+            outcome = {
+                RunEventCategory.RETRY: "retrying",
+                RunEventCategory.VALIDATION: "rejected",
+                RunEventCategory.EXHAUSTION: "failed",
+                RunEventCategory.SUBMIT: "completed",
+            }.get(category, "failed" if failure_category or worker_failure_category or provider_category else "started")
+            code = (
+                "validation_rejected"
+                if category is RunEventCategory.VALIDATION
+                else "retrying"
+                if category is RunEventCategory.RETRY
+                else "attempt_exhausted"
+                if category is RunEventCategory.EXHAUSTION
+                else "provider_failed"
+                if provider_category is not None
+                else "tool_failed"
+                if worker_failure_category is not None
+                else None
             )
-        except Exception:
-            return
+            fields: dict[str, object] = {
+                "phase": config.phase,
+                "operation": category.value,
+                "outcome": outcome,
+                "bundle_id": config.bundle_id,
+            }
+            if work_id is not None:
+                fields["work_id"] = work_id
+            if attempt_id is not None:
+                fields["attempt_id"] = attempt_id
+            if code is not None:
+                fields["code"] = code
+            if retry_count is not None and retry_count > 0:
+                fields["count"] = retry_count
+            await config.observation_projection.aemit(fields, logger=LOGGER)
+        if config.event_recorder is not None:
+            try:
+                await config.event_recorder.record(
+                    category=category,
+                    phase=config.phase,
+                    work_id=work_id,
+                    attempt_id=attempt_id,
+                    validation_stage=validation_stage,
+                    validation_codes=validation_codes,
+                    failure_category=failure_category,
+                    worker_failure_category=worker_failure_category,
+                    provider_category=provider_category,
+                    retry_count=retry_count,
+                )
+            except Exception:
+                return
 
     async def initialize(_state: WorkUnitComponentState) -> dict[str, Any]:
         return {
@@ -812,6 +859,7 @@ async def run_controlled_work_unit_component(
     fault_hook: Callable[[str], None] | None = None,
     worker: Worker,
     event_recorder: RunEventRecorderProtocol | None = None,
+    observation_projection: RuntimeObservationProjectionProtocol | None = None,
 ) -> WorkUnitComponentResult:
     """Run a caller-supplied work-unit worker through the controlled submit path.
 
@@ -888,6 +936,7 @@ async def run_controlled_work_unit_component(
             materialized_specs=materialized_specs,
             replay_attempts_by_work_id=selected_attempts,
             event_recorder=event_recorder,
+            observation_projection=observation_projection,
         ),
         worker=worker,
         submit=validate_and_submit,
