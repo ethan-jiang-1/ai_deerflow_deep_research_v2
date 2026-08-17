@@ -73,6 +73,20 @@ def test_scripted_real_baseline_proves_every_wave_action(tmp_path: Path, _script
     assert result.final_artifacts_published
     assert result.backed_claim_count >= 1, "no citation claim with a backing reference"
 
+    # SCR-006: the terminal observation is published into the bundle journal, so a
+    # read-only inspection reports the completed terminal summary.
+    from deerflow_deep_research.runtime.run_observation import RunObservationStore
+
+    bundle_dir = Path(result.journal_path).parent.parent
+    inspection = _await(
+        RunObservationStore(bundle_root=bundle_dir, bundle_id=result.bundle_id).inspect(bundle_id=result.bundle_id)
+    )
+    assert inspection.summary is not None
+    assert inspection.summary.status == "completed"
+    assert inspection.summary.phase == "final_delivery"
+    assert inspection.summary.terminal_outcome == "completed"
+    assert any(event.category.value == "terminal" for event in inspection.events)
+
     # The baseline wall-time contract: a timeout is a test failure, not a skip.
     assert elapsed < 10.0, f"wall time {elapsed:.2f}s exceeded the 10s contract"
 

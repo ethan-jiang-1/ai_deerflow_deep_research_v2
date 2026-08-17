@@ -1,6 +1,6 @@
 # BUG-033: `_backlog/_local_demo` 的真机脚本缺少 `PROFILE`，一跑就报 Usage 错误
 
-> 严重级别: P1 | 发现: 2026-08-17 | 状态: 活跃
+> 严重级别: P1 | 发现: 2026-08-17 | 状态: 已修复
 
 ## 症状
 
@@ -33,3 +33,5 @@ cd _backlog/_local_demo
   - `run-003-real-auto.sh` → 真机全自动 embedded smoke
   - `run-004-find-bugs.sh` → 真机交互 Gateway，且已带 `PROFILE="${PROFILE:-demo}"`
 - 长期：若保留 `_backlog/_local_demo` 脚本，需统一加 `PROFILE` 默认值；或直接废弃旧命名，以 `run-001~004` 为准。
+
+> 修复: 已修复（`fix-local-demo-tooling`：Makefile 默认 `PROFILE ?= demo`；显式空 `PROFILE=` 仍被拒绝）。

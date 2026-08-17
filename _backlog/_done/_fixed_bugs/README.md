@@ -1,6 +1,6 @@
 # Fixed Bugs Index — 已修复 bug 归档
 
-> 最后更新: 2026-08-11 | `_backlog/_done/_fixed_bugs/` — 已修复 bug 的归档目录。
+> 最后更新: 2026-08-18 | `_backlog/_done/_fixed_bugs/` — 已修复 bug 的归档目录。
 > 接收来自 [`../../bugs/`](../../bugs/) 的 bug。`_` 前缀 = coding agent 默认忽略。
 >
 > **本目录是 bug 编号的唯一权威来源——新 bug 的编号 = 本目录最大编号 + 1。**
@@ -48,8 +48,11 @@ bug 修完后从 `_backlog/bugs/` 通过 `git mv` 移入本目录：
 | BUG-028 | 2026-08-16 | Wave1 `targeted_search` 没有真正的修复路径 |
 | BUG-029 | 2026-08-16 | 非法 critic 输出被静默丢弃 |
 | BUG-030 | 2026-08-16 | 真机 demo 长时间运行没有实时人类可读轨迹 |
+| BUG-032 | 2026-08-17 | uv 缓存读取 `Operation not permitted` 导致 `make demo-scripted` 等本地命令直接挂 |
+| BUG-033 | 2026-08-17 | `_backlog/_local_demo` 真机脚本缺少 `PROFILE`，一跑就报 Usage 错误 |
+| BUG-034 | 2026-08-18 | `soft-bundle inspect` 对 mode 002（scripted-real）bundle 永远报 unavailable |
 
-**Next available bug ID: BUG-032**
+**Next available bug ID: BUG-035**
 
 ---
 

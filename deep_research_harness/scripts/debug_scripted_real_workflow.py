@@ -50,10 +50,12 @@ from langchain_core.outputs import ChatGeneration, ChatResult
 from langgraph.types import Command
 
 from deerflow_deep_research.domain.bundle import BundleId, RunBundleRef, bundle_host_relative_root
+from deerflow_deep_research.domain.run_observation import RecordBearingLifecycleFact
 from deerflow_deep_research.runtime.bundle_graph import BundleGraphExecutor
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
 from deerflow_deep_research.runtime.node_agent_bridge import RuntimeNodeAgentBridge
 from deerflow_deep_research.runtime.research import ResearchGraphRecipe
+from deerflow_deep_research.runtime.run_observation import BundleRunObservationPublisher
 from deerflow_deep_research.runtime.runtime_adapter import TrustedRuntimeEnvelope
 from deerflow_deep_research.runtime.work_unit_store import WorkUnitStore
 from deerflow_deep_research.tool import run_deep_research
@@ -472,6 +474,22 @@ async def _observe(
         raise AssertionError(f"baseline entered an out-of-scope branch: {trace}")
     if "rerun" in trace:
         raise AssertionError(f"scripted run entered the out-of-scope rerun branch: {trace}")
+    # The demo entry points publish lifecycle observations through their experience
+    # wrapper; this operator workflow drives the public tool surface directly, so it
+    # publishes the terminal observation itself. Without this, run-summary.json stays
+    # at the initial establish fact and inspection cannot report the terminal state.
+    if state.terminal_status is not None:
+        await BundleRunObservationPublisher(lifecycle=lifecycle, scope=world.identity).publish(
+            RecordBearingLifecycleFact(
+                bundle_id=bundle.bundle_id.value,
+                action="status",
+                status=state.terminal_status.value,
+                phase=state.phase.value,
+                generation=state.generation,
+                durability="restart_durable",
+                terminal_outcome=state.terminal_status.value,
+            )
+        )
     journal_path = str(
         Path(world.envelope.workspace_host_path) / bundle_host_relative_root(bundle) / "diagnostics" / "events.jsonl"
     )

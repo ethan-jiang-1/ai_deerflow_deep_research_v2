@@ -11,6 +11,7 @@ lifecycle authority.
 from __future__ import annotations
 
 import argparse
+import asyncio
 import json
 import os
 import re
@@ -20,6 +21,12 @@ import subprocess
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+
+from _inspect_view import render_diagnosis
+
+from deerflow_deep_research.domain.run_observation import ObservationInspectability
+from deerflow_deep_research.domain.session_workbench import WorkbenchAvailability, WorkbenchDiagnosisView
+from deerflow_deep_research.runtime.run_observation import RunObservationStore
 
 HARNESS = Path(__file__).resolve().parents[1]
 RUNS_ROOT = HARNESS / ".deep-research-demo-runs" / "workspace"
@@ -210,7 +217,9 @@ def _verify_bundle(bundle_dir: Path, bundle_id: str, mode: str) -> tuple[bool, l
             if summary.get("terminal_outcome") != "completed":
                 problems.append(f"summary.terminal_outcome={summary.get('terminal_outcome')!r}, expected 'completed'")
             if summary.get("journal_availability") != "complete":
-                problems.append(f"summary.journal_availability={summary.get('journal_availability')!r}, expected 'complete'")
+                problems.append(
+                    f"summary.journal_availability={summary.get('journal_availability')!r}, expected 'complete'"
+                )
 
     events_path = bundle_dir / "diagnostics" / "events.jsonl"
     if not events_path.exists():
@@ -225,7 +234,11 @@ def _verify_bundle(bundle_dir: Path, bundle_id: str, mode: str) -> tuple[bool, l
                 continue
             if event.get("category") == "node" and event.get("outcome") == "completed" and event.get("phase"):
                 completed_phases.add(event["phase"])
-            if event.get("category") == "terminal" and event.get("outcome") == "completed" and event.get("phase") == "final_delivery":
+            if (
+                event.get("category") == "terminal"
+                and event.get("outcome") == "completed"
+                and event.get("phase") == "final_delivery"
+            ):
                 terminal_ok = True
         if not terminal_ok and state_path.exists():
             try:
@@ -276,7 +289,11 @@ def _print_run_summary(bundle_dir: Path, bundle_id: str, mode: str) -> None:
                 event = json.loads(line)
             except json.JSONDecodeError:
                 continue
-            if event.get("category") == "terminal" and event.get("outcome") == "completed" and event.get("phase") == "final_delivery":
+            if (
+                event.get("category") == "terminal"
+                and event.get("outcome") == "completed"
+                and event.get("phase") == "final_delivery"
+            ):
                 terminal_ok = True
                 break
     state_path = bundle_dir / "state.json"
@@ -291,7 +308,7 @@ def _print_run_summary(bundle_dir: Path, bundle_id: str, mode: str) -> None:
     print("Final result:")
     report = bundle_dir / "final" / "report.md"
     if report.exists():
-        print(f"  final/report.md: exists")
+        print("  final/report.md: exists")
         body = report.read_text().strip()
         if body:
             print(body[:2000])
@@ -487,12 +504,49 @@ def cmd_inspect(args: argparse.Namespace) -> int:
     if not bundle_id:
         print("error: current_bundle_id not bound", file=sys.stderr)
         return 1
+    if manifest.get("mode", "001") == "002":
+        return _inspect_mode_002(bundle_id)
     proc = _run_make(["make", "demo-sessions", f"DEMO_ARGS=inspect {bundle_id}"])
     if proc.stdout:
         print(proc.stdout, end="")
     if proc.stderr:
         print(proc.stderr, end="", file=sys.stderr)
     return proc.returncode
+
+
+def _inspect_mode_002(bundle_id: str) -> int:
+    """Render the recorded scripted-real bundle's contained diagnostics read-only.
+
+    Mode-002 bundles are published by the debug-scripted-real workflow in an
+    independent run workspace and trusted scope that the fixed demo scope cannot
+    see, so the demo-sessions delegation can never resolve them. This operator-side
+    render reads only the recorded bundle's contained diagnostics; the record stays
+    an observation, never lifecycle authority (SBC-005), and a missing or foreign
+    bundle is simply unavailable.
+    """
+    bundle_dir = _find_bundle_dir(bundle_id)
+    if bundle_dir is None:
+        diagnosis = WorkbenchDiagnosisView(availability=WorkbenchAvailability.UNAVAILABLE)
+    else:
+        try:
+            inspection = asyncio.run(
+                RunObservationStore(bundle_root=bundle_dir, bundle_id=bundle_id).inspect(bundle_id=bundle_id)
+            )
+        except (OSError, RuntimeError, TypeError, ValueError):
+            diagnosis = WorkbenchDiagnosisView(availability=WorkbenchAvailability.UNAVAILABLE)
+        else:
+            if inspection.inspectability is not ObservationInspectability.AVAILABLE:
+                diagnosis = WorkbenchDiagnosisView(availability=WorkbenchAvailability.UNAVAILABLE)
+            else:
+                diagnosis = WorkbenchDiagnosisView(
+                    availability=WorkbenchAvailability.AVAILABLE,
+                    summary=inspection.summary,
+                    events=inspection.events[-8:],
+                    incomplete_reasons=inspection.incomplete_reasons,
+                )
+    for line in render_diagnosis(bundle_id=bundle_id, diagnosis=diagnosis):
+        print(line)
+    return 0 if diagnosis.availability is WorkbenchAvailability.AVAILABLE else 2
 
 
 def cmd_phases(args: argparse.Namespace) -> int:
@@ -512,7 +566,14 @@ def cmd_phases(args: argparse.Namespace) -> int:
         state = json.loads(state_path.read_text())
         print("\n[state.json]")
         print("  execution_trace:", " -> ".join(state.get("execution_trace", [])))
-        print("  phase:", state.get("phase"), "| phase_status:", state.get("phase_status"), "| terminal_status:", state.get("terminal_status"))
+        print(
+            "  phase:",
+            state.get("phase"),
+            "| phase_status:",
+            state.get("phase_status"),
+            "| terminal_status:",
+            state.get("terminal_status"),
+        )
     work = bundle_dir / "work"
     if work.exists():
         print("\n[work 输出]")

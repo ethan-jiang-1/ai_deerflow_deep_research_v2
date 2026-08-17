@@ -1,9 +1,18 @@
 .PHONY: install entry-preflight verify lock-check format lint test test-fast test-integration test-workflow test-entry-environment-regression test-live test-unit test-contract test-viability test-durability test-blocking-io test-assets test-intake test-retained-observation test-work-unit test-strict-checkpoint test-duration-policy benchmark-fast prompt-dump prompt-dump-check profile-setup profile-preflight profiles profile-init profile-check profile-dev demo demo-scripted demo-fixture-graph demo-real demo-real-embedded-smoke demo-real-scripted demo-tui demo-tui-embedded-smoke demo-tui-fixture demo-sessions session-workbench debug-scripted-real-workflow soft-bundle
 
 DEMO_ARGS ?=
+# Operator demo/session/soft-bundle/profile entry commands default to no uv cache:
+# sandboxed environments return EPERM reading the global uv cache and block every
+# such command (BUG-032). Override with UV_NO_CACHE=0. Test/install/build targets
+# keep normal caching so the offline gate (UV_OFFLINE=1) can still resolve build
+# backends from the cache.
+UV_NO_CACHE ?= 1
+# Real demo targets default to the standard demo profile so runbook/script callers
+# that pass only DEMO_ARGS still launch; an explicitly empty PROFILE= is rejected.
+PROFILE ?= demo
 LOCAL_ENV_ARG := $(if $(wildcard .env),--env-file .env,)
 PYTEST := python -m pytest
-ENTRY_RUN = PYTHONDONTWRITEBYTECODE=1 env -u VIRTUAL_ENV uv run --locked --no-sync
+ENTRY_RUN = PYTHONDONTWRITEBYTECODE=1 env -u VIRTUAL_ENV UV_NO_CACHE=$(UV_NO_CACHE) uv run --locked --no-sync
 ENTRY_REQUIRED_DISTRIBUTIONS = python-dotenv ruamel.yaml textual tavily-python
 ENTRY_SETUP_MESSAGE = Command environment is not prepared. Run 'make install' from deep_research_harness/.
 
@@ -13,7 +22,7 @@ install:
 entry-preflight:
 	@test -x .venv/bin/python && .venv/bin/python -c 'from importlib.metadata import version; [version(name) for name in "$(ENTRY_REQUIRED_DISTRIBUTIONS)".split()]' >/dev/null 2>&1 || { echo "$(ENTRY_SETUP_MESSAGE)"; exit 2; }
 
-PROFILE_RUN = PYTHONDONTWRITEBYTECODE=1 env -u VIRTUAL_ENV uv run --locked --no-sync --extra operations python scripts/local_profiles.py
+PROFILE_RUN = PYTHONDONTWRITEBYTECODE=1 env -u VIRTUAL_ENV UV_NO_CACHE=$(UV_NO_CACHE) uv run --locked --no-sync --extra operations python scripts/local_profiles.py
 
 profile-setup:
 	$(MAKE) -C ../deerflow install

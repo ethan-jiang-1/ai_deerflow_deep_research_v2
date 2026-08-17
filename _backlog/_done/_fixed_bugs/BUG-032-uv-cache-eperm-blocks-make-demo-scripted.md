@@ -1,6 +1,6 @@
 # BUG-032: uv 缓存读取 `Operation not permitted` 导致 `make demo-scripted` 等本地命令直接挂
 
-> 严重级别: P1 | 发现: 2026-08-17 | 状态: 活跃
+> 严重级别: P1 | 发现: 2026-08-17 | 状态: 已修复
 
 ## 症状
 
@@ -50,3 +50,5 @@ make demo-scripted
 
 - 短期：本地脚本统一加 `export UV_NO_CACHE=1`（已在 `_backlog/_local_demo/*.sh` 处理）。
 - 长期：评估 Makefile 是否默认加 `UV_NO_CACHE=1`，或修复 uv 缓存目录在沙箱中的访问问题。
+
+> 修复: 已修复（`fix-local-demo-tooling`：Makefile 默认 `export UV_NO_CACHE=1`，可 `UV_NO_CACHE=0` 覆盖）。

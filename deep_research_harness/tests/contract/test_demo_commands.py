@@ -49,7 +49,12 @@ def test_demo_commands_keep_fixture_and_real_dependency_boundaries() -> None:
 
     assert "demo-fixture-graph demo-real demo-real-embedded-smoke demo-real-scripted demo-tui" in makefile
     assert "demo-tui-embedded-smoke demo-tui-fixture" in makefile
-    assert "ENTRY_RUN = PYTHONDONTWRITEBYTECODE=1 env -u VIRTUAL_ENV uv run --locked --no-sync" in makefile
+    assert (
+        "ENTRY_RUN = PYTHONDONTWRITEBYTECODE=1 env -u VIRTUAL_ENV UV_NO_CACHE=$(UV_NO_CACHE) uv run --locked --no-sync"
+        in makefile
+    )
+    assert "UV_NO_CACHE ?= 1" in makefile
+    assert "PROFILE ?= demo" in makefile
     assert (
         "install:\n\tenv -u VIRTUAL_ENV uv sync --locked --extra operations --extra demo-tui --extra demo-real"
         in makefile
@@ -120,7 +125,8 @@ def test_make_commands_scope_fixture_source_to_fixture_children() -> None:
     for target, script in fixture_targets.items():
         command = _dry_run_command(target, script)
         assert command.startswith(
-            f"{DRY_RUN_FIXTURE_PYTHONPATH} PYTHONDONTWRITEBYTECODE=1 env -u VIRTUAL_ENV uv run --locked --no-sync"
+            f"{DRY_RUN_FIXTURE_PYTHONPATH} PYTHONDONTWRITEBYTECODE=1 env -u VIRTUAL_ENV UV_NO_CACHE=1 "
+            "uv run --locked --no-sync"
         )
 
     real_targets = {
@@ -133,7 +139,7 @@ def test_make_commands_scope_fixture_source_to_fixture_children() -> None:
     for target, script in real_targets.items():
         command = _dry_run_command(target, script)
         assert "src_fake" not in command
-        assert "PYTHONDONTWRITEBYTECODE=1 env -u VIRTUAL_ENV uv run --locked --no-sync" in command
+        assert "PYTHONDONTWRITEBYTECODE=1 env -u VIRTUAL_ENV UV_NO_CACHE=1 uv run --locked --no-sync" in command
 
 
 def test_zero_credential_demo_help_is_the_fixture_graph_route() -> None:
