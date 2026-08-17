@@ -14,6 +14,7 @@
 
 - 零前置：不联网、不花 API、不需要 Gateway。
 - 只需在 `deep_research_harness/` 下执行。
+- 全程自动：固定问题下 HITL1/HITL2 都由系统自动回答，不需要人工输入。
 
 ## 1. 创建 soft bundle 并跑 001
 
