@@ -51,6 +51,14 @@ def test_create_is_idempotent(tmp_path: Path, capsys) -> None:
         assert manifest["name"] == "demo-name"
 
 
+def test_create_uses_simple_default_question(tmp_path: Path) -> None:
+    with _patch_paths(tmp_path):
+        code = soft_bundle.cmd_create(_args(root="default-q", name=None, question=None, mode="001"))
+        assert code == 0
+        manifest = json.loads((tmp_path / "harness/default-q/manifest.json").read_text())
+        assert manifest["question"] == soft_bundle.DEFAULT_QUESTION
+
+
 def test_create_rejects_non_soft_bundle_directory(tmp_path: Path, capsys) -> None:
     with _patch_paths(tmp_path):
         bad = tmp_path / "harness" / "bad"

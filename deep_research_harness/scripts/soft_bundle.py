@@ -28,6 +28,7 @@ BUNDLE_ID_RE = re.compile(r"^b_[A-Za-z0-9_-]{20,}$")
 MANIFEST_NAME = "manifest.json"
 BUNDLES_SUBDIR = "bundles"
 SCHEMA_VERSION = 1
+DEFAULT_QUESTION = "What is the capital of France?"
 
 
 def _now() -> str:
@@ -163,7 +164,7 @@ def cmd_create(args: argparse.Namespace) -> int:
         "schema_version": SCHEMA_VERSION,
         "name": name,
         "mode": args.mode,
-        "question": args.question or "",
+        "question": args.question or DEFAULT_QUESTION,
         "current_bundle_id": None,
         "created_at": _now(),
         "updated_at": _now(),
@@ -181,6 +182,8 @@ def cmd_run(args: argparse.Namespace) -> int:
         manifest["mode"] = args.mode
     if args.question:
         manifest["question"] = args.question
+    if not manifest.get("question"):
+        manifest["question"] = DEFAULT_QUESTION
     _save_manifest(root, manifest)
 
     mode = manifest.get("mode", "001")
