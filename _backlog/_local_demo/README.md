@@ -9,7 +9,7 @@
 
 | 编号 | 手册 | 花不花钱 | 需要什么 | 这个例子是什么意思 | 默认示例问题 |
 | --- | --- | --- | --- | --- | --- |
-| 001 | [`runbook-001-最简单-fixture图端到端.md`](runbook-001-最简单-fixture图端到端.md) | 免费 | 无 | 最简单：只用假数据把图从第一节点跑到最后节点，验证“路通不通” | `What is the capital of France?` |
+| 001 | [`runbook-001-easiest-fixture-graph.md`](runbook-001-easiest-fixture-graph.md) | 免费 | 无 | 最简单：只用假数据把图从第一节点跑到最后节点，验证“路通不通” | `What is the capital of France?` |
 | 002 | `runbook-002-稍难-scripted真实链路.md`（待建） | 免费 | 无 | 稍难：用脚本化的真实控制链路跑一遍，验证“真适配器+门+持久化通不通” | 固定为 `What is one bounded fact about grid energy storage?` |
 | 003 | `runbook-003-更难-真机全自动.md`（待建） | 花 API | 本地模型/Tavily 凭据 | 更难：接真实模型和网页工具，全自动跑完，不等人 | `Compare China and US EV battery market in 2024.` |
 | 004 | `runbook-004-最难-真机交互找茬.md`（待建） | 花 API | 先起 Gateway + 人 | 最难：真机交互跑，HITL 环节要人参与，专门用来找茬 | `Compare China and US EV battery market in 2024.` |
@@ -18,7 +18,7 @@
 
 ## 每天固定怎么跑
 
-1. 打开 [`runbook-001-最简单-fixture图端到端.md`](runbook-001-最简单-fixture图端到端.md)
+1. 打开 [`runbook-001-easiest-fixture-graph.md`](runbook-001-easiest-fixture-graph.md)
 2. 按里面的顺序执行：
    - 跑 001
    - 认 bundle
