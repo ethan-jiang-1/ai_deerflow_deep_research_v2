@@ -1,6 +1,6 @@
 # _backlog — 项目待办与决策记录
 
-> 最后更新: 2026-07-30 | 本目录追踪本仓库的工作项、设计决策、上游分析。
+> 最后更新: 2026-08-17 | 本目录追踪本仓库的工作项、设计决策、上游分析。
 > 活跃工作走 OpenSpec（`openspec/changes/`）；本目录是 **上游分析与决策记录 + 待办池**，不是运行时真相。
 >
 > **本文件是 `_backlog` 的规矩手册。** 搬迁流程在下面定死，今后大家都遵循这里头定的规矩。
@@ -9,7 +9,7 @@
 
 ## 这个仓库是什么
 
-`ai_deerflow_deep_research` 是对上游 [bytedance/deer-flow](https://github.com/bytedance/deer-flow)（基于 LangGraph 的 AI super-agent 框架）之上，以 OpenSpec spec-driven 规范开发的 **Deep Research 智能体应用**。硬约束：**绝不修改上游源码**（`backend/`、`frontend/` 是上游 1:1 镜像）。研究笔记在 `_digest/`（继承自 wiki 项目），问答在 `_faq_on_digested/`，Deep Research 智能体开发走 `openspec/`。
+`ai_deerflow_deep_research` 是对上游 [bytedance/deer-flow](https://github.com/bytedance/deer-flow)（基于 LangGraph 的 AI super-agent 框架）之上，以 OpenSpec spec-driven 规范开发的 **Deep Research 智能体应用**。硬约束：**绝不修改上游源码**（`deerflow/backend/`、`deerflow/frontend/` 是上游镜像，位于 `deerflow/` submodule 内；研究笔记不随 submodule 分发）。Deep Research 智能体开发走 `openspec/`。
 
 ## 目录结构
 
@@ -27,7 +27,7 @@ _backlog/
 ├── bugs/                              # 🐛 活跃 bug → 修完移入 _done/_fixed_bugs/
 ├── todos/                            # 📋 活跃 todo → 做完移入 _done/_done_todos/
 ├── plans/                            # 📐 活跃 plan → 完成移入 _done/_closed_plans/
-├── reference/                        # 📚 外部系统分析资料（消化后产出 plan）
+├── _reference/                       # 📚 外部系统分析资料（消化后产出 plan）
 └── learning/                         # 📖 apply/研究复盘 retro（长期留存）
 ```
 
@@ -110,15 +110,14 @@ git mv plans/<name>.md _done/_closed_plans/<name>.md
 
 ## 相关外部文件
 
-> 以下路径相对于 **repo 根目录**（`/Users/bowhead/ai_deerflow_deep_research/`），不是 `_backlog/` 目录。
+> 以下路径相对于 **本仓库根目录**，不是 `_backlog/` 目录。
 
 | 路径 | 角色 |
 |------|------|
 | `AGENTS.md` / `CLAUDE.md` | repo 最高指引（monorepo 定位 + 跨切约定；`CLAUDE.md` 经 `@AGENTS.md` 导入） |
 | `openspec/config.yaml` | OpenSpec 项目上下文 + 4 artifact（proposal/specs/design/tasks）规则 |
 | `openspec/specs/` | 已接受 spec（运行时真相层，与 `_backlog` 各自簿记） |
-| `openspec/changes/` | 活跃 change |
-| `_digest/` | DeerFlow 源码研究笔记 |
-| `_faq_on_digested/` | 基于 digest 的 FAQ |
-| `_backlog/reference/` | 外部系统分析资料（如 imported workflow framework），消化后产出 `_backlog/plans/` |
-| `backend/` `frontend/` | 上游镜像（**禁改**，`main` 分支 1:1 跟踪 bytedance/deer-flow） |
+| `openspec/changes/` | 活跃 change（完成归档于 `openspec/changes/archive/`） |
+| `deerflow/AGENTS.md`、`deerflow/backend/AGENTS.md` | 框架 submodule 自带的只读指引（研究笔记不随 submodule 分发） |
+| `_backlog/_reference/` | 外部系统分析资料（如 imported workflow framework），消化后产出 `_backlog/plans/` |
+| `deerflow/backend/` `deerflow/frontend/` | 上游镜像（**禁改**，submodule 锁定在 `deerflow/` 内） |

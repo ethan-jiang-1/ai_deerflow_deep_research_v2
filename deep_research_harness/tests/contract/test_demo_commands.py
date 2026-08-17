@@ -259,7 +259,7 @@ def test_default_real_entries_require_profile_gateway_preflight_before_any_embed
 def test_embedded_smoke_calibration_documents_an_explicit_observational_procedure() -> None:
     """@impl DPL-012"""
 
-    calibration_command = "DEERFLOW_DEMO_MODEL=<profile> make demo-real-scripted"
+    calibration_command = "PROFILE=<profile> make demo-real-scripted"
     inspection_command = 'make demo-sessions DEMO_ARGS="inspect <bundle-id>"'
     documents = (
         AGENT_ROOT / "docs" / "local-operations.md",

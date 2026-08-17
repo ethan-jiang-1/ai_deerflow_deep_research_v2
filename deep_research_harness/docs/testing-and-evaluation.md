@@ -32,6 +32,41 @@ first, then use `UV_OFFLINE=1 make verify` as the complete deterministic gate.
 | Asset and requirement-coverage governance | `make test-assets`, `make test-req-coverage` |
 | Credentialed bounded live canaries | `make test-live` |
 
+## Test Directory Taxonomy
+
+Top-level test directories under `deep_research_harness/tests/`:
+
+| Directory | Meaning |
+| --- | --- |
+| `unit/` | Deterministic unit-style contracts for a single module or seam. Not import-isolated: some files reuse scenario/asset helpers. |
+| `domain/`, `engine/`, `graph/` | Deterministic contracts for the named layer (domain models, engine gates/kernels, graph composition/routing). |
+| `contract/` | Cross-cutting governance and meta contracts (lane selection, verification gate, structure, evidence, documentation integrity). |
+| `assets/` | Test-owned data plus validators (incidents, evidence claims, node conformance, lane expressions); not pytest fixtures. |
+| `fixtures/` | Shared **helper modules** (scenario recipes, scripted tools, fake models); despite the name it contains no `@pytest.fixture` declarations. |
+| `scenarios/` | Reusable scenario manifests (stable id, risk, entrypoint, expected outcome). |
+| `scenarios_periodic/` | Scheduled periodic workflow evidence, excluded from the fast/integration lanes. |
+| `scenarios_suspended/` | Retained suspended release-acceptance material; collectable but excluded by its `requires_llm`/`release_e2e` markers. |
+| `integration/`, `blocking_io/` | Deterministic integration and event-loop/blocking-I/O lanes. |
+| `live/` | Credentialed live canaries (`requires_llm`), never part of the deterministic gate. |
+| `eval/` | Evaluation metrics, corpora, and adversarial checks. |
+
+Directory placement is a convention, not an evidence authority: exact selection and
+evidence semantics remain in the owning spec and executable test-owned assets.
+
+## Deterministic Network Boundary
+
+Every deterministic test runs under the autouse `_deny_public_network` fixture in
+`tests/conftest.py`, which blocks non-loopback socket connects. A test that must reach
+a real provider belongs in `tests/live/` and carries the `requires_llm` marker; the
+retained `release_e2e` marker is the only other escape. A deterministic test that
+incidentally needs network fails loudly with `deterministic test network denied`.
+
+## Fixtures Directory Is Helpers
+
+`tests/fixtures/` contains shared helper modules (scenario recipes, scripted tools,
+fake model classes) — not `@pytest.fixture` declarations. Look for reusable pytest
+fixtures inside the test files that use them, not in this directory.
+
 ## Node Prompt Review Catalog
 
 When a node prompt builder or the shared Node Cognitive Control Program changes, run `make

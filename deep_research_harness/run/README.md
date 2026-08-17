@@ -16,7 +16,7 @@ Use the direct scripted demo from `deep_research_harness/` when collecting bound
 profile-comparison evidence, so each candidate is explicit:
 
 ```bash
-DEERFLOW_DEMO_MODEL=<profile> make demo-real-scripted
+PROFILE=<profile> make demo-real-scripted
 make demo-sessions DEMO_ARGS="inspect <bundle-id>"
 ```
 

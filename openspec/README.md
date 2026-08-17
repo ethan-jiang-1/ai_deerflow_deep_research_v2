@@ -4,7 +4,8 @@
 
 - [config.yaml](config.yaml) is the native authoring context and operation route.
 - [specs/](specs/) holds approved capability behavior; [changes/](changes/) holds
-  active proposed deltas.
+  proposed deltas currently under development, and completed changes live under
+  `changes/archive/`.
 - [Deep Research product context](product/deep-research.md) is the concise reading
   map for product-specific orientation; it routes detail to its existing owners.
 - [Change Guidance](change-guidance/README.md) routes local design and admission

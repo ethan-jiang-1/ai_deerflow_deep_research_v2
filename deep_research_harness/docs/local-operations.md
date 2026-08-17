@@ -212,7 +212,7 @@ elapsed time never manufacture a lifecycle outcome.
 Choose one registered, credential-backed profile for each bounded calibration run:
 
 ```bash
-DEERFLOW_DEMO_MODEL=<profile> make demo-real-scripted
+PROFILE=<profile> make demo-real-scripted
 make demo-sessions DEMO_ARGS="inspect <bundle-id>"
 ```
 

@@ -123,7 +123,7 @@ operations](docs/local-operations.md) own the operational detail.
 | Goal | Command |
 | --- | --- |
 | Run the zero-credential fixture-graph lifecycle | `make demo` |
-| Run the credentialed all-real demo with a question | `DEERFLOW_DEMO_MODEL=<profile> make demo-real DEMO_ARGS='--question "Compare battery storage costs"'` |
+| Run the credentialed all-real demo with a question | `PROFILE=<profile> make demo-real DEMO_ARGS='--question "Compare battery storage costs"'` |
 | Run the prepared all-real research launcher | `bash run/real-research.sh` |
 | Run the deterministic project gate | `UV_OFFLINE=1 make verify` |
 | Inspect one retained observation, read-only | `make demo-sessions DEMO_ARGS="inspect <bundle-id>"` |
@@ -133,7 +133,7 @@ operations](docs/local-operations.md) own the operational detail.
 Choose one registered, credential-backed profile explicitly for each comparison run:
 
 ```bash
-DEERFLOW_DEMO_MODEL=<profile> make demo-real-scripted
+PROFILE=<profile> make demo-real-scripted
 make demo-sessions DEMO_ARGS="inspect <bundle-id>"
 ```
 
