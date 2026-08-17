@@ -19,8 +19,9 @@
 
 | Plan | 类型 | 下一步 |
 |------|------|--------|
+| [openspec-product-boundary-portability.md](openspec-product-boundary-portability.md) | 设计 | 先完成独立 review；若采纳，再创建 `generalize-openspec-product-profile-and-governance` change，并先做双产品 fixture 的红测 |
 
-**Next available plan ID: CLS-044**（移入 `_closed_plans/` 时分配）
+**Next available plan ID: CLS-045**（移入 `_closed_plans/` 时分配）
 
 ## 已归档（移至 `_done/_closed_plans/`）
 
