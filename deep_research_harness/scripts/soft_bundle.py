@@ -164,7 +164,7 @@ def cmd_create(args: argparse.Namespace) -> int:
         "schema_version": SCHEMA_VERSION,
         "name": name,
         "mode": args.mode,
-        "question": args.question or DEFAULT_QUESTION,
+        "question": DEFAULT_QUESTION,
         "current_bundle_id": None,
         "created_at": _now(),
         "updated_at": _now(),
@@ -180,10 +180,7 @@ def cmd_run(args: argparse.Namespace) -> int:
     manifest = _require_manifest(root)
     if args.mode:
         manifest["mode"] = args.mode
-    if args.question:
-        manifest["question"] = args.question
-    if not manifest.get("question"):
-        manifest["question"] = DEFAULT_QUESTION
+    manifest["question"] = DEFAULT_QUESTION
     _save_manifest(root, manifest)
 
     mode = manifest.get("mode", "001")
@@ -323,13 +320,11 @@ def build_parser() -> argparse.ArgumentParser:
     p_create = sub.add_parser("create", help="create a soft bundle root")
     p_create.add_argument("--root", default=None)
     p_create.add_argument("--name", default=None)
-    p_create.add_argument("--question", default=None)
     p_create.add_argument("--mode", default="001", choices=["001", "002", "003", "004"])
     p_create.set_defaults(func=cmd_create)
 
     p_run = sub.add_parser("run", help="run a mode and bind the resulting bundle")
     p_run.add_argument("root")
-    p_run.add_argument("--question", default=None)
     p_run.add_argument("--mode", default=None, choices=["001", "002", "003", "004"])
     p_run.set_defaults(func=cmd_run)
 

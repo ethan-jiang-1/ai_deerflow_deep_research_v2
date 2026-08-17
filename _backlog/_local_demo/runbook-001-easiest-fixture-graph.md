@@ -20,7 +20,7 @@
 ```bash
 cd deep_research_harness
 
-# 创建 soft bundle（不指定 --root 会自动生成；不指定 --question 会用默认极简单问题）
+# 创建 soft bundle（不指定 --root 会自动生成；研究问题固定为极简单问题）
 ROOT=$(UV_NO_CACHE=1 make soft-bundle DEMO_ARGS="create --name 001-demo" | sed -n 's/^soft_bundle_root=//p')
 echo "ROOT=$ROOT"
 

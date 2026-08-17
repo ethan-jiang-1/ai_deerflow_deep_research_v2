@@ -10,11 +10,11 @@ Provide an operator-only soft bundle CLI that uses a stateless root handle to cr
 
 ### Requirement: Create a soft bundle root
 
-The CLI SHALL create a `soft_bundle_root` directory when no existing valid soft bundle is present. The caller MAY supply `--root`, `--name`, `--question`, and `--mode`; when `--root` is omitted, the CLI SHALL generate a root under the default operator workspace `.deep-research-demo-runs/workspace/soft-bundles/<generated>/`. The CLI SHALL accept only safe repository-relative `--root` values and SHALL reject absolute paths, `.`/`..` segments, empty segments, or paths outside the repository root. The CLI SHALL return both `soft_bundle_root` and `name`. If the root already contains a valid `manifest.json`, the CLI SHALL NOT overwrite it and SHALL return the existing root. If the root exists but is not a soft bundle directory, the CLI SHALL fail without writing. (`SBC-001`)
+The CLI SHALL create a `soft_bundle_root` directory when no existing valid soft bundle is present. The caller MAY supply `--root`, `--name`, and `--mode`; when `--root` is omitted, the CLI SHALL generate a root under the default operator workspace `.deep-research-demo-runs/workspace/soft-bundles/<generated>/`. The research question is fixed to `What is the capital of France?` and the CLI SHALL NOT accept a caller-supplied question argument. The CLI SHALL accept only safe repository-relative `--root` values and SHALL reject absolute paths, `.`/`..` segments, empty segments, or paths outside the repository root. The CLI SHALL return both `soft_bundle_root` and `name`. If the root already contains a valid `manifest.json`, the CLI SHALL NOT overwrite it and SHALL return the existing root. If the root exists but is not a soft bundle directory, the CLI SHALL fail without writing. (`SBC-001`)
 
 #### Scenario: Create with no arguments returns generated root and name
 - **WHEN** a caller runs `soft-bundle create` without `--root` or `--name`
-- **THEN** the CLI creates a new soft bundle root under the default parent, writes a valid `manifest.json`, and prints the generated `soft_bundle_root` and `name`
+- **THEN** the CLI creates a new soft bundle root under the default parent, writes a valid `manifest.json` with the fixed question `What is the capital of France?`, and prints the generated `soft_bundle_root` and `name`
 
 #### Scenario: Create with explicit root is idempotent
 - **WHEN** a caller runs `soft-bundle create --root <existing-valid-root>` twice
