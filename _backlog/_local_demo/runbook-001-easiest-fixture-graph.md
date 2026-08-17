@@ -1,6 +1,30 @@
+---
+title: "001 - Easiest Fixture Graph End-to-End"
+runbook_id: "001"
+difficulty: "easiest"
+mode: "fixture-graph"
+cost: "low"
+automation: "full-auto"
+fixed_question: "What is the capital of France?"
+prerequisites: []
+purpose: "Verify the Deep Research graph runs from first node to last node using a fixed simple question and a clean controlled environment."
+how_to_run: |
+  cd deep_research_harness
+  ROOT=$(UV_NO_CACHE=1 make soft-bundle DEMO_ARGS="create --name 001-demo" | sed -n 's/^soft_bundle_root=//p')
+  UV_NO_CACHE=1 make soft-bundle DEMO_ARGS="run $ROOT --mode 001"
+  UV_NO_CACHE=1 make soft-bundle DEMO_ARGS="status $ROOT"
+  UV_NO_CACHE=1 make soft-bundle DEMO_ARGS="inspect $ROOT"
+  UV_NO_CACHE=1 make soft-bundle DEMO_ARGS="phases $ROOT"
+expected_result: "terminal: completed + Fixture graph composition verified."
+non_goals:
+  - "Not a real research report validation."
+  - "No custom research question."
+  - "No manual HITL input."
+---
+
 # 001 Runbook：最简单 fixture 图端到端
 
-> **001 是什么**：用最简单、免费、确定性的方式，从图的第一个节点一路跑到最后一个节点，确认整条 Deep Research 流程能通。
+> **001 是什么**：用最简单、确定性的方式，从图的第一个节点一路跑到最后一个节点，确认整条 Deep Research 流程能通。
 >
 > **001 不是什么**：不是真实研究报告验证。fixture 图不生成真实 report，只验证 graph 通断。
 >
