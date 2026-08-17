@@ -6,18 +6,18 @@
 ## 使用边界
 
 这组文件只定义未来 OpenSpec portability 改造的最终方案。它们不直接覆盖当前 main specs、active
-delta、code、tests、`project-structure.toml` 或 runtime authority。实施必须通过后续独立 OpenSpec
-changes 完成。
+delta、code、tests、`project-structure.toml` 或 runtime authority。实施必须通过一个 source Program
+Change 与 sibling 的最小合法 adoption change set 完成。
 
 ## 文档职责
 
 | 文件 | 唯一职责 | 不承担 |
 | --- | --- | --- |
-| [主计划](../openspec-product-boundary-portability.md) | 最终目标、范围、不可变决定、V1 边界和总体完成状态 | 逐文件归属、采用步骤、迁移细节 |
+| [主计划](../openspec-product-boundary-portability.md) | 最终目标、Change budget、范围、V1 边界与高层 progress gates | 逐文件归属、采用细节、workstream 恢复机制 |
 | [`01-review-findings.md`](01-review-findings.md) | 当前事实、风险与设计推导的 review 依据 | 新决策、实施顺序、采用 contract |
 | [`02-boundary-and-file-matrix.md`](02-boundary-and-file-matrix.md) | 内容 owner、依赖方向、目标拓扑和当前文件处置 | rollout 顺序、跨仓发布流程 |
 | [`03-adoption-contract.md`](03-adoption-contract.md) | export boundary、profile 选择、采用流程、证据和成功定义 | 当前仓迁移顺序、结构 authority |
-| [`04-migration-and-proof.md`](04-migration-and-proof.md) | change 切片、兼容、恢复、guards、验证和关闭门槛 | 重新解释产品或 portable 内容归属 |
+| [`04-migration-and-proof.md`](04-migration-and-proof.md) | source/target workstreams、兼容、恢复、guards、验证和关闭门槛 | 重新解释产品或 portable 内容归属 |
 | 本文件 | 导航、术语和一致性规则 | 架构或实施决定 |
 
 ## 按问题阅读

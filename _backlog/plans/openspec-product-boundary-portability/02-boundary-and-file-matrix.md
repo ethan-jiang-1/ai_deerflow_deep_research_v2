@@ -15,7 +15,7 @@
 | Project Governance | structure/ID registries、local checkers、guard lifecycle、exact inventory | 产品行为和 runtime authority |
 | Runtime Authorities | code、typed contracts、tests、state/controller owners | authoring guidance |
 
-目标仓新增 `openspec/specs/portable-change-guidance/spec.md`，拥有 portable kernel/profile 的
+本仓终态新增 `openspec/specs/portable-change-guidance/spec.md`，拥有 portable kernel/profile 的
 observable authoring contract、export boundary、adoption proof 与 release-claim criteria。
 `deep-research-agent-charter` 继续拥有本项目 local composition 和 contributor obligations；
 `project-structure` 继续拥有 exact paths/member sets。三者不得互相复制辖区。
@@ -76,7 +76,7 @@ local information-map policy，不传播为 portable requirement。
 本计划不新增 outcome、workflow、capability-map、evaluation 或 instance 等固定槽位。当前 Deep
 Research glossary 仍由 `deep_research_harness/CONTEXT.md` 拥有。
 
-## Target Change Guidance 拓扑
+## 本仓目标 Change Guidance 拓扑
 
 ```text
 openspec/change-guidance/
@@ -151,6 +151,7 @@ machine schema。
 | `policies/workflow-outcome-review.md` | workflow-control | 迁入同名 profile policy |
 | `policies/node-agent-workflow-integrity.md` | node-agent | 迁入同名 profile policy |
 | `policies/agent-information-map.md` | local | 保留 reader-role、paths、budgets 为本地 policy，不进入 export |
+| `config.yaml`、`principles.md`、`local-context.md` 与 Harness guide 中的 DeerFlow public-API/upstream clauses | deerflow-downstream | 收敛通用 host boundary 到 profile；本仓路径、gitlink evidence 与启用选择留 local |
 
 迁移完成时，旧 policy paths 被 current links 全量替换并删除；不保留第二份可编辑正文。
 

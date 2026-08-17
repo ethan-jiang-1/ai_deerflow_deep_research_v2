@@ -252,7 +252,7 @@ Reviewer 不需要读取 `deerflow/` 源码，也不应把本计划扩成 runtim
   bounded changes，记录不可合并原因；不得为满足数字而创建 shared owner 或临时 program grammar。
 - [ ] Source proposal 使用 `## Program Focus`，冻结完整 Candidate / obligation budget、workstream
   顺序、共享 archive invariant 和 recovery rule；不再同时写 ordinary `## Change Focus`。
-- [ ] Source capability delta 只包含：新增 `portable-change-guidance`，修改
+- [ ] Source capability deltas 只包含：新增 `portable-change-guidance`，修改
   `deep-research-agent-charter`，修改 `project-structure`。
 - [ ] Source implementation scope 只包含：Change Guidance kernel/profiles/local composition、纯
   validator 与兼容 wrapper、product front-door cutover、相关 governance manifests/checkers、
@@ -282,7 +282,7 @@ Reviewer 不需要读取 `deerflow/` 源码，也不应把本计划扩成 runtim
 
 ### Sibling Adoption Change Set
 
-- [ ] **T0 — Adoption foundation**：Target adoption change 建立自己的 product front door、specs/changes
+- [ ] **T0 — Adoption foundation**：Target adoption boundary 建立自己的 product front door、specs/changes
   baseline、structure owner、local config/router/wrapper 和 requirement namespace；按 allowlist vendoring
   byte-identical kernel、selected profiles 与 validator。
 - [ ] **T1 — Deterministic workstream**：用 target 的真实 deterministic decision surface 证明 core

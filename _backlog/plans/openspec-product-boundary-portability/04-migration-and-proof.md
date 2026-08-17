@@ -216,7 +216,7 @@ evidence。Source ratify 前，source 状态保持 “portability candidate”�
 最终门禁、ratify candidate 并 archive Source Change；Target 再确认所用 candidate 已被 ratify，
 strict-validate 并 archive 尚 active 的 adoption changes。
 
-Shared package、generator、architecture schema 或 glossary cutover 不属于这两个 Changes。
+Shared package、generator、architecture schema 或 glossary cutover 不属于本 V1 source/target change set。
 
 ## Compatibility Surfaces
 

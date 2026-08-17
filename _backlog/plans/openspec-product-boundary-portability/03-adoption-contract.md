@@ -131,7 +131,9 @@ tool permission、state write、graph route 或 recovery behavior。
 
 目标仓库按以下顺序采用：
 
-1. 创建一个专门 adoption change，并声明 source revision、selected profiles 和 non-goals。
+1. 建立一个 adoption evidence boundary：优先创建一个 target-native Program Change；否则登记将被
+   复用的 active changes，或由 target decision owner 批准最小 bounded change set。共同声明 source
+   revision、selected profiles 和 non-goals。
 2. 先建立 target 自己的 product front door、specs/changes baseline 与 structure owner。
 3. 按 allowlist 复制 kernel、selected profiles 和 pure validator，保存 digests。
 4. 编写 target local router、config、wrapper 和必要 local policies；不编辑 portable files。
@@ -192,7 +194,7 @@ Target adoption change 在 `evidence/portable-practice-adoption.md` 记录：
 | --- | --- |
 | Source | repository、commit、snapshot date |
 | Export | allowlisted paths、profiles、file digests |
-| Target | repository、adoption change、target commit |
+| Target | repository、adoption change set、每个 owning commit |
 | Local composition | 新建或修改的 target-owned files |
 | Kernel integrity | portable files 是否 byte-identical |
 | Representative workstreams | 三类 workstream 的 owner、trigger、evidence 与结果 |
