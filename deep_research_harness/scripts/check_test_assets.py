@@ -85,6 +85,8 @@ from tests.assets.selection import (  # noqa: E402
     INTEGRATION_PATHS,
     LIVE_EXPRESSION,
     LIVE_PATHS,
+    PERIODIC_EXPRESSION,
+    PERIODIC_PATHS,
     WORKFLOW_EXPRESSION,
     WORKFLOW_PATHS,
 )
@@ -361,6 +363,11 @@ def main() -> int:
                 paths=LIVE_PATHS,
                 expression=LIVE_EXPRESSION,
                 label="live",
+            ),
+            FocusedSelection.PERIODIC: collect_pytest_selectors(
+                paths=PERIODIC_PATHS,
+                expression=PERIODIC_EXPRESSION,
+                label="periodic",
             ),
         }
         claims = claim_index(EVIDENCE_CLAIMS)

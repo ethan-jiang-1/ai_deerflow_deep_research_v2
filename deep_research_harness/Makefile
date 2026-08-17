@@ -1,4 +1,4 @@
-.PHONY: install entry-preflight governance verify lock-check format lint test test-fast test-integration test-workflow test-live test-unit test-contract test-viability test-durability test-blocking-io test-postgres test-assets test-req-coverage test-intake test-retained-observation test-work-unit test-strict-checkpoint test-duration-policy benchmark-fast prompt-dump prompt-dump-check profile-setup profile-preflight profiles profile-init profile-check profile-dev demo demo-scripted demo-fixture-graph demo-real demo-real-embedded-smoke demo-real-scripted demo-tui demo-tui-embedded-smoke demo-tui-fixture demo-sessions session-workbench debug-scripted-real-workflow
+.PHONY: install entry-preflight governance verify lock-check format lint test test-fast test-integration test-workflow test-entry-environment-regression test-live test-unit test-contract test-viability test-durability test-blocking-io test-assets test-req-coverage test-intake test-retained-observation test-work-unit test-strict-checkpoint test-duration-policy benchmark-fast prompt-dump prompt-dump-check profile-setup profile-preflight profiles profile-init profile-check profile-dev demo demo-scripted demo-fixture-graph demo-real demo-real-embedded-smoke demo-real-scripted demo-tui demo-tui-embedded-smoke demo-tui-fixture demo-sessions session-workbench debug-scripted-real-workflow
 
 DEMO_ARGS ?=
 LOCAL_ENV_ARG := $(if $(wildcard .env),--env-file .env,)
@@ -111,13 +111,13 @@ lint:
 	uv run ruff format --check .
 
 test:
-	uv run --extra operations --extra demo-tui $(PYTEST) -m "not (requires_llm or release_e2e or postgres)"
+	uv run --extra operations --extra demo-tui $(PYTEST) -m "not (requires_llm or release_e2e or periodic)"
 
 test-fast:
 	mkdir -p .reports
 	uv run --extra operations $(PYTEST) \
 		tests/assets tests/contract tests/domain tests/engine tests/unit tests/graph tests/eval \
-		-m "not (requires_llm or release_e2e or postgres or workflow)" \
+		-m "not (requires_llm or release_e2e or periodic or workflow)" \
 		--durations=20 --junitxml=.reports/test-fast.xml
 
 test-intake:
@@ -149,12 +149,22 @@ prompt-dump-check:
 test-integration:
 	uv run --extra operations --extra demo-tui $(PYTEST) \
 		tests/integration tests/blocking_io \
-		-m "not (requires_llm or release_e2e or postgres or workflow)"
+		-m "not (requires_llm or release_e2e or periodic or workflow)"
 
 test-workflow:
 	uv run --extra operations $(PYTEST) \
 		tests \
-		-m "workflow and not (requires_llm or release_e2e or postgres)"
+		-m "workflow and not (requires_llm or release_e2e or periodic)"
+
+# Maintained clean-copy public-entry evidence. It intentionally stays outside the
+# rapid verify aggregate because each scenario creates and installs a full copy.
+test-entry-environment-regression:
+	mkdir -p .reports
+	UV_OFFLINE=1 uv run --no-sync --extra operations --extra demo-tui $(PYTEST) \
+		tests/scenarios_periodic \
+		-m "periodic and not (requires_llm or release_e2e)" \
+		--durations=20 --junitxml=.reports/test-entry-environment.xml
+	uv run --no-sync --extra operations python scripts/check_test_durations.py .reports/test-entry-environment.xml --lane periodic
 
 test-live:
 	rm -rf .reports/live
@@ -188,9 +198,3 @@ test-durability:
 # fan-in, provider cleanup, and outer Command projection.
 test-blocking-io:
 	uv run --extra operations $(PYTEST) tests/blocking_io
-
-# Postgres durability profile is deferred (see openspec/config.yaml tech-stack
-# decisions). This target runs the postgres-marked tests, which skip until a
-# later change adds the isolated Postgres test service and Compose profile.
-test-postgres:
-	uv run --extra operations $(PYTEST) -m postgres

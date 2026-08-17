@@ -26,8 +26,11 @@ def test_testing_reference_owns_test_evidence_vocabulary_and_agent_guide_routes_
     assert re.search(r"persisted\s+trace replay", readme, flags=re.IGNORECASE)
     assert "evidence-v1" in readme
     assert "release-attestation-2026-07-17.json" in readme
-    assert "scenarios_suspended/evh_024_release_acceptance.py" in readme
+    assert "scenarios_suspended/test_evh_024_release_acceptance.py" in readme
     assert "does not prove a current release result" in readme
+    assert "test-entry-environment-regression" in readme
+    assert "tests/scenarios_periodic/" in readme
+    assert "180-second per-scenario duration" in readme
     assert "test-evidence-policy.md" in guide
     assert "lowest responsible test seam" in guide
 

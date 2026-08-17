@@ -3,6 +3,7 @@
 @impl EVH-009
 @impl EVH-005
 @impl EVH-018
+@impl EVH-032
 """
 
 from __future__ import annotations
@@ -20,6 +21,8 @@ from tests.assets.selection import (
     INTEGRATION_PATHS,
     LIVE_EXPRESSION,
     LIVE_PATHS,
+    PERIODIC_EXPRESSION,
+    PERIODIC_PATHS,
     WORKFLOW_EXPRESSION,
     WORKFLOW_PATHS,
 )
@@ -28,16 +31,26 @@ from tests.scenarios.evidence_judgment_calibration import EVIDENCE_JUDGMENT_CALI
 from tests.scenarios.final_composition_calibration import FINAL_COMPOSITION_CALIBRATION_CASES
 from tests.scenarios.intake_planning_calibration import CALIBRATION_CASES
 
+SUSPENDED_SELECTOR = "tests/scenarios_suspended/test_evh_024_release_acceptance.py::test_full_real_release_acceptance"
+PERIODIC_SELECTORS = {
+    "tests/scenarios_periodic/test_local_entry_environment.py::"
+    "test_missing_or_incomplete_entry_environment_stops_before_an_adapter",
+    "tests/scenarios_periodic/test_local_entry_environment.py::"
+    "test_prepared_entries_preserve_dependency_state_and_keep_launcher_credential_bounded",
+}
+
 
 def test_lane_expressions_are_non_overlapping_and_complete() -> None:
-    assert DETERMINISTIC_EXCLUDE == "requires_llm or release_e2e or postgres"
-    assert FAST_EXPRESSION == "not (requires_llm or release_e2e or postgres or workflow)"
+    assert DETERMINISTIC_EXCLUDE == "requires_llm or release_e2e or periodic"
+    assert FAST_EXPRESSION == "not (requires_llm or release_e2e or periodic or workflow)"
     assert INTEGRATION_EXPRESSION == FAST_EXPRESSION
-    assert WORKFLOW_EXPRESSION == "workflow and not (requires_llm or release_e2e or postgres)"
+    assert WORKFLOW_EXPRESSION == "workflow and not (requires_llm or release_e2e or periodic)"
     assert LIVE_EXPRESSION == "requires_llm and not release_e2e"
+    assert PERIODIC_EXPRESSION == "periodic and not (requires_llm or release_e2e)"
     assert set(FAST_PATHS).isdisjoint(INTEGRATION_PATHS)
     assert WORKFLOW_PATHS == ("tests",)
     assert LIVE_PATHS == ("tests/live",)
+    assert PERIODIC_PATHS == ("tests/scenarios_periodic",)
     assert "tests/eval" in FAST_PATHS
     assert "tests/integration" in INTEGRATION_PATHS
 
@@ -99,18 +112,33 @@ def test_deterministic_focused_selections_are_disjoint_exact_partition() -> None
     fast = _collect(FAST_PATHS, FAST_EXPRESSION)
     integration = _collect(INTEGRATION_PATHS, INTEGRATION_EXPRESSION)
     workflow = _collect(WORKFLOW_PATHS, WORKFLOW_EXPRESSION)
+    periodic = _collect(PERIODIC_PATHS, PERIODIC_EXPRESSION)
 
     assert fast
     assert integration
     assert workflow
+    assert periodic == PERIODIC_SELECTORS
     assert fast.isdisjoint(integration)
     assert fast.isdisjoint(workflow)
     assert integration.isdisjoint(workflow)
+    assert fast.isdisjoint(periodic)
+    assert integration.isdisjoint(periodic)
+    assert workflow.isdisjoint(periodic)
     assert fast | integration | workflow == aggregate
+    assert periodic.isdisjoint(aggregate)
 
 
-def test_retained_release_marker_has_no_collected_selector() -> None:
-    assert _collect(("tests",), "release_e2e") == set()
+def test_periodic_selectors_are_maintained_but_not_credentialed_or_suspended() -> None:
+    all_periodic = _collect(("tests",), "periodic")
+
+    assert all_periodic == PERIODIC_SELECTORS
+    assert _collect(PERIODIC_PATHS, "periodic and requires_llm") == set()
+    assert _collect(PERIODIC_PATHS, "periodic and release_e2e") == set()
+    assert SUSPENDED_SELECTOR not in all_periodic
+
+
+def test_retained_release_marker_selects_only_the_suspended_selector() -> None:
+    assert _collect(("tests",), "release_e2e") == {SUSPENDED_SELECTOR}
 
 
 def test_deterministic_lane_denies_public_network() -> None:

@@ -1,0 +1,44 @@
+name: Deep Research Entry Environment Regression
+
+on:
+  pull_request:
+    paths:
+      - "deep_research_harness/Makefile"
+      - "deep_research_harness/pyproject.toml"
+      - "deep_research_harness/uv.lock"
+      - "deep_research_harness/run/**"
+      - "deep_research_harness/scripts/**"
+      - "deep_research_harness/src/**"
+      - "deep_research_harness/src_fake/**"
+      - "deep_research_harness/tests/scenarios_periodic/**"
+      - ".github/workflows/agent-entry-environment-regression.yml"
+  push:
+    branches: [master]
+    paths:
+      - "deep_research_harness/Makefile"
+      - "deep_research_harness/pyproject.toml"
+      - "deep_research_harness/uv.lock"
+      - "deep_research_harness/run/**"
+      - "deep_research_harness/scripts/**"
+      - "deep_research_harness/src/**"
+      - "deep_research_harness/src_fake/**"
+      - "deep_research_harness/tests/scenarios_periodic/**"
+      - ".github/workflows/agent-entry-environment-regression.yml"
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  entry-environment-regression:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: deep_research_harness
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: make install
+      - run: UV_OFFLINE=1 make test-entry-environment-regression

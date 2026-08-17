@@ -16,7 +16,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 FAST_PATHS = ("tests/contract", "tests/domain", "tests/engine", "tests/unit", "tests/graph", "tests/eval")
-FAST_EXPRESSION = "not (requires_llm or release_e2e or postgres or workflow)"
+FAST_EXPRESSION = "not (requires_llm or release_e2e or workflow)"
 REQUIRED_REPORT_FIELDS = {
     "command",
     "timestamp",

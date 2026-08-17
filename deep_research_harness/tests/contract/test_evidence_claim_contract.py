@@ -133,7 +133,22 @@ def test_active_evidence_vocabularies_remain_closed() -> None:
     assert len(AssetClass) == 3
     assert len(StableSeam) == 5
     assert len(AuthenticityLevel) == 5
-    assert len(FocusedSelection) == 4
+    assert len(FocusedSelection) == 5
+
+
+def test_periodic_selection_is_valid_for_code_correctness() -> None:
+    claim = _claim(
+        selector="tests/scenarios_periodic/test_example.py::test_example",
+        expected_selection=FocusedSelection.PERIODIC,
+        requirement_ids=("EVH-032",),
+        asset_class=AssetClass.CODE_CORRECTNESS,
+        seam=StableSeam.PUBLIC_ENTRY,
+        authenticity=None,
+        scenario_case_id=None,
+        discovery_ids=(),
+    )
+
+    validate_evidence_claims((claim,), supplied_case_ids=set(), collected_selectors={claim.selector})
 
 
 @pytest.mark.parametrize(

@@ -3,7 +3,7 @@
 @impl EVH-009
 """
 
-DETERMINISTIC_EXCLUDE = "requires_llm or release_e2e or postgres"
+DETERMINISTIC_EXCLUDE = "requires_llm or release_e2e or periodic"
 FAST_PATHS = (
     "tests/assets",
     "tests/contract",
@@ -13,13 +13,15 @@ FAST_PATHS = (
     "tests/graph",
     "tests/eval",
 )
-FAST_EXPRESSION = "not (requires_llm or release_e2e or postgres or workflow)"
+FAST_EXPRESSION = "not (requires_llm or release_e2e or periodic or workflow)"
 INTEGRATION_PATHS = ("tests/integration", "tests/blocking_io")
 INTEGRATION_EXPRESSION = FAST_EXPRESSION
 WORKFLOW_PATHS = ("tests",)
-WORKFLOW_EXPRESSION = "workflow and not (requires_llm or release_e2e or postgres)"
+WORKFLOW_EXPRESSION = "workflow and not (requires_llm or release_e2e or periodic)"
 LIVE_PATHS = ("tests/live",)
 LIVE_EXPRESSION = "requires_llm and not release_e2e"
+PERIODIC_PATHS = ("tests/scenarios_periodic",)
+PERIODIC_EXPRESSION = "periodic and not (requires_llm or release_e2e)"
 
 __all__ = [
     "DETERMINISTIC_EXCLUDE",
@@ -29,6 +31,8 @@ __all__ = [
     "INTEGRATION_PATHS",
     "LIVE_EXPRESSION",
     "LIVE_PATHS",
+    "PERIODIC_EXPRESSION",
+    "PERIODIC_PATHS",
     "WORKFLOW_EXPRESSION",
     "WORKFLOW_PATHS",
 ]

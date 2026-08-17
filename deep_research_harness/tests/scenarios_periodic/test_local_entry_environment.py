@@ -3,6 +3,8 @@
 @impl DPL-005
 @impl DPL-006
 @impl LCP-002
+@impl EVH-031
+@impl EVH-032
 """
 
 from __future__ import annotations
@@ -14,10 +16,13 @@ import shutil
 import subprocess
 from pathlib import Path
 
+import pytest
+
+pytestmark = pytest.mark.periodic
+
 REPO_ROOT = Path(__file__).resolve().parents[3]
 AGENT_ROOT = REPO_ROOT / "deep_research_harness"
 DEERFLOW_ROOT = REPO_ROOT / "deerflow"
-PROFILES_ROOT = REPO_ROOT / "profiles"
 CHILD_SECRET_KEYS = ("DEEPSEEK_API_KEY", "ANTHROPIC_API_KEY", "OPENAI_API_KEY", "TAVILY_API_KEY")
 ENTRY_SETUP_MESSAGE = "Run 'make install' from deep_research_harness/."
 
@@ -39,15 +44,51 @@ def _copy_harness(tmp_path: Path) -> Path:
             "__pycache__",
         ),
     )
-    shutil.copytree(PROFILES_ROOT, copied_root / "profiles")
-    for name in ("config.yaml", "extensions_config.json"):
-        source = REPO_ROOT / name
-        if source.exists():
-            shutil.copy2(source, copied_root / name)
+    # Local profile content is gitignored developer state and must never reach
+    # the copied project; the test constructs the profile it checks itself.
+    (copied_root / "profiles").mkdir()
 
     # The copied project uses the existing editable source path but never writes to it.
     os.symlink(DEERFLOW_ROOT, copied_root / "deerflow", target_is_directory=True)
     return copied_harness
+
+
+def _write_hermetic_project_config(project: Path) -> None:
+    """Deterministically construct the root config and the checked demo profile.
+
+    The copied project must not depend on the developer machine's gitignored
+    ``profiles/``, ``config.yaml``, or ``.env`` content: the launcher's minimal
+    root config and the ``profile-check`` target's demo profile are test-owned
+    fixtures with an isolated SQLite location.
+    """
+    copied_root = project.parent
+    (copied_root / "config.yaml").write_text(
+        "models:\n"
+        "- name: deepseek-v4-flash\n"
+        "  use: deerflow.models.patched_deepseek:PatchedChatDeepSeek\n"
+        "  model: deepseek-v4-flash\n"
+        "  api_key: $DEEPSEEK_API_KEY\n"
+        "  base_url: https://api.deepseek.com/v1\n"
+        "tools:\n"
+        "- name: web_search\n"
+        "  group: web\n"
+        "  use: deerflow.community.tavily.tools:web_search_tool\n"
+        "  api_key: $TAVILY_API_KEY\n"
+        "  max_results: 5\n"
+        "sandbox:\n"
+        "  use: deerflow.sandbox.local:LocalSandboxProvider\n"
+        "  allow_host_bash: true\n"
+        "config_version: 19\n",
+        encoding="utf-8",
+    )
+    demo_profile = copied_root / "profiles" / "demo"
+    demo_profile.mkdir(parents=True, exist_ok=True)
+    sqlite_dir = demo_profile / ".deer-flow" / "data"
+    (demo_profile / "config.yaml").write_text(
+        f"database:\n  backend: sqlite\n  sqlite_dir: {sqlite_dir}\n",
+        encoding="utf-8",
+    )
+    (demo_profile / "extensions_config.json").write_text("{}\n", encoding="utf-8")
 
 
 def _child_environment(*, foreign_virtual_env: bool = False) -> dict[str, str]:
@@ -146,6 +187,7 @@ def test_prepared_entries_preserve_dependency_state_and_keep_launcher_credential
     setup = _run(project, "install")
     assert setup.returncode == 0, setup.stdout + setup.stderr
     assert _run(project, "entry-preflight", foreign_virtual_env=True).returncode == 0
+    _write_hermetic_project_config(project)
 
     help_result = _assert_state_unchanged(
         project,
@@ -188,8 +230,10 @@ def test_prepared_entries_preserve_dependency_state_and_keep_launcher_credential
     (project / ".env").write_text("", encoding="utf-8")
     launcher = _assert_state_unchanged(project, lambda: _launcher(project))
     assert launcher.returncode != 0
-    assert "开始前还需要完成一项设置" in launcher.stdout
+    assert "本地前提检查已就绪" in launcher.stdout
+    assert "结果类别: research.blocked" in launcher.stdout
     assert "TAVILY_API_KEY" not in launcher.stdout
+    assert "DEEPSEEK_API_KEY" not in launcher.stdout
 
     before_concurrent = _setup_state(project)
     first = subprocess.Popen(

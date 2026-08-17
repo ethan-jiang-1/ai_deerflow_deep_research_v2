@@ -1091,21 +1091,21 @@ REQUIREMENT_IMPACTS = (
         "DPL-005",
         "demo-pipeline",
         StableSeam.PUBLIC_ENTRY,
-        "tests/integration/test_local_entry_environment.py::test_prepared_entries_preserve_dependency_state_and_keep_launcher_credential_bounded",
+        "tests/scenarios_periodic/test_local_entry_environment.py::test_prepared_entries_preserve_dependency_state_and_keep_launcher_credential_bounded",
         "an explicit install could omit a declared demo extra and leave a supported entry to synchronize it itself",
     ),
     RequirementImpact(
         "DPL-006",
         "demo-pipeline",
         StableSeam.PUBLIC_ENTRY,
-        "tests/integration/test_local_entry_environment.py::test_missing_or_incomplete_entry_environment_stops_before_an_adapter",
+        "tests/scenarios_periodic/test_local_entry_environment.py::test_missing_or_incomplete_entry_environment_stops_before_an_adapter",
         "a missing or incomplete project environment could reach a demo adapter or cause implicit synchronization",
     ),
     RequirementImpact(
         "LCP-002",
         "local-configuration-profiles",
         StableSeam.PUBLIC_ENTRY,
-        "tests/integration/test_local_entry_environment.py::test_prepared_entries_preserve_dependency_state_and_keep_launcher_credential_bounded",
+        "tests/scenarios_periodic/test_local_entry_environment.py::test_prepared_entries_preserve_dependency_state_and_keep_launcher_credential_bounded",
         "profile-gated workbench readiness could depend on a partial optional-extra environment or mutate it at launch",
     ),
     RequirementImpact(
@@ -1632,10 +1632,7 @@ REQUIREMENT_IMPACTS = (
         "GOO-002",
         "gateway-operator-observer",
         StableSeam.RUNTIME_INTEGRATION,
-        (
-            "tests/live/test_gateway_forwarding_proof.py::"
-            "test_gateway_forwarding_proof"
-        ),
+        ("tests/live/test_gateway_forwarding_proof.py::test_gateway_forwarding_proof"),
         (
             "nested forwarding is unproven until a bounded configured-Gateway probe receives a "
             "predecessor-owned progress event on the public SSE custom channel with matching "

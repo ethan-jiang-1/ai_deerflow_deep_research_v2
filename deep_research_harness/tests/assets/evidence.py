@@ -106,6 +106,7 @@ class FocusedSelection(StrEnum):
     INTEGRATION = "integration"
     WORKFLOW = "workflow"
     LIVE = "live"
+    PERIODIC = "periodic"
 
 
 class EvidenceClaimError(ValueError):
@@ -141,7 +142,11 @@ class TestEvidenceClaim:
         if self.authenticity is not None:
             _require_enum(self.authenticity, AuthenticityLevel, "claim_authenticity_invalid")
         allowed_selections = {
-            AssetClass.CODE_CORRECTNESS: {FocusedSelection.FAST, FocusedSelection.INTEGRATION},
+            AssetClass.CODE_CORRECTNESS: {
+                FocusedSelection.FAST,
+                FocusedSelection.INTEGRATION,
+                FocusedSelection.PERIODIC,
+            },
             AssetClass.DETERMINISTIC_WORKFLOW_CONFORMANCE: {FocusedSelection.WORKFLOW},
             AssetClass.LIVE_BEHAVIORAL_EVALUATION: {FocusedSelection.LIVE},
         }
@@ -309,7 +314,12 @@ def _correctness_claim(
     authenticity: AuthenticityLevel | None = None,
     discovery_ids: tuple[str, ...] = (),
 ) -> TestEvidenceClaim:
-    selection = FocusedSelection.INTEGRATION if selector.startswith("tests/integration/") else FocusedSelection.FAST
+    if selector.startswith("tests/integration/"):
+        selection = FocusedSelection.INTEGRATION
+    elif selector.startswith("tests/scenarios_periodic/"):
+        selection = FocusedSelection.PERIODIC
+    else:
+        selection = FocusedSelection.FAST
     return TestEvidenceClaim(
         claim_id=claim_id,
         selector=selector,
@@ -1353,13 +1363,13 @@ EVIDENCE_CLAIMS = (
     ),
     _correctness_claim(
         "local-entry-environment-preflight",
-        "tests/integration/test_local_entry_environment.py::test_missing_or_incomplete_entry_environment_stops_before_an_adapter",
+        "tests/scenarios_periodic/test_local_entry_environment.py::test_missing_or_incomplete_entry_environment_stops_before_an_adapter",
         StableSeam.PUBLIC_ENTRY,
         requirement_ids=("DPL-006",),
     ),
     _correctness_claim(
         "local-entry-environment-prepared-process",
-        "tests/integration/test_local_entry_environment.py::test_prepared_entries_preserve_dependency_state_and_keep_launcher_credential_bounded",
+        "tests/scenarios_periodic/test_local_entry_environment.py::test_prepared_entries_preserve_dependency_state_and_keep_launcher_credential_bounded",
         StableSeam.PUBLIC_ENTRY,
         requirement_ids=("DPL-005", "DPL-006", "LCP-002"),
     ),

@@ -42,7 +42,7 @@ class VerifiedLane:
 
 
 BATCH1_VERIFIED_LANES = (
-    VerifiedLane("make test-assets", "not (requires_llm or release_e2e or postgres)", "13 incidents / 1170 tests"),
+    VerifiedLane("make test-assets", "not (requires_llm or release_e2e)", "13 incidents / 1170 tests"),
     VerifiedLane("make test-fast", "contract domain engine unit graph eval", "1094 passed"),
     VerifiedLane("make test-integration", "integration blocking_io", "72 passed / 4 gateway skips"),
     VerifiedLane("make test-viability", "reflected runtime + cancellation", "5 passed"),

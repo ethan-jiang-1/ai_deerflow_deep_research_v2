@@ -46,10 +46,10 @@ asyncio_mode = "auto"
 testpaths = ["tests"]
 pythonpath = [".", "src_fake"]
 markers = [
+    "periodic: maintained deterministic scenario with intentionally low execution frequency",
     "workflow: temporally ordered real lifecycle, bridge-driven agent loop, or worker submit/gate workflow with external adapters replaced",
     "requires_llm: tests that require an explicitly configured real model API",
     "release_e2e: retained suspended full-real selector marker",
-    "postgres: tests that require the isolated Postgres test service",
 ]
 
 [tool.ruff]

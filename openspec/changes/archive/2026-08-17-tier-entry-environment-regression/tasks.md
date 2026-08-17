@@ -1,0 +1,21 @@
+## 1. Selection contracts and scenario relocation
+
+- [x] 1.1 Add red collection/structure contracts that distinguish rapid, periodic, and suspended scenario surfaces: a registered `periodic` marker is excluded from `make test`, `make verify`, and workflow selection; rapid `make test-integration` excludes the periodic selector; `make test-entry-environment-regression` selects exactly the relocated clean-copy selectors; periodic selectors carry neither `requires_llm` nor `release_e2e`; suspended release selectors stay excluded. (`EVH-032`)
+- [x] 1.2 `git mv tests/integration/test_local_entry_environment.py tests/scenarios_periodic/test_local_entry_environment.py`; add `tests/scenarios_periodic/README.md` that records maintained deterministic status, target, workflow, path-routing surface, and the explicit difference from `scenarios_suspended/`; preserve both test bodies and their no-local-profile assertions. (`DPL-005`, `DPL-006`, `LCP-002`, `EVH-032`)
+- [x] 1.3 Add `PERIODIC` to the test-evidence `FocusedSelection`, its selection registry, central-claim admissibility, and `check_test_assets.py` collection/joins; update exact test-evidence and requirement-impact selectors plus all structure contracts for the relocated path. Prove asset governance validates both public-entry claims through collection-only periodic selection and no stale `tests/integration/test_local_entry_environment.py` selector remains. (`DPL-005`, `DPL-006`, `LCP-002`, `EVH-032`)
+
+## 2. Targets and cost guard
+
+- [x] 2.1 Register the `periodic` pytest marker; add `PERIODIC_PATHS`/expression and exclude it from the default deterministic aggregate and workflow expression. Add `test-entry-environment-regression` to the Makefile and `.PHONY`: it is the only target that executes `tests/scenarios_periodic/` in offline deterministic mode and emits `.reports/test-entry-environment.xml`; update exact Makefile and lane-partition contracts. (`EVH-032`)
+- [x] 2.2 Add a deterministic JUnit duration checker with an explicitly documented 180-second periodic per-scenario budget and owner/reason/expiry waivers; add direct checker tests for over-budget, valid-waiver, and expired-waiver failures. The initial local process run was deliberately cancelled at user direction because this low-frequency lane is now path-routed, scheduled, and manually runnable; its first CI report establishes the observed baseline. (`EVH-032`)
+
+## 3. Path-routed periodic CI
+
+- [x] 3.1 Add a dedicated GitHub Actions periodic entry-environment workflow that runs explicit `make install` then the offline periodic target for pull-request changes and `master` pushes to the declared `Makefile`, dependency, `run/**`, `scripts/**`, `src/**`, `src_fake/**`, periodic-test, and workflow paths, plus a daily schedule and `workflow_dispatch`; preserve the existing deterministic workflow's name and status identity. (`EVH-032`)
+- [x] 3.2 Add workflow-contract tests covering the exact triggers, setup order, periodic target invocation, absence of credentialed/release selection, and separation from the rapid deterministic workflow; describe it as a distinct CI result without asserting branch-protection configuration. (`EVH-032`)
+- [x] 3.3 Update `docs/testing-and-evaluation.md` and focused documentation contracts to define rapid versus periodic commands and retained periodic evidence, while preserving the separate `scenarios_suspended/` release explanation. (`EVH-032`)
+
+## 4. Verification and closeout
+
+- [x] 4.1 Run narrow red/green selection, documentation, duration-policy, and workflow contracts plus `UV_OFFLINE=1 make test-assets`; confirm asset governance collects exactly two periodic selectors without executing them. By user decision, the expensive periodic process body and broad `make verify` were not run locally; the first JUnit duration baseline is produced by the declared path-routed, scheduled, or manually dispatched CI workflow. (`EVH-032`)
+- [x] 4.2 Run `openspec validate tier-entry-environment-regression --strict` and `git diff HEAD --check`; record `git status --porcelain=v1 --untracked-files=all`, `git ls-files --stage deerflow`, `git submodule status -- deerflow`, `git -C deerflow status --porcelain=v1 --untracked-files=all`, and review `git diff --submodule=short`.

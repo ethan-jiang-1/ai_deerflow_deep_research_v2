@@ -11,7 +11,7 @@ from pathlib import Path
 
 from scripts.check_test_assets import collect_pytest_selectors
 from tests.assets.evidence import EVIDENCE_CLAIMS
-from tests.assets.selection import FAST_PATHS, INTEGRATION_PATHS, LIVE_PATHS, WORKFLOW_PATHS
+from tests.assets.selection import FAST_PATHS, INTEGRATION_PATHS, LIVE_PATHS, PERIODIC_PATHS, WORKFLOW_PATHS
 
 AGENT_ROOT = Path(__file__).resolve().parents[2]
 REPO_ROOT = AGENT_ROOT.parent
@@ -24,9 +24,10 @@ RETAINED_NON_EMPTY_DIRECTORIES = (
     "deep_research_harness/tests/fixtures",
     "deep_research_harness/tests/graph",
     "deep_research_harness/tests/integration",
+    "deep_research_harness/tests/scenarios_periodic",
     "deep_research_harness/tests/unit",
 )
-SUSPENDED_SELECTOR = "tests/scenarios_suspended/evh_024_release_acceptance.py::test_full_real_release_acceptance"
+SUSPENDED_SELECTOR = "tests/scenarios_suspended/test_evh_024_release_acceptance.py::test_full_real_release_acceptance"
 
 
 def _tracked_residents(directory: str) -> set[str]:
@@ -58,8 +59,8 @@ def test_retained_test_roots_are_non_empty_and_e2e_has_no_active_surface() -> No
     required_paths = {entry["path"] for entry in manifest["required_paths"]}
     assert RETIRED_E2E_DIRECTORY not in required_paths
 
-    active_paths = FAST_PATHS + INTEGRATION_PATHS + LIVE_PATHS + WORKFLOW_PATHS
+    active_paths = FAST_PATHS + INTEGRATION_PATHS + LIVE_PATHS + PERIODIC_PATHS + WORKFLOW_PATHS
     assert "tests/e2e" not in active_paths
-    assert _collect(("tests",), "release_e2e") == set()
-    assert (AGENT_ROOT / "tests/scenarios_suspended/evh_024_release_acceptance.py").is_file()
+    assert _collect(("tests",), "release_e2e") == {SUSPENDED_SELECTOR}
+    assert (AGENT_ROOT / "tests/scenarios_suspended/test_evh_024_release_acceptance.py").is_file()
     assert SUSPENDED_SELECTOR not in {claim.selector for claim in EVIDENCE_CLAIMS}

@@ -27,6 +27,7 @@ first, then use `UV_OFFLINE=1 make verify` as the complete deterministic gate.
 | Validate an existing local node-prompt review catalog without writing | `make prompt-dump-check` |
 | Deterministic integration/blocking-I/O correctness | `make test-integration` |
 | Deterministic real-loop workflow conformance | `make test-workflow` |
+| Maintained low-frequency clean-copy entry regression | `UV_OFFLINE=1 make test-entry-environment-regression` |
 | Viability, durability, or blocking-I/O slices | `make test-viability`, `make test-durability`, `make test-blocking-io` |
 | Asset and requirement-coverage governance | `make test-assets`, `make test-req-coverage` |
 | Credentialed bounded live canaries | `make test-live` |
@@ -124,14 +125,27 @@ implementation defect, or release result.
 
 ## Deterministic And Live Lanes
 
-Selection is intentionally non-overlapping. `make test` is the exact pytest-only union
-of `make test-fast`, `make test-integration`, and `make test-workflow`; it excludes
-`requires_llm`, `release_e2e`, and `postgres`. `make verify` is the canonical complete
-deterministic gate and adds root governance, lock consistency, lint, asset governance,
-and requirement coverage; it also leaves `.reports/test-fast.xml` for the separate
-CI/local `make test-duration-policy` check. Requirement impact metadata is maintained
-beside the existing evidence policy in `tests/assets/requirement_evidence.py`. Prepare
-the project with `make install` and run the gate offline as `UV_OFFLINE=1 make verify`.
+Selection is intentionally non-overlapping. The rapid gate is `make test-fast`,
+`make test-integration`, and `make test-workflow`; `make test` is their pytest-only
+union and excludes `requires_llm`, `release_e2e`, and `periodic`. `make verify` is the
+canonical complete rapid deterministic gate and adds root governance, lock consistency,
+lint, asset governance, and requirement coverage; it also leaves
+`.reports/test-fast.xml` for the separate CI/local `make test-duration-policy` check.
+Requirement impact metadata is maintained beside the existing evidence policy in
+`tests/assets/requirement_evidence.py`. Prepare the project with `make install` and run
+the rapid gate offline as `UV_OFFLINE=1 make verify`.
+
+`tests/scenarios_periodic/` holds maintained deterministic public-entry evidence whose
+clean-copy install cost is deliberately outside the rapid gate. Its scenarios are
+credential-free, carry `periodic`, and are run with
+`UV_OFFLINE=1 make test-entry-environment-regression`, which writes
+`.reports/test-entry-environment.xml` and enforces a 180-second per-scenario duration
+budget. Owner/reason/expiry waivers live in `scripts/check_test_durations.py`; an expiry
+requires a deliberate renewal. `make test-assets` collects the periodic selectors to
+validate their central claims without running their process bodies. The distinct
+`agent-entry-environment-regression.yml` CI job runs the target for declared
+entry-environment path changes, daily, and manually; it does not change the rapid
+workflow's status identity or assert branch-protection configuration.
 
 `make test-live` selects six bounded canaries: three short public-entry prefixes and
 three directly seeded late-node cases. The late-node cases prove only their focused
@@ -142,7 +156,7 @@ structural evidence basis. An explicitly selected live lane fails preflight when
 environment is incomplete; it never silently skips.
 
 The full-real selector is retained at
-`tests/scenarios_suspended/evh_024_release_acceptance.py`. It has no Make target, CI
+`tests/scenarios_suspended/test_evh_024_release_acceptance.py`. It has no Make target, CI
 workflow, active evidence claim, or published execution command. Its local README links
 to the diagnostic issue; only a new approved change that first establishes its
 less-than-ten-second deterministic loop may reactivate it.
