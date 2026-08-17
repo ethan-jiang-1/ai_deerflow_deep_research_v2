@@ -88,7 +88,7 @@ def test_run_parses_bundle_id_and_binds(tmp_path: Path, capsys) -> None:
         bundle_dir.mkdir(parents=True)
         (bundle_dir / "state.json").write_text(json.dumps({"execution_trace": ["bootstrap"], "phase": "x"}))
         fake_make = subprocess.CompletedProcess(args=[], returncode=0, stdout=f"Run Bundle: {bundle_id}\n", stderr="")
-        with patch.object(soft_bundle, "_run_make", return_value=fake_make), patch.object(soft_bundle, "_clean_run_bundles"):
+        with patch.object(soft_bundle, "_run_make", return_value=fake_make), patch.object(soft_bundle, "_clean_run_bundles"), patch.object(soft_bundle, "_verify_bundle", return_value=(True, [])):
             code = soft_bundle.cmd_run(_args(root="r", question=None, mode="001"))
         assert code == 0
         manifest = json.loads((root / "manifest.json").read_text())
@@ -188,7 +188,54 @@ def test_run_cleans_prior_bundles_before_make(tmp_path: Path) -> None:
         (old_bundle / "state.json").write_text("{}")
         fake_make = subprocess.CompletedProcess(args=[], returncode=0, stdout="Run Bundle: b_223456789012345678901234\n", stderr="")
         new_bundle = tmp_path / "harness" / ".deep-research-demo-runs" / "workspace" / "deep-research" / "scopes" / "s_new" / "b_223456789012345678901234"
-        with patch.object(soft_bundle, "_run_make", return_value=fake_make), patch.object(soft_bundle, "_find_bundle_dir", return_value=new_bundle):
+        with patch.object(soft_bundle, "_run_make", return_value=fake_make), patch.object(soft_bundle, "_find_bundle_dir", return_value=new_bundle), patch.object(soft_bundle, "_verify_bundle", return_value=(True, [])):
             code = soft_bundle.cmd_run(_args(root="r", question=None, mode="001"))
         assert code == 0
         assert not old_bundle.exists()
+
+
+def test_verify_reports_pass(tmp_path: Path, capsys) -> None:
+    with _patch_paths(tmp_path):
+        root = tmp_path / "harness" / "r"
+        root.mkdir()
+        bundle_id = "b_123456789012345678901234"
+        bundle_dir = tmp_path / "harness" / ".deep-research-demo-runs" / "workspace" / "deep-research" / "scopes" / "s_test" / bundle_id
+        bundle_dir.mkdir(parents=True)
+        (bundle_dir / "state.json").write_text(json.dumps({
+            "terminal_status": "completed",
+            "phase_status": "terminal",
+            "phase": "final_delivery",
+            "execution_trace": list(soft_bundle.REQUIRED_TRACE),
+        }))
+        diag = bundle_dir / "diagnostics"
+        diag.mkdir()
+        (diag / "run-summary.json").write_text(json.dumps({
+            "status": "completed",
+            "terminal_outcome": "completed",
+            "journal_availability": "complete",
+        }))
+        (root / "manifest.json").write_text(json.dumps({"schema_version": 1, "name": "n", "mode": "001", "question": "", "current_bundle_id": bundle_id}))
+        code = soft_bundle.cmd_verify(_args(root="r"))
+        out = capsys.readouterr().out
+        assert code == 0
+        assert "RESULT: PASS" in out
+
+
+def test_verify_reports_fail(tmp_path: Path, capsys) -> None:
+    with _patch_paths(tmp_path):
+        root = tmp_path / "harness" / "r"
+        root.mkdir()
+        bundle_id = "b_123456789012345678901234"
+        bundle_dir = tmp_path / "harness" / ".deep-research-demo-runs" / "workspace" / "deep-research" / "scopes" / "s_test" / bundle_id
+        bundle_dir.mkdir(parents=True)
+        (bundle_dir / "state.json").write_text(json.dumps({
+            "terminal_status": "blocked",
+            "phase_status": "terminal",
+            "phase": "final_delivery",
+            "execution_trace": list(soft_bundle.REQUIRED_TRACE),
+        }))
+        (root / "manifest.json").write_text(json.dumps({"schema_version": 1, "name": "n", "mode": "001", "question": "", "current_bundle_id": bundle_id}))
+        code = soft_bundle.cmd_verify(_args(root="r"))
+        err = capsys.readouterr().err
+        assert code == 1
+        assert "RESULT: FAIL" in err

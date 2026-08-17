@@ -30,6 +30,17 @@ MANIFEST_NAME = "manifest.json"
 BUNDLES_SUBDIR = "bundles"
 SCHEMA_VERSION = 1
 DEFAULT_QUESTION = "What is the capital of France?"
+REQUIRED_TRACE = (
+    "bootstrap",
+    "hitl1",
+    "topic_planning",
+    "wave0",
+    "wave1",
+    "wave2_synthesis",
+    "hitl2",
+    "readiness",
+    "final_delivery",
+)
 
 
 def _now() -> str:
@@ -159,6 +170,43 @@ def _record_bundle(root: Path, manifest: dict, bundle_dir: Path) -> None:
     _save_manifest(root, manifest)
 
 
+def _verify_bundle(bundle_dir: Path, bundle_id: str, mode: str) -> tuple[bool, list[str]]:
+    problems: list[str] = []
+
+    state_path = bundle_dir / "state.json"
+    if not state_path.exists():
+        problems.append("state.json missing")
+    else:
+        state = json.loads(state_path.read_text())
+        if state.get("terminal_status") != "completed":
+            problems.append(f"terminal_status={state.get('terminal_status')!r}, expected 'completed'")
+        if state.get("phase_status") != "terminal":
+            problems.append(f"phase_status={state.get('phase_status')!r}, expected 'terminal'")
+        if state.get("phase") != "final_delivery":
+            problems.append(f"phase={state.get('phase')!r}, expected 'final_delivery'")
+        trace = state.get("execution_trace", [])
+        missing = [phase for phase in REQUIRED_TRACE if phase not in trace]
+        if missing:
+            problems.append(f"execution_trace missing phases: {', '.join(missing)}")
+
+    summary_path = bundle_dir / "diagnostics" / "run-summary.json"
+    if not summary_path.exists():
+        problems.append("run-summary.json missing")
+    else:
+        summary = json.loads(summary_path.read_text())
+        if summary.get("status") != "completed":
+            problems.append(f"summary.status={summary.get('status')!r}, expected 'completed'")
+        if summary.get("terminal_outcome") != "completed":
+            problems.append(f"summary.terminal_outcome={summary.get('terminal_outcome')!r}, expected 'completed'")
+        if summary.get("journal_availability") != "complete":
+            problems.append(f"summary.journal_availability={summary.get('journal_availability')!r}, expected 'complete'")
+
+    if mode == "001" and (bundle_dir / "final" / "report.md").exists():
+        problems.append("001 should not publish final/report.md")
+
+    return (not problems, problems)
+
+
 def cmd_create(args: argparse.Namespace) -> int:
     if args.root:
         root = _resolve_soft_root(args.root)
@@ -237,13 +285,42 @@ def cmd_run(args: argparse.Namespace) -> int:
     _record_bundle(root, manifest, bundle_dir)
     print(f"bound_bundle_id={bundle_id}")
     print(f"bundle_local_path={_to_relative(bundle_dir)}")
-    return 0
+
+    ok, problems = _verify_bundle(bundle_dir, bundle_id, mode)
+    if ok:
+        print("RESULT: PASS")
+        return 0
+    print("RESULT: FAIL", file=sys.stderr)
+    for problem in problems:
+        print(f"  - {problem}", file=sys.stderr)
+    return 1
 
 
 def cmd_clean(args: argparse.Namespace) -> int:
     _clean_run_bundles()
     print("cleaned run bundles")
     return 0
+
+
+def cmd_verify(args: argparse.Namespace) -> int:
+    root = _resolve_soft_root(args.root)
+    manifest = _require_manifest(root)
+    bundle_id = manifest.get("current_bundle_id")
+    if not bundle_id:
+        print("error: current_bundle_id not bound", file=sys.stderr)
+        return 1
+    bundle_dir = _find_bundle_dir(bundle_id)
+    if bundle_dir is None:
+        print("error: bundle unavailable", file=sys.stderr)
+        return 1
+    ok, problems = _verify_bundle(bundle_dir, bundle_id, manifest.get("mode", "001"))
+    if ok:
+        print("RESULT: PASS")
+        return 0
+    print("RESULT: FAIL", file=sys.stderr)
+    for problem in problems:
+        print(f"  - {problem}", file=sys.stderr)
+    return 1
 
 
 def cmd_bind(args: argparse.Namespace) -> int:
@@ -365,6 +442,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_clean = sub.add_parser("clean", help="clean prior run bundles")
     p_clean.set_defaults(func=cmd_clean)
+
+    p_verify = sub.add_parser("verify", help="verify the bound bundle and print PASS/FAIL")
+    p_verify.add_argument("root")
+    p_verify.set_defaults(func=cmd_verify)
 
     p_status = sub.add_parser("status", help="show soft bundle status")
     p_status.add_argument("root")

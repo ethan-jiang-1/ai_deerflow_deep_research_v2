@@ -54,7 +54,7 @@ The CLI SHALL accept a `bundle_id` supplied by the caller, resolve its repositor
 
 ### Requirement: Query soft bundle state and content through the root
 
-The CLI SHALL support `status`, `path`, `inspect`, `phases`, and `list` commands. `status`, `path`, `inspect`, and `phases` accept only `soft_bundle_root`; `list` SHALL scan only the operator soft-bundle parent (default `.deep-research-demo-runs/workspace/soft-bundles`) for directories containing a valid `manifest.json`. `status` SHALL show the manifest facts and current bundle id. `path` SHALL print only the repository-relative `bundle_local_path`, never an absolute host path. `inspect` SHALL delegate to the existing `demo-sessions` inspection route. `phases` SHALL read the recorded local bundle content and print per-phase outputs. (`SBC-004`)
+The CLI SHALL support `status`, `path`, `inspect`, `phases`, `verify`, and `list` commands. `status`, `path`, `inspect`, `phases`, and `verify` accept only `soft_bundle_root`; `list` SHALL scan only the operator soft-bundle parent (default `.deep-research-demo-runs/workspace/soft-bundles`) for directories containing a valid `manifest.json`. `status` SHALL show the manifest facts and current bundle id. `path` SHALL print only the repository-relative `bundle_local_path`, never an absolute host path. `inspect` SHALL delegate to the existing `demo-sessions` inspection route. `phases` SHALL read the recorded local bundle content and print per-phase outputs. `verify` SHALL check the bound bundle's terminal state, execution trace, journal summary, and mode-specific report expectations, then print `RESULT: PASS` or `RESULT: FAIL`. After `run` binds a bundle, the CLI SHALL automatically run the same verification and report the verdict. (`SBC-004`)
 
 #### Scenario: Path prints repository-relative location only
 - **WHEN** a caller runs `soft-bundle path <root>` for a bound soft bundle
@@ -71,6 +71,14 @@ The CLI SHALL support `status`, `path`, `inspect`, `phases`, and `list` commands
 #### Scenario: List returns valid soft bundle roots from the operator parent
 - **WHEN** a caller runs `soft-bundle list` and the default operator soft-bundle parent contains directories with valid `manifest.json` files
 - **THEN** the CLI prints those soft bundle roots without revealing absolute host paths or scanning Harness `deep-research/scopes`
+
+#### Scenario: Verify prints PASS for a completed control run
+- **WHEN** a caller runs `soft-bundle verify <root>` for a bound bundle whose terminal state, trace, and journal summary are complete
+- **THEN** the CLI prints `RESULT: PASS`
+
+#### Scenario: Run prints FAIL when verification fails
+- **WHEN** a caller runs `soft-bundle run <root> --mode 001` and the bound bundle does not satisfy verification
+- **THEN** the CLI prints `RESULT: FAIL` and returns a non-zero exit code
 
 ### Requirement: Records and paths never become lifecycle authority
 

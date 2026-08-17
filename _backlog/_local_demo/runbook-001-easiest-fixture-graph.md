@@ -61,6 +61,7 @@ UV_NO_CACHE=1 make soft-bundle DEMO_ARGS="run $ROOT --mode 001"
 ```text
 bound_bundle_id=b_xxx
 bundle_local_path=.deep-research-demo-runs/workspace/deep-research/scopes/<scope>/<bundle_id>
+RESULT: PASS
 ```
 
 ## 2. 认 root 和 bundle
@@ -129,6 +130,23 @@ deep_research_harness/.deep-research-demo-runs/workspace/deep-research/scopes/<s
 如果 001 出现了 `final/report.md`，说明行为不符合 001 预期，需要记录 bug。
 
 ## 5. 验收最终结果
+
+`run` 已经自动 inspect 并给出 verdict；也可以随时再跑：
+
+```bash
+cd deep_research_harness
+UV_NO_CACHE=1 make soft-bundle DEMO_ARGS="verify $ROOT"
+```
+
+预期：
+
+```text
+RESULT: PASS
+```
+
+如果输出 `RESULT: FAIL`，说明 001 没跑对。
+
+对照检查：
 
 - `make soft-bundle DEMO_ARGS="status $ROOT"` 显示 `current_bundle_id` 已绑定。
 - `make soft-bundle DEMO_ARGS="phases $ROOT"` 显示执行轨迹完整、最终 `completed`。
