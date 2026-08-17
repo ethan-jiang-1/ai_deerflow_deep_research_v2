@@ -113,14 +113,14 @@ def test_path_prints_repository_relative_only(tmp_path: Path, capsys) -> None:
         assert out.startswith(".deep-research-demo-runs/")
 
 
-def test_inspect_delegates_to_demo_sessions(tmp_path: Path) -> None:
+def test_inspect_delegates_to_demo_sessions(tmp_path: Path, capsys) -> None:
     with _patch_paths(tmp_path):
         root = tmp_path / "harness" / "r"
         root.mkdir()
         bundle_id = "b_123456789012345678901234"
         (root / "manifest.json").write_text(json.dumps({"schema_version": 1, "name": "n", "mode": "001", "question": "", "current_bundle_id": bundle_id}))
         captured: list[list[str]] = []
-        fake_make = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+        fake_make = subprocess.CompletedProcess(args=[], returncode=0, stdout=f"Run Bundle: {bundle_id}\n", stderr="")
 
         def _fake_run_make(args, env_extra=None):
             captured.append(args)
@@ -131,6 +131,7 @@ def test_inspect_delegates_to_demo_sessions(tmp_path: Path) -> None:
         assert code == 0
         assert captured and "demo-sessions" in captured[0]
         assert bundle_id in captured[0][-1]
+        assert f"Run Bundle: {bundle_id}" in capsys.readouterr().out
 
 
 def test_phases_reads_recorded_content(tmp_path: Path, capsys) -> None:

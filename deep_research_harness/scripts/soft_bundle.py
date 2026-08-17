@@ -295,7 +295,12 @@ def cmd_inspect(args: argparse.Namespace) -> int:
     if not bundle_id:
         print("error: current_bundle_id not bound", file=sys.stderr)
         return 1
-    return _run_make(["make", "demo-sessions", f"DEMO_ARGS=inspect {bundle_id}"]).returncode
+    proc = _run_make(["make", "demo-sessions", f"DEMO_ARGS=inspect {bundle_id}"])
+    if proc.stdout:
+        print(proc.stdout, end="")
+    if proc.stderr:
+        print(proc.stderr, end="", file=sys.stderr)
+    return proc.returncode
 
 
 def cmd_phases(args: argparse.Namespace) -> int:
