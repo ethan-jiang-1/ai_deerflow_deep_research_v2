@@ -11,28 +11,14 @@ from pathlib import Path
 from types import MappingProxyType, ModuleType
 
 from deerflow_deep_research.domain.node_spec import NodeBuildDependencies, NodeSpec
+from deerflow_deep_research.graph.topology import LOGICAL_NODES
 
 _DOTTED_NAME_RE = re.compile(r"^[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*$")
 _REQUIRED_FILES = frozenset({"__init__.py", "node.py", "contracts.py"})
 _FORBIDDEN_FIXTURE_FILE = "fake.py"
 _REGISTRY_MODULE = "deerflow_deep_research.graph.registry"
 RESEARCH_NODE_PACKAGE_PREFIX = "deerflow_deep_research.graph.nodes"
-RESEARCH_NODE_PACKAGES = tuple(
-    f"{RESEARCH_NODE_PACKAGE_PREFIX}.{name}"
-    for name in (
-        "bootstrap",
-        "hitl1",
-        "topic_planning",
-        "wave0",
-        "wave1",
-        "wave2_synthesis",
-        "targeted_evidence",
-        "hitl2",
-        "rerun",
-        "readiness",
-        "final_delivery",
-    )
-)
+RESEARCH_NODE_PACKAGES = tuple(f"{RESEARCH_NODE_PACKAGE_PREFIX}.{name}" for name in LOGICAL_NODES)
 
 
 class NodeRegistryError(ValueError):

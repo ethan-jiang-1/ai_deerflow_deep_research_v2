@@ -18,6 +18,7 @@ from langchain_core.tools import InjectedToolArg, tool
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 from pydantic.json_schema import SkipJsonSchema
 
+from deerflow_deep_research.runtime.bundle_control import BUNDLE_ID_PATTERN as _BUNDLE_ID_PATTERN
 from deerflow_deep_research.runtime.bundle_control import BundleControl
 from deerflow_deep_research.runtime.bundle_graph import BundleGraphExecutor
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle, CurrentBundleHandle
@@ -30,7 +31,6 @@ from deerflow_deep_research.runtime.runtime_adapter import RuntimeAdapter, Runti
 ADVERTISED_ACTION = "infra_probe"
 ADVERTISED_ACTIONS = ("infra_probe", "start", "resume", "status", "cancel", "refine")
 _PROBE_ID_PATTERN = r"^[A-Za-z0-9_-]{1,64}$"
-_BUNDLE_ID_PATTERN = r"^b_[A-Za-z0-9_-]{43}$"
 
 
 class DeepResearchArgs(BaseModel):

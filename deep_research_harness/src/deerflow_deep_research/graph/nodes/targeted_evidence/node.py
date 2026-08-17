@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from deerflow_deep_research.domain.critics import ClaimVerifierResult, SourceDiagnosticResult
-from deerflow_deep_research.domain.lifecycle import make_attempt_id
+from deerflow_deep_research.domain.lifecycle import make_node_visit_id
 from deerflow_deep_research.domain.node_spec import NodeBuildDependencies
 from deerflow_deep_research.domain.state import node_state_update
 from deerflow_deep_research.domain.work_units import WORK_UNIT_GATE_VIEW_KEY, WorkUnitGateView
@@ -37,7 +37,7 @@ def build_real(dependencies: NodeBuildDependencies):
         gap_ids = state.get("unresolved_gaps") or ()
         gap_intents = materialize_gap_intents(gap_ids)
         workspace_root = dependencies.graph_context.workspace_root
-        node_attempt_id = make_attempt_id(state, "targeted_evidence")
+        node_attempt_id = make_node_visit_id(state, "targeted_evidence")
         bundle_id = state["bundle_id"]
 
         if gap_intents:

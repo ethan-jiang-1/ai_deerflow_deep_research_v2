@@ -31,7 +31,6 @@ from deerflow_deep_research.domain.lifecycle import (
     serialize_control_result,
 )
 from deerflow_deep_research.domain.state import (
-    GATED_FIELDS,
     MAX_CHECKPOINT_STATE_BYTES,
     MAX_CONTROL_RESULT_CHARS,
     OWNERSHIP_TABLE,
@@ -47,7 +46,6 @@ from deerflow_deep_research.domain.state import (
     apply_research_update,
     merge_branch_results,
     ownership_fields,
-    project_lifecycle_status,
     research_state_fields,
     validate_research_state,
 )
@@ -130,16 +128,6 @@ def test_authority_writer_can_advance_generation() -> None:
     assert update["generation"] == 2
 
 
-def test_project_lifecycle_status_preserves_wire_projection() -> None:
-    waiting = _base_values(phase_status=PhaseStatus.WAITING, waiting_for="hitl1")
-    assert project_lifecycle_status(waiting) is LifecycleStatus.SUSPENDED
-    terminal = _base_values(
-        phase_status=PhaseStatus.TERMINAL,
-        terminal_status=LifecycleStatus.COMPLETED,
-    )
-    assert project_lifecycle_status(terminal) is LifecycleStatus.COMPLETED
-
-
 def test_ownership_table_covers_every_research_state_field() -> None:
     assert ownership_fields() == research_state_fields()
     # Every entry declares a writer, at least one reader, and a reducer.
@@ -147,14 +135,6 @@ def test_ownership_table_covers_every_research_state_field() -> None:
         assert isinstance(entry.writer, WriterRole)
         assert entry.reader
         assert entry.reducer
-
-
-def test_gated_fields_are_the_authority_owned_set() -> None:
-    assert "phase" in GATED_FIELDS
-    assert "latest_gate_feedback" in GATED_FIELDS
-    assert "gate_attempts_by_phase" in GATED_FIELDS
-    assert "repair_budget_by_phase" in GATED_FIELDS
-    assert "accepted_submission_refs" in GATED_FIELDS
 
 
 def test_research_graph_state_rejects_unsupported_schema_version() -> None:
@@ -198,7 +178,6 @@ def test_interaction_graph_state_facts_are_controller_owned_and_bounded() -> Non
 
     assert checkpoint.proposal_version == 2
     assert checkpoint.interaction_feedback == feedback
-    assert {"proposal_version", "interaction_feedback"} <= GATED_FIELDS
     with pytest.raises(ValueError, match="writer_not_authorized"):
         apply_research_update(
             _base_values(),
@@ -221,7 +200,6 @@ def test_research_graph_state_default_phase_is_waiting() -> None:
     checkpoint = ResearchGraphState(**_base_values())
     assert checkpoint.phase_status is PhaseStatus.WAITING
     assert checkpoint.terminal_status is None
-    assert project_lifecycle_status(_base_values()) is LifecycleStatus.SUSPENDED
     assert checkpoint.phase is LogicalPhase.BOOTSTRAP
 
 
@@ -377,7 +355,6 @@ def test_hitl1_profile_fields_are_state_owned_and_controller_authorized() -> Non
     }
     assert profile_fields <= fields
     assert profile_fields <= ownership_fields()
-    assert profile_fields <= GATED_FIELDS
 
     current = _base_values()
     for field in profile_fields:
@@ -482,8 +459,6 @@ def test_topic_planning_fields_are_state_owned_and_planner_authorized() -> None:
     topic_fields = {"topic_refs", "topic_registry"}
     assert topic_fields <= state_fields
     assert topic_fields <= ownership_fields()
-    # Planner-owned topic authority is not gated authority (controller/gate only).
-    assert topic_fields.isdisjoint(GATED_FIELDS)
 
     current = _base_values()
     for field_name in topic_fields:

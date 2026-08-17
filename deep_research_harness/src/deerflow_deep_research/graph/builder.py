@@ -22,7 +22,7 @@ from langgraph.runtime import Runtime
 
 from deerflow_deep_research.domain.gate import GateDefinition
 from deerflow_deep_research.domain.invocation import GraphInvocationContext
-from deerflow_deep_research.domain.lifecycle import LifecycleStatus, make_attempt_id
+from deerflow_deep_research.domain.lifecycle import LifecycleStatus, make_node_visit_id
 from deerflow_deep_research.domain.node_spec import NodeCapability, NodeSpec
 from deerflow_deep_research.domain.publication import FINAL_DELIVERY_GATE_VIEW_KEY, FinalDeliveryGateView
 from deerflow_deep_research.domain.run_observation import RunEventCategory
@@ -141,7 +141,7 @@ def _node_wrapper(
         factory = adapter.factory
         is_real_adapter = adapter.kind is AdapterKind.REAL
         context = runtime.context
-        current_attempt = make_attempt_id(state, logical_name)
+        current_attempt = make_node_visit_id(state, logical_name)
         await _record_node_event(
             context,
             bundle_id=(state.get("bundle_id") if isinstance(state.get("bundle_id"), str) else None),
@@ -320,7 +320,7 @@ def _node_wrapper(
                 bundle_id=(state.get("bundle_id") if isinstance(state.get("bundle_id"), str) else None),
                 category=RunEventCategory.NODE,
                 phase=logical_name,
-                attempt_id=make_attempt_id(state, logical_name),
+                attempt_id=make_node_visit_id(state, logical_name),
                 outcome="failed",
                 failure_category="internal.unexpected",
                 worker_failure_category="unknown",
@@ -356,8 +356,8 @@ def build_research_graph(
         if unknown:
             raise ValueError(f"unknown spec override: {', '.join(sorted(unknown))}")
         loaded.update(spec_overrides)
-    if tuple(loaded) != LOGICAL_NODES:
-        raise ValueError("research registry order does not match topology")
+    # Registry order is derived from LOGICAL_NODES (see graph.registry), so the
+    # loaded mapping order matches the topology by construction.
     adapters = resolve_implementations(loaded, implementations)
     _gate_defs = validate_gate_definitions(adapters, gate_defs)
 

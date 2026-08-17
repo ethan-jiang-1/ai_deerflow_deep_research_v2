@@ -17,7 +17,6 @@ from deerflow_deep_research.domain.state import (
     PhaseStatus,
     ResearchGraphState,
     ResearchState,
-    project_lifecycle_status,
     serialize_research_state,
     validate_research_state,
 )
@@ -152,7 +151,6 @@ def test_research_state_control_fields_round_trip_through_serialization() -> Non
     restored = validate_research_state(waiting)
     assert restored.schema_version == RESEARCH_STATE_SCHEMA_VERSION
     assert restored.phase_status is PhaseStatus.WAITING
-    assert project_lifecycle_status(restored) is LifecycleStatus.SUSPENDED
 
     terminal = _values(
         phase_status=PhaseStatus.TERMINAL.value,
@@ -160,7 +158,6 @@ def test_research_state_control_fields_round_trip_through_serialization() -> Non
     )
     restored_terminal = validate_research_state(terminal)
     assert restored_terminal.terminal_status is LifecycleStatus.COMPLETED
-    assert project_lifecycle_status(restored_terminal) is LifecycleStatus.COMPLETED
 
 
 def test_research_state_serialization_is_bounded() -> None:

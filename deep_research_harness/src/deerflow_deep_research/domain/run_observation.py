@@ -23,6 +23,9 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from deerflow_deep_research.domain.identifiers import BUNDLE_ID_PATTERN as _BUNDLE_ID_PATTERN
+from deerflow_deep_research.domain.identifiers import LOGICAL_PHASE_NAMES
+
 MAX_TRACE_RECORD_BYTES = 8 * 1024
 MAX_TRACE_SNAPSHOT_BYTES = 2 * 1024 * 1024
 MAX_TRACE_RECORDS = 256
@@ -30,7 +33,6 @@ MAX_LIFECYCLE_SEQUENCE = 2**31 - 1
 MAX_LIST_ENTRIES = 20
 MAX_SKIPPED_ENTRIES = 20
 MAX_EVENT_RECORDS = 256
-_BUNDLE_ID_PATTERN = r"^b_[A-Za-z0-9_-]{43}$"
 _RECOVERY_IDENTIFIER_PATTERN = r"^[A-Za-z0-9_-]{8,64}$"
 _VALIDATION_CODE_PATTERN = r"^[a-z][a-z0-9]*(?:[._][a-z][a-z0-9]*)*$"
 _TRANSIENT_PROVIDER_CATEGORIES = frozenset({"provider.timeout", "provider.unavailable"})
@@ -367,19 +369,7 @@ class RecordBearingLifecycleFact(FrozenRunObservationContract):
     bundle_id: str = Field(pattern=_BUNDLE_ID_PATTERN)
     action: Literal["start", "resume", "status", "cancel", "refine"]
     status: Literal["active", "suspended", "completed", "stopped", "cancelled", "blocked"]
-    phase: Literal[
-        "bootstrap",
-        "hitl1",
-        "topic_planning",
-        "wave0",
-        "wave1",
-        "wave2_synthesis",
-        "targeted_evidence",
-        "hitl2",
-        "rerun",
-        "readiness",
-        "final_delivery",
-    ]
+    phase: Literal[*LOGICAL_PHASE_NAMES]
     generation: int = Field(ge=0, le=2)
     durability: Literal["same_process", "restart_durable", "unavailable"]
     trace_delta: tuple[str, ...] = Field(default=(), max_length=32)

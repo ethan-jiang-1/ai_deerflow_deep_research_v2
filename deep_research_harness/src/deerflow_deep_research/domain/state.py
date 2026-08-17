@@ -6,11 +6,9 @@
 @impl REG-009
 @impl REG-011
 
-Change 02 replaces the change-01 ``graph/skeleton_state.py`` payload with this module.
-Both schemas must never coexist as authorities: the graph builder binds ``ResearchState``
-and ``graph/skeleton_state.py`` is removed.
+This module is the single canonical state payload for the Deep Research graph.
 
-The module freezes, for changes 03/04 and every real node:
+The module freezes, for every real node:
 
 - the typed ``ResearchState`` blocks (identity / request / control / planning / work /
   quality / delivery) and the writer/reader/reducer ownership of every field;
@@ -38,6 +36,7 @@ from pydantic import BaseModel
 
 from deerflow_deep_research.domain.bundle import BundleId
 from deerflow_deep_research.domain.human_interaction import InteractionFeedback
+from deerflow_deep_research.domain.identifiers import BUNDLE_ID_RE, CONTENT_HASH_RE, SANDBOX_PATH_RE
 from deerflow_deep_research.domain.lifecycle import (
     MAX_CONTROL_RESULT_CHARS,
     MAX_FAKE_RERUN_GENERATIONS,
@@ -71,9 +70,6 @@ from deerflow_deep_research.domain.work_units import (
     TerminalFailureSummary,
     WorkSpecRef,
 )
-from deerflow_deep_research.domain.work_units import (
-    CONTENT_HASH_RE as WORK_UNIT_HASH_RE,
-)
 
 RESEARCH_STATE_SCHEMA_VERSION = 3
 BUNDLE_STATE_SCHEMA_VERSION = 5
@@ -94,10 +90,7 @@ MAX_PROPOSAL_VERSION = 1_000_000
 MAX_TOPIC_REGISTRY_BYTES = 16_384
 MAX_EXECUTION_TRACE_ENTRIES = 256
 
-BUNDLE_ID_RE = re.compile(r"^b_[A-Za-z0-9_-]{43}$")
 REQUEST_DIGEST_RE = re.compile(r"^d_[A-Za-z0-9_-]{43}$")
-CONTENT_HASH_RE = re.compile(r"^h_[A-Za-z0-9_-]{43}$")
-SANDBOX_PATH_RE = re.compile(r"^workspace/deep-research/scopes/s_[A-Za-z0-9_-]{43}/b_[A-Za-z0-9_-]{43}/.+$")
 
 _PROFILE_ENUM_VALUES = {
     "research_depth": frozenset({"", "quick_overview", "standard", "deep_dive", "exhaustive"}),
@@ -712,50 +705,6 @@ AUTHORITY_WRITERS = frozenset({WriterRole.CONTROLLER, WriterRole.SUBMIT, WriterR
 
 # Fields that only authority writers (controller / gate) may mutate. Any other writer
 # raising an update touching one of these is rejected by ``apply_research_update``.
-GATED_FIELDS = frozenset(
-    {
-        "phase",
-        "phase_status",
-        "waiting_for",
-        "terminal_status",
-        "latest_incident",
-        "latest_gate_feedback",
-        "gate_attempts_by_phase",
-        "repair_budget_by_phase",
-        "accepted_submission_refs",
-        "work_specs_by_id",
-        "attempts_by_id",
-        "work_status_by_id",
-        "active_attempt_by_work_id",
-        "terminal_failures_by_attempt_id",
-        "next_work_ordinal",
-        "next_attempt_ordinal_by_work_id",
-        "profile_ref",
-        "research_depth",
-        "target_audience",
-        "output_format",
-        "cost_tolerance",
-        "time_budget",
-        "must_answer_questions",
-        "comparison_required",
-        "comparison_subjects",
-        "request_language",
-        "output_language",
-        "degraded_profile",
-        "pending_profile",
-        "profile_followup_round",
-        "proposed_profile",
-        "profile_rejection_round",
-        "profile_feedback_cursor_message_id",
-        "proposal_version",
-        "interaction_feedback",
-        "generation",
-        "schema_version",
-        "bundle_id",
-        "outer_thread_id",
-        "route",  # @impl GAK-003 — gate writes route for gated phases
-    }
-)
 
 
 @dataclass(frozen=True)
@@ -1016,7 +965,7 @@ def merge_accepted_refs(current: Iterable[str], incoming: Iterable[str]) -> tupl
     seen: list[str] = [ref for ref in current if isinstance(ref, str)]
     existing = set(seen)
     for ref in incoming:
-        if not isinstance(ref, str) or not WORK_UNIT_HASH_RE.fullmatch(ref):
+        if not isinstance(ref, str) or not CONTENT_HASH_RE.fullmatch(ref):
             raise ValueError("accepted_ref_invalid")
         if ref in existing:
             continue
@@ -1086,34 +1035,6 @@ def merge_content_refs(
 # ---------------------------------------------------------------------------
 # Control projection and ownership-enforcing update
 # ---------------------------------------------------------------------------
-
-
-def _control_field(checkpoint: Any, name: str) -> Any:
-    if isinstance(checkpoint, Mapping):
-        return checkpoint.get(name)
-    return getattr(checkpoint, name, None)
-
-
-def project_lifecycle_status(checkpoint: Any) -> LifecycleStatus:
-    """Derive the wire ``LifecycleStatus`` (REG-004) from the three-field control model.
-
-    ``terminal_status`` wins when set; otherwise a ``waiting`` phase status (or a set
-    ``waiting_for``) projects to ``SUSPENDED``. The three-field split is internal to
-    ``ResearchState``; the wire control-result envelope is unchanged. Accepts either a
-    ``ResearchGraphState`` instance or a mapping of its fields.
-    """
-    terminal = _control_field(checkpoint, "terminal_status")
-    if terminal is not None:
-        return terminal if isinstance(terminal, LifecycleStatus) else LifecycleStatus(terminal)
-    phase_status = _control_field(checkpoint, "phase_status")
-    waiting_for = _control_field(checkpoint, "waiting_for")
-    if waiting_for is not None or phase_status in (None, PhaseStatus.WAITING):
-        return LifecycleStatus.SUSPENDED
-    if phase_status == PhaseStatus.TERMINAL:
-        # Terminal without a terminal_status is inconsistent; fail closed rather than
-        # invent a status.
-        raise ValueError("terminal_status_missing")
-    return LifecycleStatus.SUSPENDED
 
 
 def apply_research_update(
@@ -1811,7 +1732,6 @@ __all__ = [
     "ContentRef",
     "RefinementAdmission",
     "FieldOwnership",
-    "GATED_FIELDS",
     "MAX_CHECKPOINT_STATE_BYTES",
     "MAX_WORK_UNIT_BLOCK_BYTES",
     "MAX_TOPIC_REGISTRY_BYTES",
@@ -1842,7 +1762,6 @@ __all__ = [
     "merge_work_spec_refs",
     "ownership_fields",
     "node_state_update",
-    "project_lifecycle_status",
     "preview_work_unit_update",
     "research_state_fields",
     "serialize_research_state",

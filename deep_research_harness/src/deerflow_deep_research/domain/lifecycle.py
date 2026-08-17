@@ -17,15 +17,13 @@ from typing import Annotated, Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from deerflow_deep_research.domain.human_interaction import InteractionProjection
+from deerflow_deep_research.domain.identifiers import BUNDLE_ID_PATTERN, LogicalPhase
 from deerflow_deep_research.domain.run_experience import PendingInputProjection, TerminalIncidentProjection
 
 MAX_START_REQUEST_CHARS = 16_384
 MAX_REFINEMENT_CHARS = 4_096
 MAX_CONTROL_RESULT_CHARS = 4_096
-MAX_FAKE_TRACE_ENTRIES = 256
-MAX_FAKE_REPAIR_ATTEMPTS = 3
 MAX_FAKE_RERUN_GENERATIONS = 2
-BUNDLE_ID_PATTERN = r"^b_[A-Za-z0-9_-]{43}$"
 
 
 class LifecycleAction(StrEnum):
@@ -67,20 +65,6 @@ class ImplementationMode(StrEnum):
     FIXTURE = "fixture"
     MIXED = "mixed"
     ALL_REAL = "all_real"
-
-
-class LogicalPhase(StrEnum):
-    BOOTSTRAP = "bootstrap"
-    HITL1 = "hitl1"
-    TOPIC_PLANNING = "topic_planning"
-    WAVE0 = "wave0"
-    WAVE1 = "wave1"
-    WAVE2_SYNTHESIS = "wave2_synthesis"
-    TARGETED_EVIDENCE = "targeted_evidence"
-    HITL2 = "hitl2"
-    RERUN = "rerun"
-    READINESS = "readiness"
-    FINAL_DELIVERY = "final_delivery"
 
 
 class TerminalReason(StrEnum):
@@ -498,7 +482,15 @@ def completed_visits(state: Mapping[str, Any], logical_name: str) -> int:
     return sum(1 for item in state.get("execution_trace", ()) if item == logical_name)
 
 
-def make_attempt_id(state: Mapping[str, Any], logical_name: str) -> str:
+def make_node_visit_id(state: Mapping[str, Any], logical_name: str) -> str:
+    """Node-visit attempt id: ``g{gen}-{phase}-a{n}`` (dash form).
+
+    This is the node-visit counter carried by ``RunEvent.attempt_id`` /
+    ``agent_context.attempt_id``. It is deliberately distinct from the
+    work-unit attempt id produced by ``engine.work_units.ids.allocate_attempt_id``
+    (``g{gen}_{phase}_w{ordinal}_a{ordinal}``, underscore form), which is the only
+    form validated by ``ATTEMPT_ID_RE``. The two schemes never cross.
+    """
     generation = int(state.get("generation", 0))
     return f"g{generation}-{logical_name}-a{completed_visits(state, logical_name) + 1}"
 
@@ -661,9 +653,7 @@ __all__ = [
     "LegalNextAction",
     "LogicalPhase",
     "MAX_CONTROL_RESULT_CHARS",
-    "MAX_FAKE_REPAIR_ATTEMPTS",
     "MAX_FAKE_RERUN_GENERATIONS",
-    "MAX_FAKE_TRACE_ENTRIES",
     "MAX_REFINEMENT_CHARS",
     "MAX_START_REQUEST_CHARS",
     "ReadinessVerdict",
@@ -685,7 +675,7 @@ __all__ = [
     "TerminalIncidentProjection",
     "make_hitl_request_id",
     "completed_visits",
-    "make_attempt_id",
+    "make_node_visit_id",
     "refinement_text_digest",
     "refinement_round_token",
     "text_only_content",

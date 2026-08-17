@@ -22,6 +22,14 @@ def allocate_work_id(generation: int, phase: LogicalPhase | str, work_ordinal: i
 
 
 def allocate_attempt_id(work_id: str, attempt_ordinal: int) -> str:
+    """Work-unit attempt id: ``g{gen}_{phase}_w{ordinal}_a{ordinal}`` (underscore form).
+
+    This is the only attempt-id form validated by ``ATTEMPT_ID_RE``. It is
+    deliberately distinct from the node-visit counter produced by
+    ``domain.lifecycle.make_node_visit_id`` (``g{gen}-{phase}-a{n}``, dash form),
+    which carries ``RunEvent.attempt_id`` / ``agent_context.attempt_id``. The two
+    schemes never cross.
+    """
     if not isinstance(work_id, str) or not WORK_ID_RE.fullmatch(work_id):
         raise ValueError("work_id_invalid")
     if not isinstance(attempt_ordinal, int) or not 0 <= attempt_ordinal <= 99:

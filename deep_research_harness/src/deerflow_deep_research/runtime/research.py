@@ -394,13 +394,13 @@ def _build_wave2_synthesis_capabilities(envelope: TrustedRuntimeEnvelope, graph_
     )
 
 
-WAVE0_WORKER_TOOL_NAMES = frozenset(
+WORKER_TOOL_NAMES = frozenset(
     {"tavily_search", "tavily_extract", "duckduckgo_search", "jina_ai", "firecrawl_scrape", "web_search", "web_fetch"}
 )
 
 
-def _wave0_worker_policy(graph_context: Any) -> ExecutionPolicy:
-    """Bounded multi-tool policy for a Wave0 source-intake worker.
+def _worker_policy(*, policy_name: str, graph_context: Any) -> ExecutionPolicy:
+    """Bounded multi-tool policy shared by the Wave0/Wave1 workers.
 
     @impl WAN-002
     @impl NOA-001
@@ -408,13 +408,13 @@ def _wave0_worker_policy(graph_context: Any) -> ExecutionPolicy:
     """
 
     return ExecutionPolicy(
-        policy_name="wave0-source-intake",
-        allowed_tool_names=WAVE0_WORKER_TOOL_NAMES,
+        policy_name=policy_name,
+        allowed_tool_names=WORKER_TOOL_NAMES,
         read_roots=(graph_context.workspace_root, graph_context.uploads_root),
         write_roots=(graph_context.workspace_root,),
         attempt_root=graph_context.workspace_root,
         tool_specs=tuple(
-            ToolPolicySpec(tool_name=name, effect="read", native_cancellable=True) for name in WAVE0_WORKER_TOOL_NAMES
+            ToolPolicySpec(tool_name=name, effect="read", native_cancellable=True) for name in WORKER_TOOL_NAMES
         ),
         budget=ExecutionBudget(
             max_model_calls=50,
@@ -428,6 +428,12 @@ def _wave0_worker_policy(graph_context: Any) -> ExecutionPolicy:
             wall_time_seconds=900.0,
         ),
     )
+
+
+def _wave0_worker_policy(graph_context: Any) -> ExecutionPolicy:
+    """Bounded multi-tool policy for a Wave0 source-intake worker."""
+
+    return _worker_policy(policy_name="wave0-source-intake", graph_context=graph_context)
 
 
 def _build_wave0_capabilities(envelope: TrustedRuntimeEnvelope, graph_context: Any, factory: Any) -> Any:
@@ -438,35 +444,10 @@ def _build_wave0_capabilities(envelope: TrustedRuntimeEnvelope, graph_context: A
     return bridge_factory(envelope=envelope, policy=policy)
 
 
-WAVE1_WORKER_TOOL_NAMES = frozenset(
-    {"tavily_search", "tavily_extract", "duckduckgo_search", "jina_ai", "firecrawl_scrape", "web_search", "web_fetch"}
-)
-
-
 def _wave1_worker_policy(graph_context: Any) -> ExecutionPolicy:
     """Bounded multi-tool policy for a Wave1 evidence extraction worker."""
 
-    return ExecutionPolicy(
-        policy_name="wave1-evidence-extraction",
-        allowed_tool_names=WAVE1_WORKER_TOOL_NAMES,
-        read_roots=(graph_context.workspace_root, graph_context.uploads_root),
-        write_roots=(graph_context.workspace_root,),
-        attempt_root=graph_context.workspace_root,
-        tool_specs=tuple(
-            ToolPolicySpec(tool_name=name, effect="read", native_cancellable=True) for name in WAVE1_WORKER_TOOL_NAMES
-        ),
-        budget=ExecutionBudget(
-            max_model_calls=50,
-            max_total_tool_calls=200,
-            max_tool_calls_per_response=12,
-            max_parallel_tool_calls=12,
-            total_token_budget=2_000_000,
-            per_call_output_token_cap=64_000,
-            per_tool_result_bytes=512_000,
-            structured_result_bytes=64_000,
-            wall_time_seconds=900.0,
-        ),
-    )
+    return _worker_policy(policy_name="wave1-evidence-extraction", graph_context=graph_context)
 
 
 def _build_wave1_capabilities(envelope: TrustedRuntimeEnvelope, graph_context: Any, factory: Any) -> Any:

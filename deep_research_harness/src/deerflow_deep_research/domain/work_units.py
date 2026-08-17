@@ -24,6 +24,13 @@ from urllib.parse import urlsplit, urlunsplit
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from deerflow_deep_research.domain.failure_codes import FailureCode, get_classification
+from deerflow_deep_research.domain.identifiers import (
+    BUNDLE_ID_RE,
+    CONTENT_HASH_RE,
+)
+from deerflow_deep_research.domain.identifiers import (
+    SANDBOX_PATH_RE as BUNDLE_REF_RE,
+)
 from deerflow_deep_research.domain.lifecycle import LogicalPhase, WorkUnitStorageReason
 from deerflow_deep_research.domain.run_experience import ProviderObservation
 
@@ -54,8 +61,6 @@ MAX_BASELINE_FACTS = 32
 MAX_BASELINE_FACT_CHARS = 512
 MAX_SOURCE_LIMITATIONS_CHARS = 2_048
 
-BUNDLE_ID_RE = re.compile(r"^b_[A-Za-z0-9_-]{43}$")
-CONTENT_HASH_RE = re.compile(r"^h_[A-Za-z0-9_-]{43}$")
 WORK_ID_RE = re.compile(r"^g(?P<generation>[0-2])_(?P<phase>[a-z][a-z0-9_]*)_w(?P<ordinal>[0-9]{4})$")
 ATTEMPT_ID_RE = re.compile(
     r"^(?P<work_id>g(?P<generation>[0-2])_(?P<phase>[a-z][a-z0-9_]*)_w(?P<work_ordinal>[0-9]{4}))"
@@ -65,7 +70,6 @@ WORKER_ROLE_RE = re.compile(r"^[a-z][a-z0-9_]{0,63}$")
 STABLE_ID_RE = re.compile(r"^[a-z][a-z0-9_.-]{0,63}$")
 SOURCE_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 VALIDATOR_CHECK_RE = re.compile(r"^[a-z][a-z0-9_.-]{0,63}$")
-BUNDLE_REF_RE = re.compile(r"^workspace/deep-research/scopes/s_[A-Za-z0-9_-]{43}/b_[A-Za-z0-9_-]{43}/.+$")
 
 WORK_SPEC_HASH_DOMAIN = b"deerflow-deep-research:work-spec:v1\0"
 CANDIDATE_HASH_DOMAIN = b"deerflow-deep-research:candidate-result:v1\0"

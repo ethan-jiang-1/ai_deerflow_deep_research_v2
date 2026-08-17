@@ -139,7 +139,7 @@ class GateRule:
     """
 
     name: str
-    evaluate: Callable[[Any], Failure | None]  # (ResearchState) -> Failure | None
+    evaluate: Callable[[Any], Failure | None]  # (gate-state Mapping) -> Failure | None
     failure_code: FailureCode
 
 

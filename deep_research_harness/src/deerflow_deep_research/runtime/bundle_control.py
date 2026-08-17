@@ -7,25 +7,21 @@ shared typed Bundle result or the bounded HITL suspension delivery command.
 
 from __future__ import annotations
 
-import base64
-import hashlib
 from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING, Any
 
 from langchain_core.messages import HumanMessage
 
-from deerflow_deep_research.domain.bundle import BundleId, RunBundleRef
+from deerflow_deep_research.domain.bundle import BundleId
+from deerflow_deep_research.domain.identifiers import BUNDLE_ID_PATTERN  # re-exported for the tool layer
 from deerflow_deep_research.domain.lifecycle import (
     AcceptedHumanResponse,
     BundleAvailability,
     BundleControlResult,
     Durability,
-    HumanInputMode,
-    HumanInputRequest,
     InfrastructureResultCode,
     LegalNextAction,
     LifecycleAction,
-    PendingResearchInterrupt,
     RefinementAdmissionDisposition,
     RefinementOperation,
     ResponseKind,
@@ -544,27 +540,6 @@ class BundleControl:
         return self._graph_executor is not None or self._graph_executor_factory is not None
 
     @staticmethod
-    def _request_id(bundle: RunBundleRef) -> str:
-        payload = f"deep-research/hitl1/v1:{bundle.bundle_id.value}".encode("ascii")
-        digest = base64.urlsafe_b64encode(hashlib.sha256(payload).digest()).decode("ascii").rstrip("=")
-        return f"drh_{digest}"
-
-    @staticmethod
-    def _pending_interrupt(*, state: Any, request_id: str, cursor: str) -> PendingResearchInterrupt:
-        request = HumanInputRequest(
-            request_id=request_id,
-            mode=HumanInputMode.TEXT,
-            title="Research brief",
-            context='{"context_schema_version":1,"instructions":"Provide your research preferences."}',
-        )
-        return PendingResearchInterrupt(
-            request=request,
-            suspension_cursor=cursor,
-            phase="hitl1",
-            generation=state.generation,
-        )
-
-    @staticmethod
     def _response_from_messages(*, messages: Sequence[Any], state: Any) -> AcceptedHumanResponse:
         replay_request_ids = dict(zip(state.consumed_message_ids, state.consumed_request_ids, strict=True))
         expected_request_id = state.pending_request_id
@@ -638,4 +613,4 @@ class BundleControl:
         ).model_dump(mode="json", exclude_none=True)
 
 
-__all__ = ["BundleControl"]
+__all__ = ["BUNDLE_ID_PATTERN", "BundleControl"]

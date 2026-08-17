@@ -117,11 +117,19 @@ def logical_nodes(repo_root: Path) -> tuple[str, ...]:
         if isinstance(statement, ast.Assign) and any(
             isinstance(target, ast.Name) and target.id == "LOGICAL_NODES" for target in statement.targets
         ):
-            value = ast.literal_eval(statement.value)
-            if not isinstance(value, tuple) or not all(isinstance(node, str) for node in value):
+            try:
+                value = ast.literal_eval(statement.value)
+            except (ValueError, SyntaxError):
                 break
-            return value
-    raise WorkflowReaderError("topology_logical_nodes_missing")
+            if isinstance(value, tuple) and all(isinstance(node, str) for node in value):
+                return value
+            break
+    # ``LOGICAL_NODES`` is a re-export of the single-source phase list
+    # (``domain.identifiers.LOGICAL_PHASE_NAMES``), so the AST literal form is
+    # gone; resolve the live value from the same source the graph uses.
+    from deerflow_deep_research.graph.topology import LOGICAL_NODES as live_nodes
+
+    return tuple(live_nodes)
 
 
 def validate_reader_text(node: str, text: str) -> None:

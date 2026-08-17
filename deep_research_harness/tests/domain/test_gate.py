@@ -15,7 +15,6 @@ from deerflow_deep_research.domain.gate import (
 from deerflow_deep_research.domain.lifecycle import GateVerdict as BranchGateVerdict
 from deerflow_deep_research.domain.state import (
     AUTHORITY_WRITERS,
-    GATED_FIELDS,
     WriterRole,
     apply_research_update,
 )
@@ -121,9 +120,6 @@ class TestGateSoleWriter:
         update = {"latest_gate_feedback": {}}
         with pytest.raises(ValueError, match="writer_not_authorized"):
             apply_research_update({"generation": 0}, update, writer=WriterRole.REPAIR)
-
-    def test_route_in_gated_fields(self) -> None:
-        assert "route" in GATED_FIELDS
 
     def test_gate_in_authority_writers(self) -> None:
         assert WriterRole.GATE in AUTHORITY_WRITERS

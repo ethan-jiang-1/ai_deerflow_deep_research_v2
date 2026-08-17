@@ -430,11 +430,6 @@ kind = "file"
 owner = "PRS-001"
 
 [[required_paths]]
-path = "deep_research_harness/src/deerflow_deep_research/engine/work_units/reducers.py"
-kind = "file"
-owner = "PRS-001"
-
-[[required_paths]]
 path = "deep_research_harness/src/deerflow_deep_research/engine/work_units/validation.py"
 kind = "file"
 owner = "PRS-001"
@@ -496,11 +491,6 @@ owner = "PRS-003"
 
 [[required_paths]]
 path = "deep_research_harness/src/deerflow_deep_research/graph/implementation_map.py"
-kind = "file"
-owner = "PRS-003"
-
-[[required_paths]]
-path = "deep_research_harness/src/deerflow_deep_research/graph/routing.py"
 kind = "file"
 owner = "PRS-003"
 

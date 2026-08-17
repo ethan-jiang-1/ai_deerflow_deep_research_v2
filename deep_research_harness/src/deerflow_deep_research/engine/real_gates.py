@@ -11,6 +11,7 @@ from typing import Any
 
 from deerflow_deep_research.domain.failure_codes import FailureCode
 from deerflow_deep_research.domain.gate import Failure, GateDefinition, GateRule, PhaseVerdict
+from deerflow_deep_research.domain.publication import FINAL_DELIVERY_GATE_VIEW_KEY
 from deerflow_deep_research.domain.synthesis import WAVE2_GATE_PREVIEW_KEY, Wave2GatePreview
 from deerflow_deep_research.domain.wave1 import WAVE1_GATE_REVIEW_KEY, Wave1GateReview
 from deerflow_deep_research.domain.work_units import WORK_UNIT_GATE_VIEW_KEY, WorkUnitGateView
@@ -136,7 +137,7 @@ def _final_delivery_route_resolver(verdict: PhaseVerdict, failures: tuple[Failur
 
 def _final_delivery_real_rule() -> GateRule:
     def evaluate(state: Mapping[str, Any]) -> Failure | None:
-        view = state.get("_final_delivery_gate_view")
+        view = state.get(FINAL_DELIVERY_GATE_VIEW_KEY)
         if view is None:
             return Failure(
                 code=FailureCode.WORK_FAILED,

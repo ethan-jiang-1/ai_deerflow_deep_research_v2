@@ -66,7 +66,7 @@ class ToolExecutionFailure(RuntimeError):
 
 
 def _content_upper_bound(content: Any) -> int:
-    """Conservative UTF-8 byte upper bound for text content; None for non-text."""
+    """Conservative UTF-8 byte upper bound for text content; -1 for non-text."""
     if isinstance(content, str):
         return len(content.encode("utf-8"))
     return -1  # non-text: no deterministic estimator in this policy

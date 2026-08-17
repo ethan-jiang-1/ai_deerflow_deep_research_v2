@@ -14,6 +14,7 @@ import secrets
 from dataclasses import dataclass
 from enum import StrEnum
 
+from deerflow_deep_research.domain.identifiers import BUNDLE_ID_RE as _BUNDLE_ID_RE
 from deerflow_deep_research.domain.work_units import (
     ATTEMPT_ID_RE,
     WORK_ID_RE,
@@ -52,7 +53,6 @@ FINAL_CITATION_MAP_FILENAME = "claim-citation-map.json"
 READINESS_REPORT_PLAN_FILENAME = "report-plan.json"
 
 _PROBE_TOKEN_RE = re.compile(r"^[0-9a-f]{32}$")
-_BUNDLE_ID_RE = re.compile(r"^b_[A-Za-z0-9_-]{43}$")
 _SCOPE_BUCKET_RE = re.compile(r"^s_[A-Za-z0-9_-]{43}$")
 _STAGING_RE = re.compile(r"^\.submissions\.[0-9a-f]{32}\.tmp$")
 _ALIAS_PROBE_RE = re.compile(r"^\.work-unit-probe-[0-9a-f]{32}$")
@@ -359,18 +359,6 @@ def is_audit_only(path: str) -> bool:
     return classify_bundle_path(path) is BundlePathKind.AUDIT
 
 
-def dedupe_source_urls(urls: list[str]) -> tuple[str, ...]:
-    seen: set[str] = set()
-    ordered: list[str] = []
-    for url in urls:
-        canonical = canonicalize_source_url(url)
-        if canonical in seen:
-            continue
-        seen.add(canonical)
-        ordered.append(canonical)
-    return tuple(ordered)
-
-
 __all__ = [
     "ATTEMPT_ID_RE",
     "BUNDLE_HOST_SUBTREE",
@@ -416,7 +404,6 @@ __all__ = [
     "bundle_work_spec_path",
     "canonicalize_source_url",
     "classify_bundle_path",
-    "dedupe_source_urls",
     "is_audit_only",
     "is_evidence_staging_name",
     "new_bundle_id",

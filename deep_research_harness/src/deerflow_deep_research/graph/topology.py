@@ -8,22 +8,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from deerflow_deep_research.domain.identifiers import LOGICAL_PHASE_NAMES
+
 START = "__start__"
 TERMINALS = frozenset({"completed", "stopped", "blocked", "cancelled"})
 
-LOGICAL_NODES = (
-    "bootstrap",
-    "hitl1",
-    "topic_planning",
-    "wave0",
-    "wave1",
-    "wave2_synthesis",
-    "targeted_evidence",
-    "hitl2",
-    "rerun",
-    "readiness",
-    "final_delivery",
-)
+LOGICAL_NODES = LOGICAL_PHASE_NAMES
 
 
 @dataclass(frozen=True, order=True)

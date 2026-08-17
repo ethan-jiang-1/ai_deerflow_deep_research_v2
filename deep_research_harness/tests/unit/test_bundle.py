@@ -18,7 +18,6 @@ from deerflow_deep_research.domain.bundle import (
     bundle_attempt_dir,
     bundle_diagnostics_path,
     canonicalize_source_url,
-    dedupe_source_urls,
     is_audit_only,
     new_bundle_id,
     resolve_bundle_contained_path,
@@ -110,11 +109,6 @@ def test_unknown_diagnostic_is_rejected() -> None:
 def test_canonical_source_url_dedupes_trivial_variants() -> None:
     assert canonicalize_source_url("HTTPS://Example.com/a/") == "https://example.com/a"
     assert canonicalize_source_url("https://example.com/a#frag") == "https://example.com/a"
-
-
-def test_dedupe_source_urls_collapses_duplicates() -> None:
-    deduped = dedupe_source_urls(["https://example.com/a/", "https://example.com/a#x", "https://example.com/b"])
-    assert deduped == ("https://example.com/a", "https://example.com/b")
 
 
 def test_accepted_submission_refs_is_a_ledger_ref_slot() -> None:

@@ -21,6 +21,7 @@ from urllib.parse import urlsplit
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from deerflow_deep_research.domain.human_interaction import InteractionProjection, VisibleControl
+from deerflow_deep_research.domain.identifiers import LOGICAL_PHASE_NAMES
 from deerflow_deep_research.domain.run_observation import ProviderTimeoutOrigin, RunObservationView
 
 
@@ -58,19 +59,7 @@ class FailureCertainty(StrEnum):
 
 
 RunMode = Literal["fixture", "real"]
-LogicalPhaseName = Literal[
-    "bootstrap",
-    "hitl1",
-    "topic_planning",
-    "wave0",
-    "wave1",
-    "wave2_synthesis",
-    "targeted_evidence",
-    "hitl2",
-    "rerun",
-    "readiness",
-    "final_delivery",
-]
+LogicalPhaseName = Literal[*LOGICAL_PHASE_NAMES]
 RunTraceEntry = LogicalPhaseName | Literal["hitl1_auto_profile", "hitl2_auto_proceed"]
 
 
