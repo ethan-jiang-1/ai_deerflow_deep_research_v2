@@ -194,6 +194,29 @@ def test_run_cleans_prior_bundles_before_make(tmp_path: Path) -> None:
         assert not old_bundle.exists()
 
 
+def test_run_mode_002_parses_journal_path_and_binds(tmp_path: Path, capsys) -> None:
+    with _patch_paths(tmp_path):
+        root = tmp_path / "harness" / "r"
+        root.mkdir()
+        (root / "manifest.json").write_text(json.dumps({"schema_version": 1, "name": "n", "mode": "002", "question": "", "current_bundle_id": None}))
+        bundle_id = "b_123456789012345678901234"
+        bundle_dir = tmp_path / "harness" / ".deep-research-demo-runs" / "workspace" / "scripted-real" / "run-test" / "deep-research" / "scopes" / "s_test" / bundle_id
+        bundle_dir.mkdir(parents=True)
+        (bundle_dir / "final").mkdir()
+        (bundle_dir / "final" / "report.md").write_text("# Report")
+        journal = bundle_dir / "diagnostics" / "events.jsonl"
+        journal.parent.mkdir()
+        journal.write_text("")
+        output = f"bundle_id:        {bundle_id}\nevent journal:    {journal}\n"
+        fake_make = subprocess.CompletedProcess(args=[], returncode=0, stdout=output, stderr="")
+        with patch.object(soft_bundle, "_run_make", return_value=fake_make), patch.object(soft_bundle, "_verify_bundle", return_value=(True, [])), patch.object(soft_bundle, "_clean_run_bundles"):
+            code = soft_bundle.cmd_run(_args(root="r", question=None, mode="002"))
+        assert code == 0
+        manifest = json.loads((root / "manifest.json").read_text())
+        assert manifest["current_bundle_id"] == bundle_id
+        assert "bound_bundle_id=" in capsys.readouterr().out
+
+
 def test_verify_reports_pass(tmp_path: Path, capsys) -> None:
     with _patch_paths(tmp_path):
         root = tmp_path / "harness" / "r"

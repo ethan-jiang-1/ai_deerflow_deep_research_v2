@@ -40,6 +40,10 @@ The CLI SHALL run the selected operator mode using existing Harness entry surfac
 - **WHEN** a caller runs `soft-bundle run <root> --mode 001` and prior run bundles exist under the operator workspace `deep-research` subtree
 - **THEN** the CLI removes those prior run bundles before invoking the operator mode
 
+#### Scenario: Mode 002 produces a final Markdown report
+- **WHEN** a caller runs `soft-bundle run <root> --mode 002`
+- **THEN** the CLI runs the scripted-real workflow and verification requires `final/report.md` to exist
+
 ### Requirement: Bind an existing bundle id to a soft bundle root
 
 The CLI SHALL accept a `bundle_id` supplied by the caller, resolve its repository-relative local record location through operator-side lookup, and record it in the selected soft bundle root. The CLI SHALL NOT accept a path or filesystem root as the bundle selector. (`SBC-003`)

@@ -16,7 +16,7 @@
 | 编号 | 手册 | 花费 | 需要什么 | 这个例子是什么意思 | 固定问题 |
 | --- | --- | --- | --- | --- | --- |
 | 001 | [`runbook-001-easiest-fixture-graph.md`](runbook-001-easiest-fixture-graph.md) | 花（少） | 无 | 最简单：只用假数据把图从第一节点跑到最后节点，验证“路通不通” | `What is the capital of France?` |
-| 002 | `runbook-002-easy-scripted-real.md`（待建） | 花（少） | 无 | 稍难：用脚本化的真实控制链路跑一遍，验证“真适配器+门+持久化通不通” | `What is one bounded fact about grid energy storage?` |
+| 002 | [`runbook-002-easy-scripted-real.md`](runbook-002-easy-scripted-real.md) | 花（少） | 无 | 稍难：用脚本化的真实控制链路跑一遍，验证“真适配器+门+持久化通不通”，且会产出 Markdown report | `What is one bounded fact about grid energy storage?` |
 | 003 | `runbook-003-medium-real-auto.md`（待建） | 花（中） | 本地模型/Tavily 凭据 | 更难：接真实模型和网页工具，全自动跑完，不等人 | `Compare China and US EV battery market in 2024.` |
 | 004 | `runbook-004-hard-real-auto.md`（待建） | 花（多） | 真机全自动（入口待定） | 最难：真机全自动跑，专门用来找茬 | `Compare China and US EV battery market in 2024.` |
 

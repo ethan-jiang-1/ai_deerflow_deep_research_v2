@@ -30,6 +30,10 @@ MANIFEST_NAME = "manifest.json"
 BUNDLES_SUBDIR = "bundles"
 SCHEMA_VERSION = 1
 DEFAULT_QUESTION = "What is the capital of France?"
+MODE_QUESTIONS = {
+    "001": "What is the capital of France?",
+    "002": "What is one bounded fact about grid energy storage?",
+}
 REQUIRED_TRACE = (
     "bootstrap",
     "hitl1",
@@ -121,8 +125,8 @@ def _latest_bundle_dir() -> Path | None:
 def _clean_run_bundles() -> None:
     """Remove prior operator run-bundle content before a fresh control run.
 
-    Only the Harness-managed ``deep-research`` subtree under the operator
-    workspace is removed. Soft bundle records under ``soft-bundles`` are kept.
+    The Harness-managed ``deep-research`` subtree and scripted-real workspaces
+    are removed. Soft bundle records under ``soft-bundles`` are kept.
     """
     research_root = RUNS_ROOT / "deep-research"
     if research_root.exists():
@@ -130,6 +134,12 @@ def _clean_run_bundles() -> None:
         research_root.mkdir(parents=True, exist_ok=True)
     else:
         research_root.mkdir(parents=True, exist_ok=True)
+    scripted_root = RUNS_ROOT / "scripted-real"
+    if scripted_root.exists():
+        shutil.rmtree(scripted_root)
+        scripted_root.mkdir(parents=True, exist_ok=True)
+    else:
+        scripted_root.mkdir(parents=True, exist_ok=True)
 
 
 def _run_make(args: list[str], env_extra: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
@@ -190,16 +200,17 @@ def _verify_bundle(bundle_dir: Path, bundle_id: str, mode: str) -> tuple[bool, l
             problems.append(f"execution_trace missing phases: {', '.join(missing)}")
 
     summary_path = bundle_dir / "diagnostics" / "run-summary.json"
-    if not summary_path.exists():
-        problems.append("run-summary.json missing")
-    else:
-        summary = json.loads(summary_path.read_text())
-        if summary.get("status") != "completed":
-            problems.append(f"summary.status={summary.get('status')!r}, expected 'completed'")
-        if summary.get("terminal_outcome") != "completed":
-            problems.append(f"summary.terminal_outcome={summary.get('terminal_outcome')!r}, expected 'completed'")
-        if summary.get("journal_availability") != "complete":
-            problems.append(f"summary.journal_availability={summary.get('journal_availability')!r}, expected 'complete'")
+    if mode == "001":
+        if not summary_path.exists():
+            problems.append("run-summary.json missing")
+        else:
+            summary = json.loads(summary_path.read_text())
+            if summary.get("status") != "completed":
+                problems.append(f"summary.status={summary.get('status')!r}, expected 'completed'")
+            if summary.get("terminal_outcome") != "completed":
+                problems.append(f"summary.terminal_outcome={summary.get('terminal_outcome')!r}, expected 'completed'")
+            if summary.get("journal_availability") != "complete":
+                problems.append(f"summary.journal_availability={summary.get('journal_availability')!r}, expected 'complete'")
 
     events_path = bundle_dir / "diagnostics" / "events.jsonl"
     if not events_path.exists():
@@ -216,14 +227,23 @@ def _verify_bundle(bundle_dir: Path, bundle_id: str, mode: str) -> tuple[bool, l
                 completed_phases.add(event["phase"])
             if event.get("category") == "terminal" and event.get("outcome") == "completed" and event.get("phase") == "final_delivery":
                 terminal_ok = True
+        if not terminal_ok and state_path.exists():
+            try:
+                state = json.loads(state_path.read_text())
+                terminal_ok = state.get("terminal_status") == "completed" and state.get("phase") == "final_delivery"
+            except json.JSONDecodeError:
+                pass
         missing_events = [phase for phase in REQUIRED_TRACE if phase not in completed_phases]
         if missing_events:
             problems.append(f"events.jsonl missing completed node: {', '.join(missing_events)}")
         if not terminal_ok:
             problems.append("events.jsonl missing terminal completed final_delivery")
 
-    if mode == "001" and (bundle_dir / "final" / "report.md").exists():
+    report = bundle_dir / "final" / "report.md"
+    if mode == "001" and report.exists():
         problems.append("001 should not publish final/report.md")
+    if mode == "002" and not report.exists():
+        problems.append("002 should publish final/report.md")
 
     return (not problems, problems)
 
@@ -259,6 +279,13 @@ def _print_run_summary(bundle_dir: Path, bundle_id: str, mode: str) -> None:
             if event.get("category") == "terminal" and event.get("outcome") == "completed" and event.get("phase") == "final_delivery":
                 terminal_ok = True
                 break
+    state_path = bundle_dir / "state.json"
+    if not terminal_ok and state_path.exists():
+        try:
+            state = json.loads(state_path.read_text())
+            terminal_ok = state.get("terminal_status") == "completed" and state.get("phase") == "final_delivery"
+        except json.JSONDecodeError:
+            pass
     print(f"Terminal: {'final_delivery -> completed' if terminal_ok else 'final_delivery -> missing'}")
 
     print("Final result:")
@@ -299,7 +326,7 @@ def cmd_create(args: argparse.Namespace) -> int:
         "schema_version": SCHEMA_VERSION,
         "name": name,
         "mode": args.mode,
-        "question": DEFAULT_QUESTION,
+        "question": MODE_QUESTIONS.get(args.mode, DEFAULT_QUESTION),
         "current_bundle_id": None,
         "created_at": _now(),
         "updated_at": _now(),
@@ -315,45 +342,59 @@ def cmd_run(args: argparse.Namespace) -> int:
     manifest = _require_manifest(root)
     if args.mode:
         manifest["mode"] = args.mode
-    manifest["question"] = DEFAULT_QUESTION
+    mode = manifest.get("mode", "001")
+    manifest["question"] = MODE_QUESTIONS.get(mode, DEFAULT_QUESTION)
     _save_manifest(root, manifest)
 
     # Control environment: always start from a clean run-bundle workspace.
     _clean_run_bundles()
     print("cleaned prior run bundles")
 
-    mode = manifest.get("mode", "001")
-    if mode != "001":
+    question = manifest.get("question", "")
+
+    if mode == "001":
+        make_args = ["make", "demo-scripted", f'DEMO_ARGS=--question "{question}"']
+        proc = _run_make(make_args)
+        output = (proc.stdout or "") + (proc.stderr or "")
+        bundle_id = _parse_bundle_id(output)
+
+        if bundle_id is None:
+            # Fallback: deterministic fixture-graph route does not always print a bundle id.
+            fallback = ["make", "demo-fixture-graph", f'DEMO_ARGS=--question "{question}"']
+            fallback_proc = _run_make(fallback)
+            fallback_output = (fallback_proc.stdout or "") + (fallback_proc.stderr or "")
+            bundle_id = _parse_bundle_id(fallback_output)
+            if bundle_id is None:
+                latest = _latest_bundle_dir()
+                if latest is None:
+                    print("error: could not resolve a valid bundle id after run", file=sys.stderr)
+                    return 1
+                bundle_id = latest.name
+
+        if proc.returncode != 0 and bundle_id is None:
+            print(output, file=sys.stderr)
+            return proc.returncode or 1
+
+        bundle_dir = _find_bundle_dir(bundle_id)
+        if bundle_dir is None:
+            print(f"error: bundle {bundle_id} not found under operator workspace", file=sys.stderr)
+            return 1
+    elif mode == "002":
+        workspace = RUNS_ROOT / "scripted-real" / f"run-{datetime.now():%Y%m%d-%H%M%S}-{secrets.token_hex(3)}"
+        make_args = ["make", "debug-scripted-real-workflow", f"DEMO_ARGS=--workspace {workspace}"]
+        proc = _run_make(make_args)
+        output = (proc.stdout or "") + (proc.stderr or "")
+        bundle_id = _parse_bundle_id(output)
+        journal_match = re.search(r"event journal:\s*(\S+)", output)
+        bundle_dir = Path(journal_match.group(1)).parent.parent if journal_match else None
+
+        if proc.returncode != 0 or bundle_id is None or bundle_dir is None or not bundle_dir.exists():
+            print(output, file=sys.stderr)
+            return proc.returncode or 1
+    else:
         print(f"error: unsupported mode {mode}", file=sys.stderr)
         return 2
 
-    question = manifest.get("question", "")
-    make_args = ["make", "demo-scripted", f'DEMO_ARGS=--question "{question}"']
-    proc = _run_make(make_args)
-    output = (proc.stdout or "") + (proc.stderr or "")
-    bundle_id = _parse_bundle_id(output)
-
-    if bundle_id is None:
-        # Fallback: deterministic fixture-graph route does not always print a bundle id.
-        fallback = ["make", "demo-fixture-graph", f'DEMO_ARGS=--question "{question}"']
-        fallback_proc = _run_make(fallback)
-        fallback_output = (fallback_proc.stdout or "") + (fallback_proc.stderr or "")
-        bundle_id = _parse_bundle_id(fallback_output)
-        if bundle_id is None:
-            latest = _latest_bundle_dir()
-            if latest is None:
-                print("error: could not resolve a valid bundle id after run", file=sys.stderr)
-                return 1
-            bundle_id = latest.name
-
-    if proc.returncode != 0 and bundle_id is None:
-        print(output, file=sys.stderr)
-        return proc.returncode or 1
-
-    bundle_dir = _find_bundle_dir(bundle_id)
-    if bundle_dir is None:
-        print(f"error: bundle {bundle_id} not found under operator workspace", file=sys.stderr)
-        return 1
     _record_bundle(root, manifest, bundle_dir)
     print(f"bound_bundle_id={bundle_id}")
     print(f"bundle_local_path={_to_relative(bundle_dir)}")
