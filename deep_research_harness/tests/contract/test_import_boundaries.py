@@ -4,6 +4,7 @@
 @impl PRS-002
 @impl PRS-003
 @impl PRS-006
+@impl PRS-019
 @impl FSI-001
 @impl FSI-002
 @impl FSI-003
@@ -388,8 +389,10 @@ def test_whitelisted_namespace_assignment_is_toml_only(project_root: Path) -> No
     manifest = project_root / "openspec/governance/project-structure.toml"
     manifest.write_text(
         manifest.read_text(encoding="utf-8").replace(
-            'runtime = ["domain", "graph", "agents", "deerflow", "httpx", "httpx_sse", "langchain", "langgraph", "openai"]',
-            'runtime = ["domain", "graph", "agents", "deerflow", "httpx", "httpx_sse", "langchain", "langgraph", "openai", "pydantic"]',
+            'runtime = ["domain", "graph", "agents", "deerflow", "httpx", "httpx_sse", "langchain", '
+            '"langgraph", "openai"]',
+            'runtime = ["domain", "graph", "agents", "deerflow", "httpx", "httpx_sse", "langchain", '
+            '"langgraph", "openai", "pydantic"]',
         ),
         encoding="utf-8",
     )
@@ -401,8 +404,10 @@ def test_unknown_external_namespace_is_rejected_by_whitelist(project_root: Path)
     manifest = project_root / "openspec/governance/project-structure.toml"
     manifest.write_text(
         manifest.read_text(encoding="utf-8").replace(
-            'runtime = ["domain", "graph", "agents", "deerflow", "httpx", "httpx_sse", "langchain", "langgraph", "openai"]',
-            'runtime = ["domain", "graph", "agents", "deerflow", "httpx", "httpx_sse", "langchain", "langgraph", "openai", "bogus_ns"]',
+            'runtime = ["domain", "graph", "agents", "deerflow", "httpx", "httpx_sse", "langchain", '
+            '"langgraph", "openai"]',
+            'runtime = ["domain", "graph", "agents", "deerflow", "httpx", "httpx_sse", "langchain", '
+            '"langgraph", "openai", "bogus_ns"]',
         ),
         encoding="utf-8",
     )

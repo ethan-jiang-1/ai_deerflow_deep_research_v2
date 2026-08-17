@@ -1,6 +1,6 @@
 # evaluation-hardening Specification
 
-> req: EVH-001, EVH-002, EVH-003, EVH-004, EVH-005, EVH-006, EVH-007, EVH-008, EVH-009, EVH-010, EVH-011, EVH-012, EVH-013, EVH-014, EVH-015, EVH-016, EVH-017, EVH-018, EVH-019, EVH-020, EVH-021, EVH-022, EVH-023, EVH-024, EVH-025, EVH-026, EVH-027, EVH-028, EVH-029, EVH-030
+> req: EVH-001, EVH-002, EVH-003, EVH-004, EVH-005, EVH-006, EVH-007, EVH-008, EVH-009, EVH-010, EVH-011, EVH-012, EVH-013, EVH-014, EVH-015, EVH-016, EVH-017, EVH-018, EVH-019, EVH-020, EVH-021, EVH-022, EVH-023, EVH-024, EVH-025, EVH-026, EVH-027, EVH-028, EVH-029, EVH-030, EVH-031, EVH-032
 
 ## Purpose
 
@@ -113,6 +113,42 @@ lane, or evidence semantic. (`EVH-005`, `EVH-032`)
 - **WHEN** a developer runs the complete rapid deterministic verification gate
 - **THEN** `cd deep_research_harness && UV_OFFLINE=1 make verify` performs the existing
   local aggregate without resolving a former downstream root
+
+### Requirement: Deterministic test selection references only live markers and passes from a clean checkout
+
+The deterministic verification gate SHALL pass from a clean checkout (no local
+`profiles/` state, `.env`, or `config.yaml`). The retired `postgres` marker SHALL be
+absent from pytest marker registration, from every deterministic lane expression, and
+from every exact-string lane assertion; no lane SHALL exist that fails collection
+because it selects a retired marker. Suspended release-acceptance material SHALL remain
+pytest-collectable under `tests/scenarios_suspended/` (file name matches `test_*.py`)
+while excluded from every deterministic lane by its declared
+`requires_llm`/`release_e2e` markers, so suspension is visible to collection tooling
+rather than hidden by an uncollectable file name. Deterministic integration tests SHALL
+construct the profile state they check themselves and SHALL NOT depend on gitignored
+local state under `profiles/`. (`EVH-031`)
+
+#### Scenario: Retired marker has no live reference
+- **WHEN** a lane expression, a lane-selection constant, or a contract-test assertion
+  references the `postgres` marker
+- **THEN** the reference SHALL be absent, and no `test-postgres` target SHALL exist
+
+#### Scenario: Suspended release material stays collectable but excluded
+- **WHEN** pytest collects the suspended directory
+- **THEN** it SHALL find the release-acceptance file by its `test_*.py` name, and every
+  deterministic lane SHALL deselect it through its declared markers
+
+#### Scenario: Deterministic gate passes from a clean checkout
+- **WHEN** the repository is checked out cleanly (no local profile, env, or config
+  state) and `UV_OFFLINE=1 make verify` runs
+- **THEN** the gate SHALL complete successfully, including lint, asset coverage, and
+  integration lanes
+
+#### Scenario: Integration tests construct their own profile state
+- **WHEN** a deterministic integration test prepares a copied project and checks a
+  profile entry
+- **THEN** the test SHALL construct the checked profile state itself and SHALL NOT read
+  or copy gitignored local `profiles/` content
 
 #### Scenario: Unrelated product change avoids expensive clean-copy setup
 - **WHEN** a Harness pull request changes no declared entry-environment dependency path

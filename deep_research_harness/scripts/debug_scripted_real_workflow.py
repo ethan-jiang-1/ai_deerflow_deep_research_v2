@@ -525,15 +525,11 @@ async def run_scripted_real_workflow(
     started_at = time.monotonic()
     world = build_world(workspace, run_id=run_id, scenario=scenario)
     try:
-        completed = await _drive(
-            world, expected_code="completed" if scenario == "baseline" else "blocked"
-        )
+        completed = await _drive(world, expected_code="completed" if scenario == "baseline" else "blocked")
         result = await _observe(world, completed, allow_targeted_evidence=scenario != "baseline")
         result.wall_seconds = time.monotonic() - started_at
         expected_model_calls = (
-            baseline.EXPECTED_MODEL_CALLS
-            if scenario == "baseline"
-            else baseline.EXPECTED_REPAIR_TARGETED_MODEL_CALLS
+            baseline.EXPECTED_MODEL_CALLS if scenario == "baseline" else baseline.EXPECTED_REPAIR_TARGETED_MODEL_CALLS
         )
         expected_search_calls = (
             baseline.EXPECTED_WEB_SEARCH_CALLS
@@ -552,8 +548,7 @@ async def run_scripted_real_workflow(
             )
         if result.web_search_calls != expected_search_calls:
             raise AssertionError(
-                f"scripted web_search budget violated: "
-                f"{result.web_search_calls} != {expected_search_calls}"
+                f"scripted web_search budget violated: {result.web_search_calls} != {expected_search_calls}"
             )
         if result.web_fetch_calls != expected_fetch_calls:
             raise AssertionError(

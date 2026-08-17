@@ -4,6 +4,7 @@ The baseline must complete in under 10 seconds with zero env reads and zero
 network, and every script shortage or surplus must fail loudly instead of
 reporting a completed run.
 
+@impl SCR-001
 @impl SCR-003
 @impl SCR-004
 @impl SCR-005
