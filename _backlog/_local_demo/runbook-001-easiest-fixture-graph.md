@@ -62,6 +62,22 @@ UV_NO_CACHE=1 make soft-bundle DEMO_ARGS="run $ROOT --mode 001"
 bound_bundle_id=b_xxx
 bundle_local_path=.deep-research-demo-runs/workspace/deep-research/scopes/<scope>/<bundle_id>
 RESULT: PASS
+
+=== Run Summary ===
+Nodes passed:
+  1. bootstrap (completed: ...)
+  2. hitl1 (completed: ...)
+  3. topic_planning (completed: ...)
+  4. wave0 (completed: ...)
+  5. wave1 (completed: ...)
+  6. wave2_synthesis (completed: ...)
+  7. hitl2 (completed: ...)
+  8. readiness (completed: ...)
+  9. final_delivery (completed: ...)
+Terminal: final_delivery -> completed
+Final result:
+  final/report.md: not found
+Work outputs: 6 fixture files
 ```
 
 ## 2. 认 root 和 bundle

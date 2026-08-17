@@ -228,6 +228,57 @@ def _verify_bundle(bundle_dir: Path, bundle_id: str, mode: str) -> tuple[bool, l
     return (not problems, problems)
 
 
+def _print_run_summary(bundle_dir: Path, bundle_id: str, mode: str) -> None:
+    """Print a human-readable step-by-step run summary after each run."""
+    print("\n=== Run Summary ===")
+    print("Nodes passed:")
+
+    seen: dict[str, str] = {}
+    events_path = bundle_dir / "diagnostics" / "events.jsonl"
+    if events_path.exists():
+        for line in events_path.read_text().splitlines():
+            try:
+                event = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if event.get("category") == "node" and event.get("outcome") == "completed" and event.get("phase"):
+                seen[event["phase"]] = event.get("attempt_id", "?")
+    for index, phase in enumerate(REQUIRED_TRACE, start=1):
+        if phase in seen:
+            print(f"  {index}. {phase} (completed: {seen[phase]})")
+        else:
+            print(f"  {index}. {phase} (missing)")
+
+    terminal_ok = False
+    if events_path.exists():
+        for line in events_path.read_text().splitlines():
+            try:
+                event = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if event.get("category") == "terminal" and event.get("outcome") == "completed" and event.get("phase") == "final_delivery":
+                terminal_ok = True
+                break
+    print(f"Terminal: {'final_delivery -> completed' if terminal_ok else 'final_delivery -> missing'}")
+
+    print("Final result:")
+    report = bundle_dir / "final" / "report.md"
+    if report.exists():
+        print(f"  final/report.md: exists")
+        body = report.read_text().strip()
+        if body:
+            print(body[:2000])
+    else:
+        print("  final/report.md: not found")
+
+    work_root = bundle_dir / "work"
+    if work_root.exists():
+        outputs = list(work_root.rglob("outputs/fixture.json"))
+        print(f"Work outputs: {len(outputs)} fixture files")
+    else:
+        print("Work outputs: none")
+
+
 def cmd_create(args: argparse.Namespace) -> int:
     if args.root:
         root = _resolve_soft_root(args.root)
@@ -310,11 +361,12 @@ def cmd_run(args: argparse.Namespace) -> int:
     ok, problems = _verify_bundle(bundle_dir, bundle_id, mode)
     if ok:
         print("RESULT: PASS")
-        return 0
-    print("RESULT: FAIL", file=sys.stderr)
-    for problem in problems:
-        print(f"  - {problem}", file=sys.stderr)
-    return 1
+    else:
+        print("RESULT: FAIL", file=sys.stderr)
+        for problem in problems:
+            print(f"  - {problem}", file=sys.stderr)
+    _print_run_summary(bundle_dir, bundle_id, mode)
+    return 0 if ok else 1
 
 
 def cmd_clean(args: argparse.Namespace) -> int:
@@ -337,11 +389,12 @@ def cmd_verify(args: argparse.Namespace) -> int:
     ok, problems = _verify_bundle(bundle_dir, bundle_id, manifest.get("mode", "001"))
     if ok:
         print("RESULT: PASS")
-        return 0
-    print("RESULT: FAIL", file=sys.stderr)
-    for problem in problems:
-        print(f"  - {problem}", file=sys.stderr)
-    return 1
+    else:
+        print("RESULT: FAIL", file=sys.stderr)
+        for problem in problems:
+            print(f"  - {problem}", file=sys.stderr)
+    _print_run_summary(bundle_dir, bundle_id, manifest.get("mode", "001"))
+    return 0 if ok else 1
 
 
 def cmd_bind(args: argparse.Namespace) -> int:
