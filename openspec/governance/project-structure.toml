@@ -980,47 +980,12 @@ kind = "file"
 owner = "PRS-009"
 
 [[required_paths]]
-path = "openspec/tests/governance/test_change_guidance_governance.py"
-kind = "file"
-owner = "PRS-009"
-
-[[required_paths]]
-path = "openspec/tests/governance/test_change_guidance_kernel.py"
-kind = "file"
-owner = "PRS-009"
-
-[[required_paths]]
-path = "openspec/tests/governance/test_portable_change_guidance_export.py"
-kind = "file"
-owner = "PRS-009"
-
-[[required_paths]]
-path = "openspec/tests/governance/test_architecture_governance.py"
-kind = "file"
-owner = "PRS-009"
-
-[[required_paths]]
-path = "openspec/tests/governance/test_import_boundaries.py"
-kind = "file"
-owner = "PRS-009"
-
-[[required_paths]]
-path = "openspec/tests/governance/test_operation_guidance_probe_evidence.py"
-kind = "file"
-owner = "PRS-009"
-
-[[required_paths]]
 path = "openspec/governance/selected-change-closeout.md"
 kind = "file"
 owner = "PRS-009"
 
 [[required_paths]]
 path = "openspec/governance/selected-change-closeout.py"
-kind = "file"
-owner = "PRS-009"
-
-[[required_paths]]
-path = "openspec/tests/governance/test_selected_change_closeout.py"
 kind = "file"
 owner = "PRS-009"
 

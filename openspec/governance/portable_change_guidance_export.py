@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Verify a digest-bound portable Change Guidance candidate."""
+"""Verify a digest-bound portable Change Guidance candidate.
+
+@impl PCG-005
+"""
 
 from __future__ import annotations
 

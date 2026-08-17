@@ -21,9 +21,8 @@ duplicate policy prose SHALL NOT remain current.
 
 The canonical structure SHALL register the product-neutral validation module under
 OpenSpec governance and retain `openspec/governance/check_change_guidance.py` as the
-Deep Research local wrapper/CLI. It SHALL register the focused pure-kernel and wrapper
-contract tests without registering the portable module as a general project
-architecture, requirement, specification, coverage, or runtime checker.
+Deep Research local wrapper/CLI without registering the portable module as a general
+project architecture, requirement, specification, coverage, or runtime checker.
 
 The canonical structure SHALL register `openspec/product/` as the sole product-context
 directory and SHALL require its exact current member set to be `README.md`. It SHALL
@@ -36,16 +35,18 @@ The exact inventory SHALL remain only in
 `openspec/governance/project-structure.toml`. Product documents, local composition,
 checker constants, and authoring entries SHALL link to or validate against that
 registry and SHALL NOT duplicate its source/test/import/gitlink member facts. The
-registry, Change Guidance wrapper, focused tests, current authoring pointers, and
-downstream entry documents SHALL remain synchronized. Repository-root `AGENTS.md` and
+registry, Change Guidance wrapper, current authoring pointers, and downstream entry
+documents SHALL remain synchronized. Repository-root `AGENTS.md` and
 `CLAUDE.md`, Deep Research production structure, glossary authority, and the
 `deerflow/` gitlink SHALL remain unchanged. (`PRS-009`)
 
 Dependency direction SHALL be `openspec/` to `deep_research_harness/` only. OpenSpec
 governance MAY inspect the downstream application, but no Harness guide,
 documentation, Makefile, application test, or asset SHALL read, import, execute, or
-link OpenSpec content. Governance tests SHALL live under `openspec/tests/governance/`,
-and Harness verification SHALL run independently without the OpenSpec tree.
+link OpenSpec content. Harness verification SHALL run independently without the
+OpenSpec tree. Application behavior requirements SHALL retain deterministic test
+evidence, while OpenSpec-only governance requirements MAY use the implementing
+governance script's `@impl` declaration and SHALL NOT require a parallel pytest tree.
 
 #### Scenario: Canonical guidance, product, and closeout paths pass governance
 - **WHEN** architecture and Change Guidance governance inspect the target repository

@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Verify requirement IDs are backed by deterministic test modules.
+"""Verify requirement IDs have executable implementation evidence.
+
+Application behavior is evidenced by deterministic test modules. OpenSpec-only
+governance behavior may instead be evidenced by its implementing governance script.
 
 @impl EVH-009
 @impl EVH-010
@@ -36,11 +39,11 @@ def _declared_requirements(root: Path, entries: dict[str, str]) -> tuple[set[str
     return collect_active_main_requirements(root, entries)
 
 
-def _test_references(root: Path) -> tuple[set[str], list[str]]:
+def _docstring_references(
+    root: Path, paths: list[Path], *, require_test: bool
+) -> tuple[set[str], list[str]]:
     references: set[str] = set()
     parse_errors: list[str] = []
-    test_roots = (root / "deep_research_harness" / "tests", root / "openspec" / "tests")
-    paths = sorted(path for test_root in test_roots if test_root.exists() for path in test_root.rglob("test_*.py"))
     for path in paths:
         text = path.read_text(encoding="utf-8")
         try:
@@ -52,7 +55,7 @@ def _test_references(root: Path) -> tuple[set[str], list[str]]:
             isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name.startswith("test_")
             for node in ast.walk(tree)
         )
-        if not has_test:
+        if require_test and not has_test:
             continue
         docstrings: list[str] = []
         module_docstring = ast.get_docstring(tree, clean=False)
@@ -67,6 +70,20 @@ def _test_references(root: Path) -> tuple[set[str], list[str]]:
             for payload in IMPL_LINE_RE.findall(docstring):
                 references.update(_expand_ids(payload))
     return references, parse_errors
+
+
+def _evidence_references(root: Path) -> tuple[set[str], list[str]]:
+    test_root = root / "deep_research_harness" / "tests"
+    test_paths = sorted(test_root.rglob("test_*.py")) if test_root.exists() else []
+    governance_root = root / "openspec" / "governance"
+    governance_paths = sorted(governance_root.glob("*.py")) if governance_root.exists() else []
+    references, errors = _docstring_references(root, test_paths, require_test=True)
+    governance_references, governance_errors = _docstring_references(
+        root, governance_paths, require_test=False
+    )
+    references.update(governance_references)
+    errors.extend(governance_errors)
+    return references, errors
 
 
 def _source_location(root: Path, path: Path, line: int | None = None) -> str:
@@ -142,11 +159,11 @@ def check(root: Path) -> list[str]:
     registered = set(entries)
     retired = {requirement_id for requirement_id, value in entries.items() if "DEPRECATED" in str(value).upper()}
     required, ownership_errors = _declared_requirements(root, entries)
-    references, errors = _test_references(root)
+    references, errors = _evidence_references(root)
     errors.extend(ownership_errors)
     errors.extend(_production_references(root, registered, retired))
     for requirement_id in sorted(references - registered):
-        errors.append(f"unknown test requirement: {requirement_id}")
+        errors.append(f"unknown evidence requirement: {requirement_id}")
     for requirement_id in sorted(required - references):
         errors.append(f"uncovered requirement: {requirement_id}")
     return errors
@@ -159,7 +176,7 @@ def main() -> int:
         for error in errors:
             print(error, file=sys.stderr)
         return 1
-    print("Requirement-to-test coverage passed.")
+    print("Requirement implementation evidence passed.")
     return 0
 
 

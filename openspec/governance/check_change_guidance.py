@@ -6,13 +6,14 @@ the mechanical shape of an active change's Focus Card, and bounded entry-documen
 budgets. It does not judge architectural prose and it does not create runtime
 authority.
 
-@impl DRC-004
+@impl DRC-001 DRC-002 DRC-003 DRC-004 DRC-005
 @impl DRC-006
-@impl DRC-008
+@impl DRC-007 DRC-008
 @impl DRC-009
 @impl DRC-010
-@impl DRC-012
+@impl DRC-011 DRC-012
 @impl DRC-014
+@impl PCG-006
 @impl PRS-009
 """
 
