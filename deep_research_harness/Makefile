@@ -1,4 +1,4 @@
-.PHONY: install entry-preflight verify lock-check format lint test test-fast test-integration test-workflow test-entry-environment-regression test-live test-unit test-contract test-viability test-durability test-blocking-io test-assets test-intake test-retained-observation test-work-unit test-strict-checkpoint test-duration-policy benchmark-fast prompt-dump prompt-dump-check profile-setup profile-preflight profiles profile-init profile-check profile-dev demo demo-scripted demo-fixture-graph demo-real demo-real-embedded-smoke demo-real-scripted demo-tui demo-tui-embedded-smoke demo-tui-fixture demo-sessions session-workbench debug-scripted-real-workflow
+.PHONY: install entry-preflight verify lock-check format lint test test-fast test-integration test-workflow test-entry-environment-regression test-live test-unit test-contract test-viability test-durability test-blocking-io test-assets test-intake test-retained-observation test-work-unit test-strict-checkpoint test-duration-policy benchmark-fast prompt-dump prompt-dump-check profile-setup profile-preflight profiles profile-init profile-check profile-dev demo demo-scripted demo-fixture-graph demo-real demo-real-embedded-smoke demo-real-scripted demo-tui demo-tui-embedded-smoke demo-tui-fixture demo-sessions session-workbench debug-scripted-real-workflow soft-bundle
 
 DEMO_ARGS ?=
 LOCAL_ENV_ARG := $(if $(wildcard .env),--env-file .env,)
@@ -81,6 +81,11 @@ demo-tui-fixture: entry-preflight
 
 demo-sessions: entry-preflight
 	PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) --extra operations python scripts/demo_sessions.py $(DEMO_ARGS)
+
+# Operator-only soft bundle CLI. It is a stateless root handle over existing demo
+# and session entry points; never a product lifecycle surface.
+soft-bundle: entry-preflight
+	PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) python scripts/soft_bundle.py $(DEMO_ARGS)
 
 # Fixed-profile local operator surface. It is not Gateway, Web, upstream Terminal
 # Workbench, or a generic recovery client, and accepts no profile/path authority.

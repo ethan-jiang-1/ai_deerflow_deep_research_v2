@@ -20,6 +20,7 @@
 | Plan | 类型 | 下一步 |
 |------|------|--------|
 | [openspec-product-boundary-portability.md](openspec-product-boundary-portability.md) | 设计 | 将 OpenSpec practice 分为 portable core/profiles、Deep Research local composition 与 product front door，并在本仓完成机械验证 |
+| [soft-bundle-session-cli.md](soft-bundle-session-cli.md) | 设计 | 先本地原型验证 soft bundle root 句柄，再开 OpenSpec change 落地为正式 CLI |
 
 **Next available plan ID: CLS-045**（移入 `_closed_plans/` 时分配）
 

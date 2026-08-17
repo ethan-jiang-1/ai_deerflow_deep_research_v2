@@ -180,6 +180,16 @@ kind = "file"
 owner = "PRS-019"
 
 [[required_paths]]
+path = "deep_research_harness/scripts/soft_bundle.py"
+kind = "file"
+owner = "PRS-001"
+
+[[required_paths]]
+path = "deep_research_harness/tests/contract/test_soft_bundle_cli.py"
+kind = "file"
+owner = "PRS-001"
+
+[[required_paths]]
 path = "deep_research_harness/src/deerflow_deep_research/__init__.py"
 kind = "file"
 owner = "PRS-001"

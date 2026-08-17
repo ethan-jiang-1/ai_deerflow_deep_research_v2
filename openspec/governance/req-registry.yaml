@@ -53,6 +53,7 @@ prefixes:
   PCG: portable-change-guidance
   PRS: project-structure
   SCR: scripted-real-workflow-debug
+  SBC: soft-bundle-session-cli
   RCF: research-confirmation
   RED: research-demo-tui
   REG: research-graph-lifecycle
@@ -620,3 +621,10 @@ SCR-002: scripted-real-workflow-debug — The fixed narrow baseline drives one b
 SCR-003: scripted-real-workflow-debug — Script exhaustion is strict: missing responses, surplus model/tool calls, skipped wave actions, or entering targeted/rerun fail the command
 SCR-004: scripted-real-workflow-debug — Completion output labels composition, authenticity, zero-network/zero-credential assertions, per-wave counters, Bundle id, Journal entry, wall time, and the proved/unproved boundary
 SCR-005: scripted-real-workflow-debug — A dedicated Make target exposes the operator-only debug command with a CLI contract of zero env, zero network, strict exhaustion, and a sub-10-second wall time
+
+# soft-bundle-session-cli
+SBC-001: soft-bundle-session-cli — An operator CLI creates a stateless soft bundle root with optional root/name/question/mode, a default root under the operator workspace, and idempotent non-overwrite behavior
+SBC-002: soft-bundle-session-cli — The CLI runs an existing operator research entry, parses a valid bundle id after execution, resolves a repository-relative local record path, and binds it as the current bundle without path-based discovery
+SBC-003: soft-bundle-session-cli — The CLI binds only an opaque bundle id supplied by the caller and never accepts a path or filesystem root as a bundle selector
+SBC-004: soft-bundle-session-cli — Status, path, inspect, phases, and list queries use the soft bundle root or operator parent and expose only repository-relative local record locations without absolute host paths
+SBC-005: soft-bundle-session-cli — Soft bundle records, manifests, and repository-relative paths remain operator observations and never become lifecycle authority or a recovery source for deleted or foreign bundles

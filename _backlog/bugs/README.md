@@ -1,6 +1,6 @@
 # Active Bugs — 活跃 bug 列表
 
-> 最后更新: 2026-08-16（BUG-028/029 关闭） | `_backlog/bugs/` — 活跃 bug 在此
+> 最后更新: 2026-08-17（BUG-032/033 新增） | `_backlog/bugs/` — 活跃 bug 在此
 >
 > **bug 编号权威在 `_done/_fixed_bugs/`，新 bug = 最大编号 + 1。** 本文件只列活跃 bug。
 
@@ -17,9 +17,11 @@
 
 | ID | 严重级别 | 发现 | 标题 |
 | --- | --- | --- | --- |
+| BUG-032 | P1 | 2026-08-17 | uv 缓存读取 `Operation not permitted` 导致 `make demo-scripted` 等本地命令直接挂 |
+| BUG-033 | P1 | 2026-08-17 | `_backlog/_local_demo` 真机脚本缺少 `PROFILE`，一跑就报 Usage 错误 |
 
 
-**Next available bug ID: BUG-032**
+**Next available bug ID: BUG-034**
 
 ---
 

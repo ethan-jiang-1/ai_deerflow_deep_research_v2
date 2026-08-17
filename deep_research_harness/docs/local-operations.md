@@ -24,6 +24,7 @@ Run commands from `deep_research_harness/`. Use the root README's
 | Open the standalone local workbench | `make session-workbench` |
 | Inspect one retained observation | `make demo-sessions DEMO_ARGS="inspect <bundle-id>"` |
 | Run the operator-only scripted-real workflow debug | `make debug-scripted-real-workflow` |
+| Create/run/bind/inspect a soft bundle root | `make soft-bundle DEMO_ARGS="create"` |
 
 The demo targets ignore a foreign active `VIRTUAL_ENV` and use the locked project
 environment. A retained observation command is read-only: it does not discover a
@@ -47,6 +48,13 @@ production control-path integration for fixed legal inputs only — not live mod
 comprehension, web availability, coverage breadth, or the targeted/rerun/
 provider-recovery branches. The baseline fails loudly on any missing or surplus
 scripted model or tool call, or if the run enters `targeted_evidence` or `rerun`.
+
+`make soft-bundle` is an operator-only CLI over the same local demo/session entry
+points. It creates a stateless `soft_bundle_root`, runs mode 001, binds a real
+`bundle_id`, and exposes `status`, `path`, `inspect`, `phases`, and `list`. It
+prints only repository-relative local record locations and never accepts a path as a
+lifecycle selector. It is not a product command and does not change the `deep_research`
+tool contract.
 
 ## Run Bundle Lifecycle
 
