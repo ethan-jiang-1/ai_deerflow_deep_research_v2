@@ -7,7 +7,7 @@
 > 固定问题 = 受控环境，跑出来的结果可对照、可复现，找 bug 容易很多。难度从 001 到 004 递增。
 >
 > **自动化原则：因为问题固定，HITL1/HITL2 的答案也是确定的，系统自动回答，不需要人工输入。**
-> 001/002/003 都是全自动；004 若保留交互，则是专门为了找 HITL/交互类 bug 的例外模式。
+> **001~004 全部走全自动。** 真机交互/人工 HITL 专项留给未来的 010 等 runbook，不在 001~004 内。
 >
 > 原则：先跑 001，能过再 002，再 003，最后 004。一步一步来，每一步都能暴露不同层面的 bug。
 >
@@ -18,7 +18,7 @@
 | 001 | [`runbook-001-easiest-fixture-graph.md`](runbook-001-easiest-fixture-graph.md) | 免费 | 无 | 最简单：只用假数据把图从第一节点跑到最后节点，验证“路通不通” | `What is the capital of France?` |
 | 002 | `runbook-002-easy-scripted-real.md`（待建） | 免费 | 无 | 稍难：用脚本化的真实控制链路跑一遍，验证“真适配器+门+持久化通不通” | `What is one bounded fact about grid energy storage?` |
 | 003 | `runbook-003-medium-real-auto.md`（待建） | 花 API | 本地模型/Tavily 凭据 | 更难：接真实模型和网页工具，全自动跑完，不等人 | `Compare China and US EV battery market in 2024.` |
-| 004 | `runbook-004-hard-real-interactive.md`（待建） | 花 API | 先起 Gateway + 人 | 最难：真机交互跑，HITL 环节要人参与，专门用来找茬 | `Compare China and US EV battery market in 2024.` |
+| 004 | `runbook-004-hard-real-auto.md`（待建） | 花 API | 真机全自动（入口待定） | 最难：真机全自动跑，专门用来找茬 | `Compare China and US EV battery market in 2024.` |
 
 > 📐 手册命名规则固定为 `runbook-00X-难度-用途.md`，以后按这个补。
 
@@ -38,7 +38,7 @@
 
 - 001 / 002：零前置，不联网、不花 API。
 - 003：需要本地有真实模型/Tavily 凭据（不需要 Gateway）。
-- 004：需要先启动本地 Gateway：
+- 004：真机全自动（入口待定；可能是 embedded smoke 或 Gateway 自动路线）：
 
 ```bash
 cd deep_research_harness
