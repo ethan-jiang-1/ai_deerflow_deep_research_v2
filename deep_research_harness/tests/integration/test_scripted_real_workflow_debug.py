@@ -77,9 +77,7 @@ def test_scripted_real_baseline_proves_every_wave_action(tmp_path: Path, _script
     assert elapsed < 10.0, f"wall time {elapsed:.2f}s exceeded the 10s contract"
 
 
-def test_scripted_real_repair_targeted_named_case_proves_the_bounded_loop(
-    tmp_path: Path, _scripts_path: str
-) -> None:
+def test_scripted_real_repair_targeted_named_case_proves_the_bounded_loop(tmp_path: Path, _scripts_path: str) -> None:
     """BUG-028/BUG-029 named case: question handoff, critic fact, bounded blocked terminal."""
 
     import json
@@ -88,9 +86,7 @@ def test_scripted_real_repair_targeted_named_case_proves_the_bounded_loop(
 
     started_at = time.monotonic()
     result = _await(
-        run_scripted_real_workflow(
-            workspace=tmp_path, run_id="proof-repair-targeted", scenario="repair-targeted"
-        )
+        run_scripted_real_workflow(workspace=tmp_path, run_id="proof-repair-targeted", scenario="repair-targeted")
     )
     assert isinstance(result, ScriptedRealRun)
     elapsed = time.monotonic() - started_at
@@ -106,9 +102,7 @@ def test_scripted_real_repair_targeted_named_case_proves_the_bounded_loop(
     assert result.record_count >= 4, f"expected >=4 accepted records, saw {result.record_count}"
 
     events = [
-        json.loads(line)
-        for line in Path(result.journal_path).read_text(encoding="utf-8").splitlines()
-        if line.strip()
+        json.loads(line) for line in Path(result.journal_path).read_text(encoding="utf-8").splitlines() if line.strip()
     ]
     critic_facts = [
         event

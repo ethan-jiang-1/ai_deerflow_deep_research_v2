@@ -66,10 +66,9 @@ def build_synthesis_prompt(
     topics = list(topic_registry or [])
     topic_names = [t.get("title", t.get("topic_id", "")) for t in topics if isinstance(t, dict)]
     evidence_payload = [item.model_dump(mode="json") for item in evidence]
-    question_pairs = [
-        {"question_id": question_id, "question": question}
-        for question_id, question in open_questions
-    ][:64]
+    question_pairs = [{"question_id": question_id, "question": question} for question_id, question in open_questions][
+        :64
+    ]
     assignment = json.dumps(
         {
             "accepted_submission_refs": {

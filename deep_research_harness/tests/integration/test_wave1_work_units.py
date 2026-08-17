@@ -360,9 +360,7 @@ def _apply_result(state: dict, result: dict) -> dict:
     return next_state
 
 
-async def _run_real_wave1_until_review(
-    tmp_path, capabilities: ScriptedWave1Capabilities, *, event_recorder=None
-):
+async def _run_real_wave1_until_review(tmp_path, capabilities: ScriptedWave1Capabilities, *, event_recorder=None):
     seed = await build_live_seed_bundle(tmp_path, bundle=BUNDLE, include_wave1=False, now=NOW)
     graph_context = GraphContextView(
         research_scope_id=BUNDLE_ID,
@@ -979,9 +977,7 @@ async def test_invalid_critic_result_records_a_bounded_post_candidate_validation
 
     capabilities = ScriptedWave1Capabilities(claim_verifier_failure=True)
     recorder = _CriticEventRecorder()
-    _controller, _result, review = await _run_real_wave1_until_review(
-        tmp_path, capabilities, event_recorder=recorder
-    )
+    _controller, _result, review = await _run_real_wave1_until_review(tmp_path, capabilities, event_recorder=recorder)
 
     assert review.rows[0].source_diagnostic_present is True
     assert review.rows[0].claim_verifier_present is False
@@ -1040,9 +1036,7 @@ async def test_critic_invocation_failure_records_a_closed_model_tool_fact(tmp_pa
         ),
     )
     recorder = _CriticEventRecorder()
-    _controller, _result, review = await _run_real_wave1_until_review(
-        tmp_path, capabilities, event_recorder=recorder
-    )
+    _controller, _result, review = await _run_real_wave1_until_review(tmp_path, capabilities, event_recorder=recorder)
 
     assert review.rows[0].source_diagnostic_present is False
     assert review.rows[0].claim_verifier_present is True
@@ -1154,18 +1148,14 @@ async def test_wave1_gate_adapter_projects_clears_and_bounds_open_questions(tmp_
     controller, result, review = await _run_real_wave1_until_review(tmp_path, capabilities)
     assert review.rows[0].open_questions == ()
     gate_state = (
-        _state()
-        | result.parent_update
-        | {WORK_UNIT_GATE_VIEW_KEY: result.gate_view, WAVE1_GATE_REVIEW_KEY: review}
+        _state() | result.parent_update | {WORK_UNIT_GATE_VIEW_KEY: result.gate_view, WAVE1_GATE_REVIEW_KEY: review}
     )
 
     cleared = evaluate_gate_for_node(gate_state, "wave1", real_wave1_gate_def())
     assert cleared["wave1_open_questions"] == ()
 
     prior = (Wave1OpenQuestionRef(question_id="q:w1_prior", work_id="g0_wave1_w9999"),)
-    preserved = evaluate_gate_for_node(
-        gate_state | {"wave1_open_questions": prior}, "wave1", real_wave1_gate_def()
-    )
+    preserved = evaluate_gate_for_node(gate_state | {"wave1_open_questions": prior}, "wave1", real_wave1_gate_def())
     assert preserved["wave1_open_questions"] == prior
 
     with pytest.raises(ValueError, match="writer_not_authorized"):
@@ -1187,9 +1177,7 @@ async def test_wave1_gate_adapter_projects_clears_and_bounds_open_questions(tmp_
             }
         )
 
-    oversized = Wave1GateReview(
-        rows=tuple(row(f"g0_wave1_w{index:04d}", 13) for index in range(5))
-    )
+    oversized = Wave1GateReview(rows=tuple(row(f"g0_wave1_w{index:04d}", 13) for index in range(5)))
     with pytest.raises(ValueError, match="wave1_open_question_projection_overflow"):
         evaluate_gate_for_node(
             _state() | {WAVE1_GATE_REVIEW_KEY: oversized},

@@ -41,9 +41,7 @@ def _normalize_projected_ref(ref: object) -> Wave1OpenQuestionRef:
     raise ValueError("wave1_open_question_projection_invalid")
 
 
-def _project_wave1_open_questions(
-    review: Wave1GateReview, existing: object
-) -> tuple[Wave1OpenQuestionRef, ...]:
+def _project_wave1_open_questions(review: Wave1GateReview, existing: object) -> tuple[Wave1OpenQuestionRef, ...]:
     """Merge the review's refs into the checkpointed projection; fail closed on overflow."""
 
     by_id = {ref.question_id: ref for ref in (_normalize_projected_ref(ref) for ref in existing or ())}
@@ -75,9 +73,7 @@ def evaluate_gate_for_node(
     if logical_name == "wave1" and isinstance(wave1_review, Wave1GateReview):
         question_update = apply_research_update(
             state,
-            {"wave1_open_questions": _project_wave1_open_questions(
-                wave1_review, state.get("wave1_open_questions")
-            )},
+            {"wave1_open_questions": _project_wave1_open_questions(wave1_review, state.get("wave1_open_questions"))},
             writer=WriterRole.GATE,
         )
         update = {**update, **question_update}

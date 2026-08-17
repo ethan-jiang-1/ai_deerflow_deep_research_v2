@@ -171,9 +171,7 @@ def build_real(dependencies: NodeBuildDependencies):
             text_by_id = dict(resolved_texts)
             if any(question_id not in text_by_id for question_id in open_question_ids):
                 raise ValueError("synthesis_question_coverage_invalid")
-            open_question_pairs = tuple(
-                (question_id, text_by_id[question_id]) for question_id in open_question_ids
-            )
+            open_question_pairs = tuple((question_id, text_by_id[question_id]) for question_id in open_question_ids)
         evidence = await dependencies.synthesis_bundle.read_synthesis_evidence(wave0_refs)
         request = build_synthesis_prompt(
             topic_registry=topic_registry,

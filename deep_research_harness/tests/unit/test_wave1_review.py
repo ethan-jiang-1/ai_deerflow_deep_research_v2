@@ -263,7 +263,8 @@ def test_canonical_critic_code_keeps_closed_codes_and_falls_back() -> None:
     assert _canonical_critic_code(ValueError("wave1_review_assignment_kind_invalid")) == (
         "wave1_review_assignment_kind_invalid"
     )
-    assert _canonical_critic_code(
-        ValueError("1 validation error for ClaimVerifierResult\nclaims\n  Field required")
-    ) == "wave1_review_output_invalid"
+    assert (
+        _canonical_critic_code(ValueError("1 validation error for ClaimVerifierResult\nclaims\n  Field required"))
+        == "wave1_review_output_invalid"
+    )
     assert _canonical_critic_code(ValueError("unexpected detail")) == "wave1_review_output_invalid"

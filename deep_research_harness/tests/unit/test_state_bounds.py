@@ -80,9 +80,6 @@ def test_wave1_open_question_projection_stays_under_the_checkpoint_bound() -> No
 
     from deerflow_deep_research.domain.wave1 import Wave1OpenQuestionRef
 
-    refs = tuple(
-        Wave1OpenQuestionRef(question_id=f"q:w1_{'q' * 60}", work_id="g0_wave1_w00000000")
-        for _ in range(64)
-    )
+    refs = tuple(Wave1OpenQuestionRef(question_id=f"q:w1_{'q' * 60}", work_id="g0_wave1_w00000000") for _ in range(64))
     values = _base_values(wave1_open_questions=refs)
     assert len(serialize_research_state(values)) <= MAX_CHECKPOINT_STATE_BYTES

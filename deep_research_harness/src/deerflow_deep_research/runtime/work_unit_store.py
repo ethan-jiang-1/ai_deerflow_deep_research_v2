@@ -389,9 +389,7 @@ class WorkUnitStore:
             for question in document.open_questions:
                 if question.state is OpenQuestionState.TARGETED_SEARCH:
                     entries.append((record.work_id, question.question_id, question.question))
-        return tuple(
-            (question_id, question) for _work_id, question_id, question in sorted(entries)
-        )
+        return tuple((question_id, question) for _work_id, question_id, question in sorted(entries))
 
     async def publish_final(self, report: bytes, citation_map: bytes) -> tuple[ContentRef, ContentRef]:
         if not isinstance(report, bytes) or not report or len(report) > MAX_FINAL_ARTIFACT_BYTES:

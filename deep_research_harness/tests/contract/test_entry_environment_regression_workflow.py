@@ -29,7 +29,7 @@ def test_periodic_workflow_has_exact_paths_cadence_and_offline_target() -> None:
     assert workflow.startswith("name: Deep Research Entry Environment Regression\n")
     assert "pull_request:\n    paths:" in workflow
     assert "push:\n    branches: [master]\n    paths:" in workflow
-    assert "schedule:\n    - cron: \"17 3 * * *\"" in workflow
+    assert 'schedule:\n    - cron: "17 3 * * *"' in workflow
     assert "workflow_dispatch:" in workflow
     assert all(workflow.count(path) == 2 for path in EXPECTED_PATHS)
     assert workflow.count("working-directory: deep_research_harness") == 1

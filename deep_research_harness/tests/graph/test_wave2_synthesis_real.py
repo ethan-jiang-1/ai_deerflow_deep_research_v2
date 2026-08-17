@@ -815,9 +815,7 @@ async def test_real_synthesis_disposes_a_projected_question_into_one_searchable_
 async def test_real_synthesis_fails_closed_when_projected_text_is_unresolvable(tmp_path: Path) -> None:
     """@impl WSN-009"""
 
-    capabilities = _Capabilities(
-        NodeExecutionResult(finish_reason=NodeFinishReason.SUCCESS, summary=_synthesis_json())
-    )
+    capabilities = _Capabilities(NodeExecutionResult(finish_reason=NodeFinishReason.SUCCESS, summary=_synthesis_json()))
     dependencies = _dependencies(tmp_path, capabilities)
     assert isinstance(dependencies.synthesis_bundle, _SynthesisStore)
     dependencies = replace(
@@ -857,9 +855,7 @@ def test_synthesis_coverage_validator_rejects_missing_duplicate_cross_and_foreig
         _synthesis_json(gaps=(_covered_gap("q:w1_cost"),), resolved_questions=("q:w1_cost",))
     )
     with pytest.raises(ValueError, match="synthesis_question_coverage_invalid"):
-        _validate_synthesis_semantics(
-            cross_referenced, (SUBMISSION_REF,), evidence, open_question_ids=("q:w1_cost",)
-        )
+        _validate_synthesis_semantics(cross_referenced, (SUBMISSION_REF,), evidence, open_question_ids=("q:w1_cost",))
 
     foreign = parse_synthesis_output(_synthesis_json(gaps=(_covered_gap("q:w1_foreign"),)))
     with pytest.raises(ValueError, match="synthesis_question_coverage_invalid"):
@@ -879,9 +875,7 @@ def test_legacy_synthesis_artifacts_default_the_new_question_fields() -> None:
     """@impl WSN-009"""
 
     legacy_payload = json.loads(
-        _synthesis_json(
-            gaps=({key: value for key, value in _covered_gap().items() if key != "source_questions"},)
-        )
+        _synthesis_json(gaps=({key: value for key, value in _covered_gap().items() if key != "source_questions"},))
     )
     legacy = SynthesisResult.model_validate(legacy_payload)
     assert legacy.resolved_questions == ()
