@@ -214,6 +214,11 @@ def test_verify_reports_pass(tmp_path: Path, capsys) -> None:
             "terminal_outcome": "completed",
             "journal_availability": "complete",
         }))
+        events = []
+        for phase in soft_bundle.REQUIRED_TRACE:
+            events.append({"category": "node", "outcome": "completed", "phase": phase})
+        events.append({"category": "terminal", "outcome": "completed", "phase": "final_delivery"})
+        (diag / "events.jsonl").write_text("\n".join(json.dumps(e) for e in events) + "\n")
         (root / "manifest.json").write_text(json.dumps({"schema_version": 1, "name": "n", "mode": "001", "question": "", "current_bundle_id": bundle_id}))
         code = soft_bundle.cmd_verify(_args(root="r"))
         out = capsys.readouterr().out

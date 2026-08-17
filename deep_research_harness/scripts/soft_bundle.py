@@ -201,6 +201,27 @@ def _verify_bundle(bundle_dir: Path, bundle_id: str, mode: str) -> tuple[bool, l
         if summary.get("journal_availability") != "complete":
             problems.append(f"summary.journal_availability={summary.get('journal_availability')!r}, expected 'complete'")
 
+    events_path = bundle_dir / "diagnostics" / "events.jsonl"
+    if not events_path.exists():
+        problems.append("events.jsonl missing")
+    else:
+        completed_phases: set[str] = set()
+        terminal_ok = False
+        for line in events_path.read_text().splitlines():
+            try:
+                event = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if event.get("category") == "node" and event.get("outcome") == "completed" and event.get("phase"):
+                completed_phases.add(event["phase"])
+            if event.get("category") == "terminal" and event.get("outcome") == "completed" and event.get("phase") == "final_delivery":
+                terminal_ok = True
+        missing_events = [phase for phase in REQUIRED_TRACE if phase not in completed_phases]
+        if missing_events:
+            problems.append(f"events.jsonl missing completed node: {', '.join(missing_events)}")
+        if not terminal_ok:
+            problems.append("events.jsonl missing terminal completed final_delivery")
+
     if mode == "001" and (bundle_dir / "final" / "report.md").exists():
         problems.append("001 should not publish final/report.md")
 
