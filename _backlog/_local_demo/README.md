@@ -3,16 +3,19 @@
 > **001~004 是同一个端到端 Deep Research 流程的四种跑法**，不是四个分开的功能模块。
 > 都是从图的第一个节点一路跑到最后一个节点；区别只在于：是否用真实模型/网页工具、是否要人介入、环境前置有多少。
 >
+> **Control Environment 原则：所有 001~004 都使用固定研究问题，不开放自定义问题。**
+> 固定问题 = 受控环境，跑出来的结果可对照、可复现，找 bug 容易很多。难度从 001 到 004 递增。
+>
 > 原则：先跑 001，能过再 002，再 003，最后 004。一步一步来，每一步都能暴露不同层面的 bug。
 >
 > **所有操作都写在 runbook 里，不单独放 `.sh` 脚本。**
 
-| 编号 | 手册 | 花不花钱 | 需要什么 | 这个例子是什么意思 | 默认示例问题 |
+| 编号 | 手册 | 花不花钱 | 需要什么 | 这个例子是什么意思 | 固定问题 |
 | --- | --- | --- | --- | --- | --- |
 | 001 | [`runbook-001-easiest-fixture-graph.md`](runbook-001-easiest-fixture-graph.md) | 免费 | 无 | 最简单：只用假数据把图从第一节点跑到最后节点，验证“路通不通” | `What is the capital of France?` |
-| 002 | `runbook-002-稍难-scripted真实链路.md`（待建） | 免费 | 无 | 稍难：用脚本化的真实控制链路跑一遍，验证“真适配器+门+持久化通不通” | 固定为 `What is one bounded fact about grid energy storage?` |
-| 003 | `runbook-003-更难-真机全自动.md`（待建） | 花 API | 本地模型/Tavily 凭据 | 更难：接真实模型和网页工具，全自动跑完，不等人 | `Compare China and US EV battery market in 2024.` |
-| 004 | `runbook-004-最难-真机交互找茬.md`（待建） | 花 API | 先起 Gateway + 人 | 最难：真机交互跑，HITL 环节要人参与，专门用来找茬 | `Compare China and US EV battery market in 2024.` |
+| 002 | `runbook-002-easy-scripted-real.md`（待建） | 免费 | 无 | 稍难：用脚本化的真实控制链路跑一遍，验证“真适配器+门+持久化通不通” | `What is one bounded fact about grid energy storage?` |
+| 003 | `runbook-003-medium-real-auto.md`（待建） | 花 API | 本地模型/Tavily 凭据 | 更难：接真实模型和网页工具，全自动跑完，不等人 | `Compare China and US EV battery market in 2024.` |
+| 004 | `runbook-004-hard-real-interactive.md`（待建） | 花 API | 先起 Gateway + 人 | 最难：真机交互跑，HITL 环节要人参与，专门用来找茬 | `Compare China and US EV battery market in 2024.` |
 
 > 📐 手册命名规则固定为 `runbook-00X-难度-用途.md`，以后按这个补。
 

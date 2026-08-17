@@ -8,6 +8,7 @@
 - 本地跑完后必须靠 `find ... -name 'b_*'` 找最新 bundle，才能继续 inspect / phases。
 - MD 或 skill 无法在运行前先要一个稳定句柄，也无法在运行后稳定地查回目录、日志、内容。
 - 需要一个新的句柄：**soft bundle root**。
+- 001~004 作为流程测试，必须使用固定研究问题（control environment），难度递增，便于对照和找 bug；不开放自定义问题。
 
 ## 现实约束（研究结论）
 
