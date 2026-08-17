@@ -15,6 +15,7 @@ import json
 import os
 import re
 import secrets
+import shutil
 import subprocess
 import sys
 from datetime import UTC, datetime
@@ -106,6 +107,20 @@ def _latest_bundle_dir() -> Path | None:
     return candidates[0] if candidates else None
 
 
+def _clean_run_bundles() -> None:
+    """Remove prior operator run-bundle content before a fresh control run.
+
+    Only the Harness-managed ``deep-research`` subtree under the operator
+    workspace is removed. Soft bundle records under ``soft-bundles`` are kept.
+    """
+    research_root = RUNS_ROOT / "deep-research"
+    if research_root.exists():
+        shutil.rmtree(research_root)
+        research_root.mkdir(parents=True, exist_ok=True)
+    else:
+        research_root.mkdir(parents=True, exist_ok=True)
+
+
 def _run_make(args: list[str], env_extra: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
     env = os.environ.copy()
     env["UV_NO_CACHE"] = "1"
@@ -183,6 +198,10 @@ def cmd_run(args: argparse.Namespace) -> int:
     manifest["question"] = DEFAULT_QUESTION
     _save_manifest(root, manifest)
 
+    # Control environment: always start from a clean run-bundle workspace.
+    _clean_run_bundles()
+    print("cleaned prior run bundles")
+
     mode = manifest.get("mode", "001")
     if mode != "001":
         print(f"error: unsupported mode {mode}", file=sys.stderr)
@@ -218,6 +237,12 @@ def cmd_run(args: argparse.Namespace) -> int:
     _record_bundle(root, manifest, bundle_dir)
     print(f"bound_bundle_id={bundle_id}")
     print(f"bundle_local_path={_to_relative(bundle_dir)}")
+    return 0
+
+
+def cmd_clean(args: argparse.Namespace) -> int:
+    _clean_run_bundles()
+    print("cleaned run bundles")
     return 0
 
 
@@ -332,6 +357,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_bind.add_argument("root")
     p_bind.add_argument("bundle_id")
     p_bind.set_defaults(func=cmd_bind)
+
+    p_clean = sub.add_parser("clean", help="clean prior run bundles")
+    p_clean.set_defaults(func=cmd_clean)
 
     p_status = sub.add_parser("status", help="show soft bundle status")
     p_status.add_argument("root")

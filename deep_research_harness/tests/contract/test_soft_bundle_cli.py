@@ -88,7 +88,7 @@ def test_run_parses_bundle_id_and_binds(tmp_path: Path, capsys) -> None:
         bundle_dir.mkdir(parents=True)
         (bundle_dir / "state.json").write_text(json.dumps({"execution_trace": ["bootstrap"], "phase": "x"}))
         fake_make = subprocess.CompletedProcess(args=[], returncode=0, stdout=f"Run Bundle: {bundle_id}\n", stderr="")
-        with patch.object(soft_bundle, "_run_make", return_value=fake_make):
+        with patch.object(soft_bundle, "_run_make", return_value=fake_make), patch.object(soft_bundle, "_clean_run_bundles"):
             code = soft_bundle.cmd_run(_args(root="r", question=None, mode="001"))
         assert code == 0
         manifest = json.loads((root / "manifest.json").read_text())
@@ -164,3 +164,30 @@ def test_list_scans_only_soft_bundle_parent(tmp_path: Path, capsys) -> None:
         assert code == 0
         assert ".deep-research-demo-runs/workspace/soft-bundles/a" in out
         assert "soft-bundles/b" not in out
+
+
+def test_clean_removes_prior_run_bundles(tmp_path: Path, capsys) -> None:
+    with _patch_paths(tmp_path):
+        bundle_dir = tmp_path / "harness" / ".deep-research-demo-runs" / "workspace" / "deep-research" / "scopes" / "s_test" / "b_123456789012345678901234"
+        bundle_dir.mkdir(parents=True)
+        (bundle_dir / "state.json").write_text("{}")
+        code = soft_bundle.cmd_clean(_args())
+        assert code == 0
+        assert not bundle_dir.exists()
+        assert "cleaned run bundles" in capsys.readouterr().out
+
+
+def test_run_cleans_prior_bundles_before_make(tmp_path: Path) -> None:
+    with _patch_paths(tmp_path):
+        root = tmp_path / "harness" / "r"
+        root.mkdir()
+        (root / "manifest.json").write_text(json.dumps({"schema_version": 1, "name": "n", "mode": "001", "question": "", "current_bundle_id": None}))
+        old_bundle = tmp_path / "harness" / ".deep-research-demo-runs" / "workspace" / "deep-research" / "scopes" / "s_old" / "b_123456789012345678901234"
+        old_bundle.mkdir(parents=True)
+        (old_bundle / "state.json").write_text("{}")
+        fake_make = subprocess.CompletedProcess(args=[], returncode=0, stdout="Run Bundle: b_223456789012345678901234\n", stderr="")
+        new_bundle = tmp_path / "harness" / ".deep-research-demo-runs" / "workspace" / "deep-research" / "scopes" / "s_new" / "b_223456789012345678901234"
+        with patch.object(soft_bundle, "_run_make", return_value=fake_make), patch.object(soft_bundle, "_find_bundle_dir", return_value=new_bundle):
+            code = soft_bundle.cmd_run(_args(root="r", question=None, mode="001"))
+        assert code == 0
+        assert not old_bundle.exists()

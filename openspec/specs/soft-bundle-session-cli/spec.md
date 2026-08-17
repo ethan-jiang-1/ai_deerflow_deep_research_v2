@@ -26,7 +26,7 @@ The CLI SHALL create a `soft_bundle_root` directory when no existing valid soft 
 
 ### Requirement: Run research and bind the resulting bundle
 
-The CLI SHALL run the selected operator mode using existing Harness entry surfaces, parse a valid `bundle_id` from the run output, resolve the repository-relative `bundle_local_path`, record it under `bundles/<bundle_id>.json`, and update the soft bundle manifest's `current_bundle_id`. The CLI SHALL perform local path resolution only after a valid `bundle_id` is available, and SHALL NOT use path scanning to discover or select a bundle. (`SBC-002`)
+The CLI SHALL run the selected operator mode using existing Harness entry surfaces, parse a valid `bundle_id` from the run output, resolve the repository-relative `bundle_local_path`, record it under `bundles/<bundle_id>.json`, and update the soft bundle manifest's `current_bundle_id`. Before invoking the operator mode, the CLI SHALL remove all prior run-bundle content under the operator workspace `deep-research` subtree so each control-environment run starts clean. The CLI SHALL perform local path resolution only after a valid `bundle_id` is available, and SHALL NOT use path scanning to discover or select a bundle. (`SBC-002`)
 
 #### Scenario: Mode 001 run binds the newest valid bundle
 - **WHEN** a caller runs `soft-bundle run <root> --mode 001`
@@ -35,6 +35,10 @@ The CLI SHALL run the selected operator mode using existing Harness entry surfac
 #### Scenario: Run without a valid bundle id fails without binding
 - **WHEN** the underlying run exits successfully but no valid `bundle_id` can be parsed or resolved
 - **THEN** the CLI fails with a bounded error and leaves `current_bundle_id` unchanged
+
+#### Scenario: Run starts from a clean run-bundle workspace
+- **WHEN** a caller runs `soft-bundle run <root> --mode 001` and prior run bundles exist under the operator workspace `deep-research` subtree
+- **THEN** the CLI removes those prior run bundles before invoking the operator mode
 
 ### Requirement: Bind an existing bundle id to a soft bundle root
 

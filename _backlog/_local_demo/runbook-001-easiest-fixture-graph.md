@@ -17,6 +17,9 @@
 
 ## 1. 创建 soft bundle 并跑 001
 
+> 每次 `run` 都会先自动清理之前的 run bundle 内容，保证从干净状态开始。
+> 也可以手动执行：`UV_NO_CACHE=1 make soft-bundle DEMO_ARGS="clean"`。
+
 ```bash
 cd deep_research_harness
 
