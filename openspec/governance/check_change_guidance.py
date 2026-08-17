@@ -24,6 +24,12 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+from change_guidance_kernel import (
+    comma_separated_values as kernel_comma_separated_values,
+    field_value as kernel_field_value,
+    table_cells as kernel_table_cells,
+)
+
 GUIDANCE_ROOT = Path("openspec/change-guidance")
 RETIRED_GUIDANCE_ROOTS = (
     Path("openspec/agent-charter"),
@@ -31,14 +37,14 @@ RETIRED_GUIDANCE_ROOTS = (
     Path("openspec/guardrails"),
     Path("openspec/governance/agent-charter"),
 )
-POLICY_ROOT = GUIDANCE_ROOT / "policies"
-GUIDANCE_ROOT_MEMBERS = frozenset({"README.md", "principles.md", "node-edit-map.md", "policies"})
+GUIDANCE_ROOT_MEMBERS = frozenset({"README.md", "core", "profiles", "local"})
+NODE_AUTHORING_PATH = GUIDANCE_ROOT / "profiles/node-agent/node-agent.md"
 OPEN_SPEC_README_PATH = Path("openspec/README.md")
 CONFIG_PATH = Path("openspec/config.yaml")
 PRODUCT_ROOT = Path("openspec/product")
-PRODUCT_DOCUMENT_PATH = PRODUCT_ROOT / "deep-research.md"
-PRODUCT_ROOT_MEMBERS = frozenset({"deep-research.md"})
-PRODUCT_ROUTE_ANCHOR = "product/deep-research.md"
+PRODUCT_DOCUMENT_PATH = PRODUCT_ROOT / "README.md"
+PRODUCT_ROOT_MEMBERS = frozenset({"README.md"})
+PRODUCT_ROUTE_ANCHOR = "product/README.md"
 PLATFORM_ROOT = Path("openspec/platform")
 GUIDE_PATH = Path("deep_research_harness/AGENTS.md")
 CLAUDE_GUIDE_PATH = Path("deep_research_harness/CLAUDE.md")
@@ -52,7 +58,6 @@ FOCUSED_DOC_PATHS = (
 CHANGES_ROOT = Path("openspec/changes")
 FOCUS_BEGIN = "<!-- BEGIN: DEEP-RESEARCH-FOCUS-GATE -->"
 FOCUS_END = "<!-- END: DEEP-RESEARCH-FOCUS-GATE -->"
-GENERATED_BEGIN = "<!-- BEGIN GENERATED: PROJECT-STRUCTURE -->"
 CONTEXT_EXPANSION_HEADING = "## Context Expansion Gate"
 CONTEXT_EXPANSION_SENTENCE = "A possible future use is not enough to expand scope."
 PROGRAM_ROUTE_ANCHOR = "Program form: `## Program Focus` with at least two"
@@ -123,7 +128,7 @@ APPLY_GUIDANCE = "Review control-placement only when the selected proposal decla
 ARCHIVE_GUIDANCE = "Before archive, review control-placement only when the selected proposal declares it; guidance is advisory."
 OPERATION_GUIDANCE_ADVISORY_BOUNDARY = "does not execute commands, create or complete tasks, or block native operations"
 CLOSEOUT_EVIDENCE_GUIDANCE = (
-    "openspec/governance/closeout-evidence/selected_change_closeout.py verifies only caller-declared committed ranges"
+    "openspec/governance/selected-change-closeout.py verifies only caller-declared committed ranges"
 )
 CONTROL_PLACEMENT_REVIEW_COLUMNS = (
     "Changed decision or fact",
@@ -148,6 +153,14 @@ class PolicyDocument:
 
 
 @dataclass(frozen=True)
+class ProfileDefinition:
+    """One reusable profile and its complete canonical policy set."""
+
+    index_path: Path
+    policies: frozenset[str]
+
+
+@dataclass(frozen=True)
 class WorkstreamFocus:
     """A workstream section within an active bounded program proposal."""
 
@@ -156,13 +169,26 @@ class WorkstreamFocus:
 
 
 def _policy_document(name: str) -> PolicyDocument:
+    paths = {
+        "authority-and-projections": "core/change-practice.md",
+        "change-admission": "core/change-practice.md",
+        "local-context": "local/deep-research.md",
+        "agent-information-map": "local/deep-research.md",
+        "participant-outcomes": "profiles/workflow-control/workflow-control.md",
+        "human-interaction-integrity": "profiles/workflow-control/workflow-control.md",
+        "control-and-recovery": "profiles/workflow-control/workflow-control.md",
+        "workflow-outcome-review": "profiles/workflow-control/workflow-control.md",
+        "control-placement": "profiles/workflow-control/workflow-control.md",
+        "node-agent-workflow-integrity": "profiles/node-agent/node-agent.md",
+        "deerflow-downstream-boundary": "profiles/deerflow-downstream/deerflow-downstream.md",
+    }
     return PolicyDocument(
-        path=POLICY_ROOT / f"{name}.md",
-        index_link=f"policies/{name}.md",
+        path=GUIDANCE_ROOT / paths[name],
+        index_link=paths[name],
     )
 
 
-POLICY_REGISTRY = {
+LOCAL_POLICY_REGISTRY = {
     "local-context": _policy_document("local-context"),
     "authority-and-projections": _policy_document("authority-and-projections"),
     "participant-outcomes": _policy_document("participant-outcomes"),
@@ -172,9 +198,39 @@ POLICY_REGISTRY = {
     NODE_AGENT_WORKFLOW_INTEGRITY_POLICY: _policy_document(NODE_AGENT_WORKFLOW_INTEGRITY_POLICY),
     "change-admission": _policy_document("change-admission"),
     "agent-information-map": _policy_document("agent-information-map"),
-    CONTROL_PLACEMENT_POLICY: _policy_document(CONTROL_PLACEMENT_POLICY),
 }
-INFORMATION_MAP_POLICY = POLICY_ROOT / "agent-information-map.md"
+PROFILE_DEFINITIONS = {
+    "workflow-control": ProfileDefinition(
+        GUIDANCE_ROOT / "profiles/workflow-control/workflow-control.md",
+        frozenset(
+            {
+                "participant-outcomes",
+                "human-interaction-integrity",
+                "control-and-recovery",
+                WORKFLOW_OUTCOME_REVIEW_POLICY,
+                CONTROL_PLACEMENT_POLICY,
+            }
+        ),
+    ),
+    "node-agent": ProfileDefinition(
+        GUIDANCE_ROOT / "profiles/node-agent/node-agent.md",
+        frozenset({NODE_AGENT_WORKFLOW_INTEGRITY_POLICY}),
+    ),
+    "deerflow-downstream": ProfileDefinition(
+        GUIDANCE_ROOT / "profiles/deerflow-downstream/deerflow-downstream.md",
+        frozenset({"deerflow-downstream-boundary"}),
+    ),
+}
+ENABLED_PROFILES = frozenset(PROFILE_DEFINITIONS)
+POLICY_REGISTRY = {
+    **LOCAL_POLICY_REGISTRY,
+    **{
+        policy: _policy_document(policy)
+        for profile_name in ENABLED_PROFILES
+        for policy in PROFILE_DEFINITIONS[profile_name].policies
+    },
+}
+INFORMATION_MAP_POLICY = GUIDANCE_ROOT / "local/deep-research.md"
 INFORMATION_MAP_POLICY_ANCHORS = (
     "## Reader Roles",
     "## Line Budgets",
@@ -183,15 +239,11 @@ INFORMATION_MAP_POLICY_ANCHORS = (
     "local-operations.md",
     "testing-and-evaluation.md",
     "word-count",
-    "openspec/product/deep-research.md",
+    "product/README.md",
     "60 lines",
     "80 lines",
 )
-GUIDE_INFORMATION_MAP_ANCHORS = (
-    "## Information Map",
-    "README.md",
-    "project-structure.toml",
-)
+GUIDE_INFORMATION_MAP_ANCHORS = ("## Information Map", "README.md", "Makefile")
 CONFIG_INFORMATION_MAP_ANCHORS = (
     "## Default Context Boundary",
     "not a project manual",
@@ -213,7 +265,7 @@ PRODUCT_DOCUMENT_ANCHORS = (
     "code",
     "typed contracts",
     "tests",
-    "node-edit-map.md",
+        "profiles/node-agent/node-agent.md",
 )
 PRODUCT_AUTHORITY_CLAIM_PATTERN = re.compile(
     r"\b(?:this (?:page|document|map)|product context)\s+"
@@ -222,6 +274,8 @@ PRODUCT_AUTHORITY_CLAIM_PATTERN = re.compile(
 )
 LLM_NODE_AUTHORING_TRIGGER = "creating, changing, or reviewing an LLM-Bearing Node"
 AUTHORING_ROUTE_DEMOTION_ANCHOR = "before implementation navigation"
+NODE_AUTHORING_ROUTE_ANCHOR = "profiles/node-agent/node-agent.md"
+APPLICATION_NODE_AUTHORING_ROUTE = "deep_research_harness/AGENTS.md"
 NODE_EDIT_MAP_ROUTE_STEPS = (
     "1. **Classify the surface**",
     "2. **Node Cognitive Control Contract and local capability**",
@@ -229,6 +283,20 @@ NODE_EDIT_MAP_ROUTE_STEPS = (
     "4. **Structured output, feedback, and repair**",
     "5. **Focused proof and applicable cognitive evaluation**",
     "6. **Deterministic handoff owners**",
+)
+NODE_AUTHORING_SEMANTIC_ANCHORS = (
+    "Never infer the seam from the first file found or from presence or absence of a model call.",
+    "trusted assignment",
+    "delimited untrusted content",
+    "runtime enforcer",
+    "Feedback is data, not authority",
+    "stop condition",
+    "cognitive evaluation",
+    "limitation",
+    "observable behavior",
+    "## Non-Model Work",
+    "why cognition is not causal",
+    "Do not invent a capability, prompt, or repair loop.",
 )
 LOCAL_CONTEXT_SEAM_OWNER_ANCHORS = (
     "**cognitive-program:**",
@@ -266,7 +334,7 @@ def _require_fragment(text: str, fragment: str, *, code: str, detail: str) -> No
 def _validate_llm_node_authoring_pointer(text: str, path: Path, *, code_prefix: str) -> None:
     normalized = re.sub(r"\s+", " ", text)
     trigger_position = normalized.find(LLM_NODE_AUTHORING_TRIGGER)
-    link_position = normalized.find("node-edit-map.md", trigger_position)
+    link_position = normalized.find(NODE_AUTHORING_ROUTE_ANCHOR, trigger_position)
     demotion_position = normalized.find(AUTHORING_ROUTE_DEMOTION_ANCHOR, trigger_position)
     if min(trigger_position, link_position, demotion_position) == -1:
         raise ContractViolation(
@@ -276,7 +344,7 @@ def _validate_llm_node_authoring_pointer(text: str, path: Path, *, code_prefix: 
     if not trigger_position <= link_position < demotion_position:
         raise ContractViolation(
             f"{code_prefix}.node_authoring_route_demoted",
-            f"node edit map must precede implementation navigation: {path.as_posix()}",
+            f"node-agent authoring gate must precede implementation navigation: {path.as_posix()}",
         )
 
 
@@ -295,6 +363,14 @@ def _validate_node_edit_map_route(node_edit_map: str, path: Path) -> None:
             "guidance.node_edit_map_route_order_invalid",
             f"node edit map must retain its ordered cognitive-first route: {path.as_posix()}",
         )
+    normalized = re.sub(r"\s+", " ", node_edit_map)
+    for anchor in NODE_AUTHORING_SEMANTIC_ANCHORS:
+        normalized_anchor = re.sub(r"\s+", " ", anchor)
+        if normalized_anchor not in normalized:
+            raise ContractViolation(
+                "guidance.node_edit_map_semantics_missing",
+                f"node edit map lacks semantic gate {anchor!r}: {path.as_posix()}",
+            )
 
 
 def _validate_product_context(root: Path) -> None:
@@ -360,13 +436,18 @@ def _validate_change_guidance_tree(root: Path) -> None:
 
     guidance_path = root / GUIDANCE_ROOT
     index_path = GUIDANCE_ROOT / "README.md"
-    principles_path = GUIDANCE_ROOT / "principles.md"
-    node_edit_map_path = GUIDANCE_ROOT / "node-edit-map.md"
+    principles_path = GUIDANCE_ROOT / "core/change-practice.md"
+    node_edit_map_path = GUIDANCE_ROOT / "profiles/node-agent/node-agent.md"
     index = _read_file(root, index_path, code="charter.path_missing")
     principles = _read_file(root, principles_path, code="charter.path_missing")
     node_edit_map = _read_file(root, node_edit_map_path, code="guidance.node_edit_map_missing")
     _validate_node_edit_map_route(node_edit_map, node_edit_map_path)
-    _validate_llm_node_authoring_pointer(index, index_path, code_prefix="guidance")
+    _require_fragment(
+        index,
+        APPLICATION_NODE_AUTHORING_ROUTE,
+        code="guidance.application_authoring_route_missing",
+        detail=f"Change Guidance does not route to the application-owned coding guide: {index_path.as_posix()}",
+    )
 
     if guidance_path.is_symlink() or {path.name for path in guidance_path.iterdir()} != GUIDANCE_ROOT_MEMBERS:
         raise ContractViolation(
@@ -374,22 +455,39 @@ def _validate_change_guidance_tree(root: Path) -> None:
             f"Change Guidance members must equal {sorted(GUIDANCE_ROOT_MEMBERS)!r}: {GUIDANCE_ROOT.as_posix()}",
         )
 
-    expected_policy_members = {document.path.name for document in POLICY_REGISTRY.values()}
-    policy_path = root / POLICY_ROOT
-    if (policy_path / "README.md").exists() or (policy_path / "README.md").is_symlink():
+    expected_members = {
+        GUIDANCE_ROOT / "core": {"change-practice.md"},
+        GUIDANCE_ROOT / "profiles/workflow-control": {"workflow-control.md"},
+        GUIDANCE_ROOT / "profiles/node-agent": {"node-agent.md"},
+        GUIDANCE_ROOT / "profiles/deerflow-downstream": {"deerflow-downstream.md"},
+        GUIDANCE_ROOT / "local": {"deep-research.md"},
+    }
+    for directory, members in expected_members.items():
+        path = root / directory
+        if path.is_symlink() or {item.name for item in path.iterdir()} != members:
+            raise ContractViolation("guidance.policy_members_mismatch", f"members mismatch: {directory.as_posix()}")
+
+    unknown_profiles = ENABLED_PROFILES - PROFILE_DEFINITIONS.keys()
+    if unknown_profiles:
         raise ContractViolation(
-            "guidance.policy_index_present",
-            f"Change Guidance policy directory must not contain an index: {POLICY_ROOT.as_posix()}",
+            "guidance.profile_unknown",
+            f"enabled profiles are not defined: {sorted(unknown_profiles)!r}",
         )
-    if policy_path.is_symlink() or {path.name for path in policy_path.iterdir()} != expected_policy_members:
-        raise ContractViolation(
-            "guidance.policy_members_mismatch",
-            f"Change Guidance policies must equal {sorted(expected_policy_members)!r}: {POLICY_ROOT.as_posix()}",
-        )
+    for profile_name in ENABLED_PROFILES:
+        profile = PROFILE_DEFINITIONS[profile_name]
+        _read_file(root, profile.index_path, code="guidance.profile_incomplete")
+        for policy in profile.policies:
+            document = POLICY_REGISTRY.get(policy)
+            if document is None:
+                raise ContractViolation(
+                    "guidance.profile_incomplete",
+                    f"enabled profile {profile_name!r} lacks policy binding {policy!r}",
+                )
+            _read_file(root, document.path, code="guidance.profile_incomplete")
 
     _require_fragment(
         index,
-        "principles.md",
+        "core/change-practice.md",
         code="charter.index_link_missing",
         detail=f"Change Guidance index does not link to {principles_path.as_posix()}",
     )
@@ -426,7 +524,7 @@ def _validate_change_guidance_tree(root: Path) -> None:
             detail=f"policy lacks its non-authority boundary: {document.path.as_posix()}",
         )
 
-    local_context_path = POLICY_ROOT / "local-context.md"
+    local_context_path = GUIDANCE_ROOT / "local/deep-research.md"
     local_context = _read_file(root, local_context_path, code="charter.path_missing")
     _require_fragment(
         local_context,
@@ -447,7 +545,7 @@ def _validate_change_guidance_tree(root: Path) -> None:
             code="charter.local_context_seam_owner_missing",
             detail=f"local-context policy lacks seam-owner rule {anchor!r}: {local_context_path.as_posix()}",
         )
-    change_admission_path = POLICY_ROOT / "change-admission.md"
+    change_admission_path = GUIDANCE_ROOT / "local/deep-research.md"
     change_admission = _read_file(root, change_admission_path, code="charter.path_missing")
     _require_fragment(
         change_admission,
@@ -468,54 +566,25 @@ def _validate_change_guidance_tree(root: Path) -> None:
 
 def _validate_focus_gate(root: Path) -> None:
     guide = _read_file(root, GUIDE_PATH, code="guide.missing")
-    begin_count = guide.count(FOCUS_BEGIN)
-    end_count = guide.count(FOCUS_END)
-    if begin_count != 1 or end_count != 1:
-        raise ContractViolation(
-            "guide.focus_gate_missing",
-            f"module guide must contain exactly one focus-gate marker pair: {GUIDE_PATH.as_posix()}",
-        )
-
-    begin = guide.index(FOCUS_BEGIN)
-    end = guide.index(FOCUS_END, begin)
-    if end <= begin:
-        raise ContractViolation(
-            "guide.focus_gate_order",
-            f"focus-gate markers are out of order: {GUIDE_PATH.as_posix()}",
-        )
-    generated = guide.find(GENERATED_BEGIN)
-    if generated != -1 and begin > generated:
-        raise ContractViolation(
-            "guide.focus_gate_position",
-            f"focus gate must appear before the generated structure block: {GUIDE_PATH.as_posix()}",
-        )
-
-    focus_gate = guide[begin:end]
-    _validate_llm_node_authoring_pointer(focus_gate, GUIDE_PATH, code_prefix="guide")
+    _validate_node_edit_map_route(guide, GUIDE_PATH)
     _require_fragment(
-        focus_gate,
-        "change-guidance/README.md",
-        code="guide.focus_gate_link_missing",
-        detail=f"focus gate does not link to Change Guidance: {GUIDE_PATH.as_posix()}",
-    )
-    _require_fragment(
-        focus_gate,
-        "Primary owner to inspect first",
+        guide,
+        "Primary application owner",
         code="guide.module_route_missing",
-        detail=f"focus gate lacks the primary-module routing table: {GUIDE_PATH.as_posix()}",
+        detail=f"application guide lacks the primary-owner routing table: {GUIDE_PATH.as_posix()}",
     )
     _require_fragment(
-        focus_gate,
+        guide,
         CONTEXT_EXPANSION_SENTENCE,
         code="guide.context_expansion_rule_missing",
-        detail=f"focus gate lacks its context-expansion rule: {GUIDE_PATH.as_posix()}",
+        detail=f"application guide lacks its context-expansion rule: {GUIDE_PATH.as_posix()}",
     )
-    _require_fragment(
-        focus_gate,
-        PROGRAM_ROUTE_ANCHOR,
-        code="guide.program_route_missing",
-        detail=f"focus gate lacks the bounded-program route: {GUIDE_PATH.as_posix()}",
-    )
+    for forbidden in ("openspec/", "../openspec", "openspec.governance"):
+        if forbidden in guide:
+            raise ContractViolation(
+                "guide.upstream_dependency_present",
+                f"downstream application guide depends on upstream framework {forbidden!r}",
+            )
 
 
 def _validate_claude_guide(root: Path) -> None:
@@ -750,12 +819,7 @@ def _section_after_heading(proposal: str, match: re.Match[str], *, maximum_level
 
 
 def _field_value(section: str, field: str) -> str | None:
-    pattern = re.compile(
-        rf"^- \*\*{re.escape(field)}:\*\*[ \t]*(?P<value>\S[^\n]*)$",
-        re.MULTILINE,
-    )
-    match = pattern.search(section)
-    return match.group("value").strip() if match else None
+    return kernel_field_value(section, field)
 
 
 def _scoped_code(code_prefix: str, suffix: str) -> str:
@@ -908,10 +972,7 @@ def _review_section(
 
 
 def _table_cells(line: str) -> tuple[str, ...] | None:
-    stripped = line.strip()
-    if not (stripped.startswith("|") and stripped.endswith("|")):
-        return None
-    return tuple(cell.strip() for cell in stripped[1:-1].split("|"))
+    return kernel_table_cells(line)
 
 
 def _is_markdown_separator(cells: tuple[str, ...], columns: tuple[str, ...]) -> bool:
@@ -1107,16 +1168,17 @@ def _comma_separated_values(
     proposal_path: Path,
     validator: re.Pattern[str] | None = None,
 ) -> tuple[str, ...]:
-    values = tuple(item.strip() for item in value.split(","))
-    if not values or any(not item or (validator is not None and validator.fullmatch(item) is None) for item in values):
-        raise ContractViolation(
-            invalid_code,
-            f"{label} must be a non-empty comma-separated list: {proposal_path.as_posix()}",
-        )
-    if len(values) != len(set(values)):
+    raw_values = tuple(item.strip() for item in value.split(","))
+    if raw_values and not any(not item for item in raw_values) and len(raw_values) != len(set(raw_values)):
         raise ContractViolation(
             duplicate_code,
             f"{label} must not repeat an identifier: {proposal_path.as_posix()}",
+        )
+    values = kernel_comma_separated_values(value)
+    if values is None or (validator is not None and any(validator.fullmatch(item) is None for item in values)):
+        raise ContractViolation(
+            invalid_code,
+            f"{label} must be a non-empty comma-separated list: {proposal_path.as_posix()}",
         )
     return values
 

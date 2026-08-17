@@ -1,73 +1,33 @@
 # Deep Research Change Guidance
 
-> scope: `deep_research_harness/` design and OpenSpec change admission
-> authority: guidance only; never runtime control, permission, or current-state truth
+> authority: local routing only; guidance never creates runtime behavior or permission
 
-This directory is the policy-selection route for cross-cutting design and admission
-guidance. For product-specific Deep Research orientation, read the concise
-[product context](../product/deep-research.md) first; it is not a policy or runtime
-authority.
+For product orientation read [product/README.md](../product/README.md). Start ordinary
+changes with [Core Change Practice](core/change-practice.md) and one primary causal owner.
 
-## Start Here
-
-For a Coding Agent creating, changing, or reviewing an LLM-Bearing Node or direct
-model branch, first read the [node edit map](node-edit-map.md) before implementation
-navigation. It routes cognitive behavior through capability, prompt/context,
-feedback/repair, and proof/evaluation before the separate deterministic handoff.
-
-For a change under `deep_research_harness/`, first read the focus gate at the start of
-`deep_research_harness/AGENTS.md`, then select one primary module or causal owner. Read its active
-capability spec/delta, closest implementation, and lowest responsible test seam.
-Read a DeerFlow public interface only when the named local change actually depends
-on it and can state the question that interface must answer. A possible future use is
-not enough to expand scope. Do not load this whole directory by default; select every
-canonical policy from the route table whose trigger actually applies. A change still
-has one primary module or causal owner.
+For creating, changing, or reviewing an LLM-Bearing Node, first read the
+[portable Node-Agent contract](profiles/node-agent/node-agent.md), then the adopting
+application's own coding guide. In this repository the application-owned first read is
+[`deep_research_harness/AGENTS.md`](../../deep_research_harness/AGENTS.md); the
+application does not link back to this development framework.
 
 ## Policy Route
 
-| Trigger | Read this policy | It answers |
-|---|---|---|
-| Unsure where to start or how much source to inspect | [local context](policies/local-context.md) | Which module owns the decision and what is the minimum context? |
-| Adding a state record, summary, diagnostic, status view, or retained observation | [authority and projections](policies/authority-and-projections.md) | Which existing source owns the fact, and what remains only a projection? |
-| Changing CLI/TUI/API/agent-visible lifecycle output | [participant outcomes](policies/participant-outcomes.md) | What must people and AI consumers receive from the same typed facts? |
-| Adding or revising a human decision, semantic input, visible control, or interaction recovery | [human-interaction integrity](policies/human-interaction-integrity.md) | What does the person mean, which authority interprets it, and how do visible controls remain actionable? |
-| Adding, removing, or materially revising a node's LLM-bearing role, capability policy, tool posture, output admission, repair semantics, or model/non-model classification | [node-agent workflow integrity](policies/node-agent-workflow-integrity.md) | What bounded cognitive job is present, who enforces tools, and which deterministic owner may admit its candidate? |
-| Adding retry, fallback, recovery, terminal handling, or a control check | [control and recovery](policies/control-and-recovery.md) | Who owns the recovery, what is bounded, and what action is legal next? |
-| Adding or changing a model, tool, provider, worker, retry, terminal, diagnostic, or lifecycle projection path | [workflow outcome review](policies/workflow-outcome-review.md) | What failure table, fact owner, bounded recovery, terminal disposition, next action, and proof seam must the proposal record? |
-| Moving a candidate, human judgment, control fact, or deterministic admission/recovery boundary | [control placement](policies/control-placement.md) | Which deterministic owner receives the fact, which posture protects the boundary, and what evidence proves the handoff? |
-| Opening, revising, or reviewing an OpenSpec change | [change admission](policies/change-admission.md) | What belongs in Change Guidance, a policy, an owning spec, or an operational procedure? |
-| Adding or revising a contributor entry document | [agent information map](policies/agent-information-map.md) | Which reader needs it, what is the smallest route, and where does detail belong? |
+| Trigger | Canonical policy | Owner |
+| --- | --- | --- |
+| State, recovery, human decision, outcome, or control placement | rules in `workflow-control.md` | [workflow-control](profiles/workflow-control/workflow-control.md) |
+| LLM role, tool posture, candidate admission, repair, or classification | rules in `node-agent.md` | [node-agent](profiles/node-agent/node-agent.md) |
+| DeerFlow public interface, gitlink, or upstream compatibility | rules in `deerflow-downstream.md` | [deerflow-downstream](profiles/deerflow-downstream/deerflow-downstream.md) |
+| Local module/seam, Program, operation, or information-map rule | rules in `deep-research.md` | [local composition](local/deep-research.md) |
+| Fact owner versus projection and change admission | rules in `change-practice.md` | [core](core/change-practice.md) |
 
-The nested `policies/` directory is the complete trigger-bearing library, not a
-second routing authority. It classifies existing design/admission and cross-cutting
-review guidance only; the route table above remains the sole selection entry.
+Canonical documents: [core/change-practice.md](core/change-practice.md),
+[profiles/workflow-control/workflow-control.md](profiles/workflow-control/workflow-control.md),
+[profiles/node-agent/node-agent.md](profiles/node-agent/node-agent.md),
+[profiles/deerflow-downstream/deerflow-downstream.md](profiles/deerflow-downstream/deerflow-downstream.md),
+and [local/deep-research.md](local/deep-research.md).
 
-## Where Rules Belong
-
-| Kind of statement | Canonical home | Does not own |
-|---|---|---|
-| LLM-node authoring first-read route | [node-edit-map.md](node-edit-map.md) | Behavior, routes, permissions, or a per-change rule |
-| Durable, cross-capability Deep Research principle | [principles.md](principles.md) | Runtime behavior or a one-off feature contract |
-| Repeated design/review rule with a concrete trigger | `policies/<topic>.md` | State fields, routes, commands, or permissions |
-| Observable behavior, schema, action, or security boundary | Owning capability main spec and active delta | A different capability's behavior |
-| Operator procedure or incident response | Scoped runbook or operational document | Current run state or a behavioral requirement |
-| Current fact and conformance evidence | Owning typed contract, checkpoint/ledger/content authority, code, and tests | Future policy or approval |
-
-## Authority Boundary
-
-Change Guidance helps a contributor choose the right owner. It cannot invent a graph
-route, provider retry, command, state field, user authorization, checkpoint fact, or
-recovery capability. Approved main specs own required behavior; one active delta owns
-pending behavior; runtime authorities and executable contracts own current facts.
-Human-facing text, AI-facing projections, summaries, diagnostics, and this directory
-remain explanations of those facts.
-
-## Adding A Policy
-
-Add a policy only when a rule recurs across more than one capability and has a
-specific trigger that lets a contributor know when to read it. Keep it shorter and
-less authoritative than the work it guides. Give it a route-table entry, its
-non-authority boundary, and an owning capability/spec reference for any concrete
-behavior. A proposal for new behavior belongs in an OpenSpec delta even when a policy
-motivates it.
+All three profiles are enabled for this project. A change selects every triggered
+canonical policy; disabled profiles would contribute no selectable policy or review.
+Local Program grammar, paths, budgets, module map, and operations remain under
+`local/`. Exact paths remain solely in `governance/project-structure.toml`.

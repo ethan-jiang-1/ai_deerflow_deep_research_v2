@@ -24,7 +24,6 @@ HARNESS_README = AGENT_ROOT / "README.md"
 LOCAL_OPERATIONS = AGENT_ROOT / "docs" / "local-operations.md"
 RUN_README = AGENT_ROOT / "run" / "README.md"
 BACKLOG_README = REPO_ROOT / "_backlog" / "README.md"
-OPENSPEC_README = REPO_ROOT / "openspec" / "README.md"
 ROOT_AGENTS = REPO_ROOT / "AGENTS.md"
 
 
@@ -79,10 +78,3 @@ def test_backlog_paths_are_checkout_relative() -> None:
     assert "deerflow/backend" in backlog
     assert "deerflow/frontend" in backlog
     assert "deerflow/_digest" not in backlog
-
-
-def test_openspec_readme_matches_the_change_store() -> None:
-    """openspec/README describes changes/ without asserting active deltas exist."""
-    openspec_readme = _text(OPENSPEC_README)
-    assert "active proposed deltas" not in openspec_readme
-    assert "changes/archive" in openspec_readme

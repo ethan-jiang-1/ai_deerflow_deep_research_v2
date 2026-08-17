@@ -12,4 +12,4 @@ historical title, decision text, or runtime authority.
 
 - **Current applicability:** `final/report.md` remains a current Bundle artifact.
 - **Non-current / planned / dormant scope:** Its historical Primary User inspect/copy/export claim is non-current; no planned export commitment is created.
-- **Current owner or route:** [final-delivery-node](../../../openspec/specs/final-delivery-node/spec.md)
+- **Current owner or route:** `src/deerflow_deep_research/graph/nodes/final_delivery/`

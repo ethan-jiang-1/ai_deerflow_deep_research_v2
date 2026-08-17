@@ -19,7 +19,7 @@
 
 | Plan | 类型 | 下一步 |
 |------|------|--------|
-| [openspec-product-boundary-portability.md](openspec-product-boundary-portability.md) | 设计 | 确认深度 review 的修订边界；随后只创建 portable-kernel change，并以真实 sibling adoption spike 验证后续抽取 |
+| [openspec-product-boundary-portability.md](openspec-product-boundary-portability.md) | 设计 | 将 OpenSpec practice 分为 portable core/profiles、Deep Research local composition 与 product front door，并在本仓完成机械验证 |
 
 **Next available plan ID: CLS-045**（移入 `_closed_plans/` 时分配）
 

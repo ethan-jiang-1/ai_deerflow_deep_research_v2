@@ -6,11 +6,6 @@ requirement_ids = ["PRS-001", "PRS-002", "PRS-003", "PRS-004", "PRS-005", "PRS-0
 path = "deerflow"
 commit = "66b9e7f21212490cf92fafac137542b9deb06615"
 
-[guide]
-path = "deep_research_harness/AGENTS.md"
-begin_marker = "<!-- BEGIN GENERATED: PROJECT-STRUCTURE -->"
-end_marker = "<!-- END GENERATED: PROJECT-STRUCTURE -->"
-
 [package]
 source_root = "deep_research_harness/src/deerflow_deep_research"
 fixture_root = "deep_research_harness/src_fake/deerflow_deep_research_fixtures"
@@ -895,7 +890,7 @@ kind = "directory"
 owner = "PRS-009"
 
 [[required_paths]]
-path = "openspec/product/deep-research.md"
+path = "openspec/product/README.md"
 kind = "file"
 owner = "PRS-009"
 
@@ -910,67 +905,57 @@ kind = "file"
 owner = "PRS-009"
 
 [[required_paths]]
-path = "openspec/change-guidance/principles.md"
-kind = "file"
-owner = "PRS-009"
-
-[[required_paths]]
-path = "openspec/change-guidance/node-edit-map.md"
-kind = "file"
-owner = "PRS-009"
-
-[[required_paths]]
-path = "openspec/change-guidance/policies"
+path = "openspec/change-guidance/core"
 kind = "directory"
 owner = "PRS-009"
 
 [[required_paths]]
-path = "openspec/change-guidance/policies/local-context.md"
+path = "openspec/change-guidance/core/change-practice.md"
 kind = "file"
 owner = "PRS-009"
 
 [[required_paths]]
-path = "openspec/change-guidance/policies/authority-and-projections.md"
+path = "openspec/change-guidance/profiles"
+kind = "directory"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/change-guidance/profiles/workflow-control"
+kind = "directory"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/change-guidance/profiles/workflow-control/workflow-control.md"
 kind = "file"
 owner = "PRS-009"
 
 [[required_paths]]
-path = "openspec/change-guidance/policies/participant-outcomes.md"
+path = "openspec/change-guidance/profiles/node-agent"
+kind = "directory"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/change-guidance/profiles/node-agent/node-agent.md"
 kind = "file"
 owner = "PRS-009"
 
 [[required_paths]]
-path = "openspec/change-guidance/policies/human-interaction-integrity.md"
+path = "openspec/change-guidance/profiles/deerflow-downstream"
+kind = "directory"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/change-guidance/profiles/deerflow-downstream/deerflow-downstream.md"
 kind = "file"
 owner = "PRS-009"
 
 [[required_paths]]
-path = "openspec/change-guidance/policies/node-agent-workflow-integrity.md"
-kind = "file"
+path = "openspec/change-guidance/local"
+kind = "directory"
 owner = "PRS-009"
 
 [[required_paths]]
-path = "openspec/change-guidance/policies/control-and-recovery.md"
-kind = "file"
-owner = "PRS-009"
-
-[[required_paths]]
-path = "openspec/change-guidance/policies/workflow-outcome-review.md"
-kind = "file"
-owner = "PRS-009"
-
-[[required_paths]]
-path = "openspec/change-guidance/policies/change-admission.md"
-kind = "file"
-owner = "PRS-009"
-
-[[required_paths]]
-path = "openspec/change-guidance/policies/agent-information-map.md"
-kind = "file"
-owner = "PRS-009"
-
-[[required_paths]]
-path = "openspec/change-guidance/policies/control-placement.md"
+path = "openspec/change-guidance/local/deep-research.md"
 kind = "file"
 owner = "PRS-009"
 
@@ -980,32 +965,62 @@ kind = "file"
 owner = "PRS-009"
 
 [[required_paths]]
-path = "deep_research_harness/tests/contract/test_change_guidance_governance.py"
+path = "openspec/governance/change_guidance_kernel.py"
 kind = "file"
 owner = "PRS-009"
 
 [[required_paths]]
-path = "deep_research_harness/tests/contract/test_operation_guidance_probe_evidence.py"
+path = "openspec/governance/portable_change_guidance_export.py"
 kind = "file"
 owner = "PRS-009"
 
 [[required_paths]]
-path = "openspec/governance/closeout-evidence"
-kind = "directory"
-owner = "PRS-009"
-
-[[required_paths]]
-path = "openspec/governance/closeout-evidence/README.md"
+path = "openspec/governance/check_harness_dependency_direction.py"
 kind = "file"
 owner = "PRS-009"
 
 [[required_paths]]
-path = "openspec/governance/closeout-evidence/selected_change_closeout.py"
+path = "openspec/tests/governance/test_change_guidance_governance.py"
 kind = "file"
 owner = "PRS-009"
 
 [[required_paths]]
-path = "deep_research_harness/tests/contract/test_selected_change_closeout.py"
+path = "openspec/tests/governance/test_change_guidance_kernel.py"
+kind = "file"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/tests/governance/test_portable_change_guidance_export.py"
+kind = "file"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/tests/governance/test_architecture_governance.py"
+kind = "file"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/tests/governance/test_import_boundaries.py"
+kind = "file"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/tests/governance/test_operation_guidance_probe_evidence.py"
+kind = "file"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/governance/selected-change-closeout.md"
+kind = "file"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/governance/selected-change-closeout.py"
+kind = "file"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/tests/governance/test_selected_change_closeout.py"
 kind = "file"
 owner = "PRS-009"
 

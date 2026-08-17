@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import subprocess
-import tomllib
 from pathlib import Path
 
 from scripts.check_test_assets import collect_pytest_selectors
@@ -54,10 +53,6 @@ def test_retained_test_roots_are_non_empty_and_e2e_has_no_active_surface() -> No
         assert _tracked_residents(directory), directory
 
     assert not (REPO_ROOT / RETIRED_E2E_DIRECTORY).exists()
-
-    manifest = tomllib.loads((REPO_ROOT / "openspec/governance/project-structure.toml").read_text(encoding="utf-8"))
-    required_paths = {entry["path"] for entry in manifest["required_paths"]}
-    assert RETIRED_E2E_DIRECTORY not in required_paths
 
     active_paths = FAST_PATHS + INTEGRATION_PATHS + LIVE_PATHS + PERIODIC_PATHS + WORKFLOW_PATHS
     assert "tests/e2e" not in active_paths

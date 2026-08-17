@@ -6,7 +6,7 @@
 - [specs/](specs/) holds approved capability behavior; [changes/](changes/) holds
   proposed deltas currently under development, and completed changes live under
   `changes/archive/`.
-- [Deep Research product context](product/deep-research.md) is the concise reading
+- [Deep Research product context](product/README.md) is the concise reading
   map for product-specific orientation; it routes detail to its existing owners.
 - [Change Guidance](change-guidance/README.md) routes local design and admission
   policies without becoming runtime authority.

@@ -65,6 +65,19 @@ def _git_index_entries(root: Path) -> tuple[tuple[bytes, bytes], ...]:
     return tuple(entries)
 
 
+def _deleted_worktree_paths(root: Path) -> frozenset[bytes]:
+    result = subprocess.run(
+        ["git", "ls-files", "--deleted", "-z"],
+        cwd=root,
+        check=False,
+        capture_output=True,
+    )
+    if result.returncode != 0:
+        detail = result.stderr.decode("utf-8", errors="replace").strip()
+        raise NodeLanguageError(f"language.git_deletions_unavailable:{detail or root}")
+    return frozenset(path for path in result.stdout.split(b"\0") if path)
+
+
 def _entry_bytes(root: Path, mode: bytes, path_bytes: bytes) -> bytes:
     relative_path = os.fsdecode(path_bytes)
     path = root / relative_path
@@ -92,8 +105,11 @@ def scan_tracked_language(root: Path) -> NodeLanguageScan:
     checked_paths: list[str] = []
     gitlink_paths: list[str] = []
     violations: list[str] = []
+    deleted_paths = _deleted_worktree_paths(root)
     for mode, path_bytes in _git_index_entries(root):
         relative_path = os.fsdecode(path_bytes)
+        if path_bytes in deleted_paths:
+            continue
         if mode == GITLINK_MODE:
             gitlink_paths.append(relative_path)
             continue

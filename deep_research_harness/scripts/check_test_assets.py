@@ -71,8 +71,6 @@ from tests.assets.requirement_evidence import (  # noqa: E402
     RequirementEvidenceError,
     RequirementImpact,
     collected_deterministic_impl_ids,
-    load_alive_requirement_ids,
-    load_known_requirement_ids,
     validate_consolidation_decisions,
     validate_requirement_evidence,
     validate_requirement_impacts,
@@ -372,18 +370,25 @@ def main() -> int:
         }
         claims = claim_index(EVIDENCE_CLAIMS)
         validate_claim_selections(EVIDENCE_CLAIMS, focused_selectors=focused)
+        deterministic_impl_ids = collected_deterministic_impl_ids(AGENT_ROOT, collected)
+        declared_requirement_ids = {
+            *(requirement_id for claim in EVIDENCE_CLAIMS for requirement_id in claim.requirement_ids),
+            *(impact.requirement_id for impact in REQUIREMENT_IMPACTS),
+            *(rule.requirement_id for rule in REQUIREMENT_EVIDENCE_POLICY),
+            *deterministic_impl_ids,
+        }
         validate_requirement_evidence(
             policy=REQUIREMENT_EVIDENCE_POLICY,
             claims=EVIDENCE_CLAIMS,
-            alive_requirement_ids=load_alive_requirement_ids(AGENT_ROOT.parent),
-            known_requirement_ids=load_known_requirement_ids(AGENT_ROOT.parent),
-            deterministic_impl_ids=collected_deterministic_impl_ids(AGENT_ROOT, collected),
+            alive_requirement_ids=deterministic_impl_ids,
+            known_requirement_ids=declared_requirement_ids,
+            deterministic_impl_ids=deterministic_impl_ids,
             collected_selectors=set().union(*focused.values()),
         )
         validate_requirement_impacts(
             REQUIREMENT_IMPACTS,
             claims=EVIDENCE_CLAIMS,
-            known_requirement_ids=load_known_requirement_ids(AGENT_ROOT.parent),
+            known_requirement_ids=declared_requirement_ids,
             collected_selectors=set().union(*focused.values()),
         )
         validate_inventory_claim_references(

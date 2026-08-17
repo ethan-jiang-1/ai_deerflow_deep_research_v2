@@ -38,8 +38,8 @@ specification, implementation, and test seam selected by its focus gate.
 | Select and interpret deterministic, workflow-outcome, live, or release testing | [Testing and evaluation](docs/testing-and-evaluation.md) |
 | Run or interpret a manually selected Cognitive Evaluation case | [Cognitive Evaluation Suite](docs/cognitive-evaluation-suite.md) |
 | Inspect the generated graph topology | [Logical topology](docs/deep-research-topology.md) |
-| Make a code or governance change | [`AGENTS.md`](AGENTS.md), then the [Change Guidance](../openspec/change-guidance/README.md) policy triggered by the change |
-| Find exact path and layer rules | [`project-structure.toml`](../openspec/governance/project-structure.toml) |
+| Make an application code change | [`AGENTS.md`](AGENTS.md), then the owning source and narrowest test |
+| Find application architecture and layer rules | [`docs/runtime-architecture.md`](docs/runtime-architecture.md) |
 
 The focused documents preserve the detailed operational and evidence reference that
 previously lived here. Open only the one needed for the current question.

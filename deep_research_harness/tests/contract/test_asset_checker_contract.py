@@ -366,7 +366,6 @@ def test_model_led_smoke_requirement_impacts_use_collected_appropriate_selectors
     @impl HIN-014
     @impl EVH-024
     @impl RER-012
-    @impl PRS-016
     """
     expected_selections = {
         (
@@ -382,10 +381,6 @@ def test_model_led_smoke_requirement_impacts_use_collected_appropriate_selectors
             "tests/integration/test_demo_run_update_adapters.py::"
             "test_standalone_adapters_render_every_complete_proposal_line_before_control",
         ): FocusedSelection.INTEGRATION,
-        (
-            "PRS-016",
-            "tests/contract/test_live_architecture_contract.py::test_live_repository_satisfies_architecture_contract",
-        ): FocusedSelection.FAST,
         (
             "EVH-024",
             "tests/unit/test_release_control_plane.py::test_release_runner_reports_the_complete_model_led_smoke_evidence",
@@ -406,7 +401,7 @@ def test_model_led_smoke_requirement_impacts_use_collected_appropriate_selectors
     impacts = tuple(
         impact
         for impact in REQUIREMENT_IMPACTS
-        if impact.requirement_id in {"RCF-001", "HIN-014", "EVH-024", "RER-012", "PRS-016"}
+        if impact.requirement_id in {"RCF-001", "HIN-014", "EVH-024", "RER-012"}
     )
 
     assert {(impact.requirement_id, impact.selector) for impact in impacts} == set(expected_selections)

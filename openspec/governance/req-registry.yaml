@@ -50,6 +50,7 @@ prefixes:
   NAC: node-agent-capabilities
   NRI: node-agent-reader-interface
   NPC: node-prompt-catalog
+  PCG: portable-change-guidance
   PRS: project-structure
   SCR: scripted-real-workflow-debug
   RCF: research-confirmation
@@ -126,6 +127,14 @@ DRC-011: deep-research-agent-charter — Downstream agent entry documents route 
 DRC-012: deep-research-agent-charter — A current-only node authoring route directs LLM-Bearing Node work through cognition, prompt/context, feedback/repair, proof/evaluation, and deterministic handoff without granting Markdown runtime authority
 DRC-013: deep-research-agent-charter — Every materialized tracked project text surface uses current Deep Research/LangGraph vocabulary and the deterministic guard rejects retired external workflow labels without archive or backlog exceptions
 DRC-014: deep-research-agent-charter — Deep Research product context is separately discoverable as a bounded, non-authoritative OpenSpec reading map with exact existing authority routes
+
+# portable-change-guidance
+PCG-001: portable-change-guidance — A product-neutral Change Guidance kernel defines admission, authority, evidence, recovery, migration, and deletion closure without creating runtime authority
+PCG-002: portable-change-guidance — Workflow-control, node-agent, and DeerFlow-downstream profiles are independently enabled and compose every triggered obligation without first-match suppression
+PCG-003: portable-change-guidance — Each adopting project owns its product, path, profile, policy, budget, evidence, and decision bindings through one local composition boundary
+PCG-004: portable-change-guidance — Portable proposal and review validation is a pure explicit-input evaluator while each project retains its compatible local filesystem and CLI admission wrapper
+PCG-005: portable-change-guidance — A V1 portable release is an allowlisted digest-bound target-owned snapshot proved unchanged by one real sibling agent-workflow adoption
+PCG-006: portable-change-guidance — Node-agent authoring preserves the complete cognition-versus-code first-read gate independent of its filename and rejects both code-first and prompt-for-everything routing
 
 # deep-research-harness-run-bundles
 DRH-001: deep-research-harness-run-bundles — Fresh Deep Research Runs receive a fresh opaque Bundle identity and atomically published Bundle-local State and content roots

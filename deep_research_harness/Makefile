@@ -1,4 +1,4 @@
-.PHONY: install entry-preflight governance verify lock-check format lint test test-fast test-integration test-workflow test-entry-environment-regression test-live test-unit test-contract test-viability test-durability test-blocking-io test-assets test-req-coverage test-intake test-retained-observation test-work-unit test-strict-checkpoint test-duration-policy benchmark-fast prompt-dump prompt-dump-check profile-setup profile-preflight profiles profile-init profile-check profile-dev demo demo-scripted demo-fixture-graph demo-real demo-real-embedded-smoke demo-real-scripted demo-tui demo-tui-embedded-smoke demo-tui-fixture demo-sessions session-workbench debug-scripted-real-workflow
+.PHONY: install entry-preflight verify lock-check format lint test test-fast test-integration test-workflow test-entry-environment-regression test-live test-unit test-contract test-viability test-durability test-blocking-io test-assets test-intake test-retained-observation test-work-unit test-strict-checkpoint test-duration-policy benchmark-fast prompt-dump prompt-dump-check profile-setup profile-preflight profiles profile-init profile-check profile-dev demo demo-scripted demo-fixture-graph demo-real demo-real-embedded-smoke demo-real-scripted demo-tui demo-tui-embedded-smoke demo-tui-fixture demo-sessions session-workbench debug-scripted-real-workflow
 
 DEMO_ARGS ?=
 LOCAL_ENV_ARG := $(if $(wildcard .env),--env-file .env,)
@@ -37,14 +37,8 @@ profile-dev: profile-preflight
 	test -n "$(PROFILE)" || { echo "Usage: make profile-dev PROFILE=demo"; exit 2; }
 	$(PROFILE_RUN) launch "$(PROFILE)"
 
-governance:
-	python3 ../openspec/governance/check_project_reqs.py ..
-	python3 ../openspec/governance/check_project_specs.py ..
-	python3 ../openspec/governance/check_project_architecture.py ..
-	python3 ../openspec/governance/check_change_guidance.py ..
-
 verify: export UV_NO_SYNC := 1
-verify: governance lock-check lint test-assets test-req-coverage test-fast test-integration test-workflow
+verify: lock-check lint test-assets test-fast test-integration test-workflow
 
 # Fixed fixture-graph lifecycle demo. Zero API, no Gateway, config.yaml,
 # model credentials, network access, or TUI installation needed.
@@ -174,9 +168,6 @@ test-live:
 
 test-assets:
 	uv run --extra operations python scripts/check_test_assets.py
-
-test-req-coverage:
-	python3 ../openspec/governance/check_project_req_coverage.py ..
 
 test-unit:
 	uv run --extra operations $(PYTEST) tests/unit

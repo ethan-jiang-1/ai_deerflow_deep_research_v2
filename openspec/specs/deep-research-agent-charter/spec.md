@@ -9,52 +9,54 @@ human/AI-facing information-map rules for the downstream Deep Research product.
 ## Requirements
 ### Requirement: A canonical Deep Research Change Guidance route is discoverable
 
-The project SHALL maintain `openspec/change-guidance/` as the permanent home for Deep
-Research design/admission guidance. Its `README.md` SHALL be the sole routing index and
-SHALL route contributors to every canonical policy under
-`change-guidance/policies/` whose route-table trigger applies to the change, while the
-change retains exactly one primary causal owner. The route SHALL distinguish durable
-principles, the bounded node-edit information map, focused policies, owning capability
-specifications, scoped operational procedures, and current runtime facts.
+The project SHALL maintain `openspec/change-guidance/README.md` as the sole local
+routing index for Deep Research design/admission guidance. The route SHALL compose the
+product-neutral kernel, independently enabled `workflow-control`, `node-agent`, and
+`deerflow-downstream` profiles, and Deep Research-owned local extensions. It SHALL
+route contributors to every canonical enabled policy whose trigger applies while the
+change retains one primary causal owner or a bounded registered Program form.
 
-The Change Guidance route and every policy SHALL state that they are
-design/admission guidance and do not create runtime authority. The root SHALL contain
-one routing index, `principles.md`, `node-edit-map.md`, and the complete policy
-directory. The policy directory SHALL contain only the ten canonical policy documents
-and SHALL NOT contain a second index, duplicate route, or compatibility copy of policy
-prose. (`DRC-001`, `DRC-005`)
+Portable core/profile prose SHALL have one editable owner under `core/` or
+`profiles/`; Deep Research paths, exact enabled-policy set, Program extensions,
+information-map budgets, module routing, and operation closeout SHALL have one editable
+owner under `local/` or another named local authority. The router SHALL distinguish
+guidance, owning capability specifications, scoped procedures, current runtime facts,
+and exact structure authority. No guidance or composition document SHALL create
+runtime behavior, authority, permission, or a native OpenSpec operation. Old current
+policy locations SHALL NOT remain as copies, aliases, or alternative routes after
+cutover. (`DRC-001`, `DRC-005`)
 
 #### Scenario: Contributor routes a local change without scanning the repository
 - **WHEN** a contributor begins a Deep Research change affecting one owned module
-- **THEN** the Change Guidance index identifies the local-context policy and directs
-  the contributor to the owning capability specification and local evidence seam
-  rather than requiring an undifferentiated read of root DeerFlow documentation
+- **THEN** the local router identifies the applicable core/local rules and every triggered enabled profile, then directs the contributor to the owning capability and evidence seam
 
 #### Scenario: Multiple applicable policy triggers are all selected
-- **WHEN** one change affects both a participant-visible lifecycle output and a
-  bounded retry or recovery path
-- **THEN** its Change Guidance route selects both `participant-outcomes` and
-  `control-and-recovery`, records them as canonical names on the same Focus Card
-  field, and retains one primary causal owner for the change
+- **WHEN** one change triggers policies from more than one enabled profile
+- **THEN** the local composition requires the union of their canonical review obligations without allowing one profile to suppress another
 
 #### Scenario: Multiple selected policies do not create runtime authority
-- **WHEN** a contributor selects more than one triggered policy for a change
-- **THEN** those policies remain design/admission guidance and the contributor still
-  places any lifecycle action, state field, graph route, permission, or provider
-  behavior in its owning capability delta rather than treating policy selection as
-  runtime authority
+- **WHEN** a contributor selects more than one triggered policy through local composition
+- **THEN** all policies remain design/admission guidance and exact lifecycle actions, state, routes, permissions, and provider behavior remain in owning capability contracts
 
 #### Scenario: Charter and policy library are discoverable from OpenSpec root
 - **WHEN** a contributor opens `openspec/` to begin a Deep Research change
-- **THEN** `openspec/README.md` routes it to `change-guidance/README.md` as the sole
-  guidance index and that index reaches the complete nested policy library without a
-  second route
+- **THEN** `openspec/README.md` reaches the sole local Change Guidance router, which reaches core, every enabled profile, local extensions, and owning specifications without a second route
 
 #### Scenario: A behavior proposal is placed in its owning contract
-- **WHEN** a proposed policy would add a lifecycle action, state field, graph route,
-  permission, or provider behavior
-- **THEN** the Change Guidance index directs the change to an owning capability delta
-  and the policy does not claim to establish that behavior by itself
+- **WHEN** portable or local guidance identifies a proposed lifecycle action, state field, graph route, permission, or provider behavior
+- **THEN** the router directs that proposal to its owning capability delta and no guidance document claims to establish the behavior
+
+#### Scenario: Disabled profile cannot create an obligation
+- **WHEN** a local composition does not enable a reusable profile
+- **THEN** that profile's policies cannot be selected and do not create proposal fields, review records, or completeness failures
+
+#### Scenario: Local composition does not duplicate portable authority
+- **WHEN** Deep Research adds a path, Program extension, budget, or local policy binding
+- **THEN** the local owner records only that binding and links to unchanged portable semantics instead of copying kernel or profile prose
+
+#### Scenario: Retired policy path cannot remain current
+- **WHEN** governance checks the post-cutover Change Guidance tree and inbound links
+- **THEN** it rejects a duplicate old policy file, stale current link, second router, or unregistered member
 
 ### Requirement: The module guide establishes a primary-module focus gate
 
@@ -340,12 +342,12 @@ short rationale, and SHALL NOT judge the semantic truth of the classification.
 
 ### Requirement: Change Guidance policies preserve source-of-truth discipline and bounded recovery
 
-The Change Guidance index SHALL route focused policies from its single nested
-`policies/` directory for authority/projections and control/recovery. Those policies
+The Change Guidance index SHALL route focused policies from their single registered
+core, enabled-profile, or local owners for authority/projections and control/recovery. Those policies
 SHALL direct changes to use the existing owner of checkpointed control state, evidence
 ledger, sandbox content, typed result, or external contract; they SHALL reject shadow
 control records, silent fallback, unbounded retries, and invented recovery actions.
-The policy directory SHALL not have a second index, infer applicability, or grant
+The composed guidance tree SHALL not have a second index, infer applicability, or grant
 runtime authority. A policy that needs to alter an owning contract SHALL require a
 corresponding capability change. (`DRC-005`)
 
@@ -362,8 +364,7 @@ corresponding capability change. (`DRC-005`)
   nearest legal action instead of adding a presentation-layer retry loop
 
 #### Scenario: A policy library does not become a second routing authority
-- **WHEN** a contributor opens a policy directly from
-  `openspec/change-guidance/policies/`
+- **WHEN** a contributor opens a policy directly from its registered core/profile/local owner
 - **THEN** its trigger guides the contributor back through the Change Guidance index
   and does not create a second route, runtime controller, or policy applicability
   inference mechanism
@@ -470,8 +471,8 @@ runtime authority. (`DRC-008`)
 
 ### Requirement: Control-placement guidance is cross-cutting and non-authoritative
 
-Deep Research Change Guidance SHALL route `control-placement` from the canonical
-`change-guidance/policies/` directory for a change that adds or changes a gate,
+Deep Research Change Guidance SHALL route `control-placement` from the enabled
+`profiles/workflow-control/` owner for a change that adds or changes a gate,
 validator, readiness check, candidate admission, retry/fallback/recovery, next-action
 diagnostic, durable control fact, checkpoint/state writer, or cognitive/control
 boundary between a Node Agent, a human decision, and a deterministic owner. The sole
@@ -587,7 +588,7 @@ tasks, and existing deterministic evidence before describing closeout.
 
 When a change uses the delivered selected-change closeout-evidence capability, the
 authoring route SHALL identify
-`openspec/governance/closeout-evidence/selected_change_closeout.py` as its separate,
+`openspec/governance/selected-change-closeout.py` as its separate,
 caller-declared and Git-verified boundary command. It SHALL state that the resulting
 record is non-authoritative and that operation guidance remains advisory: neither
 surface executes commands, creates or completes tasks, infers a finding, validates
@@ -678,41 +679,40 @@ deleted Bundle. (`DRC-011`)
 
 ### Requirement: LLM-node authoring follows one current-only cognitive route
 
-The project SHALL maintain `openspec/change-guidance/node-edit-map.md` as the compact,
+The project SHALL maintain `deep_research_harness/AGENTS.md` as the application-owned,
 current-only first read before a Coding Agent creates, changes, or reviews an
-LLM-Bearing Node or direct model branch. The map, the Change Guidance root, and the
-Harness coding guide SHALL route that work in this order: the Node Cognitive Control
-Contract and capability policy; the prompt builder and model-visible context; structured
-output, feedback, and repair; focused deterministic proof and applicable cognitive
-evaluation; then the separate deterministic admission, materialization, ledger, gate,
-and Python/LangGraph route owners.
+LLM-Bearing Node or direct model branch. It SHALL preserve the former node-edit map's
+full semantic contract without depending on an OpenSpec path. The portable
+`node-agent` profile defines and validates that semantic contract from the upstream
+development framework; the Harness guide SHALL route work in this order: classify
+`cognitive-program`, `deterministic-guardrail`, `human-decision`, or `wiring`; inspect
+the Node Cognitive Control Contract and local capability; inspect prompt builder and
+trusted/untrusted model-visible context; trace structured output, feedback, bounded
+repair, and stop condition; inspect focused deterministic proof and applicable
+cognitive evaluation; then inspect deterministic admission, materialization, ledger,
+gate, and Python/LangGraph route owners.
 
-The map SHALL make the cognitive responsibility, trusted/untrusted input boundary,
-bounded method/tool posture, useful candidate and uncertainty standard, feedback/repair
-loop, and deterministic handoff reviewable without becoming a runtime resource,
-permission, state authority, route authority, or second behavior specification. For a
-deterministic or human-decision change, the map SHALL require the author to name why no
-cognitive program is the causal owner; it SHALL not require a fabricated prompt surface.
-The deterministic Change Guidance contract SHALL reject a missing or demoted authoring
-route. (`DRC-012`)
+The route SHALL make bounded cognitive responsibility, input authority, requested
+method/tool posture and runtime enforcer, useful candidate and uncertainty standard,
+feedback/repair, proof limitation, and deterministic handoff reviewable without
+becoming runtime configuration, permission, state/route authority, or a second
+behavior specification. For deterministic, human-decision, or wiring work where no
+model-bearing symptom is causal, it SHALL require the author to name the actual owner
+and why cognition is not causal; it SHALL NOT fabricate prompt or model-capability
+work. Deterministic governance SHALL reject a missing, demoted, or semantically
+incomplete route or any Harness dependency on OpenSpec content. (`DRC-012`)
 
 #### Scenario: Coding Agent starts an LLM-node change from cognition
 - **WHEN** a Coding Agent begins to create, change, or review an LLM-Bearing Node
-- **THEN** the Harness guide and Change Guidance root direct it to the node edit map
-  before node implementation navigation, and the map supplies the ordered cognitive
-  review route before deterministic handoff owners
+- **THEN** the Harness guide and local router direct it to the node-agent first-read route before implementation navigation, and the route supplies ordered cognitive review before deterministic handoff owners
 
 #### Scenario: Deterministic work is not forced into a prompt change
-- **WHEN** a Coding Agent changes a deterministic or human-decision node
-- **THEN** the node edit map directs it to the actual typed, domain, or graph owner
-  after recording why no cognitive program owns the decision, without requiring a
-  model capability or prompt
+- **WHEN** a Coding Agent changes a deterministic, human-decision, or wiring surface with no causal model-bearing symptom
+- **THEN** the route directs it to the actual typed, domain, control, graph, or adapter owner after recording why cognition is not causal, without requiring a model capability or prompt
 
 #### Scenario: A missing authoring route fails governance
-- **WHEN** the guided LLM-node authoring route is absent from the node edit map, the
-  Change Guidance root, or the Harness guide
-- **THEN** the deterministic Change Guidance contract rejects the missing route before
-  the affected document can claim charter conformance
+- **WHEN** any classification, cognitive contract, prompt/context, output/repair, proof/evaluation, deterministic-handoff, or explicit non-model branch is absent or demoted from the profile route, local router, or Harness guide
+- **THEN** Change Guidance governance rejects the incomplete route before those documents can claim charter conformance
 
 ### Requirement: Tracked project language contains no retired external workflow labels
 
@@ -757,47 +757,41 @@ does not reclassify historical behavior or create a compatibility term. (`DRC-01
 
 ### Requirement: Deep Research product context is separately discoverable and non-authoritative
 
-The project SHALL maintain `openspec/product/deep-research.md` as the sole canonical
-OpenSpec entry for the properties that distinguish the Deep Research product from
-other DeerFlow/LangGraph agent workflows. It SHALL be a concise product-context map:
-it SHALL identify the research-specific question or outcome, evidence and uncertainty
-posture, product-local workflow orientation, and the exact existing owners a reader
-must open for product definitions, runtime facts, approved behavior, and proof.
-The existing information-map policy and deterministic Change Guidance checker SHALL
-warn at 60 lines and reject the map above 80 lines.
+The project SHALL maintain `openspec/product/README.md` as the sole canonical OpenSpec
+front door for the properties that distinguish Deep Research from other agent
+workflows. It SHALL be a concise navigation map that identifies the product-specific
+question/outcome, evidence and uncertainty posture, local workflow orientation, and
+the exact existing owners a reader must open for terminology, approved behavior,
+current facts, architecture, and proof. The information-map policy and deterministic
+Change Guidance checker SHALL warn at 60 lines and reject the map above 80 lines.
 
-`openspec/README.md`, `openspec/config.yaml`, and the Change Guidance index SHALL
-make the product route discoverable while retaining their bounded native-workflow,
-authoring-context, and generic-policy roles. The product route SHALL not define or
-override vocabulary owned by `deep_research_harness/CONTEXT.md`; required behavior
-owned by an approved specification or active delta; current runtime facts owned by
-code, typed contracts, and tests; or a node's exact authoring route owned by
-`openspec/change-guidance/node-edit-map.md`. It SHALL not create a `platform/`
-directory, a second glossary, a global authoring handbook, or runtime Markdown
-configuration. (`DRC-014`)
+`openspec/README.md`, `openspec/config.yaml`, the local Change Guidance router, and
+governance navigation SHALL make this front door discoverable while retaining their
+own bounded roles. The product front door SHALL NOT define or override vocabulary
+owned by `deep_research_harness/CONTEXT.md`, behavior owned by a specification or
+active delta, current facts owned by code/contracts/tests, exact paths owned by
+`project-structure.toml`, or node authoring owned by its local guidance route. It SHALL
+NOT add `product/instance.yaml`, a fixed outcome/workflow/capability schema, a second
+glossary, runtime Markdown configuration, or another current product entry.
+`openspec/product/deep-research.md` SHALL be retired in the same cutover without a
+compatibility copy; historical archive text remains unchanged. (`DRC-014`)
 
 #### Scenario: Reader finds Deep Research-specific orientation without loading generic guidance as a handbook
-- **WHEN** a contributor needs to understand what makes this repository a Deep
-  Research product rather than another agent workflow
-- **THEN** `openspec/` routes the contributor to `product/deep-research.md`, which
-  identifies the product-specific concerns and directs detailed questions to their
-  existing authorities without copying those authorities' content
+- **WHEN** a contributor needs to understand what makes this repository a Deep Research product
+- **THEN** `openspec/` routes to `product/README.md`, which answers orientation and links each detailed question to its existing authority
 
 #### Scenario: Generic authoring route remains bounded
-- **WHEN** a contributor opens the OpenSpec context, Change Guidance index, or a
-  generic governance navigation document for a normal change
-- **THEN** that entry keeps its native workflow, policy-routing, or checker-navigation
-  role and links to product context only when Deep Research-specific orientation is
-  needed, without becoming a product handbook
+- **WHEN** a contributor opens OpenSpec context, the local Change Guidance router, or governance navigation for ordinary work
+- **THEN** each entry retains its authoring, policy-routing, or checker-navigation role and links product orientation only when needed without becoming a product handbook
 
 #### Scenario: Product context cannot claim product behavior or runtime authority
-- **WHEN** the product-context document describes a research-specific concern
-- **THEN** it routes the reader to the product glossary, owning capability contract,
-  implementation, or evidence seam and does not claim to establish a node role,
-  graph route, state write, model invocation, tool permission, recovery behavior, or
-  current runtime fact
+- **WHEN** the front door describes terminology, required behavior, current runtime, structure, or proof
+- **THEN** it links to the owning glossary, spec/delta, code/contracts/tests, structure registry, or evidence policy instead of copying or overriding the fact
+
+#### Scenario: Old and extra product entries fail governance
+- **WHEN** `product/deep-research.md`, a machine configuration file, or an unregistered Markdown member appears beside `product/README.md`
+- **THEN** exact-member governance fails rather than accepting multiple current product surfaces
 
 #### Scenario: Product context remains a reading map
-- **WHEN** the product-context document grows beyond its concise navigation role
-- **THEN** the Change Guidance checker warns at 60 lines and rejects it above 80 lines,
-  directing detailed material to its existing owner rather than accepting a handbook
+- **WHEN** `product/README.md` exceeds its concise navigation role
+- **THEN** governance warns at 60 lines and rejects above 80 lines, routing detail to its owner

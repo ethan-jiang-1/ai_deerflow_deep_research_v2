@@ -50,7 +50,7 @@ record SHALL not claim semantic clearance or that all worktree changes were revi
 ### Requirement: Closeout evidence remains task-led and non-authoritative
 
 The canonical repository command for this capability SHALL live at
-`openspec/governance/closeout-evidence/selected_change_closeout.py`. For a
+`openspec/governance/selected-change-closeout.py`. For a
 `boundary-verified` range, the capability SHALL allow a structured evidence record
 with only the non-authoritative dispositions `review-required` or `inconclusive`. A
 persisted record request SHALL supply the attestation again, and the capability SHALL
@@ -72,7 +72,7 @@ alter runtime behavior. (`SCC-002`)
 #### Scenario: Canonical command and output root are used
 - **WHEN** a caller invokes the repository command with a valid persisted-record
   request for an active selected change
-- **THEN** the command resolves from `governance/closeout-evidence/`, writes only
+- **THEN** the command resolves from `governance/selected-change-closeout.py`, writes only
   beneath that change's `closeout-evidence/` root, and does not create the retired
   command or output paths
 

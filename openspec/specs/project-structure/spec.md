@@ -9,72 +9,75 @@ The canonical downstream package structure, mechanically enforced import directi
 
 ### Requirement: Deep Research Change Guidance, product context, and closeout evidence occupy canonical OpenSpec paths
 
-The canonical project structure SHALL register `openspec/change-guidance/` as the
-permanent Deep Research design/admission route. Its root SHALL contain exactly
-`README.md`, `principles.md`, `node-edit-map.md`, and one `policies/` directory. The
-policy directory SHALL contain exactly the ten canonical trigger-bearing policy
-documents and SHALL NOT contain a second routing index. The canonical names, triggers,
-Focus Card fields, conditional review schemas, closed postures, and guidance-only
-authority of those policies SHALL remain unchanged.
+The canonical structure SHALL register `openspec/change-guidance/` as the local
+design/admission route. Its root SHALL contain exactly one `README.md` router and the
+registered `core/`, `profiles/`, and `local/` trees. `core/` SHALL contain only
+`change-practice.md`; `profiles/` SHALL contain exactly the independently selectable
+`workflow-control/`, `node-agent/`, and `deerflow-downstream/` trees, each with one
+complete named profile document; `local/` SHALL contain only `deep-research.md`.
+Every current guidance paragraph and policy SHALL have one registered editable owner.
+Retired pre-cutover policy paths, a second router, compatibility copy, symlink, or
+duplicate policy prose SHALL NOT remain current.
 
-The canonical project structure SHALL register `openspec/product/` as the sole
-product-context directory. Its root SHALL contain exactly `deep-research.md`, the
-canonical product-context entry. The product directory SHALL not contain a
-`platform/` abstraction, a second product index, a compatibility copy, or a document
-that claims runtime or specification authority.
+The canonical structure SHALL register the product-neutral validation module under
+OpenSpec governance and retain `openspec/governance/check_change_guidance.py` as the
+Deep Research local wrapper/CLI. It SHALL register the focused pure-kernel and wrapper
+contract tests without registering the portable module as a general project
+architecture, requirement, specification, coverage, or runtime checker.
 
-The canonical project structure SHALL register `openspec/governance/closeout-evidence/`
-as the home for the selected-change closeout command and its README. It SHALL register
-`openspec/README.md` as the bounded navigation entry that distinguishes native
-`config.yaml`, `specs/`, and `changes/` workflow surfaces from the Deep Research
-product context, project Change Guidance, and project governance. The retired
-`openspec/agent-charter/`, `openspec/policies/`, and `openspec/guardrails/` roots
-SHALL NOT remain as canonical, required, symlinked, redirected, duplicated, or
-compatibility paths.
+The canonical structure SHALL register `openspec/product/` as the sole product-context
+directory and SHALL require its exact current member set to be `README.md`. It SHALL
+reject `deep-research.md`, `instance.yaml`, an extra index, a compatibility copy, or
+any unregistered member after cutover. It SHALL continue to register
+`openspec/governance/selected-change-closeout.py`, its `selected-change-closeout.md`
+usage guide, and `openspec/README.md` at their bounded roles.
 
-The exact inventory SHALL remain only in `openspec/governance/project-structure.toml`.
-The structure registry, Change Guidance checker, focused contract test, current
-authoring pointers, and downstream entry documents SHALL remain synchronized with that
-inventory. Deterministic governance SHALL compare the exact registered Change Guidance,
-product, and policy member sets with the checked-out tree and reject missing, extra,
-duplicate, or legacy-only members. Repository-root `AGENTS.md` and `CLAUDE.md` SHALL
-remain unchanged. (`PRS-009`)
+The exact inventory SHALL remain only in
+`openspec/governance/project-structure.toml`. Product documents, local composition,
+checker constants, and authoring entries SHALL link to or validate against that
+registry and SHALL NOT duplicate its source/test/import/gitlink member facts. The
+registry, Change Guidance wrapper, focused tests, current authoring pointers, and
+downstream entry documents SHALL remain synchronized. Repository-root `AGENTS.md` and
+`CLAUDE.md`, Deep Research production structure, glossary authority, and the
+`deerflow/` gitlink SHALL remain unchanged. (`PRS-009`)
+
+Dependency direction SHALL be `openspec/` to `deep_research_harness/` only. OpenSpec
+governance MAY inspect the downstream application, but no Harness guide,
+documentation, Makefile, application test, or asset SHALL read, import, execute, or
+link OpenSpec content. Governance tests SHALL live under `openspec/tests/governance/`,
+and Harness verification SHALL run independently without the OpenSpec tree.
 
 #### Scenario: Canonical guidance, product, and closeout paths pass governance
-- **WHEN** architecture and Change Guidance governance check the target repository
-- **THEN** the exact guidance root, product-context entry, complete policy library,
-  closeout-evidence command boundary, OpenSpec root navigation, module-guide focus
-  gate, authoring pointer, and focused checker/test surfaces are present and mutually
-  discoverable
+- **WHEN** architecture and Change Guidance governance inspect the target repository
+- **THEN** the exact core/profile/local trees, pure validator, local wrapper, product front door, closeout route, and bounded entry documents are registered and mutually discoverable
 
 #### Scenario: An unregistered guidance, product, or policy member fails governance
-- **WHEN** the checked-out Change Guidance root, product directory, or policy library
-  contains an extra file, a second index, or omits a registered member
-- **THEN** deterministic governance reports the exact-member mismatch rather than
-  accepting required-path presence as sufficient evidence
+- **WHEN** a guidance/product tree contains an extra file, old policy location, second router, compatibility copy, or duplicate editable rule
+- **THEN** deterministic exact-member checks or the ownership review report the violation rather than accepting required-path presence alone
 
 #### Scenario: A legacy nested tree cannot masquerade as the current route
-- **WHEN** current structure or navigation retains only a retired root or adds a
-  compatibility copy beside the canonical Change Guidance, product, or
-  closeout-evidence tree
-- **THEN** deterministic governance rejects the retired or duplicate surface instead
-  of treating it as a valid route
+- **WHEN** current navigation retains a retired pre-cutover policy tree or adds a compatibility copy beside the registered core/profile/local topology
+- **THEN** deterministic governance rejects the legacy or duplicate surface rather than accepting it as another route
 
 #### Scenario: Policy prose, product orientation, and executable guardrails remain distinct
-- **WHEN** a contributor follows Change Guidance to a selected policy, opens the
-  product-context route, or follows governance navigation to the closeout-evidence
-  command
-- **THEN** policy prose resolves only under `change-guidance/policies/`, product
-  orientation resolves only through `product/deep-research.md`, and the command
-  resolves only under `governance/closeout-evidence/`, without any surface claiming
-  runtime or native archive authority
+- **WHEN** a contributor follows guidance, opens the product front door, or runs a registered governance command
+- **THEN** portable/local policy prose, product navigation, and executable validation remain in their registered jurisdictions without claiming each other's authority
 
 #### Scenario: Root guide boundary is preserved
 - **WHEN** the target topology is reviewed for owned paths
-- **THEN** it changes only project-owned OpenSpec and downstream entry surfaces and
-  does not add Change Guidance to repository-root `AGENTS.md` or `CLAUDE.md`
+- **THEN** it changes only project-owned OpenSpec and downstream entry surfaces and does not add Change Guidance to repository-root `AGENTS.md` or `CLAUDE.md`
 
+#### Scenario: Project structure remains the single exact authority
+- **WHEN** product or local composition needs to explain a registered path
+- **THEN** it links to `project-structure.toml` and does not recreate an exact inventory or competing machine schema
 
+#### Scenario: Product front door cutover is clean
+- **WHEN** current consumers move from `product/deep-research.md` to `product/README.md`
+- **THEN** the registry and exact-member guard accept only `README.md`, while archive references remain historical and are not treated as current consumers
+
+#### Scenario: Upstream boundary is preserved
+- **WHEN** the Program closes its structural migration
+- **THEN** metadata evidence shows the `deerflow` gitlink pointer and nested worktree are unchanged, without source-browsing or modifying the submodule
 ### Requirement: Reader-interface validation uses canonical downstream governance paths
 
 The non-runtime cognitive-node reader checker, its fixtures, and its focused contract

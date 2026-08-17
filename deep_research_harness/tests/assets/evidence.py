@@ -1260,12 +1260,6 @@ EVIDENCE_CLAIMS = (
         requirement_ids=("CNI-004",),
     ),
     _correctness_claim(
-        "run-experience-canonical-architecture",
-        "tests/contract/test_live_architecture_contract.py::test_live_repository_satisfies_architecture_contract",
-        StableSeam.DOMAIN_ENGINE,
-        requirement_ids=("PRS-005", "PRS-012", "PRS-013", "PRS-014", "PRS-016", "PRS-018", "DER-002"),
-    ),
-    _correctness_claim(
         "prompt-review-workspace-structure",
         "tests/contract/test_live_architecture_contract.py::test_prompt_review_workspace_is_optional_and_ignored",
         StableSeam.DOMAIN_ENGINE,
@@ -2027,48 +2021,6 @@ EVIDENCE_CLAIMS = (
         requirement_ids=("EVH-011",),
     ),
     _correctness_claim(
-        "charter-node-agent-workflow-integrity",
-        "tests/contract/test_change_guidance_governance.py::test_node_agent_and_workflow_outcome_reviews_remain_independent",
-        StableSeam.DOMAIN_ENGINE,
-        requirement_ids=("DRC-008",),
-    ),
-    _correctness_claim(
-        "charter-control-placement",
-        "tests/contract/test_change_guidance_governance.py::test_control_placement_and_existing_reviews_remain_independent",
-        StableSeam.DOMAIN_ENGINE,
-        requirement_ids=("DRC-009",),
-    ),
-    _correctness_claim(
-        "charter-operation-guidance",
-        "tests/contract/test_change_guidance_governance.py::test_config_requires_advisory_operation_guidance_boundary",
-        StableSeam.DOMAIN_ENGINE,
-        requirement_ids=("DRC-010",),
-    ),
-    _correctness_claim(
-        "charter-operation-guidance-probe-record",
-        "tests/contract/test_operation_guidance_probe_evidence.py::test_operation_guidance_probe_evidence_has_complete_per_probe_metadata",
-        StableSeam.DOMAIN_ENGINE,
-        requirement_ids=("DRC-010",),
-    ),
-    _correctness_claim(
-        "selected-change-closeout-boundary",
-        "tests/contract/test_selected_change_closeout.py::test_verify_boundary_emits_exact_committed_range_summary",
-        StableSeam.DOMAIN_ENGINE,
-        requirement_ids=("SCC-001",),
-    ),
-    _correctness_claim(
-        "selected-change-closeout-record",
-        "tests/contract/test_selected_change_closeout.py::test_record_review_requires_task_led_findings_or_a_stated_limitation",
-        StableSeam.DOMAIN_ENGINE,
-        requirement_ids=("SCC-002",),
-    ),
-    _correctness_claim(
-        "selected-change-closeout-no-side-effects",
-        "tests/contract/test_selected_change_closeout.py::test_invalid_attestations_do_not_run_git_or_native_archive_or_touch_tasks",
-        StableSeam.DOMAIN_ENGINE,
-        requirement_ids=("SCC-003",),
-    ),
-    _correctness_claim(
         "nac-capability-resource",
         "tests/domain/test_node_agent_capability.py::test_local_resources_load_matching_closed_postures",
         StableSeam.DOMAIN_ENGINE,
@@ -2401,12 +2353,6 @@ EVIDENCE_CLAIMS = (
             authenticity=AuthenticityLevel.REAL_NODE_FAKE_CAPABILITIES,
         )
         for case_id in _COGNITIVE_PROGRAM_CASE_IDS
-    ),
-    _correctness_claim(
-        "canonical-module-root-governance",
-        "tests/contract/test_architecture_governance.py::ArchitectureGovernanceContractTests::test_legacy_compatibility_root_fails",
-        StableSeam.DOMAIN_ENGINE,
-        requirement_ids=("PRS-001",),
     ),
     _correctness_claim(
         "retired-test-structure-governance",

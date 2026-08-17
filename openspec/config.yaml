@@ -6,7 +6,7 @@ context: |
   This is a short OpenSpec-authoring route, not a project manual. It intentionally
   does not restate runtime facts, roadmap decisions, or historical change material.
   For Deep Research-specific orientation, read
-  [product/deep-research.md](product/deep-research.md). Follow a pointer to the
+  [product/README.md](product/README.md). Follow a pointer to the
   owning source only when the change's question requires it.
 
   ## Sources Of Truth
@@ -73,9 +73,9 @@ rules:
       当 graph、node、state、checkpoint、candidate admission、retry 或 terminal handling 改变时，
       先从 `openspec/change-guidance/README.md` 选择触发的 policy；node 的 LLM role、
       tool posture 或 candidate admission 读取
-      `openspec/change-guidance/policies/node-agent-workflow-integrity.md`，而 model、tool、
+      `openspec/change-guidance/profiles/node-agent/node-agent.md`，而 model、tool、
       provider、retry、terminal、diagnostic 或 lifecycle projection 读取
-      `openspec/change-guidance/policies/workflow-outcome-review.md`。随后在 design 识别 owning
+      `openspec/change-guidance/profiles/workflow-control/workflow-outcome-review.md`。随后在 design 识别 owning
       StateGraph transition/predicate、typed input/output、writer/reducer、evaluator/materializer、
       bounded recovery/terminal disposition 与 deterministic test；不得创建 competing controller 或 authority。
   tasks:
@@ -90,7 +90,7 @@ operations:
     guidance:
       - "Review control-placement only when the selected proposal declares it; guidance is advisory."
       - "Before a target edit or resumed apply, re-read the selected review, policy, tasks, and relevant historical counterexample; add every actionable finding as an unchecked ordinary task."
-      - "For a selected control-placement change, openspec/governance/closeout-evidence/selected_change_closeout.py verifies only caller-declared committed ranges; its evidence is non-authoritative and does not change native archive authority."
+      - "For a selected control-placement change, openspec/governance/selected-change-closeout.py verifies only caller-declared committed ranges; its evidence is non-authoritative and does not change native archive authority."
       - "Guidance does not execute commands, create or complete tasks, or block native operations."
   archive:
     guidance:

@@ -33,7 +33,7 @@ RELEASE_SMOKE_INVARIANTS = (
     "minimum_distinct_sources",
 )
 RELEASE_V2_INVARIANTS = tuple(sorted((*RELEASE_INVARIANTS, *RELEASE_SMOKE_INVARIANTS)))
-SOURCE_LOCATOR = "openspec/changes/archive/2026-07-17-evaluate-harden-deep-research-graph/tasks.md#task-6.6"
+SOURCE_LOCATOR = "release-evidence/evaluate-harden-deep-research-graph/task-6.6"
 SOURCE_TARGET_SCOPE = ("deerflow_research/.reports/live", "deerflow_research/.reports/release")
 MAX_ATTESTATION_BYTES = 16 * 1024
 _RELEASE_SCENARIO_ID = "release-full-real-acceptance"

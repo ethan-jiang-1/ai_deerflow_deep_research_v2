@@ -17,4 +17,4 @@ historical title, decision text, or runtime authority.
 
 - **Current applicability:** The distinction between Primary User and operator concerns remains useful.
 - **Non-current / planned / dormant scope:** The dedicated Primary-User TUI is dormant; the current route is the Dedicated Agent plus reflected tool.
-- **Current owner or route:** [deployment-configuration](../../../openspec/specs/deployment-configuration/spec.md#requirement-dedicated-agent-is-provisioned-in-the-effective-user-scope)
+- **Current owner or route:** `src/deerflow_deep_research/runtime/` deployment configuration contracts

@@ -89,9 +89,6 @@ class UpstreamGitlink:
 class StructureManifest:
     requirement_ids: tuple[str, ...]
     upstream_gitlink: UpstreamGitlink
-    guide_path: PurePosixPath
-    begin_marker: str
-    end_marker: str
     source_root: PurePosixPath
     fixture_root: PurePosixPath | None
     fixture_package: str | None
@@ -194,13 +191,6 @@ def load_manifest(root: Path) -> StructureManifest:
         raise ContractViolation("gitlink.commit", "upstream_gitlink.commit must be a lower-case 40-hex identifier")
     upstream_gitlink = UpstreamGitlink(path=upstream_gitlink_path, commit=upstream_gitlink_commit)
 
-    guide = _expect_mapping(data.get("guide"), "guide")
-    guide_path = _relative_path(guide.get("path"), "guide.path")
-    begin_marker = _expect_string(guide.get("begin_marker"), "guide.begin_marker")
-    end_marker = _expect_string(guide.get("end_marker"), "guide.end_marker")
-    if begin_marker == end_marker:
-        raise ContractViolation("manifest.schema", "guide markers must be distinct")
-
     package = _expect_mapping(data.get("package"), "package")
     source_root = _relative_path(package.get("source_root"), "package.source_root")
     expected_source_root = CANONICAL_HARNESS_ROOT / "src" / PACKAGE_NAME
@@ -208,12 +198,6 @@ def load_manifest(root: Path) -> StructureManifest:
         raise ContractViolation(
             "source.canonical_root",
             f"package.source_root must be {expected_source_root}",
-        )
-    expected_guide_path = CANONICAL_HARNESS_ROOT / "AGENTS.md"
-    if guide_path != expected_guide_path:
-        raise ContractViolation(
-            "guide.canonical_root",
-            f"guide.path must be {expected_guide_path}",
         )
     fixture_root_raw = package.get("fixture_root")
     fixture_package_raw = package.get("fixture_package")
@@ -383,9 +367,6 @@ def load_manifest(root: Path) -> StructureManifest:
     return StructureManifest(
         requirement_ids=requirement_ids,
         upstream_gitlink=upstream_gitlink,
-        guide_path=guide_path,
-        begin_marker=begin_marker,
-        end_marker=end_marker,
         source_root=source_root,
         fixture_root=fixture_root,
         fixture_package=fixture_package,
@@ -411,29 +392,6 @@ def load_manifest(root: Path) -> StructureManifest:
 
 def _directory_display(path: PurePosixPath) -> str:
     return f"{path.as_posix()}/"
-
-
-def render_guide_block(manifest: StructureManifest) -> str:
-    lines = [
-        manifest.begin_marker,
-        "## Canonical Structure Locator",
-        "",
-        f"Exact inventory: `{MANIFEST_RELATIVE.as_posix()}`",
-        "",
-        f"- Source root: `{_directory_display(manifest.source_root)}`",
-        *(
-            [f"- Fixture source root: `{_directory_display(manifest.fixture_root)}`"]
-            if manifest.fixture_root is not None
-            else []
-        ),
-        f"- Test root: `{_directory_display(manifest.test_root)}`",
-        "- Ownership layers: " + ", ".join(f"`{layer}`" for layer in manifest.ownership_layers),
-        f"- Node grammar: `{_directory_display(manifest.node_root)}` packages export "
-        f"`{manifest.node_public_export}`; see the registry for files",
-        "- Validate: `python3 openspec/governance/check_project_architecture.py`",
-        manifest.end_marker,
-    ]
-    return "\n".join(lines) + "\n"
 
 
 def _validate_spec_authority(root: Path, manifest: StructureManifest) -> None:
@@ -471,28 +429,6 @@ def _validate_spec_authority(root: Path, manifest: StructureManifest) -> None:
     if any(SPEC_REFERENCE in path.read_text(encoding="utf-8") for path in archived_specs):
         raise ContractViolation("spec.archived_only", "an archived delta cannot be the active structural authority")
     raise ContractViolation("spec.reference_missing", "no lifecycle-appropriate project-structure spec was found")
-
-
-def _validate_guide(root: Path, manifest: StructureManifest) -> None:
-    path = root / manifest.guide_path
-    if not path.is_file():
-        raise ContractViolation("guide.marker_missing", f"module guide is missing: {manifest.guide_path}")
-    text = path.read_text(encoding="utf-8")
-    begin_count = text.count(manifest.begin_marker)
-    end_count = text.count(manifest.end_marker)
-    if begin_count == 0 or end_count == 0:
-        raise ContractViolation("guide.marker_missing", "module guide lacks the generated structure markers")
-    if begin_count != 1 or end_count != 1:
-        raise ContractViolation(
-            "guide.marker_duplicate",
-            "module guide must contain exactly one generated structure block",
-        )
-    start = text.index(manifest.begin_marker)
-    end = text.index(manifest.end_marker, start) + len(manifest.end_marker)
-    actual = text[start:end]
-    expected = render_guide_block(manifest).rstrip("\n")
-    if actual != expected:
-        raise ContractViolation("guide.drift", "generated module-guide block does not match the structure registry")
 
 
 def _validate_required_paths(root: Path, manifest: StructureManifest) -> None:
@@ -1044,7 +980,6 @@ def validate_imports(root: Path, manifest: StructureManifest) -> None:
 
 def validate_project(root: Path, manifest: StructureManifest) -> None:
     _validate_spec_authority(root, manifest)
-    _validate_guide(root, manifest)
     _validate_required_paths(root, manifest)
     _validate_ignored_paths(root, manifest)
     _validate_single_source_root(root, manifest)
@@ -1067,7 +1002,6 @@ def check_project(root: Path, *, imports_only: bool = False) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("project_root", nargs="?", default=".")
-    parser.add_argument("--render-guide", action="store_true", help="print the deterministic AGENTS.md block")
     parser.add_argument(
         "--imports-only",
         action="store_true",
@@ -1076,10 +1010,6 @@ def main() -> int:
     args = parser.parse_args()
     root = Path(args.project_root).resolve()
     try:
-        if args.render_guide:
-            manifest = load_manifest(root)
-            print(render_guide_block(manifest), end="")
-            return 0
         check_project(root, imports_only=args.imports_only)
     except ContractViolation as violation:
         print(f"ERROR [{violation.code}] {violation.detail}", file=sys.stderr)

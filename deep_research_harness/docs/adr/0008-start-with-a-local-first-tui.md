@@ -15,4 +15,4 @@ historical title, decision text, or runtime authority.
 
 - **Current applicability:** Existing Bundle lifecycle and isolation are unaffected.
 - **Non-current / planned / dormant scope:** The dedicated-TUI Local-First first-product route is dormant.
-- **Current owner or route:** [deep-research-harness-run-bundles](../../../openspec/specs/deep-research-harness-run-bundles/spec.md)
+- **Current owner or route:** `src/deerflow_deep_research/domain/bundle.py`

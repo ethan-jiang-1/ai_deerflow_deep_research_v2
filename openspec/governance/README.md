@@ -21,7 +21,7 @@
 
 `governance/` is checker and registry navigation, not product documentation. For
 Deep Research-specific orientation, leave this directory and read the
-[product context](../product/deep-research.md) reading map.
+[product context](../product/README.md) reading map.
 
 ## Checker 命令
 

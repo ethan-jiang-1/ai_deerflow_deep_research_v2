@@ -138,9 +138,8 @@ boundaries, the stable node-package shape, development order, and the current st
 contract.
 
 The canonical machine-readable structure registry is
-`../openspec/governance/project-structure.toml`. Verify it from the repository root
-with:
+The application boundary is verified from this directory with:
 
 ```bash
-python3 openspec/governance/check_project_architecture.py
+UV_OFFLINE=1 make verify
 ```

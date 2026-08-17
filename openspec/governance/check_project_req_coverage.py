@@ -39,10 +39,9 @@ def _declared_requirements(root: Path, entries: dict[str, str]) -> tuple[set[str
 def _test_references(root: Path) -> tuple[set[str], list[str]]:
     references: set[str] = set()
     parse_errors: list[str] = []
-    tests = root / "deep_research_harness" / "tests"
-    if not tests.exists():
-        return references, parse_errors
-    for path in sorted(tests.rglob("test_*.py")):
+    test_roots = (root / "deep_research_harness" / "tests", root / "openspec" / "tests")
+    paths = sorted(path for test_root in test_roots if test_root.exists() for path in test_root.rglob("test_*.py"))
+    for path in paths:
         text = path.read_text(encoding="utf-8")
         try:
             tree = ast.parse(text, filename=str(path))

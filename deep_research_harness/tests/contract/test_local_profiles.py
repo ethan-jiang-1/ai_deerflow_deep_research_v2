@@ -78,16 +78,10 @@ def _yaml(path: Path) -> dict:
 
 
 def test_profile_structure_is_project_owned_and_hook_free() -> None:
-    registry = (REPO_ROOT / "openspec/governance/project-structure.toml").read_text(encoding="utf-8")
-
-    assert 'path = "deep_research_harness/scripts/local_profiles.py"' in registry
-    assert 'path = "deep_research_harness/tests/contract/test_local_profiles.py"' in registry
-    assert 'path = "profiles"' in registry
-    assert 'path = "profiles/README.md"' in registry
-    assert 'path = "profiles/.gitignore"' in registry
-    assert "profile_handoff.sh" not in registry
-    assert 'path = "deep_research_harness/profiles"' not in registry
-    assert 'path = "deep_research_harness/.gitignore"' in registry
+    assert SCRIPT_PATH.is_file()
+    assert (REPO_ROOT / "deep_research_harness/tests/contract/test_local_profiles.py").is_file()
+    assert (REPO_ROOT / "profiles/README.md").is_file()
+    assert (REPO_ROOT / "profiles/.gitignore").is_file()
     assert (REPO_ROOT / "deep_research_harness/.gitignore").read_text(encoding="utf-8") == (
         ".deep-research-demo-runs/\n.reports/\n.pytest_cache/\n.ruff_cache/\n.node-prompt-review/\nevals/runs/\n.venv/\n"
         ".agents/\n.claude/\n"

@@ -18,7 +18,6 @@ from tests.assets.evidence import AssetClass, AuthenticityLevel, StableSeam, Tes
 
 REQUIREMENT_ID_RE = re.compile(r"[A-Z]{3}-\d{3}")
 REQUIREMENT_RANGE_RE = re.compile(r"([A-Z]{3})-(\d{3})\.\.(\d{3})")
-REQUIREMENT_HEADER_RE = re.compile(r"^\s*>\s*req:\s*(.+)$", re.MULTILINE)
 IMPL_LINE_RE = re.compile(r"@impl\s+([^\n]+)")
 
 
@@ -113,13 +112,6 @@ REQUIREMENT_IMPACTS = (
         "lane queries reuse one validated catalog",
     ),
     RequirementImpact(
-        "DER-002",
-        "deep-research-delivery-efficiency",
-        StableSeam.DOMAIN_ENGINE,
-        "tests/contract/test_live_architecture_contract.py::test_live_repository_satisfies_architecture_contract",
-        "live structure validation avoids a redundant child process",
-    ),
-    RequirementImpact(
         "DER-003",
         "deep-research-delivery-efficiency",
         StableSeam.DOMAIN_ENGINE,
@@ -210,27 +202,6 @@ REQUIREMENT_IMPACTS = (
         StableSeam.RUNTIME_INTEGRATION,
         "tests/unit/test_node_agent_bridge.py::test_capability_posture_disagreement_fails_before_model_resolution",
         "a tool-posture disagreement must fail before model-visible work",
-    ),
-    RequirementImpact(
-        "PRS-012",
-        "project-structure",
-        StableSeam.DOMAIN_ENGINE,
-        "tests/contract/test_live_architecture_contract.py::test_live_repository_satisfies_architecture_contract",
-        "capability declarations and resources must remain at registered downstream paths",
-    ),
-    RequirementImpact(
-        "PRS-013",
-        "project-structure",
-        StableSeam.DOMAIN_ENGINE,
-        "tests/contract/test_live_architecture_contract.py::test_live_repository_satisfies_architecture_contract",
-        "the profile-brief declarations and resources must remain local to HITL1",
-    ),
-    RequirementImpact(
-        "PRS-014",
-        "project-structure",
-        StableSeam.DOMAIN_ENGINE,
-        "tests/contract/test_live_architecture_contract.py::test_live_repository_satisfies_architecture_contract",
-        "reader checker and its contract test remain registered downstream paths",
     ),
     RequirementImpact(
         "EVH-012",
@@ -724,57 +695,6 @@ REQUIREMENT_IMPACTS = (
         "evidence metadata cannot overclaim stale or duplicate proof",
     ),
     RequirementImpact(
-        "DRC-008",
-        "deep-research-agent-charter",
-        StableSeam.DOMAIN_ENGINE,
-        "tests/contract/test_change_guidance_governance.py::test_node_agent_and_workflow_outcome_reviews_remain_independent",
-        "a node-agent review cannot suppress the independent failure and recovery review",
-    ),
-    RequirementImpact(
-        "DRC-009",
-        "deep-research-agent-charter",
-        StableSeam.DOMAIN_ENGINE,
-        "tests/contract/test_change_guidance_governance.py::test_control_placement_and_existing_reviews_remain_independent",
-        "a control-placement review cannot suppress the selected node-agent or workflow-outcome review",
-    ),
-    RequirementImpact(
-        "DRC-010",
-        "deep-research-agent-charter",
-        StableSeam.DOMAIN_ENGINE,
-        "tests/contract/test_change_guidance_governance.py::test_config_requires_advisory_operation_guidance_boundary",
-        "operation guidance cannot become task, command, or native-operation authority",
-    ),
-    RequirementImpact(
-        "DRC-010",
-        "deep-research-agent-charter",
-        StableSeam.DOMAIN_ENGINE,
-        "tests/contract/test_operation_guidance_probe_evidence.py::test_operation_guidance_probe_evidence_has_complete_per_probe_metadata",
-        "durable probes cannot omit their bounded observed facts and unknowns",
-    ),
-    RequirementImpact(
-        "SCC-001",
-        "selected-change-closeout-evidence",
-        StableSeam.DOMAIN_ENGINE,
-        "tests/contract/test_selected_change_closeout.py::test_verify_boundary_emits_exact_committed_range_summary",
-        "a selected change cannot claim committed-range coverage without exact repository, commit, HEAD, and "
-        "worktree facts",
-    ),
-    RequirementImpact(
-        "SCC-002",
-        "selected-change-closeout-evidence",
-        StableSeam.DOMAIN_ENGINE,
-        "tests/contract/test_selected_change_closeout.py::test_record_review_requires_task_led_findings_or_a_stated_limitation",
-        "closeout evidence cannot replace ordinary unchecked tasks or create a semantic-clearance disposition",
-    ),
-    RequirementImpact(
-        "SCC-003",
-        "selected-change-closeout-evidence",
-        StableSeam.DOMAIN_ENGINE,
-        "tests/contract/test_selected_change_closeout.py::test_invalid_attestations_do_not_run_git_or_native_archive_or_touch_tasks",
-        "an incomplete boundary cannot trigger undeclared worktree inspection, task writing, or native archive "
-        "execution",
-    ),
-    RequirementImpact(
         "RER-003",
         "research-run-experience",
         StableSeam.RUNTIME_INTEGRATION,
@@ -1029,13 +949,6 @@ REQUIREMENT_IMPACTS = (
         "without lifecycle authority",
         "Only a credentialed selected invocation can assess the model-candidate judgment rubric; deterministic "
         "tests prove branch composition and authority boundaries separately.",
-    ),
-    RequirementImpact(
-        "PRS-001",
-        "project-structure",
-        StableSeam.DOMAIN_ENGINE,
-        "tests/contract/test_architecture_governance.py::ArchitectureGovernanceContractTests::test_legacy_compatibility_root_fails",
-        "the canonical downstream root must reject a tracked legacy compatibility directory",
     ),
     RequirementImpact(
         "PRS-001",
@@ -1305,20 +1218,6 @@ REQUIREMENT_IMPACTS = (
             "test_available_active_result_projects_a_safe_non_terminal_fault[status-observes-active-bundle]"
         ),
         "a status result for an active Bundle could otherwise invent a resume prompt or terminal result",
-    ),
-    RequirementImpact(
-        "PRS-016",
-        "project-structure",
-        StableSeam.DOMAIN_ENGINE,
-        "tests/contract/test_live_architecture_contract.py::test_live_repository_satisfies_architecture_contract",
-        "the confirmation boundary could otherwise drift outside registered downstream ownership paths",
-    ),
-    RequirementImpact(
-        "PRS-018",
-        "project-structure",
-        StableSeam.DOMAIN_ENGINE,
-        "tests/contract/test_live_architecture_contract.py::test_live_repository_satisfies_architecture_contract",
-        "the upstream gitlink could drift, be replaced, or retain hidden nested worktree changes",
     ),
     RequirementImpact(
         "EVH-024",
@@ -1925,36 +1824,6 @@ def validate_requirement_evidence(
                 )
 
 
-def _load_requirement_ids(spec_roots: tuple[Path, ...]) -> set[str]:
-    alive: set[str] = set()
-    for spec_root in spec_roots:
-        if not spec_root.exists():
-            continue
-        for path in sorted(spec_root.rglob("*.md")):
-            if spec_root.name == "changes" and "archive" in path.relative_to(spec_root).parts:
-                continue
-            for header in REQUIREMENT_HEADER_RE.findall(path.read_text(encoding="utf-8")):
-                alive.update(_expand_requirement_ids(header))
-    return alive
-
-
-def load_alive_requirement_ids(project_root: Path) -> set[str]:
-    """Return requirements adopted by the main specification set."""
-
-    return _load_requirement_ids((project_root / "openspec/specs",))
-
-
-def load_known_requirement_ids(project_root: Path) -> set[str]:
-    """Return main requirements plus active deltas, excluding archived history."""
-
-    return _load_requirement_ids(
-        (
-            project_root / "openspec/specs",
-            project_root / "openspec/changes",
-        )
-    )
-
-
 def collected_deterministic_impl_ids(agent_root: Path, selectors: set[str]) -> set[str]:
     paths = {selector.split("::", 1)[0] for selector in selectors}
     requirement_ids: set[str] = set()
@@ -1992,8 +1861,6 @@ __all__ = [
     "RequirementEvidenceRule",
     "RequirementImpact",
     "collected_deterministic_impl_ids",
-    "load_alive_requirement_ids",
-    "load_known_requirement_ids",
     "validate_consolidation_decisions",
     "validate_requirement_evidence",
     "validate_requirement_impacts",

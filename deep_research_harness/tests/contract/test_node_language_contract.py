@@ -27,7 +27,7 @@ def _tracked_fixture(root: Path) -> None:
     _git(root, "config", "user.name", "Language Fixture")
     for relative_path in (
         "current.txt",
-        "openspec/changes/archive/old.txt",
+        "governance-history/old.txt",
         "_backlog/_done/closed.txt",
         "unfamiliar.extension",
     ):
@@ -49,7 +49,7 @@ def test_current_node_language_has_no_retired_identity_or_capability_contract() 
     ("relative_path", "token"),
     (
         ("current.txt", b"Phase" + b" Agent"),
-        ("openspec/changes/archive/old.txt", b"MD" + b" controller"),
+        ("governance-history/old.txt", b"MD" + b" controller"),
         ("_backlog/_done/closed.txt", b"capability" + b"_binding"),
         ("unfamiliar.extension", b"phase" + b"-agent"),
         ("unfamiliar.extension", b"D" + b"PT"),
@@ -72,10 +72,11 @@ def test_tracked_language_guard_rejects_assembled_residuals_in_every_surface(
         scan_tracked_language(root)
 
 
-def test_tracked_language_guard_fails_closed_for_missing_materialized_file(tmp_path: Path) -> None:
+def test_tracked_language_guard_ignores_a_worktree_deletion(tmp_path: Path) -> None:
     root = tmp_path / "repository"
     _tracked_fixture(root)
     (root / "current.txt").unlink()
 
-    with pytest.raises(NodeLanguageError, match="language.materialized_file_invalid:current.txt"):
-        scan_tracked_language(root)
+    report = scan_tracked_language(root)
+
+    assert "current.txt" not in report.checked_paths

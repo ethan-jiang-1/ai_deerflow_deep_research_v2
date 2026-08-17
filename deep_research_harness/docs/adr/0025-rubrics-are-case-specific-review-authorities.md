@@ -20,5 +20,5 @@ historical title, decision text, or runtime authority.
   model-facing execution input, execution output, or Runner completion status; the
   Runner reports only `completed` or `failed` and produces no cognitive quality verdict.
 - **Current owner or route:** [Evaluation Rubric](../../CONTEXT.md) is explanatory;
-  [cognitive-evaluation-suite](../../../openspec/specs/cognitive-evaluation-suite/spec.md)
+  application evaluation contracts under `evals/` and `tests/eval/`
   owns the required behavior.

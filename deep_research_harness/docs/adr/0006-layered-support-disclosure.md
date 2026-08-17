@@ -22,6 +22,5 @@ historical title, decision text, or runtime authority.
   current external retention or a post-loss reader/presentation.
 - **Current owner or route:** [Support Handoff](../../CONTEXT.md) is a current
   terminology/status entry only, not a behavior contract. The owning current requirements
-  are [research-run-experience](../../../openspec/specs/research-run-experience/spec.md),
-  [deep-research-harness-run-bundles](../../../openspec/specs/deep-research-harness-run-bundles/spec.md), and
-  [run-event-journal](../../../openspec/specs/run-event-journal/spec.md).
+  remain the typed run-experience, Run Bundle, and event-journal contracts under
+  `src/deerflow_deep_research/domain/` and their runtime projections.

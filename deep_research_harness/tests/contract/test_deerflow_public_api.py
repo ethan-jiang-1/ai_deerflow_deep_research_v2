@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import inspect
 import subprocess
-import tomllib
 from pathlib import Path
 
 from deerflow.trace_context import get_current_trace_id
@@ -29,11 +28,8 @@ def _git(*args: str, cwd: Path = REPO_ROOT) -> str:
 def test_current_deerflow_pin_is_synchronized_without_an_upgrade() -> None:
     nested_head = _git("rev-parse", "HEAD", cwd=REPO_ROOT / "deerflow")
     index_entry = _git("ls-files", "--stage", "deerflow")
-    registry = tomllib.loads((REPO_ROOT / "openspec/governance/project-structure.toml").read_text(encoding="utf-8"))
-
     assert nested_head == CURRENT_DEERFLOW_PIN
     assert index_entry.split()[:2] == ["160000", CURRENT_DEERFLOW_PIN]
-    assert registry["upstream_gitlink"]["commit"] == CURRENT_DEERFLOW_PIN
 
 
 def test_current_tool_runtime_publicly_injects_an_explicit_callable_writer() -> None:

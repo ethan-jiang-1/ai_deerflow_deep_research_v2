@@ -14,4 +14,4 @@ historical title, decision text, or runtime authority.
 
 - **Current applicability:** Deployment Owner responsibility for service configuration remains current.
 - **Non-current / planned / dormant scope:** The dedicated-TUI local setup path is dormant.
-- **Current owner or route:** [deployment-configuration](../../../openspec/specs/deployment-configuration/spec.md)
+- **Current owner or route:** `src/deerflow_deep_research/runtime/` deployment configuration contracts

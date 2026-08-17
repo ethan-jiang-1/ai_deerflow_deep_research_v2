@@ -28,8 +28,6 @@ from tests.assets.requirement_evidence import (
     RequirementEvidenceError,
     RequirementImpact,
     collected_deterministic_impl_ids,
-    load_alive_requirement_ids,
-    load_known_requirement_ids,
     validate_consolidation_decisions,
     validate_requirement_evidence,
 )
@@ -123,21 +121,6 @@ def test_ordinary_alive_requirement_needs_only_collected_deterministic_impl() ->
         deterministic_impl_ids={"EVH-006"},
         collected_selectors=set(),
     )
-
-
-def test_requirement_loaders_distinguish_main_specs_from_active_deltas(tmp_path) -> None:
-    main = tmp_path / "openspec/specs/example/spec.md"
-    active_delta = tmp_path / "openspec/changes/change/specs/example/spec.md"
-    archived_delta = tmp_path / "openspec/changes/archive/old-change/specs/example/spec.md"
-    main.parent.mkdir(parents=True)
-    active_delta.parent.mkdir(parents=True)
-    archived_delta.parent.mkdir(parents=True)
-    main.write_text("> req: ABC-001\n", encoding="utf-8")
-    active_delta.write_text("> req: ABC-002\n", encoding="utf-8")
-    archived_delta.write_text("> req: ABC-003\n", encoding="utf-8")
-
-    assert load_alive_requirement_ids(tmp_path) == {"ABC-001"}
-    assert load_known_requirement_ids(tmp_path) == {"ABC-001", "ABC-002"}
 
 
 def test_active_delta_impl_is_known_without_becoming_an_unimplemented_main_requirement() -> None:

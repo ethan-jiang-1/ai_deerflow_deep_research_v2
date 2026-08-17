@@ -1,0 +1,15 @@
+{
+  "status": "portable snapshot",
+  "sourceRepository": "git@github.com:ethan-jiang-1/ai_deerflow_deep_research_v2.git",
+  "sourceRevision": "42edd9136f9eeeb9e6d926f50faeb6721cd3f6ce",
+  "snapshotDate": "2026-08-17",
+  "workingTreeNote": "The source working tree is dirty; the per-file SHA-256 values identify the exact candidate bytes.",
+  "selectedProfiles": ["workflow-control", "node-agent", "deerflow-downstream"],
+  "files": [
+    {"path": "openspec/change-guidance/core/change-practice.md", "sha256": "e28c6b5ee7481aa7d8c1c2b60530d02e4eaf58d06add318b5bdc6518142adeab"},
+    {"path": "openspec/change-guidance/profiles/deerflow-downstream/deerflow-downstream.md", "sha256": "ccd6fc253b8113d26d7d7d31a3d24f7fed983ab0f27bb43b8c560605f3290bb8"},
+    {"path": "openspec/change-guidance/profiles/node-agent/node-agent.md", "sha256": "abef50cccf4ac1b65b7d94574585ad8e202260dfcf37aec035eee0bf3a422295"},
+    {"path": "openspec/change-guidance/profiles/workflow-control/workflow-control.md", "sha256": "98d84a316cb9eaa8db3b06d54d5f410ee2ea0d96306eaeb7fb8b144abdb0a17e"},
+    {"path": "openspec/governance/change_guidance_kernel.py", "sha256": "6c745da188f62481ce6a441fd0f967745a2c4b856c6c44593e66c0ae58f4af6d"}
+  ]
+}
