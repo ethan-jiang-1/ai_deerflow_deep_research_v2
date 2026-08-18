@@ -1,6 +1,6 @@
 # Closed Plans Index — 已完成 plan 归档
 
-> 最后更新: 2026-08-17 | `_backlog/_done/_closed_plans/` — 已完成 plan 的归档目录。
+ > 最后更新: 2026-08-18 | `_backlog/_done/_closed_plans/` — 已完成 plan 的归档目录。
 > 接收来自 [`../../plans/`](../../plans/) 的 plan。`_` 前缀 = coding agent 默认忽略。
 >
 > **plan 完成后文件名不变，位置即状态。** 移入时分配 `CLS-NNN` 序号（Closed），按完成时间递增。
@@ -64,5 +64,7 @@ plan 完成后从 `_backlog/plans/` 通过 `git mv` 移入本目录：
 
 | CLS-043 | 2026-08-16 | [narrow-scripted-real-workflow-debug-path.md](narrow-scripted-real-workflow-debug-path.md) | 窄而真三波调试路径已落地：spike 验证 0.7s 零凭据零网络基线，三波 action proof 红测转绿，OpenSpec `scripted-real-workflow-debug-path` 实现、同步主规格并归档，BUG-031 关闭；repair/targeted named case 待 BUG-028/029 的独立 change |
 | CLS-044 | 2026-08-17 | [agent-friction-fixes-via-openspec.md](agent-friction-fixes-via-openspec.md) | Agent 友善度修复计划全部落地：gate 修绿（Change 1，另一 agent 拆为 tier-entry-environment-regression + restore-deterministic-verification-gate 两个 change 实施）、文档引用/命令修正（Change 2，`fix-agent-facing-documentation-integrity`）、标识符单源化与死代码退役（Change 3，`single-source-runtime-identifiers-and-retire-dead-code`）；三个 change 均 apply → 归档 → 单独 commit（759a12f/252a0ad、e176975、4063150） |
+| CLS-045 | 2026-08-18 | [soft-bundle-session-cli.md](soft-bundle-session-cli.md) | Soft Bundle Session CLI 设计定稿并全部落地：`soft-bundle-session-cli` change（001/002/003 modes、BUNDLES 记录、SBC-001..005）实现、同步主规格并归档；BUG-034/042 随后经独立 change 修复关闭 |
+| CLS-046 | 2026-08-18 | [low-scale-real-auto-runs.md](low-scale-real-auto-runs.md) | Mode 003 real-auto 最低规模跑通设计（决策点 1/2/3 已拍板）已按 plan 重写 `low-scale-real-auto` change 并实施、同步主规格、归档；修复后 003 真机复跑暴露的 BUG-040..043 经 wave2-synthesis-validation-feedback-contract 与 soft-bundle-bind-blocked-run-bundle 两个 change 全部修复关闭 |
 
-**Next available plan ID: CLS-045**
+**Next available plan ID: CLS-047**

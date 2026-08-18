@@ -1,11 +1,11 @@
 # _backlog — 项目待办与决策记录
 
-> 最后更新: 2026-08-17 | 本目录追踪本仓库的工作项、设计决策、上游分析。
+> 最后更新: 2026-08-18 | 本目录追踪本仓库的工作项、设计决策、上游分析。
 > 活跃工作走 OpenSpec（`openspec/changes/`）；本目录是 **上游分析与决策记录 + 待办池**，不是运行时真相。
 >
 > **本文件是 `_backlog` 的规矩手册。** 搬迁流程在下面定死，今后大家都遵循这里头定的规矩。
 >
-> **命名约定：`_` 前缀目录（`_done/`、`_fixed_bugs/` 等）是已归档、已完成或明确暂停的子目录——coding agent 默认忽略，除非显式点名要读。** 活跃工作件在无前缀目录（`bugs/`、`todos/`、`plans/`）。
+> **命名约定：`_` 前缀目录 = 已结束的目录。** `_done/`、`_fixed_bugs/`、`_learning/`、`_reference/`、`_suspended_*` 等 `_` 开头的子目录代表已归档、已完成、长期留存或明确暂停——**coding agent 默认忽略，除非显式点名要读**。活跃工作件在无前缀目录（`bugs/`、`todos/`、`plans/`）。2026-08-18 起 `learning/` 更名 `_learning/`（长期留存 retro 归入 `_` 前缀，不再是无前缀的"活跃"目录）。
 
 ## 这个仓库是什么
 
@@ -28,7 +28,7 @@ _backlog/
 ├── todos/                            # 📋 活跃 todo → 做完移入 _done/_done_todos/
 ├── plans/                            # 📐 活跃 plan → 完成移入 _done/_closed_plans/
 ├── _reference/                       # 📚 外部系统分析资料（消化后产出 plan）
-└── learning/                         # 📖 apply/研究复盘 retro（长期留存）
+└── _learning/                        # 📖 apply/研究复盘 retro（长期留存，只增不删）
 ```
 
 ---

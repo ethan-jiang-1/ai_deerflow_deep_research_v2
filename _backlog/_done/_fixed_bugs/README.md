@@ -56,8 +56,12 @@ bug 修完后从 `_backlog/bugs/` 通过 `git mv` 移入本目录：
 | BUG-037 | 2026-08-18 | langgraph checkpoint "unregistered type" 警告（bundle 图存储未接应用 serde + Wave1OpenQuestionRef 未注册） |
 | BUG-038 | 2026-08-18 | 归档 change（13249bb）遗留 eval digest 漂移，`make verify` 在 HEAD 上红（synthesis.py/tool.py 未刷新） |
 | BUG-039 | 2026-08-18 | spec 同步的 wave2 有界终态变更留下期望旧 ValueError 的 workflow 测试（归档前未跑该车道） |
+| BUG-040 | 2026-08-18 | wave2 修复提示词缺 open-question 处置契约，覆盖类语义错误只能盲修（wave2-synthesis-validation-feedback-contract） |
+| BUG-041 | 2026-08-18 | wave2 有界终态吞掉具体验证类别，诊断只剩笼统 output.structured_invalid（wave2-synthesis-validation-feedback-contract） |
+| BUG-042 | 2026-08-18 | soft-bundle blocked 终态后不绑定 bundle，inspect/status/verify/phases 全部不可用（soft-bundle-bind-blocked-run-bundle） |
+| BUG-043 | 2026-08-18 | wave2 初始提示词输出契约区分度不足，模型镜像了证据里的 wave1 claims 形状（wave2-synthesis-validation-feedback-contract） |
 
-**Next available bug ID: BUG-040**
+**Next available bug ID: BUG-044**
 
 ---
 

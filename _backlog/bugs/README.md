@@ -1,6 +1,6 @@
 # Active Bugs — 活跃 bug 列表
 
-> 最后更新: 2026-08-18（BUG-038/039 立案并随同修复归档：honest-delivery-and-real-run-diagnostics；复盘见 `../learning/2026-08-18-honest-delivery-apply.md`） | `_backlog/bugs/` — 活跃 bug 在此
+> 最后更新: 2026-08-18（BUG-040..043 全部修复归档，活跃列表为空） | `_backlog/bugs/` — 活跃 bug 在此
 >
 > **bug 编号权威在 `_done/_fixed_bugs/`，新 bug = 最大编号 + 1。** 本文件只列活跃 bug。
 
@@ -15,12 +15,10 @@
 
 ## 活跃列表
 
-| ID | 严重级别 | 发现 | 标题 |
-| --- | --- | --- | --- |
-| （无 — 活跃列表空；BUG-035..039 已于 2026-08-18 修复归档） | | | |
+（空 — BUG-040..043 已全部修复，见 `../_done/_fixed_bugs/`）
 
 
-**Next available bug ID: BUG-040**
+**Next available bug ID: BUG-044**
 
 ---
 

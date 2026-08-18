@@ -1,6 +1,6 @@
-# learning — apply / 研究复盘 retro
+# _learning — apply / 研究复盘 retro
 
-> 最后更新: 2026-08-08 | `_backlog/learning/` — 可复用的 apply/研究复盘长期留存。
+> 最后更新: 2026-08-18 | `_backlog/_learning/` — 可复用的 apply/研究复盘长期留存（`_` 前缀 = 长期留存归档目录，coding agent 默认忽略）。
 
 这里放**做完一件事之后的复盘**：一次 OpenSpec change apply、一轮研究、一次大修 bug 的经验沉淀。目的是把"这次为什么做得好/差、下次怎么复用"变成可检索的经验，而不是散落在 commit message 里。
 

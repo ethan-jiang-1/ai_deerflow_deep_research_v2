@@ -25,9 +25,9 @@ _done/
 
 | 归档目录 | 数量 | Next ID |
 |---------|------|---------|
-| `_fixed_bugs/` | 39 | BUG-040 |
+| `_fixed_bugs/` | 43 | BUG-044 |
 | `_done_todos/` | 2 | DONE-003 |
-| `_closed_plans/` | 44 | CLS-045 |
+| `_closed_plans/` | 46 | CLS-047 |
 
 ### ⏸ SUSPENDED（明确暂停）
 
@@ -55,7 +55,7 @@ _Closed plan count follows the indexed CLS records; each future move increments 
 → [`_suspended_plans/`](_suspended_plans/)；其中的记录不是已完成项，只有在重新获准排期时才回到活跃目录。
 
 ### 想看复盘经验
-→ [`../learning/`](../learning/) — apply / 研究 retro。
+→ [`../_learning/`](../_learning/) — apply / 研究 retro。
 
 ### 想看具体 TODO 的设计思路
 → `../todos/todo-*.md`，每个都含：Why、现状对齐、Current Direction、Design Questions、Non-Goals、Next Step。
