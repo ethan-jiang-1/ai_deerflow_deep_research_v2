@@ -3,7 +3,15 @@
 > 生成: 2026-08-18 | 用途: 新会话 pick up 后继续（003 runbook 落地 + low-scale-real-auto change 实施）
 > 位置: 本文件在 `_backlog/_local_demo/`；设计文档在 `_backlog/plans/low-scale-real-auto-runs.md`；实施载体在 `openspec/changes/low-scale-real-auto/`
 >
-> **状态: ✅ 已完成（2026-08-18）**。change 已实施、测试通过、归档为
+> **状态: ✅✅ 端到端 PASS（2026-08-19）**。三 change 战役
+> （fix-request-envelope-coherence / honest-degraded-delivery / run-forensics +
+> preserve-failed-run-bundles）完成并归档；BUG-047..054 全部修复归档
+> （`_done/_fixed_bugs/`）。2026-08-19 真实 003 复跑 9 阶段全 completed：
+> `final/report.md` 含真实 findings 结论（473.0 GWh / CATL 211.72 / BYD 117.54）
+> 与诚实 Uncertainties 披露（gap:gap_1）。观测性就位：journal 事件带
+> call_ordinal/usage_tokens/budget_operands，run-summary 带 per-phase 策略信封。
+> 原始记录（2026-08-18）：
+> change 已实施、测试通过、归档为
 > `openspec/changes/archive/2026-08-18-low-scale-real-auto/`，主 specs 已同步
 > （新增 `execution-intent` / `low-scale-real-auto` capability），提交
 > `eab00c4`。003 首次真实 run 验证了全部机制（意图声明 → single_topic、

@@ -1,6 +1,6 @@
 # Fixed Bugs Index — 已修复 bug 归档
 
-> 最后更新: 2026-08-18 | `_backlog/_done/_fixed_bugs/` — 已修复 bug 的归档目录。
+> 最后更新: 2026-08-19 | `_backlog/_done/_fixed_bugs/` — 已修复 bug 的归档目录。
 > 接收来自 [`../../bugs/`](../../bugs/) 的 bug。`_` 前缀 = coding agent 默认忽略。
 >
 > **本目录是 bug 编号的唯一权威来源——新 bug 的编号 = 本目录最大编号 + 1。**
@@ -64,7 +64,16 @@ bug 修完后从 `_backlog/bugs/` 通过 `git mv` 移入本目录：
 | BUG-045 | 2026-08-18 | targeted_evidence worker 未排序 source_refs，候选校验必败（fix-targeted-evidence-worker） |
 | BUG-046 | 2026-08-18 | wave2_synthesis model 前阶段裸 ValueError 崩溃整个 run（fix-wave2-synthesis-bounded-input） |
 
-**Next available bug ID: BUG-047**
+| BUG-047 | 2026-08-19 | readiness/final_delivery critic 信封与构建器上限算术矛盾（fix-request-envelope-coherence） |
+| BUG-048 | 2026-08-19 | 观测性缺口：admission 操作数/策略信封/critic 兜底/usage/调用序号（run-forensics；第 7 项 follow-up） |
+| BUG-049 | 2026-08-19 | wave2 objective 构建超限——44,800 字节封顶推导（fix-request-envelope-coherence） |
+| BUG-050 | 2026-08-19 | 节点预算耗尽绕过降级——gate 预算 hand-back（honest-degraded-delivery） |
+| BUG-051 | 2026-08-19 | wave1 open-question id 碰撞类型化 + 同文本去重（honest-degraded-delivery） |
+| BUG-052 | 2026-08-19 | rerun 摧毁先前 bundle——改为归档保留（preserve-failed-run-bundles） |
+| BUG-053 | 2026-08-19 | final_delivery 退化计划确定性渲染不走 composer（honest-degraded-delivery） |
+| BUG-054 | 2026-08-19 | 高置信 findings 规则化为结论不被 critic 否决（honest-degraded-delivery） |
+
+**Next available bug ID: BUG-055**
 
 ---
 

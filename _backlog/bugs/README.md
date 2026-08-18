@@ -1,6 +1,5 @@
 # Active Bugs — 活跃 bug 列表
 
-> 最后更新: 2026-08-18（BUG-044..046 全部修复归档，活跃列表为空） | `_backlog/bugs/` — 活跃 bug 在此
 >
 > **bug 编号权威在 `_done/_fixed_bugs/`，新 bug = 最大编号 + 1。** 本文件只列活跃 bug。
 
@@ -17,14 +16,12 @@
 
 | Bug | 标题 | 发现 | 状态 |
 |-----|------|------|------|
-（空 — BUG-044..046 已全部修复归档，见 `../_done/_fixed_bugs/`）
+**Next available bug ID: BUG-055**
 
-
-**Next available bug ID: BUG-047**
 
 ---
 
-## 卡片模板
+
 
 新建 bug 文件 `BUG-<NNN>-<slug>.md`，`<NNN>` 取 `_done/_fixed_bugs/README.md` 的 Next available ID：
 

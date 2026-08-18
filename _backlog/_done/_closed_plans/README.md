@@ -67,4 +67,6 @@ plan 完成后从 `_backlog/plans/` 通过 `git mv` 移入本目录：
 | CLS-045 | 2026-08-18 | [soft-bundle-session-cli.md](soft-bundle-session-cli.md) | Soft Bundle Session CLI 设计定稿并全部落地：`soft-bundle-session-cli` change（001/002/003 modes、BUNDLES 记录、SBC-001..005）实现、同步主规格并归档；BUG-034/042 随后经独立 change 修复关闭 |
 | CLS-046 | 2026-08-18 | [low-scale-real-auto-runs.md](low-scale-real-auto-runs.md) | Mode 003 real-auto 最低规模跑通设计（决策点 1/2/3 已拍板）已按 plan 重写 `low-scale-real-auto` change 并实施、同步主规格、归档；修复后 003 真机复跑暴露的 BUG-040..043 经 wave2-synthesis-validation-feedback-contract 与 soft-bundle-bind-blocked-run-bundle 两个 change 全部修复关闭 |
 
-**Next available plan ID: CLS-047**
+| CLS-047 | 2026-08-19 | [fix-003-blocking-bugs-three-changes.md](fix-003-blocking-bugs-three-changes.md) | 003 阻断 bug 三 change 战役完成：fix-request-envelope-coherence（047/049）、honest-degraded-delivery（050/051/053/054）、run-forensics（048.1-4/6）+ 提前的 preserve-failed-run-bundles（052）全部实施、测试门全绿、归档并同步主 specs；真实 003 复跑 RESULT: PASS（9 阶段 completed，真实 findings + 诚实 Uncertainties）；BUG-048 第 7 项（state.json 投影）留 follow-up |
+
+**Next available plan ID: CLS-048**

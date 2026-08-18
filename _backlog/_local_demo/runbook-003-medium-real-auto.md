@@ -131,7 +131,7 @@ UV_NO_CACHE=1 make soft-bundle DEMO_ARGS="verify $ROOT"
 - 证据提交引用**真实 source URL**（`bundle` 内 evidence/submissions 或 report
   的引用列表）。
 
-### 5.1 honest gap 不收敛时的诚实交付（BUG-035 + BUG-044/046 修复后的验收语义）
+### 5.1 honest gap 不收敛时的诚实交付（BUG-035/044/046/050/053/054 修复后的验收语义）
 
 真实模型留 honest gap（如"两个来源数字为什么不同"、"精确全年总量是多少"）
 且补证不收敛是**常态**，不再判负：
@@ -140,6 +140,16 @@ UV_NO_CACHE=1 make soft-bundle DEMO_ARGS="verify $ROOT"
   hitl2 → readiness → final_delivery，终态 `completed`，`RESULT: PASS`
   （readiness 在降级后不再把流程送回补证循环——BUG-044 修复；即便
   readiness critic 调用失败也走降级交付）。
+- **节点级预算失败同样交还 gate**（BUG-050 修复）：wave2 synthesis 的
+  模型调用被策略预算拒绝/截停时，节点不再直写 terminal blocked，而是写
+  `wave2_budget_exhausted` 信号非终止返回；wave2 gate 把它投影为规则失败，
+  走与 gap 耗尽**同一套**预算/marker/降级分支——同一 seeding 至多降级一次。
+- **高置信 finding 必须交付**（BUG-054 修复）：`confidence=high`、引用完备、
+  无检索需求的 synthesis finding 直接成为可写结论（statement 原文），
+  readiness critic 的非实质性判定只能**追加**强制不确定项（披露），不能清空
+  结论——"部分结论 + 披露并存"取代"insufficient → 零交付"。
+- **退化 plan 免模型**（BUG-053 修复）：结论数与不确定项数均 ≤1 时排序数学
+  唯一，final_delivery 确定性构造 layout，不再赌模型回显合成 id。
 - `final/report.md` 的 `## Uncertainties` 段必须**披露**未收敛的 gap
   （描述来自 `synthesis/findings.json`；正文找不到描述时至少披露 gap id）。
 - blocked 只在两种情形出现：结构性失败；或"降级后再次耗尽"
