@@ -23,6 +23,8 @@
 
 | [openspec-materials-feedback-from-bugfix-campaign.md](openspec-materials-feedback-from-bugfix-campaign.md) | 反馈/复盘 | 裁定 4 条建议是否立 change（delta 机械卡 / checker 入归档门 / ID 登记 CLI 化 / 路由表单源化） |
 
+| [openspec-rule-reachability.md](openspec-rule-reachability.md) | 设计+执行 | **待采纳**（决策点 A/B）：单 change `openspec-rule-reachability`，T0 清 drift → T1 delta 机械卡 → T2 checker 归档门禁 → T3 ID 前移 polish → T4 单源化（可拆） |
+
 **Next available plan ID: CLS-047**（移入 `_closed_plans/` 时分配）
 
 ## 已归档（移至 `_done/_closed_plans/`）
