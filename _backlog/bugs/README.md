@@ -1,6 +1,6 @@
 # Active Bugs — 活跃 bug 列表
 
-> 最后更新: 2026-08-18（BUG-032/033/034 已修复归档） | `_backlog/bugs/` — 活跃 bug 在此
+> 最后更新: 2026-08-18（BUG-035/036/037 新增） | `_backlog/bugs/` — 活跃 bug 在此
 >
 > **bug 编号权威在 `_done/_fixed_bugs/`，新 bug = 最大编号 + 1。** 本文件只列活跃 bug。
 
@@ -17,9 +17,12 @@
 
 | ID | 严重级别 | 发现 | 标题 |
 | --- | --- | --- | --- |
+| [BUG-035](BUG-035-wave2-honest-gap-exhausts-real-runs.md) | P1 | 2026-08-18 | wave2 honest gap 两轮补证不收敛导致 003 真实 run 必死于 gate blocked（2/2 次复现） |
+| [BUG-036](BUG-036-demo-real-journal-unavailable-misreport.md) | P2 | 2026-08-18 | demo_real 终端显示 "Event Journal 记录不可用" 但 journal 实际存在且 complete |
+| [BUG-037](BUG-037-langgraph-unregistered-checkpoint-types.md) | P2 | 2026-08-18 | langgraph checkpoint 反序列化 "unregistered type" 警告（未来版本会阻塞） |
 
 
-**Next available bug ID: BUG-035**
+**Next available bug ID: BUG-038**
 
 ---
 
