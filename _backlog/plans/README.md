@@ -21,6 +21,8 @@
 |------|------|--------|
 | [openspec-product-boundary-portability.md](openspec-product-boundary-portability.md) | 设计 | 将 OpenSpec practice 分为 portable core/profiles、Deep Research local composition 与 product front door，并在本仓完成机械验证 |
 
+| [openspec-materials-feedback-from-bugfix-campaign.md](openspec-materials-feedback-from-bugfix-campaign.md) | 反馈/复盘 | 裁定 4 条建议是否立 change（delta 机械卡 / checker 入归档门 / ID 登记 CLI 化 / 路由表单源化） |
+
 **Next available plan ID: CLS-047**（移入 `_closed_plans/` 时分配）
 
 ## 已归档（移至 `_done/_closed_plans/`）

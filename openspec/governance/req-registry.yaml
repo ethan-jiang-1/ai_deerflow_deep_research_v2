@@ -314,6 +314,7 @@ REJ-005: run-event-journal — DeerFlow runtime context and custom streaming are
 REJ-006: run-event-journal — Admitted all-real demo Bundles retain matching trusted redacted execution-profile provenance only in Journal admission and summary facts
 REJ-007: run-event-journal — Journal attribution retains closed budget-stop subreasons and parser/materialization validation facts without changing recovery or lifecycle authority
 REJ-008: run-event-journal — Wave1 critic review dispatch validation facts carry exactly one closed critic kind and retain no raw critic output while remaining observation-only
+REJ-009: run-event-journal — Run summary retains per-phase policy-envelope snapshots of executed phases as provenance only, never admission or routing authority
 
 # research-run-experience
 RER-001: research-run-experience — One runtime-owned module converts lifecycle wire results into shared safe run updates for presentation adapters

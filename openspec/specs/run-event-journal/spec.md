@@ -1,6 +1,6 @@
 # run-event-journal Specification
 
-> req: REJ-001, REJ-002, REJ-003, REJ-004, REJ-005, REJ-006, REJ-007, REJ-008
+> req: REJ-001, REJ-002, REJ-003, REJ-004, REJ-005, REJ-006, REJ-007, REJ-008, REJ-009
 
 ## Purpose
 
