@@ -62,8 +62,9 @@ bug 修完后从 `_backlog/bugs/` 通过 `git mv` 移入本目录：
 | BUG-043 | 2026-08-18 | wave2 初始提示词输出契约区分度不足，模型镜像了证据里的 wave1 claims 形状（wave2-synthesis-validation-feedback-contract） |
 | BUG-044 | 2026-08-18 | 003 real-auto 在 wave2 honest gap 上 research.blocked（gate_blocked），未按 runbook 5.1 降级为 completed（fix-readiness-degraded-route） |
 | BUG-045 | 2026-08-18 | targeted_evidence worker 未排序 source_refs，候选校验必败（fix-targeted-evidence-worker） |
+| BUG-046 | 2026-08-18 | wave2_synthesis model 前阶段裸 ValueError 崩溃整个 run（fix-wave2-synthesis-bounded-input） |
 
-**Next available bug ID: BUG-046**
+**Next available bug ID: BUG-047**
 
 ---
 
