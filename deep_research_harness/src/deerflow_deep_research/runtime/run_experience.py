@@ -941,13 +941,16 @@ class ResearchRunExperience:
             return None
         if control.terminal_incident is not None:
             incident = control.terminal_incident
-            provider_diagnostic = self._is_provider_diagnostic(control)
+            if self._is_provider_diagnostic(control) and incident.diagnostic_ref is None:
+                raise ValueError("provider_diagnostic_reference_missing")
+            # Journal-availability truth is a property of the published
+            # reference, not of the incident's failure class: every blocked
+            # incident resolves its published diagnostic reference through
+            # the same observation-verified publication check (BUG-036).
             diagnostic_location: Literal["bundle_journal", "unavailable"] = "unavailable"
             journal_record_created = False
-            if provider_diagnostic:
-                if incident.diagnostic_ref is None:
-                    raise ValueError("provider_diagnostic_reference_missing")
-                diagnostic_location = self._provider_diagnostic_location(control, incident.diagnostic_ref)
+            if terminal_diagnostic_ref is not None:
+                diagnostic_location = self._incident_diagnostic_location(control, terminal_diagnostic_ref)
                 journal_record_created = diagnostic_location == "bundle_journal"
             return self._failure(
                 incident.code,
@@ -968,7 +971,7 @@ class ResearchRunExperience:
             source=control,
         )
 
-    def _provider_diagnostic_location(self, control: BundleControlResult, diagnostic_ref: str) -> str:
+    def _incident_diagnostic_location(self, control: BundleControlResult, diagnostic_ref: str) -> str:
         session = self._observation_view
         if (
             session is not None

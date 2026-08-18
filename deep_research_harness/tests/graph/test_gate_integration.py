@@ -106,9 +106,28 @@ class TestRealWave2GateOutcomes:
         assert update["route"] == "pass"
         assert update["unresolved_gaps"] == ()
 
-    def test_repeated_searchable_gap_exhausts_to_blocked(self) -> None:
+    def test_first_exhausted_gap_degrades_to_honest_pass(self) -> None:
+        """@impl WSN-004 — first exhaustion degrades once instead of blocking."""
+
         state = _state() | {
             "repair_budget_by_phase": {"wave2_synthesis": 0},
+            WAVE2_GATE_PREVIEW_KEY: Wave2GatePreview(searchable_gap_ids=("gap:needed",)),
+        }
+
+        update = evaluate_gate_for_node(state, "wave2_synthesis", build_wave2_real_gate_def())
+
+        assert update["route"] == "pass"
+        assert "terminal_status" not in update
+        assert "latest_incident" not in update
+        assert update["unresolved_gaps"] == ("gap:needed",)  # kept for disclosure
+        assert update["degraded_decisions"] == ("wave2_synthesis:exhaustion_degraded",)
+
+    def test_repeated_searchable_gap_exhausts_to_blocked(self) -> None:
+        """@impl WSN-004 — after the one degradation, exhaustion blocks as before."""
+
+        state = _state() | {
+            "repair_budget_by_phase": {"wave2_synthesis": 0},
+            "degraded_decisions": ("wave2_synthesis:exhaustion_degraded",),
             WAVE2_GATE_PREVIEW_KEY: Wave2GatePreview(searchable_gap_ids=("gap:needed",)),
         }
 

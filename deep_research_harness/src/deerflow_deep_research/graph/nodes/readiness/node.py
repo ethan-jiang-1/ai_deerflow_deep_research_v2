@@ -73,8 +73,24 @@ def build_real(dependencies: NodeBuildDependencies):
                 except Exception:
                     critic_output = conservative_readiness_output(must_answer)
 
+        # 2b. Honest-gap disclosure: gate-recorded unresolved searchable gap ids
+        #     joined against the canonical synthesis artifact (ids from state,
+        #     bodies from the store; a missing body still discloses the id).
+        unresolved_gap_ids = tuple(gap_id for gap_id in (state.get("unresolved_gaps") or ()) if isinstance(gap_id, str))
+        gap_records = ()
+        if unresolved_gap_ids:
+            try:
+                gap_records = await dependencies.work_units.store.read_synthesis_gaps()
+            except Exception:
+                gap_records = ()
+
         # 3. Materialize report plan
-        report_plan = materialize_report_plan(critic_output, hard_failures)
+        report_plan = materialize_report_plan(
+            critic_output,
+            hard_failures,
+            unresolved_gap_ids=unresolved_gap_ids,
+            gap_records=gap_records,
+        )
         try:
             report_plan_ref = await dependencies.work_units.store.write_readiness_report_plan(report_plan)
         except Exception:

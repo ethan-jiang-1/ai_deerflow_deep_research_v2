@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+from deerflow_deep_research.domain.synthesis import GapRecord
+
 from .contracts import (
     ReadinessCriticOutput,
     ReadinessReportPlan,
@@ -14,15 +16,33 @@ from .contracts import (
 from .hard_rules import HardRuleFailure
 
 
+def _gap_uncertainty(gap_id: str, gap: GapRecord | None) -> ReportPlanUncertainty:
+    """Project one gate-recorded unresolved gap as a mandatory uncertainty."""
+
+    question = f"Unresolved research gap {gap_id}"
+    if gap is None:
+        return ReportPlanUncertainty(
+            question=question,
+            limitation="Gap description unavailable in the synthesis artifact.",
+        )
+    return ReportPlanUncertainty(question=question, limitation=gap.description)
+
+
 def materialize_report_plan(
     critic_output: ReadinessCriticOutput,
     hard_failures: tuple[HardRuleFailure, ...],
+    *,
+    unresolved_gap_ids: tuple[str, ...] = (),
+    gap_records: tuple[GapRecord, ...] = (),
 ) -> ReadinessReportPlan:
     """Produce an immutable report plan from critic verdicts and hard-rule results.
 
     - ready_substantive → writable conclusions
     - ready_insufficient_judgment → mandatory uncertainties
     - blocked_repair_required → absent from both (counted by caller)
+    - gate-recorded unresolved searchable gaps → mandatory uncertainties
+      (gap bodies come only from the canonical synthesis artifact; a recorded
+      id without a body still discloses the id honestly)
     """
     conclusions: list[ReportPlanConclusion] = []
     uncertainties: list[ReportPlanUncertainty] = []
@@ -43,6 +63,10 @@ def materialize_report_plan(
                     limitation=pq.limitation_note or "Evidence insufficient for definitive judgment.",
                 )
             )
+
+    gaps_by_id = {gap.gap_id: gap for gap in gap_records}
+    for gap_id in unresolved_gap_ids:
+        uncertainties.append(_gap_uncertainty(gap_id, gaps_by_id.get(gap_id)))
 
     # Provenance failures become blanket uncertainties
     for f in hard_failures:

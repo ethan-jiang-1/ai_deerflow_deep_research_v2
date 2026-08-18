@@ -383,10 +383,17 @@ async def test_wave2_malformed_output_consumes_repair_and_leaves_no_partial_auth
         fault_hook=None,
     )
 
-    with pytest.raises(ValueError, match="synthesis_output_json_invalid"):
-        await WAVE2_SPEC.real_factory(
-            NodeBuildDependencies(graph, context, bridge, synthesis_bundle=store, selected_bundle=selected)
-        )({"bundle_id": identity.bundle_id, "accepted_submission_refs": (), "execution_trace": ()})
+    # The one-shot repair candidate is still invalid: the bounded terminal
+    # (spec wave2-synthesis-node: "A still-invalid repaired candidate blocks
+    # the node") routes exhausted with a typed incident — never an uncaught
+    # ValueError escaping the node boundary.
+    update = await WAVE2_SPEC.real_factory(
+        NodeBuildDependencies(graph, context, bridge, synthesis_bundle=store, selected_bundle=selected)
+    )({"bundle_id": identity.bundle_id, "accepted_submission_refs": (), "execution_trace": ()})
+
+    assert update["route"] == "exhausted"
+    assert update["terminal_status"] == "blocked"
+    assert update["latest_incident"]["code"] == "output.structured_invalid"
 
     assert case_id == MALFORMED_OUTPUT_CASE.case_id
     assert bridge.agents_built == 2

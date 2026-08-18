@@ -51,8 +51,13 @@ bug 修完后从 `_backlog/bugs/` 通过 `git mv` 移入本目录：
 | BUG-032 | 2026-08-17 | uv 缓存读取 `Operation not permitted` 导致 `make demo-scripted` 等本地命令直接挂 |
 | BUG-033 | 2026-08-17 | `_backlog/_local_demo` 真机脚本缺少 `PROFILE`，一跑就报 Usage 错误 |
 | BUG-034 | 2026-08-18 | `soft-bundle inspect` 对 mode 002（scripted-real）bundle 永远报 unavailable |
+| BUG-035 | 2026-08-18 | wave2 honest gap 两轮补证不收敛导致 003 真实 run 必死于 gate blocked（honest-delivery-and-real-run-diagnostics） |
+| BUG-036 | 2026-08-18 | demo_real 终端误报 "Event Journal 记录不可用"（journal 投影只覆盖 provider 分支） |
+| BUG-037 | 2026-08-18 | langgraph checkpoint "unregistered type" 警告（bundle 图存储未接应用 serde + Wave1OpenQuestionRef 未注册） |
+| BUG-038 | 2026-08-18 | 归档 change（13249bb）遗留 eval digest 漂移，`make verify` 在 HEAD 上红（synthesis.py/tool.py 未刷新） |
+| BUG-039 | 2026-08-18 | spec 同步的 wave2 有界终态变更留下期望旧 ValueError 的 workflow 测试（归档前未跑该车道） |
 
-**Next available bug ID: BUG-035**
+**Next available bug ID: BUG-040**
 
 ---
 

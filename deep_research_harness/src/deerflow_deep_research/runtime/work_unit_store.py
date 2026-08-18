@@ -10,6 +10,7 @@ import asyncio
 import base64
 import fcntl
 import hashlib
+import json
 import os
 import stat
 import threading
@@ -48,6 +49,7 @@ from deerflow_deep_research.domain.state import ContentRef
 from deerflow_deep_research.domain.synthesis import (
     MAX_SYNTHESIS_EVIDENCE_ENTRY_BYTES,
     MAX_SYNTHESIS_EVIDENCE_TOTAL_BYTES,
+    GapRecord,
     SynthesisEvidence,
     SynthesisResult,
 )
@@ -78,6 +80,7 @@ from deerflow_deep_research.runtime.work_unit_storage import (
 LOCK_TIMEOUT_SECONDS = 2.0
 LOCK_RETRY_SECONDS = 0.025
 MAX_FINAL_ARTIFACT_BYTES = 2 * 1024 * 1024
+MAX_SYNTHESIS_ARTIFACT_BYTES = 2 * 1024 * 1024
 
 
 class CommitDisposition(StrEnum):
@@ -334,6 +337,20 @@ class WorkUnitStore:
         if not isinstance(result, SynthesisResult):
             raise TypeError("synthesis_result_required")
         await asyncio.to_thread(self._write_synthesis_sync, canonical_json_bytes(result))
+
+    async def read_synthesis_gaps(self) -> tuple[GapRecord, ...]:
+        """Read the canonical synthesis artifact's gap records (contained, bounded).
+
+        The persisted ``synthesis/findings.json`` stays the only gap-body content
+        authority; checkpoint state carries ids only.
+        """
+
+        raw = await self.read_canonical_bytes(
+            bundle_synthesis_findings_path(self.bundle),
+            max_bytes=MAX_SYNTHESIS_ARTIFACT_BYTES,
+        )
+        result = SynthesisResult.model_validate(json.loads(raw))
+        return result.gaps
 
     async def read_synthesis_evidence(self, accepted_refs: tuple[str, ...]) -> tuple[SynthesisEvidence, ...]:
         records = await self.load_records()

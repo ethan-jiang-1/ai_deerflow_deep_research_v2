@@ -43,6 +43,21 @@ triggers it. The `route_map` (or `route_resolver`) SHALL translate the verdict t
 the route string written to `state["route"]`; a `degraded_pass` SHALL map to the
 same route label as `pass`.
 
+`GateDefinition` SHALL additionally carry an opt-in
+`degraded_pass_on_exhaustion: bool` (default `false`). For a gate that declares it,
+budget exhaustion with no hard failure SHALL produce `pass` with `degraded=True`
+(riding the same route label as `pass`, and NOT appending
+`REPAIR_BUDGET_EXHAUSTED` or writing any terminal transition) instead of `blocked`,
+provided this phase has not already produced an exhaustion-degraded pass since its
+repair budget was last seeded. The kernel SHALL bound degradation through the
+gate-owned `degraded_decisions` state field: the state update for an
+exhaustion-degraded pass appends one stable marker (`<phase>:exhaustion_degraded`)
+and a later exhaustion evaluation of the same phase with the marker present
+escalates to `blocked` exactly as for a gate without the policy. Any hard failure
+SHALL still block regardless of the policy. The rerun planner's gate-state reset
+SHALL clear the phase's marker together with the budgets it already resets, so a
+fresh research round can degrade at most once again.
+
 #### Scenario: All rules pass produces pass verdict
 - **WHEN** `evaluate_gate` runs all rules and none returns a Failure
 - **THEN** `GateResult.verdict` is `PhaseVerdict.PASS`, `failures` is empty, and `inspect` summarizes no issues
@@ -58,6 +73,36 @@ same route label as `pass`.
 #### Scenario: Budget exhaustion with repairable failures escalates to blocked
 - **WHEN** repairable failures exist but `remaining_budget` is 0
 - **THEN** `GateResult.verdict` is `PhaseVerdict.BLOCKED` with `REPAIR_BUDGET_EXHAUSTED` in the failure list
+
+#### Scenario: Declared exhaustion policy degrades to a bounded honest pass
+- **WHEN** a gate with `degraded_pass_on_exhaustion=true` exhausts its budget with
+  only semantic/repairable failures remaining, no hard failure, and no prior
+  exhaustion-degraded marker for the phase
+- **THEN** `GateResult.verdict` is `PhaseVerdict.PASS` with `degraded=True`, the
+  route label equals `route_map[PASS]`, no `REPAIR_BUDGET_EXHAUSTED` failure or
+  terminal transition is produced, and the state update appends the phase's
+  `exhaustion_degraded` marker to `degraded_decisions`
+
+#### Scenario: Degradation happens at most once per budget seeding
+- **WHEN** the same phase evaluates at exhausted budget again after it already
+  produced an exhaustion-degraded pass (marker present)
+- **THEN** the verdict is `PhaseVerdict.BLOCKED` with `REPAIR_BUDGET_EXHAUSTED`
+  exactly as for a gate without the policy
+
+#### Scenario: Hard failure still blocks under the declared policy
+- **WHEN** a gate with `degraded_pass_on_exhaustion=true` collects any hard failure
+- **THEN** the verdict is `PhaseVerdict.BLOCKED` regardless of budget, marker, or policy
+
+#### Scenario: Rerun reset restores one degradation opportunity
+- **WHEN** the rerun planner's gate-state reset runs after a phase degraded
+- **THEN** the phase's `exhaustion_degraded` marker is cleared together with its
+  gate attempts and repair budget, and a later exhaustion may degrade at most once
+  more
+
+#### Scenario: Undeclared gates keep today's exhaustion semantics
+- **WHEN** a gate without `degraded_pass_on_exhaustion` exhausts its budget with
+  semantic failures remaining
+- **THEN** the verdict is `PhaseVerdict.BLOCKED` and no marker is written
 
 #### Scenario: Degradable-only failures produce degraded pass
 - **WHEN** all failures are classified `degradable` and no hard, semantic, or repairable failures exist

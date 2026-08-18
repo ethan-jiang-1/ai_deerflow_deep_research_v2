@@ -83,6 +83,12 @@ def _compute_consecutive(
 # ---------------------------------------------------------------------------
 
 
+def exhaustion_degradation_marker(phase: str) -> str:
+    """Stable ``degraded_decisions`` marker for one honest-degraded phase."""
+
+    return f"{phase}:exhaustion_degraded"
+
+
 def _resolve_budget(
     state: Mapping[str, Any],
     phase: str,
@@ -182,22 +188,39 @@ def evaluate_gate(
             ),
         )
 
-    # 8. Escalate budget exhaustion → BLOCKED
-    #    Covers both the case where _derive_verdict returned REPAIR (budget=0
-    #    after prior decrements) and where it returned BLOCKED (budget=0 from
-    #    the start via default_budget=0).
+    # 8. Escalate budget exhaustion → BLOCKED, unless the gate declares the
+    #    bounded honest-degradation policy: then the FIRST exhaustion with no
+    #    primary hard failure (rules or budget resolver) degrades to a pass
+    #    instead, at most once per budget seeding (tracked through the
+    #    gate-owned ``degraded_decisions`` marker). Covers both the case where
+    #    _derive_verdict returned REPAIR (budget=0 after prior decrements) and
+    #    where it returned BLOCKED (budget=0 from the start via
+    #    default_budget=0).
+    exhaustion_degraded = False
     if budget <= 0 and any(f.classification in ("repairable", "semantic") for f in failures_tuple):
-        if verdict is not PhaseVerdict.BLOCKED:
-            verdict = PhaseVerdict.BLOCKED
-        if not any(f.code is FailureCode.REPAIR_BUDGET_EXHAUSTED for f in failures_tuple):
-            failures_tuple = (
-                *failures_tuple,
-                Failure(
-                    code=FailureCode.REPAIR_BUDGET_EXHAUSTED,
-                    rule_name="gate_kernel",
-                    description=f"repair budget exhausted for phase {phase}",
-                ),
-            )
+        primary_hard = any(f.classification == "hard" for f in failures)
+        marker = exhaustion_degradation_marker(phase)
+        may_degrade = (
+            gate_def.degraded_pass_on_exhaustion
+            and not primary_hard
+            and marker not in set(state.get("degraded_decisions") or ())
+        )
+        if may_degrade:
+            verdict = PhaseVerdict.PASS
+            degraded = True
+            exhaustion_degraded = True
+        else:
+            if verdict is not PhaseVerdict.BLOCKED:
+                verdict = PhaseVerdict.BLOCKED
+            if not any(f.code is FailureCode.REPAIR_BUDGET_EXHAUSTED for f in failures_tuple):
+                failures_tuple = (
+                    *failures_tuple,
+                    Failure(
+                        code=FailureCode.REPAIR_BUDGET_EXHAUSTED,
+                        rule_name="gate_kernel",
+                        description=f"repair budget exhausted for phase {phase}",
+                    ),
+                )
 
     # 9. Update budget for REPAIR verdict
     remaining_budget = budget
@@ -228,6 +251,7 @@ def evaluate_gate(
         failures=failures_tuple,
         failed_refs=failed_refs,
         degraded=degraded,
+        exhaustion_degraded=exhaustion_degraded,
         attempt=attempt,
         remaining_budget=remaining_budget,
         new_generation=new_generation,
@@ -265,6 +289,14 @@ def gate_result_to_state_update(
     current_budget: dict[str, int] = dict(state.get("repair_budget_by_phase") or {})
     current_budget[phase] = gate_result.remaining_budget
     update["repair_budget_by_phase"] = current_budget
+
+    # Honest-degradation marker: bounds degradation to once per phase per
+    # budget seeding (full-tuple write for the LastValue channel).
+    if gate_result.exhaustion_degraded:
+        marker = exhaustion_degradation_marker(phase)
+        current_degraded = tuple(state.get("degraded_decisions") or ())
+        if marker not in current_degraded:
+            update["degraded_decisions"] = (*current_degraded, marker)
 
     # Generation
     if gate_result.new_generation is not None:
@@ -305,5 +337,6 @@ def gate_result_to_state_update(
 
 __all__ = [
     "evaluate_gate",
+    "exhaustion_degradation_marker",
     "gate_result_to_state_update",
 ]

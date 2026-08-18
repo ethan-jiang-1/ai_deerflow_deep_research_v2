@@ -36,7 +36,14 @@ def _state(**overrides):
     return {**base, **overrides}
 
 
-def _gate_def(phase="wave0", rules=None, default_budget=3, route_map=None, budget_resolver=None):
+def _gate_def(
+    phase="wave0",
+    rules=None,
+    default_budget=3,
+    route_map=None,
+    budget_resolver=None,
+    degraded_pass_on_exhaustion=False,
+):
     if rules is None:
         rules = (_mk_rule("always_pass", FailureCode.WORK_FAILED, should_fail=False),)
     if route_map is None:
@@ -47,6 +54,7 @@ def _gate_def(phase="wave0", rules=None, default_budget=3, route_map=None, budge
         default_budget=default_budget,
         route_map=route_map,
         budget_resolver=budget_resolver,
+        degraded_pass_on_exhaustion=degraded_pass_on_exhaustion,
     )
 
 
@@ -521,3 +529,94 @@ class TestStateUpdate:
         update = gate_result_to_state_update(r, "wave0", _state())
         assert "terminal_status" not in update
         assert "generation" not in update
+
+
+# ---------------------------------------------------------------------------
+# Honest-delivery exhaustion degradation (BUG-035)
+# ---------------------------------------------------------------------------
+
+
+class TestExhaustionDegradation:
+    def _semantic_gap_gate(self, **kwargs):
+        rule = _mk_rule("wave2_searchable_gaps", FailureCode.MISSING_EVIDENCE, ref="gap:precise_total")
+        return _gate_def(
+            phase="wave2_synthesis",
+            rules=(rule,),
+            route_map={
+                PhaseVerdict.PASS: "pass",
+                PhaseVerdict.REPAIR: "evidence_needed",
+                PhaseVerdict.BLOCKED: "exhausted",
+            },
+            degraded_pass_on_exhaustion=True,
+            **kwargs,
+        )
+
+    def test_first_exhaustion_degrades_to_honest_pass(self) -> None:
+        gd = self._semantic_gap_gate(default_budget=0)
+
+        result = evaluate_gate(_state(), "wave2_synthesis", gd)
+
+        assert result.verdict is PhaseVerdict.PASS
+        assert result.degraded is True
+        assert result.exhaustion_degraded is True
+        assert result.route == "pass"
+        assert result.remaining_budget == 0
+        assert not any(f.code is FailureCode.REPAIR_BUDGET_EXHAUSTED for f in result.failures)
+
+    def test_degraded_state_update_writes_marker_without_terminal_fields(self) -> None:
+        gd = self._semantic_gap_gate(default_budget=0)
+        state = _state(degraded_decisions=("wave0:exhaustion_degraded",))
+
+        result = evaluate_gate(state, "wave2_synthesis", gd)
+        update = gate_result_to_state_update(result, "wave2_synthesis", state)
+
+        assert update["degraded_decisions"] == ("wave0:exhaustion_degraded", "wave2_synthesis:exhaustion_degraded")
+        assert "terminal_status" not in update
+        assert "latest_incident" not in update
+        assert update["route"] == "pass"
+
+    def test_repeated_exhaustion_after_marker_blocks(self) -> None:
+        gd = self._semantic_gap_gate(default_budget=0)
+        state = _state(degraded_decisions=("wave2_synthesis:exhaustion_degraded",))
+
+        result = evaluate_gate(state, "wave2_synthesis", gd)
+
+        assert result.verdict is PhaseVerdict.BLOCKED
+        assert result.exhaustion_degraded is False
+        assert any(f.code is FailureCode.REPAIR_BUDGET_EXHAUSTED for f in result.failures)
+        assert result.route == "exhausted"
+
+    def test_hard_failure_still_blocks_under_the_policy(self) -> None:
+        gd = self._semantic_gap_gate(default_budget=0)
+        hard = _mk_rule("identity", FailureCode.IDENTITY_MISMATCH)
+        gd_hard = GateDefinition(
+            phase="wave2_synthesis",
+            rules=(*gd.rules, hard),
+            default_budget=0,
+            route_map=gd.route_map,
+            degraded_pass_on_exhaustion=True,
+        )
+
+        result = evaluate_gate(_state(), "wave2_synthesis", gd_hard)
+
+        assert result.verdict is PhaseVerdict.BLOCKED
+        assert result.exhaustion_degraded is False
+
+    def test_undeclared_gate_keeps_exhaustion_blocking(self) -> None:
+        rule = _mk_rule("wave2_searchable_gaps", FailureCode.MISSING_EVIDENCE, ref="gap:x")
+        gd = _gate_def(phase="wave2_synthesis", rules=(rule,), default_budget=0)
+
+        result = evaluate_gate(_state(), "wave2_synthesis", gd)
+
+        assert result.verdict is PhaseVerdict.BLOCKED
+        assert result.exhaustion_degraded is False
+        assert any(f.code is FailureCode.REPAIR_BUDGET_EXHAUSTED for f in result.failures)
+
+    def test_budget_resolver_failure_never_degrades(self) -> None:
+        gd = self._semantic_gap_gate(default_budget=1, budget_resolver=lambda state: 11)
+
+        result = evaluate_gate(_state(), "wave2_synthesis", gd)
+
+        assert result.verdict is PhaseVerdict.BLOCKED
+        assert result.exhaustion_degraded is False
+        assert any(f.code is FailureCode.GATE_EVALUATION_FAILED for f in result.failures)

@@ -503,8 +503,16 @@ class BundleLifecycle:
         await asyncio.to_thread(self._prepare_graph_checkpoint_sync, bundle, lease)
         from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
+        from deerflow_deep_research.runtime.checkpoint import build_deep_research_checkpoint_serde
+
         try:
             async with AsyncSqliteSaver.from_conn_string(str(database_path)) as saver:
+                # The Bundle-contained graph store crosses the same explicit
+                # registered-type msgpack boundary as the generic host; the
+                # library default would warn today and block recovery in a
+                # future strict langgraph (BUG-037).
+                if hasattr(saver, "serde"):
+                    saver.serde = build_deep_research_checkpoint_serde()
                 await store.read(lease=lease)
                 yield saver
         except asyncio.CancelledError:

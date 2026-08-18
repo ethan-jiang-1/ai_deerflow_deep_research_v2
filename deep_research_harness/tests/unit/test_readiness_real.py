@@ -25,7 +25,7 @@ from deerflow_deep_research.domain.enums import NodeFinishReason
 from deerflow_deep_research.domain.lifecycle import LifecycleStatus
 from deerflow_deep_research.domain.node_spec import NodeBuildDependencies
 from deerflow_deep_research.domain.state import BundleLocalState, ContentRef
-from deerflow_deep_research.domain.synthesis import SynthesisEvidence
+from deerflow_deep_research.domain.synthesis import GapRecord, SynthesisEvidence
 from deerflow_deep_research.domain.work_units import canonical_json_bytes
 from deerflow_deep_research.graph.nodes.readiness.contracts import ReadinessReportPlan
 from deerflow_deep_research.graph.nodes.readiness.critic import (
@@ -42,11 +42,23 @@ BUNDLE = RunBundleRef(bundle_id=BundleId("b_" + "A" * 43), scope_bucket="s_" + "
 
 
 class ScriptedStore:
-    def __init__(self, *, fail: bool = False, plan_fail: bool = False) -> None:
+    def __init__(
+        self,
+        *,
+        fail: bool = False,
+        plan_fail: bool = False,
+        gaps: tuple[GapRecord, ...] = (),
+    ) -> None:
         self.fail = fail
         self.plan_fail = plan_fail
+        self.gaps = gaps
         self.calls: list[tuple[str, ...]] = []
         self.written_plans: list[ReadinessReportPlan] = []
+
+    async def read_synthesis_gaps(self) -> tuple[GapRecord, ...]:
+        if self.fail:
+            raise ValueError("synthesis artifact unavailable")
+        return self.gaps
 
     async def read_synthesis_evidence(self, accepted_refs: tuple[str, ...]) -> tuple[SynthesisEvidence, ...]:
         self.calls.append(accepted_refs)
@@ -119,7 +131,14 @@ def _candidate(
     return json.dumps(payload)
 
 
-def _deps(*, response: str | None = None, raises: bool = False, store_fail: bool = False, plan_fail: bool = False):
+def _deps(
+    *,
+    response: str | None = None,
+    raises: bool = False,
+    store_fail: bool = False,
+    plan_fail: bool = False,
+    gaps: tuple[GapRecord, ...] = (),
+):
     graph = GraphContextView(
         research_scope_id=BUNDLE.bundle_id.value,
         workspace_root="/mnt/user-data/workspace/deep-research/r",
@@ -127,7 +146,7 @@ def _deps(*, response: str | None = None, raises: bool = False, store_fail: bool
         outputs_root="/mnt/user-data/outputs/deep-research/r",
     )
     capabilities = ScriptedCapabilities(response, raises=raises)
-    store = ScriptedStore(fail=store_fail, plan_fail=plan_fail)
+    store = ScriptedStore(fail=store_fail, plan_fail=plan_fail, gaps=gaps)
     dependencies = NodeBuildDependencies(
         graph_context=graph,
         agent_context=NodeAgentContext(
@@ -301,3 +320,60 @@ class TestRealReadiness:
                     capabilities=dependencies.capabilities,
                 )
             )
+
+
+GAP_CONFLICT = GapRecord(
+    gap_id="gap:share_conflict",
+    description="Sources report differing 2024 market-share figures; the divergence is unexplained.",
+    priority=2,
+    search_required=True,
+)
+
+
+class TestHonestGapDisclosure:
+    """@impl REA-003 — unresolved searchable gaps become disclosed uncertainties."""
+
+    def test_matched_gap_becomes_a_disclosed_uncertainty(self) -> None:
+        dependencies, _capabilities, store = _deps(gaps=(GAP_CONFLICT,))
+        state = _state()
+        state["unresolved_gaps"] = ("gap:share_conflict",)
+
+        asyncio.run(build_real(dependencies)(state))
+
+        uncertainties = store.written_plans[0].mandatory_uncertainties
+        assert any(
+            u.question == "Unresolved research gap gap:share_conflict" and u.limitation == GAP_CONFLICT.description
+            for u in uncertainties
+        )
+
+    def test_recorded_gap_id_without_a_body_discloses_the_id_only(self) -> None:
+        dependencies, _capabilities, store = _deps(gaps=())
+        state = _state()
+        state["unresolved_gaps"] = ("gap:missing_body",)
+
+        asyncio.run(build_real(dependencies)(state))
+
+        uncertainties = store.written_plans[0].mandatory_uncertainties
+        assert any(
+            u.question == "Unresolved research gap gap:missing_body"
+            and u.limitation == "Gap description unavailable in the synthesis artifact."
+            for u in uncertainties
+        )
+
+    def test_failed_gap_read_still_discloses_the_id(self) -> None:
+        dependencies, _capabilities, store = _deps(store_fail=True)
+        state = _state()
+        state["unresolved_gaps"] = ("gap:any",)
+
+        asyncio.run(build_real(dependencies)(state))
+
+        uncertainties = store.written_plans[0].mandatory_uncertainties
+        assert any(u.question == "Unresolved research gap gap:any" for u in uncertainties)
+
+    def test_no_unresolved_gaps_keeps_the_plan_unchanged(self) -> None:
+        dependencies, _capabilities, store = _deps(gaps=(GAP_CONFLICT,))
+
+        asyncio.run(build_real(dependencies)(_state()))
+
+        uncertainties = store.written_plans[0].mandatory_uncertainties
+        assert uncertainties == ()

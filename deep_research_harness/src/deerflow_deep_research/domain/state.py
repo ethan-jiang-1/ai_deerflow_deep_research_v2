@@ -1059,6 +1059,7 @@ def apply_research_update(
         "latest_incident": frozenset({WriterRole.CONTROLLER, WriterRole.GATE}),
         "latest_gate_feedback": frozenset({WriterRole.GATE}),
         "unresolved_gaps": frozenset({WriterRole.GATE}),
+        "degraded_decisions": frozenset({WriterRole.GATE}),
         "wave1_open_questions": frozenset({WriterRole.GATE}),
         "gate_attempts_by_phase": frozenset({WriterRole.GATE}),
         "repair_budget_by_phase": frozenset({WriterRole.GATE}),

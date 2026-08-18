@@ -304,6 +304,7 @@ def reset_gate_state_for_scope(
         return {
             "gate_attempts_by_phase": {},
             "repair_budget_by_phase": {},
+            "degraded_decisions": (),
         }
     # For topic/finding scoped reruns, reset all phases too —
     # the downstream planners filter by active_topic_filter, and the
@@ -311,6 +312,7 @@ def reset_gate_state_for_scope(
     return {
         "gate_attempts_by_phase": {},
         "repair_budget_by_phase": {},
+        "degraded_decisions": (),
     }
 
 

@@ -19,7 +19,7 @@ how_to_run: |
   UV_NO_CACHE=1 make soft-bundle DEMO_ARGS="inspect $ROOT"
   UV_NO_CACHE=1 make soft-bundle DEMO_ARGS="phases $ROOT"
   UV_NO_CACHE=1 make soft-bundle DEMO_ARGS="verify $ROOT"
-expected_result: "RESULT: PASS + final/report.md with real content + one wave0 + one wave1 work unit"
+expected_result: "RESULT: PASS + final/report.md with real content + one wave0 + one wave1 work unit; a non-converging honest gap degrades to a completed run whose report discloses the gap under Uncertainties"
 non_goals:
   - "Not a Gateway observer path claim (validates the non-interactive operator path only)."
   - "No custom research question."
@@ -131,6 +131,19 @@ UV_NO_CACHE=1 make soft-bundle DEMO_ARGS="verify $ROOT"
 - 证据提交引用**真实 source URL**（`bundle` 内 evidence/submissions 或 report
   的引用列表）。
 
+### 5.1 honest gap 不收敛时的诚实交付（BUG-035 修复后的验收语义）
+
+真实模型留 honest gap（如"两个来源数字为什么不同"、"精确全年总量是多少"）
+且 2 轮补证不收敛是**常态**，不再判负：
+
+- wave2 gate 预算耗尽时**首次**降级为 degraded pass，run 继续走
+  hitl2 → readiness → final_delivery，终态 `completed`，`RESULT: PASS`。
+- `final/report.md` 的 `## Uncertainties` 段必须**披露**未收敛的 gap
+  （描述来自 `synthesis/findings.json`；正文找不到描述时至少披露 gap id）。
+- 只有"降级后再次耗尽"才会 blocked——单次 003 run 预期不会触发。
+- 终端若出现 blocked（其他原因），journal 可用性行应如实显示
+  `Event Journal: 已创建`（诊断 ref 已发布时），不再误报"不可用"。
+
 ## 6. 单 work unit 验收
 
 003 声明 minimal 意图 → planner `single_topic` → wave0/wave1 各恰好 1 个
@@ -159,5 +172,6 @@ unit）。若出现多个 work unit，说明 single_topic 推导没生效，按�
 2. 在 `_backlog/bugs/README.md` 活跃列表登记
 3. 不要直接去改 Harness 核心；先按 `_backlog` 规矩走 bug 流程
 4. 真实模型波动（repair 循环多、wave2 留 honest gap、final_delivery 多次
-   attempt）是实测常态：gate 2 轮 + must_answer + 归一化覆盖收敛路径，失败时
-   按 bug 流程记录证据。
+   attempt）是实测常态：gate 2 轮 + must_answer + 归一化覆盖收敛路径；wave2
+   honest gap 不收敛时按 5.1 节降级为带披露的 completed 交付（不再阻塞），
+   其余失败按 bug 流程记录证据。

@@ -101,3 +101,113 @@ def test_missing_location_terminal_remains_reject_only_in_inventory(tmp_path: Pa
 
     assert report.rejected == 1
     assert not (tmp_path / "output").exists()
+
+
+# ---------------------------------------------------------------------------
+# Journal truth for gate-blocked terminals (BUG-036)
+# ---------------------------------------------------------------------------
+
+BUNDLE_ID = "b_" + "G" * 43
+DIAG_REF = "diag_gateblocked0001"
+
+
+def _blocked_control(diagnostic_ref: str | None):
+    from deerflow_deep_research.domain.lifecycle import (
+        BundleAvailability,
+        BundleControlResult,
+        BundleRefinementProjection,
+        LifecycleAction,
+        LifecycleStatus,
+        LogicalPhase,
+        ResultCode,
+        TerminalReason,
+    )
+    from deerflow_deep_research.domain.run_experience import TerminalIncidentProjection
+
+    return BundleControlResult(
+        action=LifecycleAction.START,
+        code=ResultCode.BLOCKED,
+        availability=BundleAvailability.AVAILABLE,
+        durability="restart_durable",
+        bundle_id=BUNDLE_ID,
+        status=LifecycleStatus.BLOCKED,
+        phase=LogicalPhase.WAVE2_SYNTHESIS,
+        generation=0,
+        terminal_reason=TerminalReason.GATE_BLOCKED,
+        terminal_incident=TerminalIncidentProjection(
+            code=RunFailureCode.RESEARCH_BLOCKED,
+            phase="wave2_synthesis",
+            certainty=FailureCertainty.DIRECT,
+            diagnostic_ref=diagnostic_ref,
+        ),
+        refinement=BundleRefinementProjection(disposition="none"),
+    )
+
+
+def _experience_with_observation(terminal_diagnostic_ref: str | None):
+    from deerflow_deep_research.domain.run_observation import ObservationInspectability, RunObservationView
+
+    experience = object.__new__(ResearchRunExperience)
+    experience._observation_view = RunObservationView(
+        bundle_id=BUNDLE_ID,
+        inspectability=ObservationInspectability.AVAILABLE,
+        durability="restart_durable",
+        terminal_diagnostic_ref=terminal_diagnostic_ref,
+    )
+    experience._lifecycle_phase = "wave2_synthesis"
+    return experience
+
+
+def test_gate_blocked_terminal_with_published_reference_reports_journal_created() -> None:
+    """@impl RER-009 — publication truth, not incident class, decides location."""
+
+    experience = _experience_with_observation(DIAG_REF)
+    failure = experience._failure_for_terminal(
+        _blocked_control(diagnostic_ref=None),
+        terminal_diagnostic_ref=DIAG_REF,
+    )
+
+    assert failure is not None
+    assert failure.diagnostic_location == "bundle_journal"
+    assert failure.journal_record_created is True
+    assert failure.diagnostic_ref == DIAG_REF
+
+
+def test_gate_blocked_terminal_without_verified_publication_reports_unavailable() -> None:
+    experience = _experience_with_observation("diag_different0001")
+    failure = experience._failure_for_terminal(
+        _blocked_control(diagnostic_ref=None),
+        terminal_diagnostic_ref=DIAG_REF,
+    )
+
+    assert failure is not None
+    assert failure.diagnostic_location == "unavailable"
+    assert failure.journal_record_created is False
+
+
+def test_gate_blocked_terminal_without_observation_view_reports_unavailable() -> None:
+    experience = _experience_with_observation(None)
+    experience._observation_view = None
+    failure = experience._failure_for_terminal(
+        _blocked_control(diagnostic_ref=None),
+        terminal_diagnostic_ref=DIAG_REF,
+    )
+
+    assert failure is not None
+    assert failure.diagnostic_location == "unavailable"
+    assert failure.journal_record_created is False
+
+
+def test_provider_diagnostic_without_reference_fails_closed_at_the_contract() -> None:
+    """The domain contract rejects a provider incident without a reference
+    before the run-experience layer could ever project it."""
+
+    from deerflow_deep_research.domain.run_experience import ProviderObservation, TerminalIncidentProjection
+
+    with pytest.raises(ValidationError, match="provider_terminal_requires_diagnostic_ref"):
+        TerminalIncidentProjection(
+            code=RunFailureCode.PROVIDER_TIMEOUT,
+            phase="wave2_synthesis",
+            certainty=FailureCertainty.DIRECT,
+            provider_observation=ProviderObservation(response_kind="no_response"),
+        )

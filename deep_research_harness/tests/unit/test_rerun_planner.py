@@ -210,6 +210,19 @@ class TestGateStateReset:
         assert result["gate_attempts_by_phase"] == {}
         assert result["repair_budget_by_phase"] == {}
 
+    def test_reset_restores_the_exhaustion_degradation_opportunity(self) -> None:
+        from deerflow_deep_research.graph.nodes.rerun.planner import reset_gate_state_for_scope
+
+        state = {
+            "gate_attempts_by_phase": {"wave2_synthesis": 3},
+            "repair_budget_by_phase": {"wave2_synthesis": 0},
+            "degraded_decisions": ("wave2_synthesis:exhaustion_degraded",),
+        }
+
+        for scope in (RerunScope(scope="full", reason="test"), RerunScope(scope="topic", reason="test")):
+            result = reset_gate_state_for_scope(dict(state), scope)
+            assert result["degraded_decisions"] == ()
+
 
 class TestFullRerunUpdateCompiler:
     def test_graph_facade_reuses_the_exact_run_refinement_compiler(self) -> None:

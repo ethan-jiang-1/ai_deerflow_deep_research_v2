@@ -214,6 +214,11 @@ def build_wave2_real_gate_def() -> GateDefinition:
         default_budget=1,
         route_map=_synthesis_route_map(),
         budget_resolver=_wave2_minimal_pair_budget_resolver,
+        # Honest searchable gaps (source contradictions, missing precise
+        # figures) have no convergence guarantee within a bounded evidence
+        # budget: the first exhaustion degrades to a disclosed-gap pass
+        # instead of killing the run (BUG-035).
+        degraded_pass_on_exhaustion=True,
     )
 
 

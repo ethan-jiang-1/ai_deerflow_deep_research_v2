@@ -80,6 +80,7 @@ class GateResult:
     advice: str = ""
     failed_refs: tuple[str, ...] = ()
     degraded: bool = False
+    exhaustion_degraded: bool = False
     attempt: int = 1
     remaining_budget: int = 0
     new_generation: int | None = None
@@ -116,6 +117,7 @@ class GateResult:
             "advice": self.advice,
             "failed_refs": list(self.failed_refs),
             "degraded": self.degraded,
+            "exhaustion_degraded": self.exhaustion_degraded,
             "attempt": self.attempt,
             "remaining_budget": self.remaining_budget,
             "new_generation": self.new_generation,
@@ -194,6 +196,12 @@ class GateDefinition:
     kernel before ``default_budget``; returning ``None`` falls back to the
     default. A resolver result outside the same [0, 10] bound as
     ``default_budget`` is a gate failure, never an unchecked crash.
+
+    ``degraded_pass_on_exhaustion`` opts the phase into bounded honest
+    degradation: the first budget exhaustion with no hard rule failure returns
+    a degraded ``pass`` instead of ``blocked`` (at most once per budget
+    seeding; see the gate kernel's ``degraded_decisions`` marker). Gates
+    without the flag keep today's exhaustion-blocking semantics.
     """
 
     phase: str
@@ -202,6 +210,7 @@ class GateDefinition:
     route_map: dict[PhaseVerdict, str] | None = None
     route_resolver: Callable[..., str] | None = None
     budget_resolver: Callable[[Mapping[str, Any]], int | None] | None = None
+    degraded_pass_on_exhaustion: bool = False
 
     def __post_init__(self) -> None:
         if self.default_budget < 0 or self.default_budget > 10:

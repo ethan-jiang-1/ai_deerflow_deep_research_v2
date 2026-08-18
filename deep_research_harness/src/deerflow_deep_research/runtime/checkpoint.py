@@ -112,8 +112,10 @@ def resolve_effective_provider(app_config) -> ProviderSelection:
 def build_deep_research_checkpoint_serde():
     """Return the smallest explicit LangGraph msgpack compatibility boundary.
 
-    Deep Research checkpoints intentionally persist only these two project value
-    types. All other project types remain blocked in strict msgpack mode.
+    Deep Research checkpoints intentionally persist only these three project
+    value types (``ContentRef`` including its ``AttemptStatus`` alias usage,
+    and the wave1 open-question projection). All other project types remain
+    blocked in strict msgpack mode.
     """
     from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 
@@ -121,6 +123,7 @@ def build_deep_research_checkpoint_serde():
         allowed_msgpack_modules={
             ("deerflow_deep_research.domain.state", "ContentRef"),
             ("deerflow_deep_research.domain.work_units", "AttemptStatus"),
+            ("deerflow_deep_research.domain.wave1", "Wave1OpenQuestionRef"),
         }
     )
 
