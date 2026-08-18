@@ -5,7 +5,9 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Literal
+import re
+from typing import Annotated, Any, Literal
+from urllib.parse import urlsplit
 
 from pydantic import Field, model_validator
 
@@ -22,10 +24,47 @@ from deerflow_deep_research.domain.work_units import (
 )
 
 
+def _derive_targeted_source_id(canonical_url: str) -> str:
+    """Deterministic provider-shape source id derived from the canonical URL.
+
+    Follows the existing ``source:w1_<slug>`` scoped-id convention so a provider
+    that emits only ``url`` still yields a stable, contract-conforming id.
+    """
+    parts = urlsplit(canonical_url)
+    base = (parts.hostname or "") + parts.path
+    slug = re.sub(r"[^a-zA-Z0-9_.:-]+", "_", base).strip("_.:-")[:64]
+    if not slug:
+        raise ValueError("source_id_invalid")
+    return f"source:te_{slug}"
+
+
 class TargetedWorkerSource(_FrozenModel):
     source_id: str = Field(pattern=SOURCE_ID_RE.pattern)
     canonical_url: str = Field(min_length=1, max_length=2048)
     title: str = Field(min_length=1, max_length=512)
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_provider_shape(cls, value: Any) -> Any:
+        """Map the provider source shape onto the typed contract.
+
+        ``url`` becomes the canonical URL, ``source_id`` is derived when the
+        provider omits it, and provider-only fields (``observed_relevance``,
+        ``snippet``) are absorbed rather than rejected.
+        """
+        if not isinstance(value, dict):
+            return value
+        payload = dict(value)
+        for absorbed in ("observed_relevance", "snippet"):
+            payload.pop(absorbed, None)
+        raw_url = payload.pop("url", None)
+        if "canonical_url" not in payload:
+            if not isinstance(raw_url, str):
+                return payload
+            payload["canonical_url"] = canonicalize_source_url(raw_url)
+        if "source_id" not in payload:
+            payload["source_id"] = _derive_targeted_source_id(payload["canonical_url"])
+        return payload
 
     @model_validator(mode="after")
     def require_canonical_url(self) -> TargetedWorkerSource:

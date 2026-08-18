@@ -43,6 +43,7 @@ class FailureCode(StrEnum):
     # System — gate-internal, produced by the kernel itself
     REPAIR_BUDGET_EXHAUSTED = "repair_budget_exhausted"
     FATIGUE_ESCALATION = "fatigue_escalation"
+    GATE_EVALUATION_FAILED = "gate_evaluation_failed"
 
 
 def get_classification(code: FailureCode) -> str:
@@ -79,6 +80,7 @@ _CLASSIFICATION_MAP: dict[FailureCode, str] = {
     # System
     FailureCode.REPAIR_BUDGET_EXHAUSTED: "hard",
     FailureCode.FATIGUE_ESCALATION: "hard",
+    FailureCode.GATE_EVALUATION_FAILED: "hard",
 }
 
 

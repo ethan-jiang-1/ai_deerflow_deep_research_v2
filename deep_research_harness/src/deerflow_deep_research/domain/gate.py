@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any
@@ -187,13 +187,21 @@ def _validate_route_map(
 
 @dataclass(frozen=True)
 class GateDefinition:
-    """A named collection of rules + route resolution for one phase."""
+    """A named collection of rules + route resolution for one phase.
+
+    ``budget_resolver`` optionally derives the initial repair budget from graph
+    state (e.g. HITL-owned profile intent fields). It is consulted by the gate
+    kernel before ``default_budget``; returning ``None`` falls back to the
+    default. A resolver result outside the same [0, 10] bound as
+    ``default_budget`` is a gate failure, never an unchecked crash.
+    """
 
     phase: str
     rules: tuple[GateRule, ...]
     default_budget: int = 3
     route_map: dict[PhaseVerdict, str] | None = None
     route_resolver: Callable[..., str] | None = None
+    budget_resolver: Callable[[Mapping[str, Any]], int | None] | None = None
 
     def __post_init__(self) -> None:
         if self.default_budget < 0 or self.default_budget > 10:

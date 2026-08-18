@@ -1,6 +1,6 @@
 # Plans — plan/分析文档索引
 
-> 最后更新: 2026-08-17 | `_backlog/plans/` — 活跃 plan 在此，完成的普通 plan 移入 [`../_done/_closed_plans/`](../_done/_closed_plans/)。
+> 最后更新: 2026-08-18 | `_backlog/plans/` — 活跃 plan 在此，完成的普通 plan 移入 [`../_done/_closed_plans/`](../_done/_closed_plans/)。
 >
 > **plan 没有编号，文件名即标识。完成后文件名不变，位置即状态。**
 
@@ -21,6 +21,7 @@
 |------|------|--------|
 | [openspec-product-boundary-portability.md](openspec-product-boundary-portability.md) | 设计 | 将 OpenSpec practice 分为 portable core/profiles、Deep Research local composition 与 product front door，并在本仓完成机械验证 |
 | [soft-bundle-session-cli.md](soft-bundle-session-cli.md) | 设计 | 先本地原型验证 soft bundle root 句柄，再开 OpenSpec change 落地为正式 CLI |
+| [low-scale-real-auto-runs.md](low-scale-real-auto-runs.md) | 设计 | plan 已定稿（最终共识，决策点 1/2/3 已拍板）；OpenSpec change `low-scale-real-auto` 已按 plan 重写并 `validate --strict` 通过，批准后按 tasks 实施 |
 
 **Next available plan ID: CLS-045**（移入 `_closed_plans/` 时分配）
 

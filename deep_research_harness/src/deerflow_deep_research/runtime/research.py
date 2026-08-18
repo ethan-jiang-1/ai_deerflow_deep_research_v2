@@ -363,6 +363,11 @@ def _wave2_synthesis_node_agent_policy(graph_context: Any) -> ExecutionPolicy:
     """Dedicated zero-tool policy for accepted-evidence synthesis.
 
     @impl NOA-011
+
+    The budget carries real-output headroom (scale-independent product fix):
+    real runs exhaust the scripted-calibrated values on real output (observed
+    ``budget.exhausted``). Readiness/final-delivery budgets stay unchanged until
+    real runs demonstrate a need (evidence-driven).
     """
 
     return ExecutionPolicy(
@@ -372,15 +377,15 @@ def _wave2_synthesis_node_agent_policy(graph_context: Any) -> ExecutionPolicy:
         write_roots=(),
         attempt_root=graph_context.workspace_root,
         budget=ExecutionBudget(
-            max_model_calls=2,
+            max_model_calls=4,
             max_total_tool_calls=1,
             max_tool_calls_per_response=1,
             max_parallel_tool_calls=1,
-            total_token_budget=16_384,
-            per_call_output_token_cap=4_096,
+            total_token_budget=64_000,
+            per_call_output_token_cap=16_384,
             per_tool_result_bytes=1,
-            structured_result_bytes=8_192,
-            wall_time_seconds=60.0,
+            structured_result_bytes=16_384,
+            wall_time_seconds=300.0,
         ),
     )
 

@@ -9,7 +9,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from typing import Any
 
 from deerflow_deep_research.domain.failure_codes import FailureCode
@@ -87,11 +87,25 @@ def _resolve_budget(
     state: Mapping[str, Any],
     phase: str,
     default_budget: int,
+    budget_resolver: Callable[[Mapping[str, Any]], int | None] | None = None,
 ) -> tuple[int, dict[str, int]]:
-    """Return (budget_for_this_phase, full_updated_dict)."""
+    """Return (budget_for_this_phase, full_updated_dict).
+
+    The optional resolver is consulted first: a non-``None`` result seeds the
+    budget; ``None`` falls back to ``default_budget``. A result outside the
+    same [0, 10] bound as ``default_budget`` raises ``ValueError`` (the caller
+    turns a raising resolver into a gate failure).
+    """
+    budget = default_budget
+    if budget_resolver is not None:
+        resolved = budget_resolver(state)
+        if resolved is not None:
+            if not 0 <= resolved <= 10:
+                raise ValueError(f"resolved budget out of range [0, 10]: {resolved}")
+            budget = resolved
     current: dict[str, int] = dict(state.get("repair_budget_by_phase") or {})
     if phase not in current:
-        current[phase] = default_budget
+        current[phase] = budget
     return current[phase], current
 
 
@@ -120,8 +134,25 @@ def evaluate_gate(
     current_attempts: dict[str, int] = dict(state.get("gate_attempts_by_phase") or {})
     attempt = current_attempts.get(phase, 0) + 1
 
-    # 3. Budget tracking
-    budget, full_budget = _resolve_budget(state, phase, gate_def.default_budget)
+    # 3. Budget tracking (a raising/out-of-range budget resolver is a gate
+    #    failure — hard classification — never an unchecked crash)
+    try:
+        budget, full_budget = _resolve_budget(
+            state,
+            phase,
+            gate_def.default_budget,
+            gate_def.budget_resolver,
+        )
+    except Exception as exc:
+        budget = 0
+        full_budget = dict(state.get("repair_budget_by_phase") or {})
+        failures.append(
+            Failure(
+                code=FailureCode.GATE_EVALUATION_FAILED,
+                rule_name="gate_budget_resolver",
+                description=f"budget resolver failed for phase {phase}: {type(exc).__name__}",
+            )
+        )
 
     # 4. Derive verdict
     failures_tuple = tuple(failures)

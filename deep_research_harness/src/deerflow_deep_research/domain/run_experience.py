@@ -270,6 +270,9 @@ class StartRun(FrozenRunContract):
     kind: Literal["start"] = "start"
     question: str = Field(min_length=1, max_length=16_384)
     scripted: bool = False
+    # Optional declared research intent for an automatic (scripted) start;
+    # absent = today's behavior.
+    profile_intent: Literal["minimal"] | None = None
 
 
 class AnswerRun(FrozenRunContract):

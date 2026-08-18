@@ -482,7 +482,14 @@ async def _run_embedded_smoke(*, question: str | None, scripted: bool) -> int:
             experience.set_observation_publisher(adapter.observation_publisher)
         transport.bind(runtime=build_demo_runtime(mode="real", adapter=adapter))
         update = await experience.handle(
-            StartRun(question=selected_question, scripted=scripted),
+            StartRun(
+                question=selected_question,
+                scripted=scripted,
+                # Credentialed demo automatic runs declare the minimal research
+                # intent at the entry (mode 003 inherits it); the real product
+                # path consumes it (single-topic planning, two-round gate).
+                profile_intent="minimal" if scripted else None,
+            ),
             observer=_dispatch_observer(),
         )
         while isinstance(update, AwaitingInput):

@@ -11,6 +11,7 @@ import pytest
 from deerflow_deep_research_fixtures.gates import build_fixture_gate_definitions
 from deerflow_deep_research_fixtures.scenario import FixtureScenario
 
+from deerflow_deep_research.domain.gate import PhaseVerdict
 from deerflow_deep_research.domain.synthesis import WAVE2_GATE_PREVIEW_KEY, Wave2GatePreview
 from deerflow_deep_research.domain.work_units import WORK_UNIT_GATE_VIEW_KEY, WorkUnitGateView
 from deerflow_deep_research.engine.gate_kernel import evaluate_gate
@@ -120,6 +121,44 @@ class TestRealWave2GateOutcomes:
     def test_missing_current_preview_fails_closed(self) -> None:
         with pytest.raises(ValueError, match="wave2_gate_preview_missing"):
             evaluate_gate_for_node(_state(), "wave2_synthesis", build_wave2_real_gate_def())
+
+    def test_wave2_gate_budget_resolves_two_rounds_for_minimal_profile_intent(self) -> None:
+        """@impl WSN-001
+
+        The wave2 gate budget resolver reads the HITL-owned profile intent
+        fields: the minimal pair yields two evidence rounds.
+        """
+        state = _state() | {
+            "cost_tolerance": "minimal",
+            "time_budget": "very_quick",
+            WAVE2_GATE_PREVIEW_KEY: Wave2GatePreview(searchable_gap_ids=("gap:needed",)),
+        }
+
+        result = evaluate_gate(state, "wave2_synthesis", build_wave2_real_gate_def())
+
+        assert result.verdict is PhaseVerdict.REPAIR
+        assert result.remaining_budget == 1  # 2 rounds seeded, one decremented
+
+    def test_wave2_gate_budget_keeps_one_round_without_the_minimal_pair(self) -> None:
+        """@impl WSN-001
+
+        Absent (or partial) profile intent keeps today's single-round budget.
+        """
+        for overrides in (
+            {},
+            {"cost_tolerance": "minimal"},
+            {"time_budget": "very_quick"},
+            {"cost_tolerance": "moderate", "time_budget": "very_quick"},
+        ):
+            state = _state() | {
+                **overrides,
+                WAVE2_GATE_PREVIEW_KEY: Wave2GatePreview(searchable_gap_ids=("gap:needed",)),
+            }
+
+            result = evaluate_gate(state, "wave2_synthesis", build_wave2_real_gate_def())
+
+            assert result.verdict is PhaseVerdict.REPAIR
+            assert result.remaining_budget == 0  # default one round, decremented
 
     def test_wave2_preview_cannot_write_other_phase_projection(self) -> None:
         state = _state() | {

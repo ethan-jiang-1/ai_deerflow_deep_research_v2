@@ -103,10 +103,14 @@ def _admitted_start_action_input(*, action: str, context: Mapping[str, Any]) -> 
     if not marked_non_interactive:
         return None
     candidate = context.get("non_interactive_policy")
+    allowed_keys = {"auto_profile", "auto_proceed", "profile_intent"}
     required_keys = {"auto_profile", "auto_proceed"}
-    if not isinstance(candidate, Mapping) or set(candidate) != required_keys:
+    if not isinstance(candidate, Mapping) or not required_keys <= set(candidate) <= allowed_keys:
         raise ValueError("non_interactive_policy_invalid")
     if candidate["auto_profile"] is not True or candidate["auto_proceed"] is not True:
+        raise ValueError("non_interactive_policy_invalid")
+    profile_intent = candidate.get("profile_intent")
+    if profile_intent is not None and profile_intent != "minimal":
         raise ValueError("non_interactive_policy_invalid")
     if action != "start":
         return None
@@ -114,6 +118,7 @@ def _admitted_start_action_input(*, action: str, context: Mapping[str, Any]) -> 
         non_interactive_policy=NonInteractivePolicy(
             auto_profile=candidate["auto_profile"],
             auto_proceed=candidate["auto_proceed"],
+            profile_intent=profile_intent,
         )
     )
 

@@ -31,3 +31,79 @@ def test_wave2_provider_shape(case) -> None:
         "summary": output.summary,
     }
     assert observed == thaw_provider_shape_payload(case.expected_payload)
+
+
+def _synthesis_payload(**overrides: object) -> str:
+    payload: dict[str, object] = {
+        "schema_version": 1,
+        "findings": [],
+        "relations": [],
+        "gaps": [],
+        "summary": "",
+    }
+    payload.update(overrides)
+    return json.dumps(payload)
+
+
+def test_wave2_finding_priority_labels_normalize_to_ints() -> None:
+    """@impl WSN-001
+
+    Provider string priority labels map to the typed int 1-5 contract before
+    validation; integers pass through.
+    """
+    output = parse_synthesis_output(
+        _synthesis_payload(
+            findings=[
+                {"id": "a", "statement": "S1", "priority": "high", "confidence": "high"},
+                {"id": "b", "statement": "S2", "priority": "moderate", "confidence": "medium"},
+                {"id": "c", "statement": "S3", "priority": "low", "confidence": "low"},
+                {"id": "d", "statement": "S4", "priority": 2, "confidence": "high"},
+            ]
+        )
+    )
+    assert [finding.priority for finding in output.findings] == [1, 3, 5, 2]
+
+
+def test_wave2_gap_priority_labels_normalize_to_ints() -> None:
+    """@impl WSN-001"""
+    output = parse_synthesis_output(
+        _synthesis_payload(
+            gaps=[
+                {"id": "a", "description": "G1", "priority": "critical"},
+                {"id": "b", "description": "G2", "priority": "medium"},
+                {"id": "c", "description": "G3", "priority": "low"},
+            ]
+        )
+    )
+    assert [gap.priority for gap in output.gaps] == [1, 3, 5]
+
+
+def test_wave2_gap_prose_questions_fold_into_description() -> None:
+    """@impl WSN-001
+
+    Natural-language gap ``source_questions`` fold into the description; only
+    ``q:w1_*`` ids stay in the typed refs.
+    """
+    output = parse_synthesis_output(
+        _synthesis_payload(
+            gaps=[
+                {
+                    "id": "a",
+                    "description": "Gap about storage cost.",
+                    "priority": 1,
+                    "source_questions": ["q:w1_storage_cost", "What does storage cost per kWh in 2024?"],
+                }
+            ]
+        )
+    )
+    gap = output.gaps[0]
+    assert gap.source_questions == ("q:w1_storage_cost",)
+    assert "What does storage cost per kWh in 2024?" in gap.description
+
+
+def test_wave2_resolved_questions_keep_only_contract_ids() -> None:
+    """@impl WSN-001"""
+    output = parse_synthesis_output(
+        _synthesis_payload(resolved_questions=["q:w1_a", "Some natural language note", "q:w1_b"])
+    )
+    assert output.resolved_questions == ("q:w1_a", "q:w1_b")

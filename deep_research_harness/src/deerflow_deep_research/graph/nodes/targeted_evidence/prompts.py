@@ -41,6 +41,8 @@ def build_targeted_worker_prompt(gap_id: str) -> NodeExecutionRequest:
         "instruction": "Return exactly one JSON object and no markdown.",
         "schema_version": 1,
         "required_keys": ["schema_version", "gap_id", "gap_status", "sources", "limitations"],
+        "source_required_keys": ["url", "title", "observed_relevance"],
+        "bounds": {"gap_status": "resolved | deferred | unresolved"},
     }
     return NodeExecutionRequest(
         objective=objective,

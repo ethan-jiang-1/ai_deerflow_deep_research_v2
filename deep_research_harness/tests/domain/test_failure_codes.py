@@ -58,6 +58,7 @@ def test_classification_consistency() -> None:
         FailureCode.SCHEMA_VERSION_UNSUPPORTED,
         FailureCode.REPAIR_BUDGET_EXHAUSTED,
         FailureCode.FATIGUE_ESCALATION,
+        FailureCode.GATE_EVALUATION_FAILED,
     }
     for code in hard:
         assert get_classification(code) == "hard", f"{code} should be hard"

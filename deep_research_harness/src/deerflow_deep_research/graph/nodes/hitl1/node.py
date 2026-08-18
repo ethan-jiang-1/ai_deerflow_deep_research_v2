@@ -44,10 +44,14 @@ from deerflow_deep_research.domain.lifecycle import (
 )
 from deerflow_deep_research.domain.node_spec import NodeBuildDependencies
 from deerflow_deep_research.domain.profile import (
+    MAX_QUESTION_CHARS,
+    CostTolerance,
     PartialResearchProfile,
     RequestBundleStoreProtocol,
+    ResearchDepth,
     StructuredBrief,
     SupportedLanguage,
+    TimeBudget,
     derive_comparison_intake_seed,
     finalize_profile,
     merge_profile_progress,
@@ -793,9 +797,23 @@ def build_real(dependencies: NodeBuildDependencies):
         # Non-interactive auto-profile: skip interrupt only when no human fact is required.
         non_interactive = state.get("non_interactive_policy")
         if isinstance(non_interactive, dict) and non_interactive.get("auto_profile") is True:
-            if (seed.comparison_required and seed.comparison_subjects is None) or seed.output_language is None:
+            question_text = request_text.strip()
+            if (
+                not question_text
+                or len(question_text) > MAX_QUESTION_CHARS
+                or (seed.comparison_required and seed.comparison_subjects is None)
+                or seed.output_language is None
+            ):
                 await _persist_terminal(request_store, bundle_state, status=LifecycleStatus.BLOCKED)
                 return _exhausted_update()
+            declared_intent = non_interactive.get("profile_intent")
+            intent_seed: dict[str, Any] = {}
+            if declared_intent == "minimal":
+                intent_seed = {
+                    "depth": ResearchDepth.QUICK_OVERVIEW,
+                    "cost_tolerance": CostTolerance.MINIMAL,
+                    "time_budget": TimeBudget.VERY_QUICK,
+                }
             profile = finalize_profile(
                 PartialResearchProfile(
                     schema_version=2,
@@ -803,6 +821,8 @@ def build_real(dependencies: NodeBuildDependencies):
                     comparison_subjects=seed.comparison_subjects,
                     request_language=seed.request_language,
                     output_language=seed.output_language,
+                    must_answer=(question_text,),
+                    **intent_seed,
                 ),
                 degraded=True,
             )

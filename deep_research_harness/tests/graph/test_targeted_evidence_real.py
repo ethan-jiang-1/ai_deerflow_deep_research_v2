@@ -429,6 +429,109 @@ def _targeted_summary(*, gap_id: str = "gap:storage-cost") -> str:
     )
 
 
+def test_targeted_worker_provider_shape_normalizes_url_and_absorbs_extra_fields() -> None:
+    """@impl TEL-002
+
+    A provider source item carrying only ``url`` (plus ``observed_relevance`` /
+    ``snippet``) maps onto the typed ``source_id``/``canonical_url`` contract.
+    """
+    from deerflow_deep_research.graph.nodes.targeted_evidence.prompts import parse_targeted_worker_output
+
+    output = parse_targeted_worker_output(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "gap_id": "gap:storage-cost",
+                "gap_status": "resolved",
+                "sources": [
+                    {
+                        "url": "https://example.com/targeted",
+                        "title": "Targeted evidence",
+                        "observed_relevance": 0.92,
+                        "snippet": "A search snippet",
+                    }
+                ],
+                "limitations": "",
+            }
+        )
+    )
+    source = output.sources[0]
+    assert source.source_id == "source:te_example.com_targeted"
+    assert source.canonical_url == "https://example.com/targeted"
+    assert source.title == "Targeted evidence"
+    assert "observed_relevance" not in source.model_dump()
+    assert "snippet" not in source.model_dump()
+
+
+def test_targeted_worker_keeps_provider_source_id_and_canonicalizes_url() -> None:
+    """@impl TEL-002"""
+    from deerflow_deep_research.graph.nodes.targeted_evidence.prompts import parse_targeted_worker_output
+
+    output = parse_targeted_worker_output(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "gap_id": "gap:storage-cost",
+                "gap_status": "deferred",
+                "sources": [
+                    {
+                        "source_id": "source:official",
+                        "url": "https://example.com/official/",
+                        "title": "Official",
+                    }
+                ],
+                "limitations": "honest limit",
+            }
+        )
+    )
+    source = output.sources[0]
+    assert source.source_id == "source:official"
+    assert source.canonical_url == "https://example.com/official"
+
+
+async def test_targeted_worker_provider_shape_materializes_canonical_sources(tmp_path: Path) -> None:
+    """@impl TEL-002
+
+    The full worker path accepts the provider shape and materializes canonical
+    source records.
+    """
+    summary = json.dumps(
+        {
+            "schema_version": 1,
+            "gap_id": "gap:storage-cost",
+            "gap_status": "resolved",
+            "sources": [
+                {
+                    "url": "https://example.com/targeted",
+                    "title": "Targeted evidence",
+                    "observed_relevance": 0.92,
+                }
+            ],
+            "limitations": "",
+        }
+    )
+    capabilities = _ResultCapabilities(
+        NodeExecutionResult(finish_reason=NodeFinishReason.SUCCESS, summary=summary)
+    )
+    store, node, state = _targeted_harness(tmp_path, capabilities)
+
+    update = await node(state)
+
+    records = await store.load_records()
+    assert update["route"] == "next"
+    assert len(records) == 1
+    record = records[0]
+    assert record.result_contract == "targeted.source-intake"
+    assert record.source_refs[0].source_id == "source:te_example.com_targeted"
+    assert record.source_refs[0].canonical_url == "https://example.com/targeted"
+    contained_root = tmp_path / bundle_host_relative_root(BUNDLE)
+    source_path = contained_root / "work" / record.work_id / record.attempt_id / "cache" / "source-0.json"
+    payload = json.loads(source_path.read_text(encoding="utf-8"))
+    assert payload["source_id"] == "source:te_example.com_targeted"
+    assert payload["canonical_url"] == "https://example.com/targeted"
+    assert "observed_relevance" not in payload
+
+
 def _targeted_harness(tmp_path: Path, capabilities: _ResultCapabilities):
     graph = GraphContextView(
         research_scope_id=BUNDLE_ID,

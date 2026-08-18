@@ -533,8 +533,13 @@ async def test_real_synthesis_repairs_forged_reference_with_assigned_evidence_on
 
 
 async def test_real_synthesis_rejects_forged_repair_without_publishing(tmp_path: Path) -> None:
-    """@impl WSN-008"""
+    """@impl WSN-008
+    @impl WSN-009
 
+    A still-invalid repaired candidate terminates as a bounded ``exhausted``
+    with a typed ``output.structured_invalid`` incident; it never escapes as an
+    uncaught exception.
+    """
     capabilities = _SequenceCapabilities(
         NodeExecutionResult(
             finish_reason=NodeFinishReason.SUCCESS,
@@ -546,20 +551,26 @@ async def test_real_synthesis_rejects_forged_repair_without_publishing(tmp_path:
         ),
     )
 
-    with pytest.raises(ValueError, match="synthesis_finding_backing_ref_invalid"):
-        await NODE_SPEC.real_factory(_dependencies(tmp_path, capabilities))(_state())  # type: ignore[arg-type]
+    update = await NODE_SPEC.real_factory(_dependencies(tmp_path, capabilities))(_state())  # type: ignore[arg-type]
 
+    assert update["route"] == "exhausted"
+    assert update["terminal_status"] == "blocked"
+    assert update["latest_incident"]["code"] == "output.structured_invalid"
+    assert update["latest_incident"]["phase"] == "wave2_synthesis"
     assert len(capabilities.requests) == 2
     assert all(request.tools_enabled is False for request in capabilities.requests)
     assert not (tmp_path / bundle_host_relative_root(BUNDLE) / "synthesis" / "findings.json").exists()
 
 
 async def test_real_synthesis_rejects_empty_repair_when_accepted_evidence_exists(tmp_path: Path) -> None:
+    """@impl WSN-009"""
     capabilities = _EmptyRepairCapabilities()
 
-    with pytest.raises(ValueError, match="synthesis_findings_required"):
-        await NODE_SPEC.real_factory(_dependencies(tmp_path, capabilities))(_state())  # type: ignore[arg-type]
+    update = await NODE_SPEC.real_factory(_dependencies(tmp_path, capabilities))(_state())  # type: ignore[arg-type]
 
+    assert update["route"] == "exhausted"
+    assert update["terminal_status"] == "blocked"
+    assert update["latest_incident"]["code"] == "output.structured_invalid"
     assert len(capabilities.requests) == 2
     assert not (tmp_path / bundle_host_relative_root(BUNDLE) / "synthesis" / "findings.json").exists()
 
@@ -581,11 +592,14 @@ async def test_real_synthesis_repairs_gaps_only_output_when_accepted_evidence_ex
 
 
 async def test_real_synthesis_rejects_gaps_only_repair_without_publishing(tmp_path: Path) -> None:
+    """@impl WSN-009"""
     capabilities = _GapsOnlyRepairCapabilities(valid_repair=False)
 
-    with pytest.raises(ValueError, match="synthesis_findings_required"):
-        await NODE_SPEC.real_factory(_dependencies(tmp_path, capabilities))(_state())  # type: ignore[arg-type]
+    update = await NODE_SPEC.real_factory(_dependencies(tmp_path, capabilities))(_state())  # type: ignore[arg-type]
 
+    assert update["route"] == "exhausted"
+    assert update["terminal_status"] == "blocked"
+    assert update["latest_incident"]["code"] == "output.structured_invalid"
     assert len(capabilities.requests) == 2
     assert capabilities.requests[1].tools_enabled is False
     assert capabilities.requests[0].capability_ref is not None
@@ -742,17 +756,28 @@ async def test_wave2_terminal_failure_bypasses_success_only_gate_preview(tmp_pat
 
 
 async def test_real_synthesis_invalid_output_fails_without_publishing_partial_artifact(tmp_path: Path) -> None:
-    result = NodeExecutionResult(finish_reason=NodeFinishReason.SUCCESS, summary="not-json")
-    with pytest.raises(ValueError, match="synthesis_output_json_invalid"):
-        await NODE_SPEC.real_factory(_dependencies(tmp_path, _Capabilities(result)))(_state())
+    """@impl WSN-009
 
+    A repair that still returns invalid structured output terminates as a
+    bounded ``exhausted`` instead of raising out of the graph.
+    """
+    result = NodeExecutionResult(finish_reason=NodeFinishReason.SUCCESS, summary="not-json")
+    update = await NODE_SPEC.real_factory(_dependencies(tmp_path, _Capabilities(result)))(_state())
+
+    assert update["route"] == "exhausted"
+    assert update["terminal_status"] == "blocked"
+    assert update["latest_incident"]["code"] == "output.structured_invalid"
     assert not (tmp_path / bundle_host_relative_root(BUNDLE) / "synthesis" / "findings.json").exists()
 
 
 async def test_real_synthesis_malformed_output_fails_without_artifact(tmp_path: Path) -> None:
+    """@impl WSN-009"""
     result = NodeExecutionResult(finish_reason=NodeFinishReason.SUCCESS, summary="not-json")
-    with pytest.raises(ValueError, match="synthesis_output_json_invalid"):
-        await NODE_SPEC.real_factory(_dependencies(tmp_path, _Capabilities(result)))(_state())
+    update = await NODE_SPEC.real_factory(_dependencies(tmp_path, _Capabilities(result)))(_state())
+
+    assert update["route"] == "exhausted"
+    assert update["terminal_status"] == "blocked"
+    assert update["latest_incident"]["code"] == "output.structured_invalid"
     assert not (tmp_path / bundle_host_relative_root(BUNDLE) / "synthesis" / "findings.json").exists()
 
 

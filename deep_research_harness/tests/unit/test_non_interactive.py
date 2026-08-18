@@ -84,6 +84,32 @@ async def test_tool_allows_declared_non_interactive_policy_for_start(tmp_path: P
     assert adapter.initialize_parent_sandbox_values == [True]
 
 
+async def test_tool_allows_declared_minimal_profile_intent_for_start(tmp_path: Path) -> None:
+    """@impl RUI-009
+
+    The closed non-interactive policy admits ``profile_intent=minimal``.
+    """
+    adapter = _Adapter(_envelope(tmp_path))
+    result = await run_deep_research(
+        action="start",
+        probe_id=None,
+        runtime=_runtime(
+            context={
+                "non_interactive": True,
+                "non_interactive_policy": {
+                    "auto_profile": True,
+                    "auto_proceed": True,
+                    "profile_intent": "minimal",
+                },
+            }
+        ),
+        adapter=adapter,
+    )
+
+    assert result["code"] != "interactive_required"
+    assert adapter.initialize_parent_sandbox_values == [True]
+
+
 async def test_tool_rejects_missing_or_incomplete_non_interactive_policy_before_bundle_publication(
     tmp_path: Path,
 ) -> None:
@@ -97,6 +123,10 @@ async def test_tool_rejects_missing_or_incomplete_non_interactive_policy_before_
         {"auto_profile": 1, "auto_proceed": True},
         {"auto_profile": True, "auto_proceed": "yes"},
         {"auto_profile": True, "auto_proceed": True, "unexpected": True},
+        {"auto_profile": True, "auto_proceed": True, "profile_intent": "standard"},
+        {"auto_profile": True, "auto_proceed": True, "profile_intent": "minimal", "unexpected": True},
+        {"auto_profile": True, "auto_proceed": True, "profile_intent": 1},
+        {"auto_profile": True, "auto_proceed": True, "profile_intent": ""},
     )
     for policy in invalid_policies:
         adapter = _Adapter(_envelope(tmp_path))

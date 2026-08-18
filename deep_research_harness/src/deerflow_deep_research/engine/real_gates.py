@@ -195,12 +195,25 @@ def build_wave1_real_gate_def() -> GateDefinition:
     )
 
 
+def _wave2_minimal_pair_budget_resolver(state: Mapping[str, Any]) -> int | None:
+    """Two evidence rounds under the minimal profile-intent pair, else default.
+
+    Reads the HITL-owned profile intent fields already written into graph state
+    (``profile_state_fields``); the gate only READS state, so no writer-role
+    change is involved.
+    """
+    if state.get("cost_tolerance") == "minimal" and state.get("time_budget") == "very_quick":
+        return 2
+    return None
+
+
 def build_wave2_real_gate_def() -> GateDefinition:
     return GateDefinition(
         phase="wave2_synthesis",
         rules=(_wave2_searchable_gap_rule(),),
         default_budget=1,
         route_map=_synthesis_route_map(),
+        budget_resolver=_wave2_minimal_pair_budget_resolver,
     )
 
 

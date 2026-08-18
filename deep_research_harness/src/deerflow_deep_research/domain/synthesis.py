@@ -24,6 +24,58 @@ MAX_SYNTHESIS_EVIDENCE_TOTAL_BYTES = 96 * 1024
 SYNTHESIS_SCHEMA_VERSION = 1
 WAVE2_GATE_PREVIEW_KEY = "__wave2_gate_preview__"
 
+_PRIORITY_LABELS: dict[str, int] = {
+    "critical": 1,
+    "high": 1,
+    "medium": 3,
+    "moderate": 3,
+    "low": 5,
+}
+
+
+def _normalize_priority(value: Any) -> int | None:
+    """Map provider priority labels to the typed int 1-5; integers pass through.
+
+    Unknown labels are left untouched so the typed contract validator (and its
+    repair path) stays the admission authority.
+    """
+    if isinstance(value, bool) or not isinstance(value, (int, str)):
+        return None
+    if isinstance(value, int):
+        return value
+    normalized = value.strip().lower().replace("-", "_").replace(" ", "_")
+    return _PRIORITY_LABELS.get(normalized)
+
+
+def _fold_prose_questions(gap: dict[str, Any]) -> None:
+    """Keep only ``q:w1_*`` ids on a gap's ``source_questions`` and fold prose
+    into the description (deterministic contract-boundary adaptation)."""
+
+    raw_questions = gap.get("source_questions")
+    if not isinstance(raw_questions, (tuple, list)):
+        return
+    kept: list[str] = []
+    prose: list[str] = []
+    for item in raw_questions:
+        if not isinstance(item, str):
+            continue
+        text = item.strip()
+        if QUESTION_ID_RE.fullmatch(text):
+            kept.append(text)
+        elif text:
+            prose.append(text)
+    if kept:
+        gap["source_questions"] = sorted(set(kept))
+    else:
+        gap.pop("source_questions", None)
+    if prose:
+        folded = " ".join(prose)
+        existing = gap.get("description")
+        if isinstance(existing, str) and existing.strip():
+            gap["description"] = f"{existing.strip()} {folded}"[:2000]
+        else:
+            gap["description"] = folded[:2000]
+
 
 def _scoped_id(value: Any, *, prefix: str) -> str:
     if not isinstance(value, str):
@@ -155,6 +207,9 @@ class SynthesisResult(_FrozenModel):
                 ]
                 finding["backing_refs"] = list(dict.fromkeys(combined_refs))
             finding.setdefault("priority", 3)
+            normalized_priority = _normalize_priority(finding.get("priority"))
+            if normalized_priority is not None:
+                finding["priority"] = normalized_priority
             finding.setdefault("confidence", "medium")
             if isinstance(raw_id, str):
                 finding_aliases[raw_id] = finding_id
@@ -251,8 +306,26 @@ class SynthesisResult(_FrozenModel):
                 else:
                     raise ValueError("gap_severity_invalid")
             gap.setdefault("priority", 3)
+            normalized_priority = _normalize_priority(gap.get("priority"))
+            if normalized_priority is not None:
+                gap["priority"] = normalized_priority
+            _fold_prose_questions(gap)
             normalized_gaps.append(gap)
         payload["gaps"] = normalized_gaps
+
+        resolved_questions = payload.get("resolved_questions")
+        if isinstance(resolved_questions, (tuple, list)):
+            kept = sorted(
+                {
+                    item.strip()
+                    for item in resolved_questions
+                    if isinstance(item, str) and QUESTION_ID_RE.fullmatch(item.strip())
+                }
+            )
+            if kept:
+                payload["resolved_questions"] = kept
+            else:
+                payload.pop("resolved_questions", None)
         return payload
 
 

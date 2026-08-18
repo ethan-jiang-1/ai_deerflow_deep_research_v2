@@ -665,6 +665,71 @@ async def test_non_interactive_auto_profile_stays_outside_interactive_confirmati
     assert caps.requests == []
 
 
+async def test_non_interactive_declared_minimal_intent_seeds_trio_and_must_answer() -> None:
+    """@impl HIN-014
+
+    A declared minimal intent constructs the single-topic profile trio and the
+    must-answer question, without a model call.
+    """
+    caps = _Caps()
+    store = _RequestStore()
+    result = await hitl1_node.build_real(_deps(caps, store))(
+        _state(non_interactive_policy={"auto_profile": True, "profile_intent": "minimal"})
+    )
+
+    assert result["route"] == "accepted"
+    assert result["research_depth"] == "quick_overview"
+    assert result["cost_tolerance"] == "minimal"
+    assert result["time_budget"] == "very_quick"
+    assert result["must_answer_questions"] == ("Research storage options",)
+    assert result["degraded_profile"] is True
+    assert len(store.writes) == 1
+    written = store.writes[0]
+    assert written.depth.value == "quick_overview"
+    assert written.cost_tolerance.value == "minimal"
+    assert written.time_budget.value == "very_quick"
+    assert written.must_answer == ("Research storage options",)
+    assert written.degraded_profile is True
+    assert caps.requests == []
+
+
+async def test_non_interactive_absent_intent_keeps_degraded_profile_but_seeds_must_answer() -> None:
+    """@impl HIN-014
+
+    Absent intent keeps the current degraded profile (no dimension fields) while
+    the product fix seeds the must-answer question.
+    """
+    store = _RequestStore()
+    result = await hitl1_node.build_real(_deps(_Caps(), store))(
+        _state(non_interactive_policy={"auto_profile": True})
+    )
+
+    assert result["route"] == "accepted"
+    written = store.writes[0]
+    assert written.depth is None
+    assert written.cost_tolerance is None
+    assert written.time_budget is None
+    assert written.must_answer == ("Research storage options",)
+    assert written.degraded_profile is True
+
+
+async def test_non_interactive_overlong_request_blocks_without_profile() -> None:
+    """@impl HIN-014
+
+    An automatic request longer than the must-answer bound fails closed through
+    the blocked path: no profile artifact, never a truncated question.
+    """
+    store = _RequestStore()
+    result = await hitl1_node.build_real(_deps(_Caps(), store))(
+        _state(request_text="x" * 257, non_interactive_policy={"auto_profile": True})
+    )
+
+    assert result["route"] == "exhausted"
+    assert result["terminal_reason"] == TerminalReason.GATE_BLOCKED.value
+    assert "profile_ref" not in result
+    assert store.writes == []
+
+
 @pytest.mark.parametrize(
     "confirmation",
     (

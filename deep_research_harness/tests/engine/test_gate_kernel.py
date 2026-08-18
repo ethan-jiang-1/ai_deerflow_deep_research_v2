@@ -36,12 +36,18 @@ def _state(**overrides):
     return {**base, **overrides}
 
 
-def _gate_def(phase="wave0", rules=None, default_budget=3, route_map=None):
+def _gate_def(phase="wave0", rules=None, default_budget=3, route_map=None, budget_resolver=None):
     if rules is None:
         rules = (_mk_rule("always_pass", FailureCode.WORK_FAILED, should_fail=False),)
     if route_map is None:
         route_map = {PhaseVerdict.PASS: "pass", PhaseVerdict.REPAIR: "repair", PhaseVerdict.BLOCKED: "exhausted"}
-    return GateDefinition(phase=phase, rules=rules, default_budget=default_budget, route_map=route_map)
+    return GateDefinition(
+        phase=phase,
+        rules=rules,
+        default_budget=default_budget,
+        route_map=route_map,
+        budget_resolver=budget_resolver,
+    )
 
 
 def test_wave0_exhaustion_writes_diagnosis_without_changing_route() -> None:
@@ -260,6 +266,40 @@ class TestLazyBudget:
         gd = _gate_def(default_budget=5)
         result = evaluate_gate(_state(), "wave0", gd)
         assert result.remaining_budget == 5  # no decrement on PASS
+
+
+class TestBudgetResolver:
+    def test_resolver_result_seeds_the_budget(self) -> None:
+        gd = _gate_def(default_budget=1, budget_resolver=lambda state: 2)
+        result = evaluate_gate(_state(), "wave0", gd)
+        assert result.remaining_budget == 2
+
+    def test_resolver_none_falls_back_to_default(self) -> None:
+        gd = _gate_def(default_budget=1, budget_resolver=lambda state: None)
+        result = evaluate_gate(_state(), "wave0", gd)
+        assert result.remaining_budget == 1
+
+    def test_resolver_none_default_gate_definition_keeps_default(self) -> None:
+        gd = _gate_def(default_budget=1)
+        result = evaluate_gate(_state(), "wave0", gd)
+        assert result.remaining_budget == 1
+
+    def test_out_of_range_resolver_result_is_a_gate_failure(self) -> None:
+        gd = _gate_def(default_budget=1, budget_resolver=lambda state: 11)
+        result = evaluate_gate(_state(), "wave0", gd)
+        assert result.verdict is PhaseVerdict.BLOCKED
+        assert any(f.code is FailureCode.GATE_EVALUATION_FAILED for f in result.failures)
+        assert result.remaining_budget == 0
+
+    def test_raising_resolver_is_a_gate_failure_not_a_crash(self) -> None:
+        def explode(_state):
+            raise RuntimeError("resolver exploded")
+
+        gd = _gate_def(default_budget=1, budget_resolver=explode)
+        result = evaluate_gate(_state(), "wave0", gd)
+        assert result.verdict is PhaseVerdict.BLOCKED
+        assert any(f.code is FailureCode.GATE_EVALUATION_FAILED for f in result.failures)
+        assert result.remaining_budget == 0
 
 
 # ---------------------------------------------------------------------------

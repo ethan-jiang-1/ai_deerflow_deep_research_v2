@@ -12,7 +12,12 @@ from typing import Any
 
 from deerflow_deep_research.domain.lifecycle import LifecycleStatus, TerminalReason
 from deerflow_deep_research.domain.node_spec import NodeBuildDependencies
-from deerflow_deep_research.domain.run_experience import NodeProblem, TerminalIncidentProjection
+from deerflow_deep_research.domain.run_experience import (
+    FailureCertainty,
+    NodeProblem,
+    RunFailureCode,
+    TerminalIncidentProjection,
+)
 from deerflow_deep_research.domain.state import PhaseStatus, node_state_update
 from deerflow_deep_research.domain.synthesis import (
     WAVE2_GATE_PREVIEW_KEY,
@@ -207,9 +212,22 @@ def build_real(dependencies: NodeBuildDependencies):
             if isinstance(repair_outcome, InvocationFailure):
                 return _exhausted_update(repair_outcome.problem, state=state, dependencies=dependencies)
             repaired = repair_outcome.result
-            output = _validate_synthesis_semantics(
-                parse_synthesis_output(repaired.summary), wave0_refs, evidence, open_question_ids=open_question_ids
-            )
+            try:
+                output = _validate_synthesis_semantics(
+                    parse_synthesis_output(repaired.summary), wave0_refs, evidence, open_question_ids=open_question_ids
+                )
+            except ValueError:
+                # A still-invalid repaired candidate is a bounded terminal, never
+                # an uncaught crash: route exhausted with a typed incident.
+                return _exhausted_update(
+                    NodeProblem(
+                        code=RunFailureCode.OUTPUT_STRUCTURED_INVALID,
+                        phase="wave2_synthesis",
+                        certainty=FailureCertainty.DIRECT,
+                    ),
+                    state=state,
+                    dependencies=dependencies,
+                )
         await materialize_synthesis(output, dependencies.synthesis_bundle)
         return node_state_update(
             "wave2_synthesis",

@@ -331,10 +331,10 @@ class ResearchRunExperience:
             self._observation_view = None
             context: Mapping[str, Any] | None = None
             if intent.scripted:
-                context = {
-                    "non_interactive": True,
-                    "non_interactive_policy": {"auto_profile": True, "auto_proceed": True},
-                }
+                policy: dict[str, Any] = {"auto_profile": True, "auto_proceed": True}
+                if intent.profile_intent is not None:
+                    policy["profile_intent"] = intent.profile_intent
+                context = {"non_interactive": True, "non_interactive_policy": policy}
             return "start", None, context
         if isinstance(intent, AnswerRun):
             if self._pending_request is None or self._bundle_id is None:
