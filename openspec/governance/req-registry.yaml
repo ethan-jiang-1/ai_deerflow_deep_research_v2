@@ -505,7 +505,7 @@ WON-013: wave1-node — Wave1 targeted-search questions project a bounded gate-o
 
 # wave2-synthesis-node
 WSN-006: wave2-synthesis-node — Wave2 calibration makes evidence-grounded findings, relations, uncertainty, and honest gaps model-visible while preserving deterministic materialization, searchable-gap projection, gate, and route authority
-WSN-001: wave2-synthesis-node — Synthesis agent reads only accepted evidence via read-only policy and produces structured findings-index, cross-topic relations, contradictions, and candidate gaps without web tools
+WSN-001: wave2-synthesis-node — Synthesis agent reads only accepted evidence via read-only policy and produces structured findings-index, cross-topic relations, contradictions, and candidate gaps without web tools; a bounded terminal projects the concrete semantic validation category for semantic failures (e.g. synthesis_question_coverage_invalid) while pure parser failures keep the generic output.structured_invalid
 WSN-002: wave2-synthesis-node — Deterministic materializer writes synthesis artifacts to sandbox with structured finding schema and cross-topic ledger
 WSN-003: wave2-synthesis-node — Hard gate validates finding references, structure, and accepted backing; semantic gate checks causal strength, contradiction coverage, and must-answer completeness
 WSN-004: wave2-synthesis-node — Real synthesis integrates into the all-real and explicitly composed mixed graph requiring the full real chain through wave1 while preserving the deterministic fixture test/demo path with unchanged topology
@@ -513,6 +513,8 @@ WSN-005: wave2-synthesis-node — Wave2 synthesis and repair admit only candidat
 WSN-007: wave2-synthesis-node — Wave2 synthesis reads and materializes only within its selected Run Bundle and cannot create a replacement root
 WSN-008: wave2-synthesis-node — Wave2 runtime capabilities own bounded accepted-evidence synthesis and one structured repair cognition while deterministic owners retain candidate admission and lifecycle authority
 WSN-009: wave2-synthesis-node — Synthesis disposes every projected Wave1 question through exactly one searchable gap or an explicit resolution with deterministic coverage, bounded repair, and exhausted terminal
+WSN-010: wave2-synthesis-node — Wave2 structured repair carries the full trusted open-question disposition contract plus the concrete failing coverage detail (missing/duplicated/foreign projected ids) so coverage repair is non-blind
+WSN-011: wave2-synthesis-node — The wave2 output contract includes a concrete minimal example object of the findings/relations/gaps shape and an explicit negative contrast against a wave1 claims verdict list
 
 # rerun-node
 REN-001: rerun-node — Rerun scope is deterministically parsed from HITL2 decision payload producing a typed RerunPlan with scope, reason, target topics, target findings, and retained topics, defaulting to full scope when metadata is absent
@@ -624,7 +626,7 @@ SCR-005: scripted-real-workflow-debug — A dedicated Make target exposes the op
 
 # soft-bundle-session-cli
 SBC-001: soft-bundle-session-cli — An operator CLI creates a stateless soft bundle root with optional root/name/question/mode, a default root under the operator workspace, and idempotent non-overwrite behavior
-SBC-002: soft-bundle-session-cli — The CLI runs an existing operator research entry, parses a valid bundle id after execution, resolves a repository-relative local record path, and binds it as the current bundle without path-based discovery
+SBC-002: soft-bundle-session-cli — The CLI runs an existing operator research entry, parses a valid bundle id after execution, resolves a repository-relative local record path, and binds it as the current bundle; the resolved bundle is recorded and bound regardless of the operator entry's exit code, with the non-zero exit status and raw failed output preserved
 SBC-003: soft-bundle-session-cli — The CLI binds only an opaque bundle id supplied by the caller and never accepts a path or filesystem root as a bundle selector
 SBC-004: soft-bundle-session-cli — Status, path, inspect, phases, and list queries use the soft bundle root or operator parent and expose only repository-relative local record locations without absolute host paths
 SBC-005: soft-bundle-session-cli — Soft bundle records, manifests, and repository-relative paths remain operator observations and never become lifecycle authority or a recovery source for deleted or foreign bundles

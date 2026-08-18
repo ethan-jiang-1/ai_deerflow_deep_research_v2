@@ -370,6 +370,12 @@ def cmd_run(args: argparse.Namespace) -> int:
 
     question = manifest.get("question", "")
 
+    # Per-mode run exit code preserved for the shared tail. mode 001 keeps
+    # run_exit=None so its tail behavior stays byte-identical to today
+    # (`return 0 if ok else 1`); modes 002/003 bind on a resolved bundle even
+    # when the run exited non-zero and return the run's own exit code.
+    run_exit: int | None = None
+
     if mode == "001":
         make_args = ["make", "demo-scripted", f'DEMO_ARGS=--question "{question}"']
         proc = _run_make(make_args)
@@ -389,6 +395,9 @@ def cmd_run(args: argparse.Namespace) -> int:
                     return 1
                 bundle_id = latest.name
 
+        # mode 001 unchanged: this early return is an AND-gate and, after the
+        # fallback above, bundle_id is guaranteed non-None here (dead branch);
+        # a resolved bundle flows to binding regardless of the exit code.
         if proc.returncode != 0 and bundle_id is None:
             print(output, file=sys.stderr)
             return proc.returncode or 1
@@ -406,23 +415,34 @@ def cmd_run(args: argparse.Namespace) -> int:
         journal_match = re.search(r"event journal:\s*(\S+)", output)
         bundle_dir = Path(journal_match.group(1)).parent.parent if journal_match else None
 
-        if proc.returncode != 0 or bundle_id is None or bundle_dir is None or not bundle_dir.exists():
+        # Bind decision depends only on "did we resolve a valid bundle", never
+        # on the exit code: a blocked run that still produced a journal-derived
+        # bundle directory gets recorded so post-run queries keep working.
+        if bundle_id is None or bundle_dir is None or not bundle_dir.exists():
             print(output, file=sys.stderr)
             return proc.returncode or 1
+        run_exit = proc.returncode
+        if run_exit:
+            # Preserve the underlying failure reason before binding.
+            print(output, file=sys.stderr)
     elif mode == "003":
         make_args = ["make", "demo-real-scripted", f'DEMO_ARGS=--question "{question}"']
         proc = _run_make(make_args)
         output = (proc.stdout or "") + (proc.stderr or "")
         bundle_id = _parse_bundle_id(output)
 
-        if proc.returncode != 0 or bundle_id is None:
+        if bundle_id is None:
             print(output, file=sys.stderr)
             return proc.returncode or 1
 
         bundle_dir = _find_bundle_dir(bundle_id)
         if bundle_dir is None:
-            print(f"error: bundle {bundle_id} not found under operator workspace", file=sys.stderr)
-            return 1
+            print(output, file=sys.stderr)
+            return proc.returncode or 1
+        run_exit = proc.returncode
+        if run_exit:
+            # Preserve the underlying failure reason before binding.
+            print(output, file=sys.stderr)
     else:
         print(f"error: unsupported mode {mode}", file=sys.stderr)
         return 2
@@ -439,7 +459,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         for problem in problems:
             print(f"  - {problem}", file=sys.stderr)
     _print_run_summary(bundle_dir, bundle_id, mode)
-    return 0 if ok else 1
+    return run_exit or (0 if ok else 1)
 
 
 def cmd_clean(args: argparse.Namespace) -> int:

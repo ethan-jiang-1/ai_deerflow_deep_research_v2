@@ -28,6 +28,18 @@ The CLI SHALL create a `soft_bundle_root` directory when no existing valid soft 
 
 The CLI SHALL run the selected operator mode using existing Harness entry surfaces, parse a valid `bundle_id` from the run output, resolve the repository-relative `bundle_local_path`, record it under `bundles/<bundle_id>.json`, and update the soft bundle manifest's `current_bundle_id`. Before invoking the operator mode, the CLI SHALL remove all prior run-bundle content under the operator workspace `deep-research` subtree so each control-environment run starts clean. The CLI SHALL perform local path resolution only after a valid `bundle_id` is available, and SHALL NOT use path scanning to discover or select a bundle. (`SBC-002`)
 
+The CLI SHALL bind and record a resolved `bundle_id` whenever the run produced a
+valid, resolvable bundle directory, **including when the operator entry exits
+non-zero** (for example a blocked terminal): the manifest SHALL be updated to
+`current_bundle_id` and the `bundles/<bundle_id>.json` record SHALL be written
+before the CLI returns the run's own exit code. The CLI SHALL still return the
+operator run's non-zero exit code so the blocked/failed status is preserved, SHALL
+print the raw run output to stderr on that failure path so the underlying failure
+reason stays visible, and SHALL NOT report the run as successful. A run that
+produces no valid `bundle_id` or no resolvable bundle directory keeps the existing
+behavior: it SHALL fail without binding and leave `current_bundle_id` unchanged.
+(`SBC-002`)
+
 The CLI SHALL support mode 003 (real-auto): `run <root> --mode 003` SHALL
 execute the fixed real-auto embedded-smoke entry (`make demo-real-scripted
 --question "<fixed>"`), parse the returned `Run Bundle: b_xxx` id, resolve the
@@ -64,6 +76,21 @@ terminal/trace/journal checks. (`SBC-002`, `SBC-004`)
   without `final/report.md`
 - **THEN** the CLI prints `RESULT: FAIL` naming the missing report and returns a
   non-zero exit code
+
+#### Scenario: A blocked run still binds its resolved bundle
+- **WHEN** a mode-003 run exits non-zero (blocked terminal) but its output still
+  contains a valid `Run Bundle: b_xxx` and the bundle directory resolves under the
+  operator workspace
+- **THEN** the CLI records the bundle (`current_bundle_id` + `bundles/<id>.json`)
+  and `bundle_local_path`, prints the raw run output to stderr so the failure reason
+  stays visible, prints the bound id/local path, returns the run's non-zero exit
+  code, and keeps the run reported as failed
+
+#### Scenario: A failed run without a resolvable bundle still fails without binding
+- **WHEN** a run exits non-zero and no valid `bundle_id` or bundle directory can be
+  resolved
+- **THEN** the CLI prints the raw run output, does not modify `current_bundle_id`,
+  and returns a non-zero exit code
 
 ### Requirement: Bind an existing bundle id to a soft bundle root
 

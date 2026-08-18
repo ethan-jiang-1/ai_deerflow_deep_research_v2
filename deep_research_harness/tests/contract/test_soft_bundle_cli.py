@@ -416,9 +416,7 @@ def test_run_mode_003_binds_the_real_auto_bundle(tmp_path: Path, capsys) -> None
             / bundle_id
         )
         bundle_dir.mkdir(parents=True)
-        fake_make = subprocess.CompletedProcess(
-            args=[], returncode=0, stdout=f"Run Bundle: {bundle_id}\n", stderr=""
-        )
+        fake_make = subprocess.CompletedProcess(args=[], returncode=0, stdout=f"Run Bundle: {bundle_id}\n", stderr="")
         with (
             patch.object(soft_bundle, "_run_make", return_value=fake_make) as fake_make_call,
             patch.object(soft_bundle, "_clean_run_bundles"),
@@ -613,3 +611,113 @@ def test_verify_reports_fail(tmp_path: Path, capsys) -> None:
         err = capsys.readouterr().err
         assert code == 1
         assert "RESULT: FAIL" in err
+
+
+def test_run_mode_003_blocked_run_binds_resolved_bundle_and_preserves_exit_code(tmp_path: Path, capsys) -> None:
+    """@impl SBC-002 A blocked (non-zero) mode-003 run that still resolves a
+    valid bundle id binds and records the bundle, preserves the raw failed
+    output on stderr, and returns the run's own non-zero exit code."""
+    with _patch_paths(tmp_path):
+        root = tmp_path / "harness" / "r"
+        root.mkdir()
+        (root / "manifest.json").write_text(
+            json.dumps({"schema_version": 1, "name": "n", "mode": "003", "question": "", "current_bundle_id": None})
+        )
+        bundle_id = "b_123456789012345678901234"
+        bundle_dir = (
+            tmp_path
+            / "harness"
+            / ".deep-research-demo-runs"
+            / "workspace"
+            / "deep-research"
+            / "scopes"
+            / "s_test"
+            / bundle_id
+        )
+        bundle_dir.mkdir(parents=True)
+        raw_failure = "terminal_status=blocked\n[bounded terminal reached]"
+        fake_make = subprocess.CompletedProcess(
+            args=[], returncode=1, stdout=f"Run Bundle: {bundle_id}\n", stderr=raw_failure
+        )
+        with (
+            patch.object(soft_bundle, "_run_make", return_value=fake_make),
+            patch.object(soft_bundle, "_clean_run_bundles"),
+            patch.object(soft_bundle, "_verify_bundle", return_value=(False, ["terminal_status='blocked'"])),
+        ):
+            code = soft_bundle.cmd_run(_args(root="r", question=None, mode="003"))
+        assert code == 1
+        captured = capsys.readouterr()
+        manifest = json.loads((root / "manifest.json").read_text())
+        assert manifest["current_bundle_id"] == bundle_id
+        record = json.loads((root / "bundles" / f"{bundle_id}.json").read_text())
+        assert record["bundle_id"] == bundle_id
+        assert "bound_bundle_id=" in captured.out
+        assert raw_failure in captured.err
+
+
+def test_run_mode_002_blocked_run_binds_journal_derived_bundle_and_preserves_exit_code(tmp_path: Path, capsys) -> None:
+    """@impl SBC-002 A blocked (non-zero) mode-002 run that still journal-derives
+    a real bundle directory binds and records the bundle, preserves the raw
+    failed output on stderr, and returns the run's own non-zero exit code."""
+    with _patch_paths(tmp_path):
+        root = tmp_path / "harness" / "r"
+        root.mkdir()
+        (root / "manifest.json").write_text(
+            json.dumps({"schema_version": 1, "name": "n", "mode": "002", "question": "", "current_bundle_id": None})
+        )
+        bundle_id = "b_123456789012345678901234"
+        bundle_dir = (
+            tmp_path
+            / "harness"
+            / ".deep-research-demo-runs"
+            / "workspace"
+            / "scripted-real"
+            / "run-test"
+            / "deep-research"
+            / "scopes"
+            / "s_test"
+            / bundle_id
+        )
+        bundle_dir.mkdir(parents=True)
+        journal = bundle_dir / "diagnostics" / "events.jsonl"
+        journal.parent.mkdir()
+        journal.write_text("")
+        raw_failure = "terminal_status=blocked\n[bounded terminal reached]"
+        output = f"bundle_id:        {bundle_id}\nevent journal:    {journal}\n{raw_failure}"
+        fake_make = subprocess.CompletedProcess(args=[], returncode=2, stdout=output, stderr="")
+        with (
+            patch.object(soft_bundle, "_run_make", return_value=fake_make),
+            patch.object(soft_bundle, "_verify_bundle", return_value=(False, [])),
+            patch.object(soft_bundle, "_clean_run_bundles"),
+        ):
+            code = soft_bundle.cmd_run(_args(root="r", question=None, mode="002"))
+        assert code == 2
+        captured = capsys.readouterr()
+        manifest = json.loads((root / "manifest.json").read_text())
+        assert manifest["current_bundle_id"] == bundle_id
+        assert "bound_bundle_id=" in captured.out
+        assert raw_failure in captured.err
+
+
+def test_run_mode_003_non_zero_exit_without_resolvable_bundle_fails_without_binding(tmp_path: Path, capsys) -> None:
+    """@impl SBC-002 A failed run without a resolvable bundle still fails
+    without binding: current_bundle_id stays unchanged and the raw output is
+    preserved on stderr."""
+    with _patch_paths(tmp_path):
+        root = tmp_path / "harness" / "r"
+        root.mkdir()
+        (root / "manifest.json").write_text(
+            json.dumps({"schema_version": 1, "name": "n", "mode": "003", "question": "", "current_bundle_id": None})
+        )
+        raw_failure = "make: *** No rule to make target"
+        fake_make = subprocess.CompletedProcess(args=[], returncode=1, stdout="", stderr=raw_failure)
+        with (
+            patch.object(soft_bundle, "_run_make", return_value=fake_make),
+            patch.object(soft_bundle, "_clean_run_bundles"),
+        ):
+            code = soft_bundle.cmd_run(_args(root="r", question=None, mode="003"))
+        assert code == 1
+        manifest = json.loads((root / "manifest.json").read_text())
+        assert manifest["current_bundle_id"] is None
+        assert not (root / "bundles").exists()
+        assert raw_failure in capsys.readouterr().err
