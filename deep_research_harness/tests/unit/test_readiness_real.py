@@ -330,6 +330,71 @@ GAP_CONFLICT = GapRecord(
 )
 
 
+class TestWave2DegradedRoute:
+    """BUG-044: after the wave2 gate degrades, readiness must deliver, not re-open the spent repair loop."""
+
+    DEGRADED = ("wave2_synthesis:exhaustion_degraded",)
+
+    def test_bridge_failure_in_degraded_run_routes_pass_with_disclosure(self) -> None:
+        dependencies, _capabilities, store = _deps(raises=True, gaps=(GAP_CONFLICT,))
+        state = _state(questions=("Q1",))
+        state["degraded_decisions"] = self.DEGRADED
+        state["unresolved_gaps"] = (GAP_CONFLICT.gap_id,)
+
+        result = asyncio.run(build_real(dependencies)(state))
+
+        assert result["route"] == "pass"
+        assert result["readiness_blocked_count"] == 1
+        assert {item["verdict"] for item in result["readiness_critic_summary"]["per_question"]} == {
+            "blocked_repair_required"
+        }
+        uncertainties = store.written_plans[0].mandatory_uncertainties
+        assert any(
+            u.question == f"Unresolved research gap {GAP_CONFLICT.gap_id}" and u.limitation == GAP_CONFLICT.description
+            for u in uncertainties
+        )
+
+    def test_rejected_candidate_in_degraded_run_routes_pass(self) -> None:
+        for response in (_candidate(("Q1", "unknown")), _candidate(("Q1", "Q1")), "not-json"):
+            dependencies, _capabilities, store = _deps(response=response, gaps=(GAP_CONFLICT,))
+            state = _state()
+            state["degraded_decisions"] = self.DEGRADED
+            state["unresolved_gaps"] = (GAP_CONFLICT.gap_id,)
+
+            result = asyncio.run(build_real(dependencies)(state))
+
+            assert result["route"] == "pass"
+            assert result["readiness_critic_summary"]["per_question"][0]["verdict"] == "blocked_repair_required"
+            assert any(
+                u.question == f"Unresolved research gap {GAP_CONFLICT.gap_id}"
+                for u in store.written_plans[0].mandatory_uncertainties
+            )
+
+    def test_structural_failure_still_routes_exhausted_in_degraded_run(self) -> None:
+        dependencies, _capabilities, _store = _deps(store_fail=True)
+        state = _state()
+        state["degraded_decisions"] = self.DEGRADED
+
+        result = asyncio.run(build_real(dependencies)(state))
+
+        assert result["route"] == "exhausted"
+        assert result["terminal_status"] == LifecycleStatus.BLOCKED.value
+        assert result["readiness_hard_failures"] == (
+            {"code": "synthesis_evidence_unavailable", "detail": "", "refs": ()},
+        )
+
+    def test_ready_verdicts_in_degraded_run_still_route_pass(self) -> None:
+        dependencies, _capabilities, store = _deps(response=_candidate(("Q1",)))
+        state = _state()
+        state["degraded_decisions"] = self.DEGRADED
+
+        result = asyncio.run(build_real(dependencies)(state))
+
+        assert result["route"] == "pass"
+        assert result["readiness_blocked_count"] == 0
+        assert len(store.written_plans) == 1
+
+
 class TestHonestGapDisclosure:
     """@impl REA-003 — unresolved searchable gaps become disclosed uncertainties."""
 

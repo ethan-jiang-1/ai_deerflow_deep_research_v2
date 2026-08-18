@@ -25,7 +25,7 @@ _done/
 
 | 归档目录 | 数量 | Next ID |
 |---------|------|---------|
-| `_fixed_bugs/` | 43 | BUG-044 |
+| `_fixed_bugs/` | 45 | BUG-046 |
 | `_done_todos/` | 2 | DONE-003 |
 | `_closed_plans/` | 46 | CLS-047 |
 

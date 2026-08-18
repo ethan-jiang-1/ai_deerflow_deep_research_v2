@@ -838,3 +838,137 @@ async def test_targeted_node_returns_a_drained_gate_view_for_an_empty_gap_visit(
     assert view.drained is True
     assert view.planned_work_ids == ()
     assert view.accepted_record_by_work_id == {}
+
+
+def _unsorted_targeted_summary(*, gap_id: str = "gap:storage-cost") -> str:
+    """Two sources deliberately in reverse canonical (source_id, canonical_url) order."""
+    return json.dumps(
+        {
+            "schema_version": 1,
+            "gap_id": gap_id,
+            "gap_status": "resolved",
+            "sources": [
+                {
+                    "source_id": "source:zzz-last",
+                    "canonical_url": "https://example.com/z-last",
+                    "title": "Z source",
+                },
+                {
+                    "source_id": "source:aaa-first",
+                    "canonical_url": "https://example.com/a-first",
+                    "title": "A source",
+                },
+            ],
+            "limitations": "",
+        }
+    )
+
+
+async def test_targeted_worker_sorts_sources_before_submission(tmp_path: Path) -> None:
+    """BUG-045: unsorted worker output must still pass the canonical-order submission validator."""
+    dependencies = _dependencies(tmp_path, _Capabilities(_unsorted_targeted_summary()))
+
+    update = await NODE_SPEC.real_factory(dependencies)(
+        {
+            "bundle_id": BUNDLE_ID,
+            "generation": 0,
+            "execution_trace": (),
+            "unresolved_gaps": ("gap:storage-cost",),
+            "critic_work_items": (),
+        }
+    )
+
+    records = await dependencies.work_units.store.load_records()
+    assert update["route"] == "next"
+    assert len(records) == 1
+    ordered_ids = tuple(record.source_id for record in records[0].source_refs)
+    assert ordered_ids == ("source:aaa-first", "source:zzz-last")
+
+
+def test_targeted_worker_prompt_carries_bounded_gap_description() -> None:
+    from deerflow_deep_research.graph.nodes.targeted_evidence.prompts import (
+        MAX_TARGETED_GAP_DESCRIPTION_CHARS,
+        build_targeted_worker_prompt,
+    )
+
+    prompt = build_targeted_worker_prompt(
+        "gap:g1", gap_description="What is the total EV battery volume in China for 2024?"
+    )
+    assert "gap:g1" in prompt.objective
+    assert "What is the total EV battery volume in China for 2024?" in prompt.objective
+
+    long = "y" * 5000
+    truncated = build_targeted_worker_prompt("gap:g1", gap_description=long)
+    assert ("y" * MAX_TARGETED_GAP_DESCRIPTION_CHARS) in truncated.objective
+    assert ("y" * (MAX_TARGETED_GAP_DESCRIPTION_CHARS + 1)) not in truncated.objective
+
+
+def test_targeted_worker_prompt_without_description_is_id_only() -> None:
+    from deerflow_deep_research.graph.nodes.targeted_evidence.prompts import build_targeted_worker_prompt
+
+    prompt = build_targeted_worker_prompt("gap:g1")
+    assert "gap:g1" in prompt.objective
+
+
+async def test_targeted_node_carries_gap_description_from_canonical_artifact(tmp_path: Path) -> None:
+    from deerflow_deep_research.domain.synthesis import GapRecord, SynthesisResult
+
+    capabilities = _Capabilities(_targeted_summary())
+    dependencies = _dependencies(tmp_path, capabilities)
+    store = dependencies.work_units.store
+    await store.write_synthesis(
+        SynthesisResult(
+            schema_version=1,
+            findings=(),
+            gaps=(
+                GapRecord(
+                    gap_id="gap:storage-cost",
+                    description="Storage cost gap body for the assigned gap.",
+                    priority=2,
+                    search_required=True,
+                ),
+            ),
+        )
+    )
+    update = await NODE_SPEC.real_factory(dependencies)(
+        {
+            "bundle_id": BUNDLE_ID,
+            "generation": 0,
+            "execution_trace": (),
+            "unresolved_gaps": ("gap:storage-cost",),
+            "critic_work_items": (),
+        }
+    )
+
+    records = await store.load_records()
+    assert update["route"] == "next"
+    assert len(records) == 1
+    assert "Storage cost gap body for the assigned gap." in capabilities.requests[0].objective
+
+
+async def test_targeted_node_fails_soft_on_gap_read_and_still_runs_id_only(tmp_path: Path) -> None:
+
+    capabilities = _Capabilities(_targeted_summary())
+    dependencies = _dependencies(tmp_path, capabilities)
+    store = dependencies.work_units.store
+
+    async def _raise(*_args, **_kwargs):
+        raise OSError("synthesis artifact unavailable")
+
+    store.read_synthesis_gaps = _raise  # patch the canonical gap read only
+
+    update = await NODE_SPEC.real_factory(dependencies)(
+        {
+            "bundle_id": BUNDLE_ID,
+            "generation": 0,
+            "execution_trace": (),
+            "unresolved_gaps": ("gap:storage-cost",),
+            "critic_work_items": (),
+        }
+    )
+
+    records = await store.load_records()
+    assert update["route"] == "next"
+    assert len(records) == 1
+    assert "gap:storage-cost" in capabilities.requests[0].objective
+    assert "Storage cost gap body" not in capabilities.requests[0].objective

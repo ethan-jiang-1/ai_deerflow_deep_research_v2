@@ -19,6 +19,7 @@ from deerflow_deep_research.domain.lifecycle import LifecycleStatus, TerminalRea
 from deerflow_deep_research.domain.node_spec import NodeBuildDependencies
 from deerflow_deep_research.domain.state import PhaseStatus, node_state_update
 from deerflow_deep_research.domain.workflow_outcomes import InvocationFailure, invoke_and_normalize
+from deerflow_deep_research.engine.gate_kernel import exhaustion_degradation_marker
 
 from .contracts import HardRuleFailure, ReadinessCriticOutput
 from .critic import (
@@ -100,12 +101,21 @@ def build_real(dependencies: NodeBuildDependencies):
         # 4. Route determination
         blocked_count = sum(1 for pq in critic_output.per_question if pq.verdict == "blocked_repair_required")
 
+        # Once the wave2 gate has already exhausted its repair budget and
+        # degraded (gate-owned marker in ``degraded_decisions``), any further
+        # ``repair_targeted`` route would be re-evaluated by the wave2 gate at
+        # exhausted budget with the marker present and terminate the run
+        # ``blocked`` without a report (BUG-044). In that state the only
+        # non-terminal route is ``pass``, delivering the degraded-pass contract:
+        # the report plan keeps disclosing the gate-recorded unresolved gaps.
+        wave2_degraded = exhaustion_degradation_marker("wave2_synthesis") in (state.get("degraded_decisions") or ())
+
         if has_structural_failure(hard_failures) or report_plan_ref is None:
             route = "exhausted"
             terminal_status = LifecycleStatus.BLOCKED.value
             terminal_reason = TerminalReason.GATE_BLOCKED.value
             phase_status = PhaseStatus.TERMINAL.value
-        elif blocked_count > 0:
+        elif blocked_count > 0 and not wave2_degraded:
             route = "repair_targeted"
             terminal_status = None
             terminal_reason = None

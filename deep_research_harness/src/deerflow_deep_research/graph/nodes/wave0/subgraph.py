@@ -270,7 +270,11 @@ async def run_wave0_work_units_real(
             )
         metas: list[Wave0SourceMeta] = []
         source_refs: list[SourceRef] = []
-        for index, source in enumerate(output.sources):
+        # Submission validator requires canonical (source_id, canonical_url)
+        # order; sort before building refs (BUG-045 defect class), mirroring
+        # the wave1 worker.
+        ordered_sources = tuple(sorted(output.sources, key=lambda source: (source.source_id, source.canonical_url)))
+        for index, source in enumerate(ordered_sources):
             cache_name = f"source-{index}.json"
             content = canonical_json_bytes(
                 {

@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import shutil
 import time
@@ -30,6 +31,7 @@ from deerflow_deep_research.domain.context import (
 )
 from deerflow_deep_research.domain.enums import NodeFinishReason
 from deerflow_deep_research.domain.invocation import GraphInvocationContext
+from deerflow_deep_research.domain.lifecycle import LifecycleStatus, TerminalReason
 from deerflow_deep_research.domain.node_spec import NodeBuildDependencies
 from deerflow_deep_research.domain.run_experience import (
     FailureCertainty,
@@ -848,9 +850,12 @@ async def test_real_synthesis_fails_closed_when_projected_text_is_unresolvable(t
         synthesis_bundle=_QuestionStore(dependencies.synthesis_bundle.delegate, questions=()),
     )
 
-    with pytest.raises(ValueError, match="synthesis_question_coverage_invalid"):
-        await NODE_SPEC.real_factory(dependencies)(_question_state())
+    update = await NODE_SPEC.real_factory(dependencies)(_question_state())
 
+    assert update["route"] == "exhausted"
+    assert update["terminal_status"] == LifecycleStatus.BLOCKED.value
+    assert update["terminal_reason"] == TerminalReason.GATE_BLOCKED.value
+    assert update["latest_incident"]["validation_category"] == "synthesis_question_coverage_invalid"
     assert capabilities.requests == []
 
 
@@ -1091,3 +1096,48 @@ async def test_parse_terminal_keeps_generic_code_without_validation_category(tmp
     assert update["route"] == "exhausted"
     assert update["latest_incident"]["code"] == "output.structured_invalid"
     assert "validation_category" not in update["latest_incident"]
+
+
+class _CoverageFailureStore(_SynthesisStore):
+    """No Wave1 document provides any open-question text (coverage mismatch)."""
+
+    async def read_wave1_open_questions(self, accepted_refs: tuple[str, ...]) -> tuple[tuple[str, str], ...]:
+        assert accepted_refs == (SUBMISSION_REF,)
+        return ()
+
+
+async def test_pre_model_coverage_failure_terminates_bounded_instead_of_crashing(tmp_path: Path) -> None:
+    """BUG-046: uncovered open-question ids must produce a typed exhausted terminal, not a crash."""
+    capabilities = _Capabilities(NodeExecutionResult(finish_reason=NodeFinishReason.SUCCESS, summary=_synthesis_json()))
+    deps = _dependencies(tmp_path, capabilities)
+    deps = dataclasses.replace(deps, synthesis_bundle=_CoverageFailureStore(deps.synthesis_bundle.delegate))
+    state = {
+        **_state(),
+        "wave1_open_questions": ({"question_id": "q:w1_uncovered", "work_id": "g0_wave1_w0000"},),
+    }
+
+    update = await NODE_SPEC.real_factory(deps)(state)
+
+    assert update["route"] == "exhausted"
+    assert update["terminal_status"] == LifecycleStatus.BLOCKED.value
+    assert update["terminal_reason"] == TerminalReason.GATE_BLOCKED.value
+    incident = update["latest_incident"]
+    assert incident["validation_category"] == "synthesis_question_coverage_invalid"
+    assert capabilities.requests == []
+
+
+async def test_pre_model_malformed_projection_terminates_bounded(tmp_path: Path) -> None:
+    """BUG-046: a malformed open-question projection entry must not crash the graph."""
+    capabilities = _Capabilities(NodeExecutionResult(finish_reason=NodeFinishReason.SUCCESS, summary=_synthesis_json()))
+    deps = _dependencies(tmp_path, capabilities)
+    state = {
+        **_state(),
+        "wave1_open_questions": ("not-a-ref",),
+    }
+
+    update = await NODE_SPEC.real_factory(deps)(state)
+
+    assert update["route"] == "exhausted"
+    assert update["terminal_status"] == LifecycleStatus.BLOCKED.value
+    assert update["latest_incident"]["validation_category"] == "input.wave1_open_question_projection_invalid"
+    assert capabilities.requests == []

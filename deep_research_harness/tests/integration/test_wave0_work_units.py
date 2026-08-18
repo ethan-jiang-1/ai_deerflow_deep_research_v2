@@ -1333,3 +1333,35 @@ async def test_failed_or_timed_out_work_allocates_one_fresh_retry_through_shared
     first_ref = first_ref / failed.attempt_id / "work-spec.json"
     retry_ref = first_ref.parent.parent / retry_id / "work-spec.json"
     assert first_ref.read_bytes() == retry_ref.read_bytes() == canonical_json_bytes(spec)
+
+
+async def test_real_wave0_worker_sorts_sources_before_submission(tmp_path) -> None:
+    """BUG-045 defect class: unsorted wave0 output still passes the canonical-order validator."""
+    capabilities = _ResultCapabilities(
+        NodeExecutionResult(
+            finish_reason=NodeFinishReason.SUCCESS,
+            summary=(
+                '{"schema_version":1,"sources":['
+                '{"source_id":"source:zzz-last","canonical_url":"https://example.com/z-last",'
+                '"title":"Z source","fetch_status":"fetched"},'
+                '{"source_id":"source:aaa-first","canonical_url":"https://example.com/a-first",'
+                '"title":"A source","fetch_status":"fetched"}],'
+                '"baseline_facts":["storage is bounded"],"limitations":""}'
+            ),
+        )
+    )
+    context, store = _context(tmp_path, capabilities)
+    assert context.work_units is not None
+
+    component = await run_wave0_work_units_real(
+        _state(),
+        controller=context.work_units,
+        topic_registry=({"topic_id": "storage", "title": "Storage", "scope": "Storage economics"},),
+        clock=lambda: NOW,
+    )
+
+    records = await store.load_records()
+    assert len(records) == 1
+    ordered_ids = tuple(record.source_id for record in records[0].source_refs)
+    assert ordered_ids == ("source:aaa-first", "source:zzz-last")
+    assert component.parent_update["accepted_submission_refs"] == (records[0].record_hash,)

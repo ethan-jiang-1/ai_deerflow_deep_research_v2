@@ -7,3 +7,4 @@ evals/runs/
 .venv/
 .agents/
 .claude/
+.repro-tmp/

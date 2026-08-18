@@ -142,6 +142,18 @@ async def run_gap_workers(state: dict, gap_intents: tuple, dependencies: Any) ->
     if not isinstance(bundle, RunBundleRef):
         raise ValueError("selected_bundle_context_missing")
 
+    # Bounded context join: the canonical synthesis artifact's gap bodies give
+    # the worker something to search for (BUG-045). Routing authority stays
+    # id-only (TEL-001); a failed read degrades to id-only requests, never a
+    # crash of the repair loop.
+    try:
+        gap_records = await controller.store.read_synthesis_gaps()
+    except Exception:
+        gap_records = ()
+    gap_description_by_id = {
+        record.gap_id: record.description for record in gap_records if isinstance(record.gap_id, str)
+    }
+
     async def worker(spec: WorkSpec, attempt: Attempt) -> CandidateResult:
         resolved = await controller.resolver.resolve_worker(
             logical_name="targeted_evidence",
@@ -155,7 +167,10 @@ async def run_gap_workers(state: dict, gap_intents: tuple, dependencies: Any) ->
         outcome = await invoke_and_normalize(
             lambda: resolved.node_dependencies.capabilities.run_agent(
                 context=resolved.node_dependencies.agent_context,
-                request=build_targeted_worker_prompt(spec.scope[0]),
+                request=build_targeted_worker_prompt(
+                    spec.scope[0],
+                    gap_description=gap_description_by_id.get(spec.scope[0]),
+                ),
             ),
             phase="targeted_evidence",
         )
@@ -184,7 +199,11 @@ async def run_gap_workers(state: dict, gap_intents: tuple, dependencies: Any) ->
 
         metas: list[TargetedSourceMeta] = []
         source_refs: list[SourceRef] = []
-        for index, source in enumerate(output.sources):
+        # The submission validator requires canonical (source_id, canonical_url)
+        # order; sort the accepted source set before building refs (BUG-045),
+        # mirroring the wave1 worker.
+        ordered_sources = tuple(sorted(output.sources, key=lambda source: (source.source_id, source.canonical_url)))
+        for index, source in enumerate(ordered_sources):
             cache_name = f"source-{index}.json"
             content = canonical_json_bytes(source)
             await writer.write_source(cache_name, content)

@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Mapping
 from typing import Any
 
@@ -44,6 +45,36 @@ def _synthesis_validation_category(error: ValueError) -> str:
     if code.startswith("synthesis_"):
         return "semantic_invalid"
     return "candidate_invalid"
+
+
+_PRE_MODEL_CATEGORY_RE = re.compile(r"^[a-z]+(?:[._][a-z0-9_]+)*$")
+_PRE_MODEL_SNAKE_RE = re.compile(r"^[a-z][a-z0-9_]*(?:_[a-z0-9_]+)*$")
+
+
+def _pre_model_problem(error: ValueError) -> NodeProblem:
+    """Typed incident for a pre-model input-condition failure (BUG-046).
+
+    The pre-model raise sites use closed, self-describing messages (e.g.
+    ``synthesis_question_coverage_invalid``). Carry the concrete message as the
+    validation category when it already matches the NodeProblem pattern;
+    messages whose first segment carries digits (``wave1_...``) are namespaced
+    as ``input.<message>`` to stay pattern-safe; anything else falls back to
+    the generic bucket from ``_synthesis_validation_category``.
+    """
+
+    message = str(error)
+    if _PRE_MODEL_CATEGORY_RE.fullmatch(message):
+        category = message
+    elif _PRE_MODEL_SNAKE_RE.fullmatch(message):
+        category = f"input.{message}"
+    else:
+        category = _synthesis_validation_category(error)
+    return NodeProblem(
+        code=RunFailureCode.OUTPUT_STRUCTURED_INVALID,
+        phase="wave2_synthesis",
+        certainty=FailureCertainty.DIRECT,
+        validation_category=category,
+    )
 
 
 class SynthesisValidationFailure(ValueError):
@@ -201,25 +232,34 @@ def build_real(dependencies: NodeBuildDependencies):
         raise ValueError("selected_bundle_context_mismatch")
 
     async def run(state: dict[str, Any]) -> dict[str, Any]:
-        topic_registry = state.get("topic_registry") or ()
-        wave0_refs = tuple(state.get("accepted_submission_refs") or ())
-        wave1_refs = ()  # Wave1 refs are in the same ledger; for now, all accepted refs
-        open_question_ids = tuple(_question_ref_id(ref) for ref in (state.get("wave1_open_questions") or ()))
-        open_question_pairs: tuple[tuple[str, str], ...] = ()
-        if open_question_ids:
-            resolved_texts = await dependencies.synthesis_bundle.read_wave1_open_questions(wave0_refs)
-            text_by_id = dict(resolved_texts)
-            if any(question_id not in text_by_id for question_id in open_question_ids):
-                raise ValueError("synthesis_question_coverage_invalid")
-            open_question_pairs = tuple((question_id, text_by_id[question_id]) for question_id in open_question_ids)
-        evidence = await dependencies.synthesis_bundle.read_synthesis_evidence(wave0_refs)
-        request = build_synthesis_prompt(
-            topic_registry=topic_registry,
-            wave0_refs=wave0_refs,
-            wave1_refs=wave1_refs,
-            evidence=evidence,
-            open_questions=open_question_pairs,
-        )
+        # Pre-model input derivation is guarded (BUG-046): every failure mode
+        # here is a data condition (projection parse, open-question coverage,
+        # accepted-record resolution, evidence read) that must terminate the
+        # node through the typed exhausted route with its concrete category —
+        # never escape as an uncaught exception and crash the graph. Only
+        # ValueError is caught; cancellation and programming errors propagate.
+        try:
+            topic_registry = state.get("topic_registry") or ()
+            wave0_refs = tuple(state.get("accepted_submission_refs") or ())
+            wave1_refs = ()  # Wave1 refs are in the same ledger; for now, all accepted refs
+            open_question_ids = tuple(_question_ref_id(ref) for ref in (state.get("wave1_open_questions") or ()))
+            open_question_pairs: tuple[tuple[str, str], ...] = ()
+            if open_question_ids:
+                resolved_texts = await dependencies.synthesis_bundle.read_wave1_open_questions(wave0_refs)
+                text_by_id = dict(resolved_texts)
+                if any(question_id not in text_by_id for question_id in open_question_ids):
+                    raise ValueError("synthesis_question_coverage_invalid")
+                open_question_pairs = tuple((question_id, text_by_id[question_id]) for question_id in open_question_ids)
+            evidence = await dependencies.synthesis_bundle.read_synthesis_evidence(wave0_refs)
+            request = build_synthesis_prompt(
+                topic_registry=topic_registry,
+                wave0_refs=wave0_refs,
+                wave1_refs=wave1_refs,
+                evidence=evidence,
+                open_questions=open_question_pairs,
+            )
+        except ValueError as input_error:
+            return _exhausted_update(_pre_model_problem(input_error), state=state, dependencies=dependencies)
         outcome = await invoke_and_normalize(
             lambda: dependencies.capabilities.run_agent(context=dependencies.agent_context, request=request),
             phase="wave2_synthesis",

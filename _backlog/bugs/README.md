@@ -1,6 +1,6 @@
 # Active Bugs — 活跃 bug 列表
 
-> 最后更新: 2026-08-18（BUG-040..043 全部修复归档，活跃列表为空） | `_backlog/bugs/` — 活跃 bug 在此
+> 最后更新: 2026-08-18（BUG-044/045 修复归档，BUG-046 活跃） | `_backlog/bugs/` — 活跃 bug 在此
 >
 > **bug 编号权威在 `_done/_fixed_bugs/`，新 bug = 最大编号 + 1。** 本文件只列活跃 bug。
 
@@ -15,10 +15,12 @@
 
 ## 活跃列表
 
-（空 — BUG-040..043 已全部修复，见 `../_done/_fixed_bugs/`）
+| Bug | 标题 | 发现 | 状态 |
+|-----|------|------|------|
+| [BUG-046](BUG-046-003-wave2-synthesis-pre-model-crash.md) | wave2_synthesis model 前阶段裸 ValueError 崩溃整个 run（internal.unexpected → bundle.unavailable） | 2026-08-18 | 活跃 |
 
 
-**Next available bug ID: BUG-044**
+**Next available bug ID: BUG-047**
 
 ---
 
