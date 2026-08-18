@@ -510,9 +510,7 @@ async def test_targeted_worker_provider_shape_materializes_canonical_sources(tmp
             "limitations": "",
         }
     )
-    capabilities = _ResultCapabilities(
-        NodeExecutionResult(finish_reason=NodeFinishReason.SUCCESS, summary=summary)
-    )
+    capabilities = _ResultCapabilities(NodeExecutionResult(finish_reason=NodeFinishReason.SUCCESS, summary=summary))
     store, node, state = _targeted_harness(tmp_path, capabilities)
 
     update = await node(state)

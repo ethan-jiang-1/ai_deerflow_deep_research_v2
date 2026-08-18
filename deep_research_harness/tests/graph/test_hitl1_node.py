@@ -700,9 +700,7 @@ async def test_non_interactive_absent_intent_keeps_degraded_profile_but_seeds_mu
     the product fix seeds the must-answer question.
     """
     store = _RequestStore()
-    result = await hitl1_node.build_real(_deps(_Caps(), store))(
-        _state(non_interactive_policy={"auto_profile": True})
-    )
+    result = await hitl1_node.build_real(_deps(_Caps(), store))(_state(non_interactive_policy={"auto_profile": True}))
 
     assert result["route"] == "accepted"
     written = store.writes[0]
