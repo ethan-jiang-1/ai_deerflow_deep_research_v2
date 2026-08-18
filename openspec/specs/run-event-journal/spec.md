@@ -277,11 +277,22 @@ applicable closed canonical-code collection on failure. Wave0 and Wave1 candidat
 facts SHALL additionally retain their closed final response shape. When a parser- and
 where-applicable locally-valid Wave0 or Wave1 candidate later fails a deterministic
 post-candidate boundary, the Journal SHALL retain one `post_candidate` validation fact
-with that boundary's existing canonical code collection. A validation fact SHALL be
-emitted only after that candidate reaches the named boundary; an invocation failure
-before the boundary remains the existing invocation fact. These observations SHALL not
-change existing repair counts, provider recovery, controller ownership, routing,
-terminal classification, checkpoint state, or legal lifecycle action. (`REJ-007`)
+with that boundary's existing canonical code collection. When the real final-delivery
+composer candidate of a non-degenerate visit reaches its parser or admission boundary
+and is not admitted, the Journal SHALL retain one `initial` validation fact for that
+attempt carrying the boundary's existing closed canonical code collection
+(`final_layout_empty`, `final_layout_json_invalid`, `final_layout_not_object`,
+`final_layout_shape_invalid`, `final_layout_schema_unsupported`,
+`final_layout_conclusions_invalid`, `final_layout_uncertainties_invalid`), where
+`final_layout_shape_invalid` collapses typed-candidate validation detail that is not
+one of the literal parser/admission codes; the final-delivery fact SHALL carry no response
+shape, and a final-delivery composer invocation failure SHALL retain only the existing
+invocation fact and no validation fact, consistent with the pre-boundary failure rule.
+A validation fact SHALL be emitted only after that candidate reaches the named
+boundary; an invocation failure before the boundary remains the existing invocation
+fact. These observations SHALL not change existing repair counts, provider recovery,
+controller ownership, routing, terminal classification, checkpoint state, or legal
+lifecycle action. (`REJ-007`)
 
 #### Scenario: A known budget stop is attributable without raw detail
 - **WHEN** a bridge stops an invocation at a known model, token, tool, or bridge
@@ -313,6 +324,19 @@ terminal classification, checkpoint state, or legal lifecycle action. (`REJ-007`
 - **THEN** the Journal retains separate ordered `initial` and `repair` validation
   facts with their own canonical code collections and, for Wave0/Wave1, closed response
   shapes, without a raw draft or exception text
+
+#### Scenario: A rejected final-delivery layout keeps its canonical code
+- **WHEN** a non-degenerate final-delivery visit's composer delivery fails parsing or
+  admission after normalization and the visit degrades to the plan-order layout
+- **THEN** the Journal retains one correlated `initial` validation fact for that attempt
+  with exactly the boundary's closed canonical code, no response shape, and no raw
+  model output, while the visit's publication and terminal outcome proceed unchanged
+
+#### Scenario: A final-delivery invocation failure stays an invocation fact
+- **WHEN** a non-degenerate final-delivery visit's composer invocation fails before a
+  candidate reaches the parser boundary
+- **THEN** the Journal retains the existing invocation fact with no validation fact,
+  and the visit's plan-order degradation proceeds unchanged
 
 #### Scenario: Post-candidate evidence does not become recovery input
 - **WHEN** a Wave0 or Wave1 candidate fails a later deterministic validation boundary

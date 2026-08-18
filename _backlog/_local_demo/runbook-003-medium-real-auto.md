@@ -148,11 +148,19 @@ UV_NO_CACHE=1 make soft-bundle DEMO_ARGS="verify $ROOT"
   无检索需求的 synthesis finding 直接成为可写结论（statement 原文），
   readiness critic 的非实质性判定只能**追加**强制不确定项（披露），不能清空
   结论——"部分结论 + 披露并存"取代"insufficient → 零交付"。
+- **layout 回显失败不再阻塞**（BUG-055 修复）：非退化 plan 的排版候选被拒
+  （fence/散文包裹在归一化后仍不可 admit）或 composer 调用失败时，
+  final_delivery **同 visit 降级为 plan-order layout 并正常发布**——排版是
+  advisory，不消耗 gate repair、不再可能因此 blocked；拒绝的 canonical code
+  （闭合 `final_layout_*`）进 journal `initial` validation fact，模型原文按
+  REJ 契约不落盘。
 - **退化 plan 免模型**（BUG-053 修复）：结论数与不确定项数均 ≤1 时排序数学
   唯一，final_delivery 确定性构造 layout，不再赌模型回显合成 id。
 - `final/report.md` 的 `## Uncertainties` 段必须**披露**未收敛的 gap
   （描述来自 `synthesis/findings.json`；正文找不到描述时至少披露 gap id）。
-- blocked 只在两种情形出现：结构性失败；或"降级后再次耗尽"
+- blocked 只在两种情形出现：结构性失败（plan/evidence 读取、render、publish、
+  readback/verify——BUG-055 修复后 layout 回显失败已降级为带发布的 completed，
+  不在此列）；或"降级后再次耗尽"
   （wave2 gate 每次预算 seeding 至多降级一次）——均带 typed incident 与
   诊断引用（wave2 输入条件失败也走有界终止，不再裸崩溃——BUG-046）。
   历史上"单次 003 run 预期不会触发 blocked"的表述已被 2/2 次真实 run

@@ -659,7 +659,7 @@ REQUIREMENT_IMPACTS = (
         StableSeam.LIFECYCLE_MIXED_GRAPH,
         (
             "tests/integration/test_zero_tool_node_conformance.py::"
-            "test_final_delivery_scripted_real_bridge_rejects_plan_violation_before_publication"
+            "test_final_delivery_scripted_real_bridge_degrades_plan_violation_to_plan_order"
         ),
         "scripted workflow conformance cannot let a plan-violating candidate publish or bypass the final gate",
     ),

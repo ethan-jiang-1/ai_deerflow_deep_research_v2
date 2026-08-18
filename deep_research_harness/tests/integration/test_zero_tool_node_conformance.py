@@ -793,10 +793,12 @@ async def test_final_delivery_scripted_real_bridge_composes_publishes_and_comple
 
 
 @pytest.mark.workflow
-async def test_final_delivery_scripted_real_bridge_rejects_plan_violation_before_publication(
+async def test_final_delivery_scripted_real_bridge_degrades_plan_violation_to_plan_order(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
+    """@bug BUG-055: an inadmissible ordering degrades and still delivers."""
+
     response = json.dumps(
         {
             "schema_version": 1,
@@ -805,15 +807,30 @@ async def test_final_delivery_scripted_real_bridge_rejects_plan_violation_before
         }
     )
 
-    result, events, _model, _expected_prompt, observed_store, _policy, identity = await _run_scripted_final_delivery(
+    result, events, _model, _expected_prompt, observed_store, _policy, _identity = await _run_scripted_final_delivery(
         monkeypatch,
         tmp_path,
         response=response,
     )
 
-    assert events == ["plan-read", "evidence-read", "model", "parse", "admit", "gate"]
-    assert observed_store.published is None
-    assert result["route"] == "repair"
-    assert "terminal_status" not in result
-    assert not result.get("report_refs")
-    assert not (tmp_path / bundle_host_relative_root(identity.bundle_ref) / "final").exists()
+    assert events == [
+        "plan-read",
+        "evidence-read",
+        "model",
+        "parse",
+        "admit",
+        "render",
+        "publish",
+        "final-read",
+        "gate",
+    ]
+    assert observed_store.published is not None
+    report, citation_map = observed_store.published
+    assert report.index(b"Approved context is retained verbatim.") < report.index(
+        b"Approved decision is retained verbatim."
+    )  # degraded plan order, not the rejected partial order
+    assert set(json.loads(citation_map)["claims"]) == {"conclusion:0", "conclusion:1"}
+    assert result["route"] == "pass"
+    assert result["terminal_status"] == "completed"
+    assert result["phase_status"] == "terminal"
+    assert result["gate_attempts_by_phase"]["final_delivery"] == 1

@@ -32,12 +32,17 @@ publication, terminal status, or the final graph outcome.
 Open `composer.py`, `node.py`, and final-delivery contracts for candidate, publication,
 or freshness symptoms; use `tests/unit/test_final_delivery_real.py` first. For runtime
 policy or injection symptoms, use `tests/unit/test_research_runtime_capabilities.py`.
+A rejected or unusable composer delivery is not a publication symptom: the visit
+degrades to the deterministic plan-order layout (BUG-055), records one closed
+`initial` validation fact through the event recorder, and still publishes.
 
 ## Three Cross-Module Facts
 
 1. The admitted readiness plan and a bounded, delimited accepted-evidence projection
    are the only composer inputs.
-2. The composer has a forbidden-tool, one-invocation policy and returns only layout IDs.
+2. The composer has a forbidden-tool, one-invocation policy and returns only layout IDs;
+   its ordering contribution is advisory — an invocation or admission failure degrades
+   to the plan-order layout in the same visit without consuming a repair round.
 3. The publisher re-read and fresh final gate, not a model response or stale report ref,
    own publication verification, routes, and terminal completion.
 

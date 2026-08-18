@@ -436,7 +436,7 @@ EVIDENCE_CLAIMS = (
         claim_id="nac-final-delivery-composer-risk",
         selector=(
             "tests/integration/test_zero_tool_node_conformance.py::"
-            "test_final_delivery_scripted_real_bridge_rejects_plan_violation_before_publication"
+            "test_final_delivery_scripted_real_bridge_degrades_plan_violation_to_plan_order"
         ),
         expected_selection=FocusedSelection.WORKFLOW,
         requirement_ids=(
@@ -1858,7 +1858,7 @@ EVIDENCE_CLAIMS = (
         "workflow-outcome-final-delivery-known-invocation",
         (
             "tests/unit/test_final_delivery_real.py::TestRealFinalDelivery::"
-            "test_bridge_and_publisher_failures_take_one_attempt_without_a_pass_view"
+            "test_composer_invocation_failure_degrades_without_a_validation_fact"
         ),
         StableSeam.NODE_INTERFACE,
         requirement_ids=("FID-002", "FID-004", "EVH-022", "WFO-001", "WFO-002"),

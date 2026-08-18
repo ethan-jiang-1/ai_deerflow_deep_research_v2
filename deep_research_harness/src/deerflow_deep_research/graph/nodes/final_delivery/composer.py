@@ -20,6 +20,112 @@ def _entry_ids(prefix: str, count: int) -> tuple[str, ...]:
     return tuple(f"{prefix}:{index}" for index in range(count))
 
 
+def plan_order_layout(plan: ReadinessReportPlan) -> FinalDeliveryLayoutCandidate:
+    """Construct the deterministic plan-order layout candidate (BUG-053/BUG-055).
+
+    Shared by the degenerate-plan branch (unique legal order) and the layout
+    degradation path (composer ordering unavailable or inadmissible). It passes
+    through the same admission, rendering, and publication path as a
+    composer-produced candidate.
+    """
+
+    return FinalDeliveryLayoutCandidate(
+        schema_version=1,
+        conclusion_order=_entry_ids("conclusion", len(plan.writable_conclusions)),
+        uncertainty_order=_entry_ids("uncertainty", len(plan.mandatory_uncertainties)),
+    )
+
+
+def _extract_fenced_block(text: str) -> str | None:
+    """Return the content of the first fenced code block, if any."""
+
+    lines = text.splitlines()
+    inside = False
+    body: list[str] = []
+    for line in lines:
+        stripped = line.strip()
+        if not inside and stripped.startswith("```"):
+            inside = True
+            continue
+        if inside and stripped.startswith("```"):
+            return "\n".join(body)
+        if inside:
+            body.append(line)
+    return None
+
+
+def _extract_embedded_object(text: str) -> dict[str, object] | None:
+    """Return the first balanced JSON object embedded in surrounding prose."""
+
+    decoder = json.JSONDecoder()
+    for index, character in enumerate(text):
+        if character != "{":
+            continue
+        try:
+            value, _ = decoder.raw_decode(text[index:])
+        except json.JSONDecodeError:
+            continue
+        if isinstance(value, dict):
+            return value
+    return None
+
+
+def parse_layout_candidate(text: str) -> FinalDeliveryLayoutCandidate:
+    """Parse a composer delivery into a validated layout candidate.
+
+    Delivery-shape normalization only (BUG-055): the closed layout JSON may arrive
+    bare, inside a fenced code block, or embedded in prose. Content admission
+    stays closed — no id guessing, schema repair, or completion of missing
+    entries.
+    """
+
+    if not isinstance(text, str) or not text.strip():
+        raise ValueError("final_layout_empty")
+    stripped = text.strip()
+    payload = _load_delivered_object(stripped)
+    if payload is None:
+        raise ValueError("final_layout_json_invalid")
+    if not isinstance(payload, dict):
+        raise ValueError("final_layout_not_object")
+    return FinalDeliveryLayoutCandidate.model_validate(payload)
+
+
+def _load_delivered_object(stripped: str) -> object | None:
+    """Load the first delivered JSON value bare, fenced, or embedded in prose.
+
+    Returns ``None`` only when no JSON value is recoverable from any delivery
+    shape; a parsed non-object value is returned as-is so the caller keeps the
+    distinction between invalid JSON and a non-object payload.
+    """
+
+    for attempt in (_load_bare, _load_fenced, _load_embedded):
+        payload = attempt(stripped)
+        if payload is not None:
+            return payload
+    return None
+
+
+def _load_bare(stripped: str) -> object | None:
+    try:
+        return json.loads(stripped)
+    except json.JSONDecodeError:
+        return None
+
+
+def _load_fenced(stripped: str) -> object | None:
+    fenced = _extract_fenced_block(stripped)
+    if fenced is None or not fenced.strip():
+        return None
+    try:
+        return json.loads(fenced.strip())
+    except json.JSONDecodeError:
+        return None
+
+
+def _load_embedded(stripped: str) -> object | None:
+    return _extract_embedded_object(stripped)
+
+
 def _bounded_evidence(evidence: Iterable[SynthesisEvidence]) -> tuple[dict[str, object], ...]:
     items = tuple(evidence)
     if not items:
@@ -89,18 +195,6 @@ def build_final_delivery_request(
         tools_enabled=False,
         capability_ref=FINAL_DELIVERY_COMPOSER,
     )
-
-
-def parse_layout_candidate(text: str) -> FinalDeliveryLayoutCandidate:
-    if not isinstance(text, str) or not text.strip():
-        raise ValueError("final_layout_empty")
-    try:
-        payload = json.loads(text)
-    except json.JSONDecodeError as exc:
-        raise ValueError("final_layout_json_invalid") from exc
-    if not isinstance(payload, dict):
-        raise ValueError("final_layout_not_object")
-    return FinalDeliveryLayoutCandidate.model_validate(payload)
 
 
 def admit_layout_candidate(

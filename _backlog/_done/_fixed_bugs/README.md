@@ -72,8 +72,9 @@ bug 修完后从 `_backlog/bugs/` 通过 `git mv` 移入本目录：
 | BUG-052 | 2026-08-19 | rerun 摧毁先前 bundle——改为归档保留（preserve-failed-run-bundles） |
 | BUG-053 | 2026-08-19 | final_delivery 退化计划确定性渲染不走 composer（honest-degraded-delivery） |
 | BUG-054 | 2026-08-19 | 高置信 findings 规则化为结论不被 critic 否决（honest-degraded-delivery） |
+| BUG-055 | 2026-08-19 | final_delivery layout 回显 3/3 拒绝致 blocked——归一化+降级+观测（fix-final-delivery-layout-fragility） |
 
-**Next available bug ID: BUG-055**
+**Next available bug ID: BUG-058**
 
 ---
 

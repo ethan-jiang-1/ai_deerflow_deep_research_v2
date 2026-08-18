@@ -84,6 +84,51 @@ def test_final_response_shape_classifier_retains_only_the_closed_enum(
     assert response == original
 
 
+def test_v3_final_delivery_validation_fact_needs_no_response_shape() -> None:
+    """@bug BUG-055: the layout admission boundary joins the named boundaries.
+
+    Response shape stays wave0/wave1-only: a final_delivery `initial` fact with
+    no shape is legal, and supplying one is rejected.
+    """
+
+    base = {
+        "schema_version": 3,
+        "sequence": 2,
+        "timestamp": datetime.now(UTC),
+        "category": RunEventCategory.VALIDATION,
+        "generation": 0,
+        "phase": "final_delivery",
+    }
+
+    accepted = RunEvent(
+        **{
+            **base,
+            "validation_stage": "initial",
+            "validation_codes": ("final_layout_json_invalid",),
+        }
+    )
+    assert accepted.validation_codes == ("final_layout_json_invalid",)
+
+    collapsed = RunEvent(
+        **{
+            **base,
+            "validation_stage": "initial",
+            "validation_codes": ("final_layout_shape_invalid",),
+        }
+    )
+    assert collapsed.validation_codes == ("final_layout_shape_invalid",)
+
+    with pytest.raises(ValueError, match="journal_validation_response_shape_unexpected"):
+        RunEvent(
+            **{
+                **base,
+                "validation_stage": "initial",
+                "validation_codes": ("final_layout_json_invalid",),
+                "response_shape": FinalResponseShape.JSON_OBJECT,
+            }
+        )
+
+
 def test_v3_validation_contract_rejects_impossible_shape_and_stage_pairs() -> None:
     base = {
         "schema_version": 3,

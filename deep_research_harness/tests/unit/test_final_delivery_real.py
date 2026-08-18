@@ -32,7 +32,9 @@ from deerflow_deep_research.engine.gate_kernel import evaluate_gate, gate_result
 from deerflow_deep_research.engine.real_gates import build_final_delivery_real_gate_def
 from deerflow_deep_research.graph.nodes.final_delivery.composer import (
     MAX_FINAL_DELIVERY_EVIDENCE_BYTES,
+    admit_layout_candidate,
     build_final_delivery_request,
+    parse_layout_candidate,
 )
 from deerflow_deep_research.graph.nodes.final_delivery.contracts import (
     FINAL_DELIVERY_GATE_VIEW_KEY,
@@ -173,7 +175,22 @@ class ScriptedCapabilities:
         return NodeExecutionResult(finish_reason=NodeFinishReason.SUCCESS, summary=self.response)
 
 
-def _deps(*, bundle: ScriptedFinalBundle, capabilities: ScriptedCapabilities | None = None) -> NodeBuildDependencies:
+class SpyEventRecorder:
+    """Duck-typed journal recorder capturing validation facts for assertion."""
+
+    def __init__(self) -> None:
+        self.events: list[dict[str, object]] = []
+
+    async def record(self, **kwargs: object) -> None:
+        self.events.append(kwargs)
+
+
+def _deps(
+    *,
+    bundle: ScriptedFinalBundle,
+    capabilities: ScriptedCapabilities | None = None,
+    event_recorder: SpyEventRecorder | None = None,
+) -> NodeBuildDependencies:
     graph = GraphContextView(
         research_scope_id=_RID,
         workspace_root=f"/mnt/user-data/{_BUNDLE_ROOT}",
@@ -193,6 +210,7 @@ def _deps(*, bundle: ScriptedFinalBundle, capabilities: ScriptedCapabilities | N
         capabilities=capabilities or ScriptedCapabilities(),
         publication_bundle=ScriptedPublicationBundle(bundle),
         final_delivery_bundle=bundle,
+        event_recorder=event_recorder,
     )
 
 
@@ -253,6 +271,31 @@ class TestRealFinalDelivery:
         assert request.capability_ref.capability_id == "final-delivery-composer"
         assert "readiness_report_plan" not in request.objective
         assert "/mnt/user-data" not in request.objective
+
+    def test_layout_parse_normalizes_fenced_and_embedded_deliveries(self) -> None:
+        """@bug BUG-055: delivery shape (fence/prose wrapping) must not cost the run."""
+
+        plan = _multi_conclusion_plan()
+        payload = {
+            "schema_version": 1,
+            "conclusion_order": ["conclusion:1", "conclusion:0"],
+            "uncertainty_order": ["uncertainty:0"],
+        }
+        body = json.dumps(payload)
+        fenced = f"```json\n{body}\n```"
+        embedded = f"Here is the requested layout:\n{body}\nHope that helps."
+
+        for delivery in (body, fenced, embedded):
+            candidate = admit_layout_candidate(parse_layout_candidate(delivery), plan)
+            assert candidate.conclusion_order == ("conclusion:1", "conclusion:0")
+            assert candidate.uncertainty_order == ("uncertainty:0",)
+
+    def test_layout_parse_still_rejects_inadmissible_content(self) -> None:
+        """Normalization is delivery-shape only: content admission stays closed."""
+
+        for delivery in ("", "   ", "not json at all", json.dumps([1, 2]), "null"):
+            with pytest.raises(ValueError, match="final_layout_"):
+                parse_layout_candidate(delivery)
 
     def test_real_gate_uses_only_the_current_attempt_view_and_owns_completion(self) -> None:
         report = b"# Deep Research Report\n"
@@ -384,8 +427,104 @@ class TestRealFinalDelivery:
         assert result[FINAL_DELIVERY_GATE_VIEW_KEY].failure_code is FailureCode.EVIDENCE_INSUFFICIENT
 
     @pytest.mark.asyncio
-    async def test_rejected_layout_and_readback_failure_never_publish_a_pass_view(self) -> None:
-        rejected_candidate = json.dumps({"schema_version": 1, "conclusion_order": [], "uncertainty_order": []})
+    async def test_inadmissible_candidate_degrades_to_plan_order_and_publishes(self) -> None:
+        """@bug BUG-055: an ordering miss must not cost the run its delivery."""
+
+        recorder = SpyEventRecorder()
+        bundle = ScriptedFinalBundle(plan=_multi_conclusion_plan())
+        dependencies = _deps(
+            bundle=bundle,
+            capabilities=ScriptedCapabilities("not json at all"),
+            event_recorder=recorder,
+        )
+
+        result = await build_real(dependencies)(_state(bundle))
+
+        view = result[FINAL_DELIVERY_GATE_VIEW_KEY]
+        assert isinstance(view, FinalDeliveryGateView)
+        assert view.failure_code is None
+        assert view.published_refs == result["report_refs"]
+        report, _citation_map = dependencies.publication_bundle.calls[0]  # type: ignore[union-attr]
+        first = report.find(b"The approved conclusion is retained verbatim.")
+        second = report.find(b"The second approved conclusion is retained verbatim.")
+        assert 0 < first < second  # plan order: conclusion:0 before conclusion:1
+        validations = [event for event in recorder.events if event.get("category") is not None]
+        assert len(validations) == 1
+        assert validations[0]["validation_codes"] == ("final_layout_json_invalid",)
+        assert validations[0]["validation_stage"] == "initial"
+        assert "response_shape" not in validations[0] or validations[0]["response_shape"] is None
+
+    @pytest.mark.asyncio
+    async def test_duplicate_order_candidate_collapses_to_shape_invalid_and_degrades(self) -> None:
+        """Typed-candidate validation detail collapses to the closed shape code."""
+
+        recorder = SpyEventRecorder()
+        duplicate = json.dumps(
+            {
+                "schema_version": 1,
+                "conclusion_order": ["conclusion:0", "conclusion:0"],
+                "uncertainty_order": ["uncertainty:0"],
+            }
+        )
+        bundle = ScriptedFinalBundle(plan=_multi_conclusion_plan())
+        dependencies = _deps(bundle=bundle, capabilities=ScriptedCapabilities(duplicate), event_recorder=recorder)
+
+        result = await build_real(dependencies)(_state(bundle))
+
+        assert result[FINAL_DELIVERY_GATE_VIEW_KEY].failure_code is None
+        validations = [event for event in recorder.events if event.get("category") is not None]
+        assert len(validations) == 1
+        assert validations[0]["validation_codes"] == ("final_layout_shape_invalid",)
+        assert len(dependencies.publication_bundle.calls) == 1  # type: ignore[union-attr]
+
+    @pytest.mark.asyncio
+    async def test_fenced_candidate_is_admitted_without_degradation(self) -> None:
+        """A fenced delivery is normalized and the composer's order is kept."""
+
+        recorder = SpyEventRecorder()
+        fenced = (
+            "```json\n"
+            + json.dumps(
+                {
+                    "schema_version": 1,
+                    "conclusion_order": ["conclusion:1", "conclusion:0"],
+                    "uncertainty_order": ["uncertainty:0"],
+                }
+            )
+            + "\n```"
+        )
+        bundle = ScriptedFinalBundle(plan=_multi_conclusion_plan())
+        dependencies = _deps(bundle=bundle, capabilities=ScriptedCapabilities(fenced), event_recorder=recorder)
+
+        result = await build_real(dependencies)(_state(bundle))
+
+        assert result[FINAL_DELIVERY_GATE_VIEW_KEY].failure_code is None
+        report, _citation_map = dependencies.publication_bundle.calls[0]  # type: ignore[union-attr]
+        first = report.find(b"The approved conclusion is retained verbatim.")
+        second = report.find(b"The second approved conclusion is retained verbatim.")
+        assert 0 < second < first  # composer order: conclusion:1 before conclusion:0
+        assert recorder.events == []
+
+    @pytest.mark.asyncio
+    async def test_composer_invocation_failure_degrades_without_a_validation_fact(self) -> None:
+        """@bug BUG-055: invocation failure degrades too; only the invocation fact exists."""
+
+        recorder = SpyEventRecorder()
+        bundle = ScriptedFinalBundle(plan=_multi_conclusion_plan())
+        failed_capabilities = ScriptedCapabilities(fails=True)
+        dependencies = _deps(bundle=bundle, capabilities=failed_capabilities, event_recorder=recorder)
+
+        result = await build_real(dependencies)(_state(bundle))
+
+        assert len(failed_capabilities.requests) == 1
+        view = result[FINAL_DELIVERY_GATE_VIEW_KEY]
+        assert isinstance(view, FinalDeliveryGateView)
+        assert view.failure_code is None
+        assert len(dependencies.publication_bundle.calls) == 1  # type: ignore[union-attr]
+        assert recorder.events == []  # no validation fact for a pre-boundary failure
+
+    @pytest.mark.asyncio
+    async def test_readback_failure_never_publishes_a_pass_view(self) -> None:
         complete_candidate = json.dumps(
             {
                 "schema_version": 1,
@@ -393,35 +532,17 @@ class TestRealFinalDelivery:
                 "uncertainty_order": ["uncertainty:0"],
             }
         )
-        for response, readback_fails in (
-            ("not json", False),
-            (rejected_candidate, False),
-            (complete_candidate, True),
-        ):
-            bundle = ScriptedFinalBundle(plan=_multi_conclusion_plan())
-            bundle.fail_final_read = readback_fails
-            dependencies = _deps(bundle=bundle, capabilities=ScriptedCapabilities(response))
+        bundle = ScriptedFinalBundle(plan=_multi_conclusion_plan())
+        bundle.fail_final_read = True
+        dependencies = _deps(bundle=bundle, capabilities=ScriptedCapabilities(complete_candidate))
 
-            result = await build_real(dependencies)(_state(bundle))
+        result = await build_real(dependencies)(_state(bundle))
 
-            assert result[FINAL_DELIVERY_GATE_VIEW_KEY].failure_code is FailureCode.WORK_FAILED
-            if readback_fails:
-                assert len(dependencies.publication_bundle.calls) == 1  # type: ignore[union-attr]
-            else:
-                assert dependencies.publication_bundle.calls == []  # type: ignore[union-attr]
+        assert result[FINAL_DELIVERY_GATE_VIEW_KEY].failure_code is FailureCode.WORK_FAILED
+        assert len(dependencies.publication_bundle.calls) == 1  # type: ignore[union-attr]
 
     @pytest.mark.asyncio
-    async def test_bridge_and_publisher_failures_take_one_attempt_without_a_pass_view(self) -> None:
-        bridge_bundle = ScriptedFinalBundle(plan=_multi_conclusion_plan())
-        failed_capabilities = ScriptedCapabilities(fails=True)
-        bridge_dependencies = _deps(bundle=bridge_bundle, capabilities=failed_capabilities)
-
-        bridge_result = await build_real(bridge_dependencies)(_state(bridge_bundle))
-
-        assert len(failed_capabilities.requests) == 1
-        assert bridge_dependencies.publication_bundle.calls == []  # type: ignore[union-attr]
-        assert bridge_result[FINAL_DELIVERY_GATE_VIEW_KEY].failure_code is FailureCode.WORK_FAILED
-
+    async def test_publisher_failure_takes_one_attempt_without_a_pass_view(self) -> None:
         publisher_bundle = ScriptedFinalBundle(plan=_plan())
         publisher_bundle.fail_publication = True
         publisher_dependencies = _deps(bundle=publisher_bundle)

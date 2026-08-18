@@ -20,15 +20,37 @@ from deerflow_deep_research.domain.publication import (
     FinalDeliveryLayoutCandidate,
 )
 from deerflow_deep_research.domain.readiness import ReadinessReportPlan
+from deerflow_deep_research.domain.run_observation import RunEventCategory
 from deerflow_deep_research.domain.state import node_state_update
+from deerflow_deep_research.domain.synthesis import SynthesisEvidence
 from deerflow_deep_research.domain.workflow_outcomes import InvocationFailure, invoke_and_normalize
 
 from .composer import (
     admit_layout_candidate,
     build_final_delivery_request,
     parse_layout_candidate,
+    plan_order_layout,
     render_final_artifacts,
 )
+
+_LAYOUT_LITERAL_CODES = frozenset(
+    {
+        "final_layout_empty",
+        "final_layout_json_invalid",
+        "final_layout_not_object",
+        "final_layout_schema_unsupported",
+        "final_layout_conclusions_invalid",
+        "final_layout_uncertainties_invalid",
+    }
+)
+_LAYOUT_SHAPE_INVALID = "final_layout_shape_invalid"
+
+
+def _canonical_layout_code(error: ValueError) -> str:
+    """Collapse parser/admission detail to the closed Journal vocabulary."""
+
+    code = str(error)
+    return code if code in _LAYOUT_LITERAL_CODES else _LAYOUT_SHAPE_INVALID
 
 
 def _failure_view(*, evidence_present: bool, code: FailureCode) -> FinalDeliveryGateView:
@@ -45,6 +67,63 @@ def _validate_final_artifacts(report: bytes, citation_map: bytes) -> None:
         or not isinstance(payload.get("claims"), dict)
     ):
         raise ValueError("final_citation_map_shape_invalid")
+
+
+async def _record_layout_validation_fact(dependencies: NodeBuildDependencies, *, code: str) -> None:
+    """Retain the closed canonical code of a rejected composer delivery.
+
+    Observation only (BUG-055): persistence failure must not perturb the visit,
+    mirroring the topic-planning validation-fact owner.
+    """
+
+    if dependencies.event_recorder is None:
+        return
+    try:
+        await dependencies.event_recorder.record(
+            category=RunEventCategory.VALIDATION,
+            phase="final_delivery",
+            validation_stage="initial",
+            validation_codes=(code,),
+        )
+    except Exception:
+        return
+
+
+def _is_degenerate(plan: ReadinessReportPlan) -> bool:
+    return len(plan.writable_conclusions) <= 1 and len(plan.mandatory_uncertainties) <= 1
+
+
+async def _admitted_or_degraded_layout(
+    dependencies: NodeBuildDependencies,
+    *,
+    plan: ReadinessReportPlan,
+    evidence: tuple[SynthesisEvidence, ...],
+) -> FinalDeliveryLayoutCandidate:
+    """Acquire the visit's layout candidate.
+
+    Degenerate plans construct the unique order deterministically (BUG-053).
+    Non-degenerate visits ask the composer once; an invocation failure or an
+    inadmissible delivery degrades to the deterministic plan-order layout rather
+    than failing the visit (BUG-055) — ordering is advisory and must not cost
+    the run its delivery. Only a candidate that reached the parser/admission
+    boundary leaves a validation fact; an invocation failure keeps only the
+    existing invocation fact.
+    """
+
+    if _is_degenerate(plan):
+        return plan_order_layout(plan)
+    request = build_final_delivery_request(plan, evidence)
+    outcome = await invoke_and_normalize(
+        lambda: dependencies.capabilities.run_agent(context=dependencies.agent_context, request=request),
+        phase="final_delivery",
+    )
+    if isinstance(outcome, InvocationFailure):
+        return plan_order_layout(plan)
+    try:
+        return admit_layout_candidate(parse_layout_candidate(outcome.result.summary), plan)
+    except ValueError as exc:
+        await _record_layout_validation_fact(dependencies, code=_canonical_layout_code(exc))
+        return plan_order_layout(plan)
 
 
 def build_real(dependencies: NodeBuildDependencies):
@@ -84,27 +163,7 @@ def build_real(dependencies: NodeBuildDependencies):
             }
         try:
             evidence = await dependencies.final_delivery_bundle.read_synthesis_evidence(accepted_refs)
-            if len(plan.writable_conclusions) <= 1 and len(plan.mandatory_uncertainties) <= 1:
-                # Degenerate plan (BUG-053): the complete legal layout is the
-                # mathematically unique single order, so the node constructs it
-                # deterministically and never asks a model to echo synthetic
-                # entry ids. Admission, rendering, and publication stay shared.
-                layout = FinalDeliveryLayoutCandidate(
-                    schema_version=1,
-                    conclusion_order=tuple(f"conclusion:{i}" for i in range(len(plan.writable_conclusions))),
-                    uncertainty_order=tuple(f"uncertainty:{i}" for i in range(len(plan.mandatory_uncertainties))),
-                )
-            else:
-                request = build_final_delivery_request(plan, evidence)
-                outcome = await invoke_and_normalize(
-                    lambda: dependencies.capabilities.run_agent(
-                        context=dependencies.agent_context, request=request
-                    ),
-                    phase="final_delivery",
-                )
-                if isinstance(outcome, InvocationFailure):
-                    raise ValueError("final_composer_execution_failed")
-                layout = admit_layout_candidate(parse_layout_candidate(outcome.result.summary), plan)
+            layout = await _admitted_or_degraded_layout(dependencies, plan=plan, evidence=evidence)
             report, citation_map = render_final_artifacts(plan, layout)
             refs = await dependencies.publication_bundle.publish_final(report, citation_map)
             if not isinstance(refs, tuple) or len(refs) != 2:

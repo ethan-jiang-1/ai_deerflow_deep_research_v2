@@ -16,7 +16,9 @@
 
 | Bug | 标题 | 发现 | 状态 |
 |-----|------|------|------|
-**Next available bug ID: BUG-055**
+| [BUG-056](BUG-056-readiness-critic-conformance-pre-existing-failure.md) | readiness critic 零工具一致性测试在 HEAD 上即失败（route=exhausted 而非 pass） | 2026-08-19 | 活跃 |
+| [BUG-057](BUG-057-readiness-critic-cap-fallback-blocked.md) | readiness critic 被 per_call_output_cap 截停后保守回退仍遭 gate blocked（降级通路在 readiness 不彻底） | 2026-08-19 | 活跃 |
+**Next available bug ID: BUG-058**
 
 
 ---
