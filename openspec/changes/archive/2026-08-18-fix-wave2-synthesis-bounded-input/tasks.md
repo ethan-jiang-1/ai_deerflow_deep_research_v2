@@ -29,4 +29,4 @@
       `UV_OFFLINE=1` 会在 lock-check 失败；等价窄口径：
       `UV_NO_CACHE=1 .venv/bin/python -m pytest tests/unit tests/graph tests/contract`）
 - [x] 3.2 `openspec validate fix-wave2-synthesis-bounded-input --strict` 通过
-- [ ] 3.3 更新 BUG-046（修复关联指向本 change）；真实 003 验证 run 待跑
+- [x] 3.3 更新 BUG-046（修复关联指向本 change）；真实 003 验证 run 待跑

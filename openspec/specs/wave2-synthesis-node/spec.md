@@ -6,10 +6,8 @@ Cross-topic synthesis agent with read-only policy, structured findings, and gap 
 
 ## Requirements
 
-
-
-
 ### Requirement: Read-only synthesis agent produces structured findings
+
 The synthesis agent SHALL read accepted evidence and critic verdicts and produce one or more structured findings with priority, affected topics, backing refs, confidence, and `search_required`, plus canonical gaps with priority, affected topics, and an explicit `search_required` value. Whenever accepted evidence is non-empty, a gaps-only result SHALL fail semantic validation and use the existing one-shot zero-tool repair; gaps SHALL NOT substitute for at least one backed finding. The agent SHALL run under zero-tool read-only policy. Prompt instructions and provider-shape normalization SHALL distinguish finding follow-up advice from gap routing authority and SHALL preserve the canonical gap value without inventing it from prose.
 
 Provider-shape normalization SHALL map string priority labels to the typed int 1-5
@@ -23,8 +21,17 @@ with a typed incident; a semantic validation failure (including question coverag
 SHALL carry its concrete validation category (for example
 `synthesis_question_coverage_invalid`) in the incident/diagnostic projection, while
 a pure parser failure SHALL keep the generic `output.structured_invalid` code; it
-SHALL NOT escape as an uncaught exception. The wave2 gate budget SHALL resolve from
-the HITL-owned profile intent fields in graph state: the minimal pair
+SHALL NOT escape as an uncaught exception. **The same bounded-termination promise
+SHALL hold for the pre-model input phase: when the node derives its inputs from
+checkpoint state and the accepted ledger (open-question projection parsing,
+coverage of projected question ids by accepted Wave1 documents, accepted-record
+resolution, or synthesis-evidence reads) and any of those conditions fails, the
+node SHALL terminate through the same `exhausted` blocked route with a typed
+incident carrying the concrete failure category (for example
+`synthesis_question_coverage_invalid`), never escape as an uncaught exception, and
+never crash the graph; non-`ValueError` exceptions and cancellation SHALL NOT be
+swallowed by this guard.** The wave2 gate budget SHALL resolve from the HITL-owned
+profile intent fields in graph state: the minimal pair
 (`cost_tolerance=minimal` and `time_budget=very_quick`) yields two evidence rounds,
 otherwise the default one round stands. (`WSN-001`, `WSN-009`)
 
@@ -66,6 +73,14 @@ otherwise the default one round stands. (`WSN-001`, `WSN-009`)
   semantic category when the failure was semantic (for example
   `synthesis_question_coverage_invalid`) or the generic `output.structured_invalid`
   code when the failure was a parser failure
+
+#### Scenario: Pre-model input inconsistency blocks the node instead of crashing
+- **WHEN** the node's pre-model input derivation fails — projected open-question
+  ids are not covered by the accepted Wave1 documents, an accepted record cannot
+  be resolved or read, or the open-question projection cannot be parsed
+- **THEN** the node routes `exhausted` to the blocked terminal with a typed
+  incident carrying the concrete failure category, publishes no synthesis
+  artifact, and no exception escapes to the graph
 
 #### Scenario: The projected category never becomes lifecycle authority
 - **WHEN** a terminal incident projects a concrete validation category

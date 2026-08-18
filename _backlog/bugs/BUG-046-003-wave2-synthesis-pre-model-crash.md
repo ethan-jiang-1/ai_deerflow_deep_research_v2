@@ -44,9 +44,24 @@ run 能走到 wave2 第二访，此雷才暴露。
 
 ## 修复关联
 
-待定。修复 = model 前阶段整体包 try/except ValueError → typed exhausted
-（`_exhausted_update` + `NodeProblem(code=OUTPUT_STRUCTURED_INVALID,
-validation_category=<具体类别>)`），与 BUG-041 的 journal/demo 渲染衔接；
-run 以 research.blocked + 诊断收尾而非崩溃。需 OpenSpec change
-（`wave2-synthesis-node` 契约：节点任何输入条件失败必须 bounded，不得
-crash 图）。修复后 003 即使 coverage 失败也有诊断可查、可重试。
+✅ 已修复（2026-08-18，代码已落地）：OpenSpec change
+`openspec/changes/fix-wave2-synthesis-bounded-input/`（`wave2-synthesis-node`
+WSN-001 delta，propose → polish → apply）。
+
+修复 = `wave2_synthesis/node.py` 的 model 前输入推导段（topic_registry →
+build_synthesis_prompt）整体包 `try/except ValueError` →
+`_pre_model_problem(error)` → typed exhausted（`_exhausted_update` +
+`NodeProblem(code=OUTPUT_STRUCTURED_INVALID, validation_category=...)`）：
+- `validation_category` 取 raise 点闭式消息串（`synthesis_question_coverage_
+  invalid` 等，pattern 校验通过则直接用；`wave1_*` 首段含数字的加
+  `input.` 前缀使其满足 NodeProblem pattern；其余回退泛化桶）；
+- 不吞 CancelledError/非 ValueError；模型调用路径逻辑不变；
+- run 以 `research.blocked`（带具体类别诊断）收尾，不再
+  `bundle.unavailable` 静默死亡。
+
+验证：`tests/graph/test_wave2_synthesis_real.py` 新增 2 用例（uncovered
+question id → exhausted + `synthesis_question_coverage_invalid`；非法投影 →
+`input.wave1_open_question_projection_invalid`）+ 更新既有
+`test_real_synthesis_fails_closed_when_projected_text_is_unresolvable`（旧断言
+即崩溃行为）；全量 `make verify` 通过、ruff 干净、`openspec validate
+--strict` 通过。真实 003 验证 run 待跑（三个修复齐后验证）。
