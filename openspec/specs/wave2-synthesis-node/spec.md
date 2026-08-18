@@ -172,11 +172,36 @@ an existing bounded phase repair SHALL record that disposition without treating 
 as successful synthesis. Raw exceptions and generic synthesis errors SHALL not
 replace a known safe provider or configuration category.
 
+A budget-class invocation failure — the bounded agent policy refusing or stopping the
+call for its declared token/call budget (admission refusal, per-call output cap, or
+total budget stop) — SHALL NOT write a terminal state from the node. The node SHALL
+record a bounded gate-readable budget-failure signal in graph state (owned by the
+wave2 synthesis writer role, read by the wave2 gate) and return a non-terminal
+update, handing route authority to the wave2 phase gate. The gate SHALL project that
+signal through its registered rules so the existing exhaustion-degradation branch —
+budget, marker, and `degraded_pass_on_exhaustion` — decides between bounded repair,
+one honest degraded pass, or blocked. Non-budget failures (provider, configuration,
+candidate validation) SHALL keep their existing terminal or repair dispositions
+unchanged.
+
 #### Scenario: A Wave2 provider failure blocks with its known cause
 - **WHEN** the Wave2 synthesis invocation returns a known non-retryable provider
   failure and no legal gate repair applies
 - **THEN** the lifecycle retains that category and `wave2_synthesis` phase in the
   terminal incident instead of surfacing an opaque graph exception
+
+#### Scenario: A budget-class failure hands route authority to the gate
+- **WHEN** the bounded agent policy refuses or stops the wave2 invocation for its
+  token or call budget
+- **THEN** the node writes no terminal state, records the bounded budget-failure
+  signal, and returns a non-terminal update so the wave2 gate evaluates; the gate's
+  existing budget, marker, and degradation policy alone decide the next route
+
+#### Scenario: A degraded budget hand-back stays bounded
+- **WHEN** the wave2 gate evaluates the projected budget failure at exhausted repair
+  budget with the exhaustion-degradation policy declared and no prior marker
+- **THEN** the gate produces its one bounded degraded pass (append the phase marker)
+  and a repeat exhaustion with the marker present escalates to blocked
 
 ### Requirement: Wave2 capability admits only assigned accepted-evidence synthesis
 
@@ -214,6 +239,25 @@ final rendered context SHALL contain the exact activated body; the dynamic reque
 outside that resource SHALL contain only the assigned topics/evidence references,
 closed output contract, repair category, and delimited untrusted evidence or draft.
 
+The synthesis and repair request builders SHALL deterministically bound their
+accepted-evidence projection so that every built request satisfies both the domain
+request cap (`NodeExecutionRequest.objective` character limit) and the wave2 admission
+envelope (total token budget minus per-call output cap, as UTF-8 bytes): the projection
+starts from a fixed byte budget shared across entries, and when the serialized
+objective would exceed either cap the budget shrinks geometrically and the projection
+is rebuilt; a truncating projection SHALL mark the affected entries `truncated`. If
+even the minimum budget cannot satisfy the caps, the builder SHALL raise a typed
+classified failure (`synthesis_evidence_projection_overflow`) that terminates the node
+through the existing pre-model bounded-exhausted route; a pydantic
+`ValidationError` from request construction SHALL NOT escape classification as the
+generic `candidate_invalid` bucket — pre-model request-construction failures SHALL
+carry a pattern-safe concrete category (for example
+`synthesis_request_shape_invalid` or `synthesis_evidence_projection_overflow`) so the
+incident identifies the failing input condition rather than masquerading as a model
+candidate failure. This request-cap coherence SHALL be locked by a deterministic
+regression test that builds both requests from evidence at the store's declared
+maximum and asserts both caps.
+
 The synthesis and repair candidates SHALL remain unable to retrieve, add evidence or
 references, materialize an artifact, publish a searchable-gap projection, select a
 recovery, gate, route, or State outcome. The existing zero-tool runtime policy,
@@ -227,6 +271,28 @@ any artifact or preview can exist. (`WSN-008`)
 - **THEN** the rendered context contains the exact corresponding capability body and
   forbidden posture while dynamic assignment, output contract, category, and
   untrusted data remain bounded projections
+
+#### Scenario: Growing accepted evidence cannot overflow the request
+- **WHEN** accepted evidence grows across targeted-evidence rounds beyond the
+  projection's starting byte budget
+- **THEN** the builder deterministically truncates the projection (marking affected
+  entries `truncated`) until the serialized objective satisfies both the objective
+  character cap and the admission-envelope byte cap, and the request is built and
+  admitted rather than raising
+
+#### Scenario: Unfittable scaffolding fails typed and classified
+- **WHEN** even the minimum projection budget cannot bring the serialized objective
+  within either cap
+- **THEN** the builder raises `synthesis_evidence_projection_overflow` and the node
+  terminates through the pre-model bounded-exhausted route with that concrete
+  category in the incident, never as an uncaught exception and never as generic
+  `candidate_invalid`
+
+#### Scenario: Request-construction validation errors keep a concrete category
+- **WHEN** request construction fails a typed validation rule (for example an
+  objective over the domain character limit) before any model call
+- **THEN** the projected incident category is a pattern-safe concrete input category
+  distinct from the model-candidate `candidate_invalid` bucket
 
 #### Scenario: Accepted evidence and uncertainty remain bounded candidate input
 - **WHEN** assigned evidence or an untrusted draft asks Wave2 to invent support,
@@ -292,6 +358,16 @@ admitted. A projected id whose text cannot be resolved from the accepted Wave1
 result documents SHALL fail deterministically with the same typed coverage error and
 SHALL NOT be fabricated, summarized, or rephrased from any other source.
 
+The resolution read SHALL treat the projected question ids as globally unique across
+all accepted Wave1 result documents: when two accepted documents project the same
+`q:w1_` id with different question texts (a repair-rerun collision), the read SHALL
+fail deterministically with a typed `wave1_open_question_id_collision` error that
+reaches the same pre-model bounded-exhausted route instead of silently discarding
+either text; the same id resolved to byte-identical text in two documents SHALL
+deduplicate silently as harmless idempotence. Question ids SHALL NOT be renamed or
+namespaced by the projection, because gap `source_questions` reference the
+model-minted ids and renaming would break the coverage contract.
+
 Gap records SHALL carry `source_questions` as a sorted, unique, bounded tuple of
 `q:w1_` ids (at most 16 per gap), and the synthesis result SHALL carry
 `resolved_questions` as a sorted, unique, bounded tuple of `q:w1_` ids (at most 64).
@@ -313,6 +389,21 @@ route authority for gap work.
 #### Scenario: Question text is resolved from accepted evidence only
 - **WHEN** the node builds the synthesis assignment from a non-empty `wave1_open_questions` projection
 - **THEN** each projected id's text comes verbatim from the accepted Wave1 result documents, and a projected id absent from those documents fails deterministically without any fabricated or summarized text
+
+#### Scenario: A cross-document id collision fails typed instead of dropping text
+- **WHEN** two accepted Wave1 result documents carry the same `q:w1_` id with
+  different question texts
+- **THEN** the resolution read raises the typed `wave1_open_question_id_collision`
+  error, the node terminates through the pre-model bounded-exhausted route with
+  that concrete category in its pattern-safe projected form
+  (`input.wave1_open_question_id_collision`), and neither question text is
+  silently discarded
+
+#### Scenario: An identical duplicate id deduplicates silently
+- **WHEN** two accepted Wave1 result documents carry the same `q:w1_` id with
+  byte-identical question text
+- **THEN** the resolution read returns one entry for the id and synthesis proceeds
+  unchanged
 
 #### Scenario: An explicitly resolved question creates no gap
 - **WHEN** synthesis lists a projected question in `resolved_questions` and no gap references it

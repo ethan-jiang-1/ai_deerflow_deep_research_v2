@@ -6,7 +6,9 @@
 
 Provide deterministic gate definitions, verdicts, bounded repair, and route
 projection for Deep Research phases.
+
 ## Requirements
+
 ### Requirement: Gate definitions collect all rules and produce deterministic verdicts
 
 The system SHALL define `GateDefinition` as a named collection of `GateRule`
@@ -31,6 +33,15 @@ PASS/BLOCKED, `None` on REPAIR), the failure fingerprint tuple, and a
 `route_map: dict[PhaseVerdict, str]` (or a `route_resolver` callable for phases
 with multiple repair targets) and a `default_budget: int` for lazy budget
 initialization.
+
+A phase node SHALL be permitted to hand a budget-class execution failure to its gate
+instead of writing a terminal state: the node records a bounded state signal owned
+by that node's writer role, returns a non-terminal update, and a registered gate
+rule projects the signal as a `Failure` (classification `repairable` unless the
+phase's degradation policy says otherwise). Such a projected failure SHALL enter the
+existing verdict, budget, fatigue, and exhaustion-degradation machinery unchanged —
+no new verdict, route, or degradation path is added by this hand-back, and the
+gate's `degraded_decisions` marker remains the sole bound on degradation.
 
 The evaluate function SHALL run every registered rule, collect all failures in
 registration order, and derive the verdict as: `blocked` if any hard failure exists
@@ -69,6 +80,13 @@ fresh research round can degrade at most once again.
 #### Scenario: Hard failure produces blocked verdict regardless of budget
 - **WHEN** one rule returns a hard `Failure` even when budget remains
 - **THEN** `GateResult.verdict` is `PhaseVerdict.BLOCKED`, no repair is attempted, and `advice` states the hard failure cannot be repaired
+
+#### Scenario: A projected node budget failure rides the existing machinery
+- **WHEN** a phase node hands back a budget-class failure signal and the phase gate
+  projects it as a repairable rule failure
+- **THEN** the verdict, budget decrement, fatigue fingerprint, and any
+  exhaustion-degradation follow the existing kernel branches with no new route or
+  verdict kind, and only the gate may append the degradation marker
 
 #### Scenario: Budget exhaustion with repairable failures escalates to blocked
 - **WHEN** repairable failures exist but `remaining_budget` is 0

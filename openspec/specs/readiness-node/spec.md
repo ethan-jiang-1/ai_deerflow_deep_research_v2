@@ -77,7 +77,9 @@ readiness SHALL remain fixture-controlled. (`REA-002`)
 
 ### Requirement: Report plan materializer produces immutable projection
 
-A deterministic materializer SHALL produce a `ReadinessReportPlan` from the critic's verdicts and hard-rule results. The plan SHALL contain writable conclusions (from `ready_substantive`), mandatory uncertainties (from `ready_insufficient_judgment`), and prohibited upgrades. It SHALL additionally append one mandatory uncertainty for every gate-recorded unresolved searchable gap: the gap id set comes from the checkpointed `unresolved_gaps` control field, and each gap's description is read from the bundle store's canonical `synthesis/findings.json` artifact through a bounded contained read; a recorded id whose gap body is absent from the artifact SHALL still produce an uncertainty naming the gap id without fabricating a description, and no gap body SHALL enter checkpoint state. The readiness controller SHALL serialize the admitted plan to the canonical `readiness_report_plan` artifact before checkpointing its `ContentRef`; the reference SHALL name the contained path and exact content hash of those immutable bytes. A later reader may consume only a contained, hash-matched plan and no rejected critic output becomes part of it.
+A deterministic materializer SHALL produce a `ReadinessReportPlan` from the critic's verdicts, the canonical synthesis artifact's admitted findings, and hard-rule results. The plan SHALL contain writable conclusions (from `ready_substantive`), mandatory uncertainties (from `ready_insufficient_judgment`), and prohibited upgrades. It SHALL additionally append one mandatory uncertainty for every gate-recorded unresolved searchable gap: the gap id set comes from the checkpointed `unresolved_gaps` control field, and each gap's description is read from the bundle store's canonical `synthesis/findings.json` artifact through a bounded contained read; a recorded id whose gap body is absent from the artifact SHALL still produce an uncertainty naming the gap id without fabricating a description, and no gap body SHALL enter checkpoint state.
+
+Writable conclusions SHALL have a deterministic second source that the critic cannot veto away: every admitted synthesis finding with `confidence=high`, a non-empty `backing_refs` tuple fully contained in the accepted submission-reference ledger, and `search_required=false` SHALL become one writable conclusion whose `conclusion_text` is the finding's verbatim `statement` and whose `backing_claim_ids` are the finding's `backing_refs` (bounded to the plan contract's cardinality). The finding projection is read from the same canonical synthesis artifact through a bounded contained read and no finding body enters checkpoint state. Critic verdicts that are not `ready_substantive` SHALL contribute only mandatory uncertainties and the existing repair-route counting; they SHALL NOT remove, demote, or block finding-derived conclusions — a partially answered research question SHALL be delivered as finding-derived conclusions alongside disclosed uncertainties rather than zero delivery. The readiness controller SHALL serialize the admitted plan to the canonical `readiness_report_plan` artifact before checkpointing its `ContentRef`; the reference SHALL name the contained path and exact content hash of those immutable bytes. A later reader may consume only a contained, hash-matched plan and no rejected critic output becomes part of it.
 
 #### Scenario: ready_substantive verdicts become writable conclusions
 - **WHEN** the critic produces `ready_substantive` for Q1 and Q3
@@ -90,6 +92,19 @@ A deterministic materializer SHALL produce a `ReadinessReportPlan` from the crit
 #### Scenario: blocked_repair_required verdicts produce neither conclusions nor uncertainties
 - **WHEN** the critic produces `blocked_repair_required` for Q4
 - **THEN** Q4 is absent from both conclusions and uncertainties; `readiness_blocked_count` is incremented
+
+#### Scenario: High-confidence findings become conclusions despite an insufficient critic verdict
+- **WHEN** the canonical synthesis artifact carries a `confidence=high` finding with
+  non-empty backing refs contained in the accepted ledger and `search_required=false`,
+  and the critic judges the corresponding question not substantive
+- **THEN** the plan still carries that finding's statement as a writable conclusion
+  with its backing refs, and the critic's judgment appears as a disclosed mandatory
+  uncertainty — the run delivers partial conclusions instead of zero
+
+#### Scenario: Findings without complete backing stay out of conclusions
+- **WHEN** a finding lacks backing refs, cites a reference outside the accepted
+  ledger, is not high-confidence, or asks for more search
+- **THEN** it produces no writable conclusion from the finding-derived source
 
 #### Scenario: Unresolved searchable gaps become disclosed uncertainties
 - **WHEN** readiness runs with `unresolved_gaps` naming gap `g:x` whose
@@ -183,6 +198,14 @@ out-of-scope, incomplete, or failed execution output SHALL be deterministically
 projected to conservative `blocked_repair_required` verdicts for the affected supplied
 questions; it SHALL NOT silently use the all-ready fallback. (`REA-006`)
 
+Whenever the conservative projection substitutes for a critic result — execution
+failure or an inadmissible candidate — the node SHALL emit one node-level
+`readiness_critic_fallback` observation carrying a closed reason
+(`execution_failed` or `candidate_invalid`). The event SHALL be absent when the
+critic candidate is admitted, SHALL NOT carry the rejected raw output, prompt text,
+or provider payload, and SHALL NOT alter the existing conservative projection,
+route calculation, or repair counting.
+
 The checkpointed critic summary SHALL contain only the admitted, bounded typed
 per-question projection consumed by the materializer. Raw provider output, prompt
 text, sandbox paths, rejected candidate content, and unused critic-only fields SHALL
@@ -202,9 +225,23 @@ bridge success output.
 - **THEN** no question is projected as `ready_substantive` solely from that failure
   and the existing repair path is the only legal next action
 
+#### Scenario: A fallback is visible as a first-class event
+- **WHEN** the conservative projection substitutes for the critic result because the
+  invocation failed or the candidate was inadmissible
+- **THEN** one `readiness_critic_fallback` node event with the closed reason is
+  recorded in the run journal, without raw output or prompt text, and the projection
+  and route are unchanged
+
 #### Scenario: Tool posture is enforced
 - **WHEN** the readiness critic request and effective runtime policy are inspected
 - **THEN** they permit no web, sandbox, or other tool calls and no writable root
+
+#### Scenario: Builder-maximal evidence stays admissible
+- **WHEN** the critic request is built with evidence filling the builder's full
+  evidence-projection budget and the assembled node policy is inspected
+- **THEN** the projected request bytes plus the trusted system prompt plus the
+  per-call output cap do not exceed the policy's total token budget, so the call
+  reaches the provider instead of being refused by admission control
 
 #### Scenario: Rejected output is not retained as checkpoint authority
 - **WHEN** critic output fails admission

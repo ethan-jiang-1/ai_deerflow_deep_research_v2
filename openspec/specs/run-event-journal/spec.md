@@ -249,6 +249,27 @@ deadline retains its current `provider.timeout` failure category with
 `bridge_wall_time`. The bridge's existing normalized timeout origin remains unchanged
 outside this Journal field.
 
+A budget-stop event SHALL additionally retain the closed arithmetic operands the
+middleware already computed when they exist and are relevant to the stop reason:
+a `token_admission` stop carries the projected request byte count, the total token
+budget, and the per-call output token cap that failed the admission inequality; a
+`per_call_output_cap` stop carries the observed output token count and the cap; a
+`total_token_budget` stop carries the cumulative token use and the budget. Operand
+fields SHALL be absent when their stop reason does not define them, SHALL be plain
+non-negative integers, and SHALL NOT carry request content, prompt text, or any raw
+exception detail.
+
+Every bridge-emitted `model_tool` event SHALL carry a per-attempt call ordinal: a
+monotonically increasing integer, starting at 1 within one node-agent attempt, pairing
+each `started`/`completed` (or failure) outcome with its request. Work-unit critic
+boundary facts that already correlate through their closed `work_id` and `critic_kind`
+carry no ordinal. A `completed` invocation
+whose provider usage is available SHALL retain the usage token counts
+(`input_tokens`, `output_tokens`, `total_tokens`) as plain non-negative integers;
+usage SHALL be absent when the provider did not report it, and its absence SHALL NOT
+be treated as a failure. These observational fields SHALL NOT change invocation
+outcomes, failure categories, budget decisions, routing, or terminal classification.
+
 When topic planning, Wave0, or Wave1 reaches its existing parser, local semantic, or
 deterministic materialization boundary, the Journal SHALL retain one `initial` or
 `repair` validation fact with an empty canonical-code collection on success or the
@@ -268,6 +289,23 @@ terminal classification, checkpoint state, or legal lifecycle action. (`REJ-007`
 - **THEN** its Journal invocation event retains the unchanged safe failure category and
   exactly one allowed budget-stop reason, without the middleware detail or provider
   payload
+
+#### Scenario: An admission stop carries its arithmetic operands
+- **WHEN** a `token_admission` stop is recorded
+- **THEN** the event retains the projected request bytes, total token budget, and
+  per-call output cap whose inequality failed, as plain integers, and no request
+  content or prompt text
+
+#### Scenario: Ordinals pair starts with completions within one attempt
+- **WHEN** one node attempt performs multiple model invocations
+- **THEN** each `model_tool` event carries the attempt-scoped call ordinal, the n-th
+  invocation's started and completed events share ordinal n, and ordinals restart per
+  attempt
+
+#### Scenario: Usage tokens ride the completed event when available
+- **WHEN** a completed invocation's provider usage is available
+- **THEN** the completed event retains the input/output/total token counts; when the
+  provider reports no usage the fields are absent and the outcome stays `completed`
 
 #### Scenario: Initial and repair validation facts remain distinct
 - **WHEN** a topic-planning, Wave0, or Wave1 candidate fails initial validation and its
@@ -313,3 +351,23 @@ observation with no admission, retry, gate, route, terminal, or lifecycle author
 #### Scenario: Legacy records without the critic kind remain readable
 - **WHEN** a Journal retains v3 events written before this change or v1/v2 records
 - **THEN** inspection reads them with `critic_kind` absent and performs no migration or rewrite
+
+### Requirement: Run summary retains per-phase policy envelope snapshots
+
+The Journal's run-summary artifact SHALL carry, for every real model-bearing phase
+that executed in the run, one closed policy-envelope snapshot: the policy name,
+total token budget, per-call output token cap, and declared maximum model calls.
+Snapshots SHALL reflect the envelopes actually assembled for the run, SHALL be absent
+for phases that did not execute, SHALL contain no prompt text, capability bodies, or
+provider credentials, and SHALL NOT be readable as admission, routing, or lifecycle
+authority by any component. (`REJ-009`)
+
+#### Scenario: Envelopes answer "what budget did this run give each phase"
+- **WHEN** an operator inspects a completed run's summary after a budget-stop incident
+- **THEN** each executed phase's total token budget and output cap are present in the
+  summary without reading source code or replaying assembly
+
+#### Scenario: Absent phases stay absent
+- **WHEN** a phase did not execute in the run
+- **THEN** its envelope snapshot is absent from the summary rather than projected from
+  defaults
