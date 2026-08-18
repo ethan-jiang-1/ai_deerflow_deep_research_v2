@@ -21,7 +21,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from deerflow_deep_research.domain.identifiers import BUNDLE_ID_PATTERN as _BUNDLE_ID_PATTERN
 from deerflow_deep_research.domain.identifiers import LOGICAL_PHASE_NAMES
@@ -50,6 +50,39 @@ class ExecutionProfileEvidence(FrozenRunObservationContract):
 
     profile_id: str = Field(min_length=1, max_length=64, pattern=r"^[a-z][a-z0-9-]*$")
     registry_revision: str = Field(min_length=2, max_length=16, pattern=r"^v[1-9][0-9]*$")
+
+
+class UsageTokensEvidence(FrozenRunObservationContract):
+    """Provider usage counts of one completed model invocation (BUG-048 item 4).
+
+    Closed non-negative integers only; absence on an event means the provider
+    reported no usage and is never itself a failure.
+    """
+
+    input_tokens: int = Field(ge=0)
+    output_tokens: int = Field(ge=0)
+    total_tokens: int = Field(ge=0)
+
+    @model_validator(mode="after")
+    def validate_totals(self) -> UsageTokensEvidence:
+        if self.total_tokens != self.input_tokens + self.output_tokens:
+            raise ValueError("usage_tokens_total_inconsistent")
+        return self
+
+
+class PolicyEnvelopeEvidence(FrozenRunObservationContract):
+    """One phase's assembled execution-policy envelope (BUG-048 item 2).
+
+    Read-only run summary provenance: it answers "what budget did this run give
+    this phase" without source reading. It carries no prompt text, capability
+    bodies, or credentials, and is never admission or routing authority.
+    """
+
+    phase: str = Field(min_length=1, max_length=32, pattern=r"^[a-z][a-z0-9_]*$")
+    policy_name: str = Field(min_length=1, max_length=64, pattern=r"^[a-z][a-z0-9-]*$")
+    total_token_budget: int = Field(ge=1)
+    per_call_output_token_cap: int = Field(ge=1)
+    max_model_calls: int = Field(ge=1)
 
 
 class ObservationInspectability(StrEnum):
@@ -209,6 +242,21 @@ class RunEvent(FrozenRunObservationContract):
     recovery_event_disposition: Literal["scheduled", "exhausted"] | None = None
     execution_profile: ExecutionProfileEvidence | None = None
     budget_stop_reason: BudgetStopReason | None = None
+    call_ordinal: int | None = Field(default=None, ge=1, le=64)
+    usage_tokens: UsageTokensEvidence | None = None
+    budget_operands: dict[str, int] | None = Field(default=None)
+
+    @field_validator("budget_operands")
+    @classmethod
+    def validate_budget_operands(cls, operands: dict[str, int] | None) -> dict[str, int] | None:
+        if operands is None:
+            return None
+        if not operands or len(operands) > 4:
+            raise ValueError("journal_budget_operands_invalid")
+        for key, value in operands.items():
+            if not re.fullmatch(r"[a-z][a-z0-9_]{0,31}", key) or value < 0:
+                raise ValueError("journal_budget_operands_invalid")
+        return dict(operands)
 
     @model_validator(mode="after")
     def validate_recovery_event(self) -> RunEvent:
@@ -257,6 +305,12 @@ class RunEvent(FrozenRunObservationContract):
                     raise ValueError("journal_budget_stop_reason_failure_mismatch")
             elif self.failure_category != "budget.exhausted":
                 raise ValueError("journal_budget_stop_reason_failure_mismatch")
+        if self.usage_tokens is not None and (
+            self.category is not RunEventCategory.MODEL_TOOL or self.outcome != "completed"
+        ):
+            raise ValueError("journal_usage_tokens_unexpected")
+        if self.budget_operands is not None and self.budget_stop_reason is None:
+            raise ValueError("journal_budget_operands_unexpected")
         recovery_control_fields_present = any(
             value is not None
             for value in (
@@ -346,6 +400,14 @@ class RunSummary(FrozenRunObservationContract):
     last_dropped_sequence: int | None = Field(default=None, ge=1, le=MAX_LIFECYCLE_SEQUENCE)
     retained_recovery_summary: RetainedRecoverySummary | None = None
     execution_profile: ExecutionProfileEvidence | None = None
+    policy_envelopes: tuple[PolicyEnvelopeEvidence, ...] = Field(default=(), max_length=32)
+
+    @model_validator(mode="after")
+    def validate_policy_envelopes(self) -> RunSummary:
+        phases = [envelope.phase for envelope in self.policy_envelopes]
+        if len(set(phases)) != len(phases):
+            raise ValueError("run_summary_policy_envelope_phases_duplicate")
+        return self
 
     @model_validator(mode="after")
     def validate_journal_loss(self) -> RunSummary:

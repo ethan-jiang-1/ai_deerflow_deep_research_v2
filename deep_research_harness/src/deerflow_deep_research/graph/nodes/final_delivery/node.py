@@ -14,7 +14,11 @@ from typing import Any
 
 from deerflow_deep_research.domain.failure_codes import FailureCode
 from deerflow_deep_research.domain.node_spec import NodeBuildDependencies
-from deerflow_deep_research.domain.publication import FINAL_DELIVERY_GATE_VIEW_KEY, FinalDeliveryGateView
+from deerflow_deep_research.domain.publication import (
+    FINAL_DELIVERY_GATE_VIEW_KEY,
+    FinalDeliveryGateView,
+    FinalDeliveryLayoutCandidate,
+)
 from deerflow_deep_research.domain.readiness import ReadinessReportPlan
 from deerflow_deep_research.domain.state import node_state_update
 from deerflow_deep_research.domain.workflow_outcomes import InvocationFailure, invoke_and_normalize
@@ -80,14 +84,27 @@ def build_real(dependencies: NodeBuildDependencies):
             }
         try:
             evidence = await dependencies.final_delivery_bundle.read_synthesis_evidence(accepted_refs)
-            request = build_final_delivery_request(plan, evidence)
-            outcome = await invoke_and_normalize(
-                lambda: dependencies.capabilities.run_agent(context=dependencies.agent_context, request=request),
-                phase="final_delivery",
-            )
-            if isinstance(outcome, InvocationFailure):
-                raise ValueError("final_composer_execution_failed")
-            layout = admit_layout_candidate(parse_layout_candidate(outcome.result.summary), plan)
+            if len(plan.writable_conclusions) <= 1 and len(plan.mandatory_uncertainties) <= 1:
+                # Degenerate plan (BUG-053): the complete legal layout is the
+                # mathematically unique single order, so the node constructs it
+                # deterministically and never asks a model to echo synthetic
+                # entry ids. Admission, rendering, and publication stay shared.
+                layout = FinalDeliveryLayoutCandidate(
+                    schema_version=1,
+                    conclusion_order=tuple(f"conclusion:{i}" for i in range(len(plan.writable_conclusions))),
+                    uncertainty_order=tuple(f"uncertainty:{i}" for i in range(len(plan.mandatory_uncertainties))),
+                )
+            else:
+                request = build_final_delivery_request(plan, evidence)
+                outcome = await invoke_and_normalize(
+                    lambda: dependencies.capabilities.run_agent(
+                        context=dependencies.agent_context, request=request
+                    ),
+                    phase="final_delivery",
+                )
+                if isinstance(outcome, InvocationFailure):
+                    raise ValueError("final_composer_execution_failed")
+                layout = admit_layout_candidate(parse_layout_candidate(outcome.result.summary), plan)
             report, citation_map = render_final_artifacts(plan, layout)
             refs = await dependencies.publication_bundle.publish_final(report, citation_map)
             if not isinstance(refs, tuple) or len(refs) != 2:

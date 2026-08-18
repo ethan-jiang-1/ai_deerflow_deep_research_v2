@@ -53,6 +53,7 @@ from deerflow_deep_research.runtime.research import (
     _build_wave0_capabilities,
     _build_wave1_capabilities,
     _build_wave2_synthesis_capabilities,
+    policy_envelope_table,
 )
 from deerflow_deep_research.runtime.run_observation import RunObservationRecorder, RunObservationStore
 from deerflow_deep_research.runtime.runtime_adapter import TrustedRuntimeEnvelope
@@ -917,10 +918,26 @@ class BundleGraphExecutor:
 
         if not isinstance(envelope, TrustedRuntimeEnvelope):
             return envelope
+        # BUG-048 item 2: bind the assembled per-phase envelope table (same
+        # graph-context projection the capability builders use) so the run
+        # summary can carry each executed phase's policy envelope.
+        root = run_bundle_root(bundle)
+        envelope = replace(
+            envelope,
+            policy_envelopes=policy_envelope_table(
+                GraphContextView(
+                    research_scope_id=bundle.bundle_id.value,
+                    workspace_root=f"/mnt/user-data/{root}",
+                    uploads_root="/mnt/user-data/uploads",
+                    outputs_root=f"/mnt/user-data/outputs/{root}",
+                )
+            ),
+        )
         recorder = RunObservationRecorder(
             store=RunObservationStore(
                 bundle_root=lifecycle.private_root(bundle),
                 bundle_id=bundle.bundle_id.value,
+                policy_envelopes=getattr(envelope, "policy_envelopes", ()) or (),
             ),
             bundle_id=bundle.bundle_id.value,
             execution_profile=envelope.execution_profile,

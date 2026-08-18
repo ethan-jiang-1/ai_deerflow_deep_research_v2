@@ -14,6 +14,7 @@ import base64
 import hashlib
 import json
 import time
+from dataclasses import replace
 from datetime import UTC, datetime
 from types import SimpleNamespace
 
@@ -25,7 +26,7 @@ from deerflow_deep_research.domain.enums import NodeFinishReason
 from deerflow_deep_research.domain.lifecycle import LifecycleStatus
 from deerflow_deep_research.domain.node_spec import NodeBuildDependencies
 from deerflow_deep_research.domain.state import BundleLocalState, ContentRef
-from deerflow_deep_research.domain.synthesis import GapRecord, SynthesisEvidence
+from deerflow_deep_research.domain.synthesis import GapRecord, SynthesisEvidence, SynthesisFinding
 from deerflow_deep_research.domain.work_units import canonical_json_bytes
 from deerflow_deep_research.graph.nodes.readiness.contracts import ReadinessReportPlan
 from deerflow_deep_research.graph.nodes.readiness.critic import (
@@ -59,6 +60,11 @@ class ScriptedStore:
         if self.fail:
             raise ValueError("synthesis artifact unavailable")
         return self.gaps
+
+    async def read_synthesis_findings(self) -> tuple[SynthesisFinding, ...]:
+        if self.fail:
+            raise ValueError("synthesis artifact unavailable")
+        return ()
 
     async def read_synthesis_evidence(self, accepted_refs: tuple[str, ...]) -> tuple[SynthesisEvidence, ...]:
         self.calls.append(accepted_refs)
@@ -299,6 +305,7 @@ class TestRealReadiness:
         assert result["terminal_status"] == LifecycleStatus.BLOCKED.value
         assert result["readiness_hard_failures"] == (
             {"code": "synthesis_evidence_unavailable", "detail": "", "refs": ()},
+            {"code": "synthesis_findings_unavailable", "detail": "", "refs": ()},
         )
         assert capabilities.requests == []
 
@@ -381,6 +388,7 @@ class TestWave2DegradedRoute:
         assert result["terminal_status"] == LifecycleStatus.BLOCKED.value
         assert result["readiness_hard_failures"] == (
             {"code": "synthesis_evidence_unavailable", "detail": "", "refs": ()},
+            {"code": "synthesis_findings_unavailable", "detail": "", "refs": ()},
         )
 
     def test_ready_verdicts_in_degraded_run_still_route_pass(self) -> None:
@@ -442,3 +450,50 @@ class TestHonestGapDisclosure:
 
         uncertainties = store.written_plans[0].mandatory_uncertainties
         assert uncertainties == ()
+
+
+class _RecordingEventRecorder:
+    def __init__(self) -> None:
+        self.events: list[dict[str, object]] = []
+
+    async def record(self, **event: object) -> None:
+        self.events.append(dict(event))
+
+
+def test_critic_fallback_is_a_first_class_event_with_closed_reasons() -> None:
+    """@bug BUG-048 item 3: execution and candidate failures each emit once."""
+
+    from deerflow_deep_research.domain.run_observation import RunEventCategory
+
+    # Execution failure -> execution_failed.
+    deps, _caps, _store = _deps(raises=True)
+    recorder = _RecordingEventRecorder()
+    deps = replace(deps, event_recorder=recorder)
+    result = asyncio.run(build_real(deps)(_state()))
+    assert [e["failure_category"] for e in recorder.events] == ["readiness_critic_fallback.execution_failed"]
+    assert all(e["category"] is RunEventCategory.NODE for e in recorder.events)
+    assert result.get("route") is not None  # projection and route unchanged
+
+    # Inadmissible candidate -> candidate_invalid.
+    deps2, _caps2, _store2 = _deps(response="not-json")
+    recorder2 = _RecordingEventRecorder()
+    deps2 = replace(deps2, event_recorder=recorder2)
+    asyncio.run(build_real(deps2)(_state()))
+    assert [e["failure_category"] for e in recorder2.events] == ["readiness_critic_fallback.candidate_invalid"]
+
+    # Admitted candidate -> no fallback event at all.
+    deps3, _caps3, _store3 = _deps(response=_candidate(("Q1",), LEDGER_HASH))
+    recorder3 = _RecordingEventRecorder()
+    deps3 = replace(deps3, event_recorder=recorder3)
+    asyncio.run(build_real(deps3)(_state()))
+    assert recorder3.events == []
+
+    # A failing recorder cannot change the projection.
+    class FailingRecorder:
+        async def record(self, **_event: object) -> None:
+            raise RuntimeError("journal unavailable")
+
+    deps4, _caps4, _store4 = _deps(raises=True)
+    deps4 = replace(deps4, event_recorder=FailingRecorder())
+    result4 = asyncio.run(build_real(deps4)(_state()))
+    assert result4.get("route") is not None

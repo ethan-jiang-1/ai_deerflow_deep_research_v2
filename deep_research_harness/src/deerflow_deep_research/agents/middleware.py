@@ -39,16 +39,25 @@ class NodeAgentStop(RuntimeError):
 
 
 class AgentBudgetError(NodeAgentStop):
-    """Raised to stop the agent with a typed budget/usage finish reason."""
+    """Raised to stop the agent with a typed budget/usage finish reason.
+
+    ``operands`` retains the closed arithmetic the middleware already computed
+    for the failing inequality (BUG-048 item 1): plain non-negative integers
+    keyed by a closed vocabulary, so the journal can attribute a refusal
+    without recomputing request bytes offline. Absent when the stop reason
+    defines no operands.
+    """
 
     def __init__(
         self,
         finish_reason: NodeFinishReason,
         detail: str,
         budget_stop_reason: BudgetStopReason | None = None,
+        operands: dict[str, int] | None = None,
     ) -> None:
         super().__init__(finish_reason, detail)
         self.budget_stop_reason = budget_stop_reason
+        self.operands: dict[str, int] = dict(operands) if operands else {}
 
 
 class AgentPolicyError(NodeAgentStop):
@@ -120,6 +129,11 @@ class BudgetMiddleware(AgentMiddleware):
                 NodeFinishReason.BUDGET_EXHAUSTED,
                 "token admission upper bound exceeds budget",
                 BudgetStopReason.TOKEN_ADMISSION,
+                operands={
+                    "projected_request_bytes": projected,
+                    "total_token_budget": budget.total_token_budget,
+                    "per_call_output_token_cap": budget.per_call_output_token_cap,
+                },
             )
 
         response = await handler(request)
@@ -134,6 +148,10 @@ class BudgetMiddleware(AgentMiddleware):
                 NodeFinishReason.BUDGET_EXHAUSTED,
                 "per-call output token cap exceeded",
                 BudgetStopReason.PER_CALL_OUTPUT_CAP,
+                operands={
+                    "observed_output_tokens": int(usage["output_tokens"]),
+                    "per_call_output_token_cap": budget.per_call_output_token_cap,
+                },
             )
 
         self.tokens_used += int(usage["total_tokens"])
@@ -142,6 +160,10 @@ class BudgetMiddleware(AgentMiddleware):
                 NodeFinishReason.BUDGET_EXHAUSTED,
                 "total token budget exhausted",
                 BudgetStopReason.TOTAL_TOKEN_BUDGET,
+                operands={
+                    "cumulative_tokens": self.tokens_used,
+                    "total_token_budget": budget.total_token_budget,
+                },
             )
         self.model_calls += 1
 

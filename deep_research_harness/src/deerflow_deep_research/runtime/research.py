@@ -23,6 +23,7 @@ from deerflow_deep_research.agents.policies import (
 from deerflow_deep_research.domain.gate import GateDefinition
 from deerflow_deep_research.domain.lifecycle import ImplementationMode
 from deerflow_deep_research.domain.node_spec import NodeBuildDependencies, PolicyRef
+from deerflow_deep_research.domain.run_observation import PolicyEnvelopeEvidence
 from deerflow_deep_research.domain.state import RESEARCH_STATE_SCHEMA_VERSION
 from deerflow_deep_research.graph.builder import all_real_gate_definitions, build_research_graph
 from deerflow_deep_research.graph.implementation_map import (
@@ -296,7 +297,13 @@ def _build_topic_planning_capabilities(envelope: TrustedRuntimeEnvelope, graph_c
 
 
 def _readiness_node_agent_policy(graph_context: Any) -> ExecutionPolicy:
-    """Dedicated zero-tool policy for per-question evidence answerability."""
+    """Dedicated zero-tool policy for per-question evidence answerability.
+
+    The envelope admits the critic builder's full evidence projection
+    (``MAX_READINESS_EVIDENCE_BYTES`` plus request scaffolding and the output
+    cap); a smaller total budget refused every real-run call before the
+    network as ``token_admission`` (BUG-047).
+    """
 
     return ExecutionPolicy(
         policy_name="readiness-evidence-critic",
@@ -309,7 +316,7 @@ def _readiness_node_agent_policy(graph_context: Any) -> ExecutionPolicy:
             max_total_tool_calls=1,
             max_tool_calls_per_response=1,
             max_parallel_tool_calls=1,
-            total_token_budget=8_192,
+            total_token_budget=16_384,
             per_call_output_token_cap=2_048,
             per_tool_result_bytes=1,
             structured_result_bytes=4_096,
@@ -328,7 +335,13 @@ def _build_readiness_capabilities(envelope: TrustedRuntimeEnvelope, graph_contex
 
 
 def _final_delivery_node_agent_policy(graph_context: Any) -> ExecutionPolicy:
-    """Dedicated zero-tool policy for one bounded report-layout invocation."""
+    """Dedicated zero-tool policy for one bounded report-layout invocation.
+
+    The envelope admits the composer builder's full evidence projection plus
+    the report-plan projection; a smaller total budget refused real-run calls
+    before the network as ``token_admission`` (BUG-047, same shape as
+    readiness).
+    """
 
     return ExecutionPolicy(
         policy_name="final-delivery-composer",
@@ -341,7 +354,7 @@ def _final_delivery_node_agent_policy(graph_context: Any) -> ExecutionPolicy:
             max_total_tool_calls=1,
             max_tool_calls_per_response=1,
             max_parallel_tool_calls=1,
-            total_token_budget=8_192,
+            total_token_budget=24_576,
             per_call_output_token_cap=2_048,
             per_tool_result_bytes=1,
             structured_result_bytes=4_096,
@@ -396,6 +409,39 @@ def _build_wave2_synthesis_capabilities(envelope: TrustedRuntimeEnvelope, graph_
         envelope=envelope,
         policy=_wave2_synthesis_node_agent_policy(graph_context),
         tools_resolver=lambda _envelope, _policy: (),
+    )
+
+
+def policy_envelope_table(graph_context: Any) -> tuple[PolicyEnvelopeEvidence, ...]:
+    """Assembled per-phase execution-policy envelopes (BUG-048 item 2).
+
+    Provenance for the run summary: constructs each phase policy once (pure
+    constructors) and projects only its bounded envelope numbers. Never
+    admission, routing, or lifecycle authority. ``targeted_evidence`` shares
+    the Wave0 worker bridge, so it reports the same envelope under its own
+    phase name.
+    """
+
+    entries = (
+        ("hitl1", _hitl1_node_agent_policy),
+        ("topic_planning", _topic_planning_node_agent_policy),
+        ("wave0", _wave0_worker_policy),
+        ("targeted_evidence", _wave0_worker_policy),
+        ("wave1", _wave1_worker_policy),
+        ("wave2_synthesis", _wave2_synthesis_node_agent_policy),
+        ("readiness", _readiness_node_agent_policy),
+        ("final_delivery", _final_delivery_node_agent_policy),
+    )
+    return tuple(
+        PolicyEnvelopeEvidence(
+            phase=phase,
+            policy_name=policy.policy_name,
+            total_token_budget=policy.budget.total_token_budget,
+            per_call_output_token_cap=policy.budget.per_call_output_token_cap,
+            max_model_calls=policy.budget.max_model_calls,
+        )
+        for phase, build in entries
+        for policy in (build(graph_context),)
     )
 
 

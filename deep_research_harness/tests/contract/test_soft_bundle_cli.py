@@ -721,3 +721,70 @@ def test_run_mode_003_non_zero_exit_without_resolvable_bundle_fails_without_bind
         assert manifest["current_bundle_id"] is None
         assert not (root / "bundles").exists()
         assert raw_failure in capsys.readouterr().err
+
+
+def _seed_run_subtree(runs: Path, name: str, sentinel: str) -> None:
+    subtree = runs / name
+    subtree.mkdir(parents=True, exist_ok=True)
+    (subtree / sentinel).write_text(sentinel, encoding="utf-8")
+
+
+
+def test_clean_run_bundles_archives_prior_subtrees(tmp_path: Path, capsys) -> None:
+    """@bug BUG-052: a fresh control run archives instead of destroying prior trees."""
+
+    with _patch_paths(tmp_path):
+        runs = tmp_path / "harness" / ".deep-research-demo-runs" / "workspace"
+        _seed_run_subtree(runs, "deep-research", "state.json")
+        _seed_run_subtree(runs, "scripted-real", "events.jsonl")
+
+        soft_bundle._clean_run_bundles()
+
+        archive_root = runs / "archive"
+        assert archive_root.is_dir()
+        archived = {
+            name: next(d for d in archive_root.iterdir() if d.name.startswith(f"{name}-"))
+            for name in ("deep-research", "scripted-real")
+        }
+        assert (archived["deep-research"] / "state.json").read_text(encoding="utf-8") == "state.json"
+        assert (archived["scripted-real"] / "events.jsonl").exists()
+        assert not any((runs / "deep-research").iterdir())
+        assert not any((runs / "scripted-real").iterdir())
+        assert "archived prior run bundles" in capsys.readouterr().out
+
+
+def test_clean_run_bundles_prunes_to_three_archives(tmp_path: Path) -> None:
+    """@bug BUG-052: archive retention keeps the three most recent per subtree."""
+
+    with _patch_paths(tmp_path):
+        runs = tmp_path / "harness" / ".deep-research-demo-runs" / "workspace"
+        archive_root = runs / "archive"
+        archive_root.mkdir(parents=True)
+        for ts in ("1754000000000", "1755000000000", "1756000000000"):
+            (archive_root / f"deep-research-{ts}").mkdir()
+        _seed_run_subtree(runs, "deep-research", "fresh")
+
+        soft_bundle._clean_run_bundles()
+
+        kept = sorted(
+            d.name
+            for d in (runs / "archive").iterdir()
+            if d.name.startswith("deep-research-")
+        )
+        assert len(kept) == 3
+        assert "deep-research-1754000000000" not in kept
+        assert (runs / "archive" / kept[-1] / "fresh").exists()
+
+
+def test_clean_run_bundles_empty_root_creates_no_archive(tmp_path: Path, capsys) -> None:
+    """@bug BUG-052: an absent subtree keeps the plain recreate behavior."""
+
+    with _patch_paths(tmp_path):
+        runs = tmp_path / "harness" / ".deep-research-demo-runs" / "workspace"
+
+        soft_bundle._clean_run_bundles()
+
+        assert not (runs / "archive").exists()
+        assert (runs / "deep-research").is_dir() and not any((runs / "deep-research").iterdir())
+        assert (runs / "scripted-real").is_dir() and not any((runs / "scripted-real").iterdir())
+        assert "archived prior run bundles" not in capsys.readouterr().out

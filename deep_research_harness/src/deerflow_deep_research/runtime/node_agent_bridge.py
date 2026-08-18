@@ -138,6 +138,10 @@ class _InvocationRecording:
     """Private per-invocation Journal-only attribution; never a node result."""
 
     budget_stop_reason: BudgetStopReason | None = None
+    # BUG-048 items 1/4: closed arithmetic operands for the failing budget
+    # inequality, and the provider usage counts of a successful invocation.
+    budget_operands: dict[str, int] | None = None
+    usage_tokens: dict[str, int] | None = None
 
 
 def _default_model_resolver(envelope: TrustedRuntimeEnvelope) -> ResolvedNodeModel:
@@ -244,6 +248,17 @@ class RuntimeNodeAgentBridge:
     model_resolver: ModelResolver = _default_model_resolver
     tools_resolver: ToolsResolver = _default_tools_resolver
     agents_built: int = field(default=0)
+    # Per-attempt model invocation ordinals (BUG-048 item 6): pair each
+    # model_tool started/completed(+/failed) event with its request index.
+    _call_ordinals: dict[str, int] = field(default_factory=dict)
+
+    def _next_call_ordinal(self, attempt_id: str) -> int:
+        ordinal = self._call_ordinals.get(attempt_id, 0) + 1
+        self._call_ordinals[attempt_id] = ordinal
+        return ordinal
+
+    def _peek_call_ordinal(self, attempt_id: str) -> int | None:
+        return self._call_ordinals.get(attempt_id)
 
     def _validate_capability_window(
         self,
@@ -278,7 +293,13 @@ class RuntimeNodeAgentBridge:
 
         recording = _InvocationRecording()
         result = await self._run_agent(context=context, request=request, recording=recording)
-        await self._record_result(context, result, budget_stop_reason=recording.budget_stop_reason)
+        await self._record_result(
+            context,
+            result,
+            budget_stop_reason=recording.budget_stop_reason,
+            budget_operands=recording.budget_operands,
+            usage_tokens=recording.usage_tokens,
+        )
         return result
 
     async def _run_agent(
@@ -295,6 +316,7 @@ class RuntimeNodeAgentBridge:
                 error_code="selected_bundle_context_missing",
                 code=RunFailureCode.PERSISTENCE_UNAVAILABLE,
             )
+        self._next_call_ordinal(context.attempt_id)
         await self._record(context, outcome="started")
         if self.envelope.parent_sandbox is None:
             return self._safe_failure(
@@ -446,6 +468,8 @@ class RuntimeNodeAgentBridge:
                 recording.budget_stop_reason = (
                     candidate if candidate in _MIDDLEWARE_BUDGET_STOP_REASONS else BudgetStopReason.UNKNOWN
                 )
+                if isinstance(exc, AgentBudgetError) and exc.operands:
+                    recording.budget_operands = dict(exc.operands)
             self._emit(context, operation="run_agent", status=str(exc.finish_reason))
             return self._safe_failure(
                 context,
@@ -594,6 +618,7 @@ class RuntimeNodeAgentBridge:
                 code=RunFailureCode.INTERNAL_UNEXPECTED,
                 certainty=FailureCertainty.UNKNOWN,
             )
+        recording.usage_tokens = self._usage_tokens(result)
         if tool_policy_middleware.tool_calls < request.minimum_tool_calls:
             self._emit(context, operation="run_agent", status="required_tool_not_called")
             return self._safe_failure(
@@ -625,10 +650,12 @@ class RuntimeNodeAgentBridge:
         result: NodeExecutionResult,
         *,
         budget_stop_reason: BudgetStopReason | None,
+        budget_operands: dict[str, int] | None = None,
+        usage_tokens: dict[str, int] | None = None,
     ) -> None:
         problem = result.problem
         if problem is None:
-            await self._record(context, outcome="completed")
+            await self._record(context, outcome="completed", usage_tokens=usage_tokens)
             return
         code = problem.code.value
         provider_category = (
@@ -670,6 +697,11 @@ class RuntimeNodeAgentBridge:
                 )
                 else None
             ),
+            budget_operands=(
+                budget_operands
+                if budget_stop_reason is not None and problem.code is RunFailureCode.BUDGET_EXHAUSTED
+                else None
+            ),
         )
 
     async def _record(
@@ -681,6 +713,8 @@ class RuntimeNodeAgentBridge:
         worker_failure_category: str | None = None,
         provider_category: str | None = None,
         budget_stop_reason: BudgetStopReason | None = None,
+        budget_operands: dict[str, int] | None = None,
+        usage_tokens: dict[str, int] | None = None,
     ) -> None:
         factory = self.envelope.event_recorder_factory
         if factory is None:
@@ -695,8 +729,15 @@ class RuntimeNodeAgentBridge:
                 "worker_failure_category": worker_failure_category,
                 "provider_category": provider_category,
             }
+            ordinal = self._peek_call_ordinal(context.attempt_id)
+            if ordinal is not None:
+                event["call_ordinal"] = ordinal
             if budget_stop_reason is not None:
                 event["budget_stop_reason"] = budget_stop_reason
+            if budget_operands:
+                event["budget_operands"] = dict(budget_operands)
+            if usage_tokens:
+                event["usage_tokens"] = dict(usage_tokens)
             await factory(context.research_scope_id).record(
                 **event,
             )
@@ -884,6 +925,26 @@ class RuntimeNodeAgentBridge:
             "run_id": self.envelope.outer_run_id,
             "app_config": self.envelope.app_config,
         }
+
+    @staticmethod
+    def _usage_tokens(result: Any) -> dict[str, int] | None:
+        """Closed provider usage counts of a successful invocation (BUG-048 item 4).
+
+        Absent — not a failure — when the provider reported no usage metadata.
+        """
+
+        messages = result.get("messages") if isinstance(result, dict) else None
+        usage = getattr(messages[-1], "usage_metadata", None) if messages else None
+        if not usage:
+            return None
+        try:
+            return {
+                "input_tokens": int(usage["input_tokens"]),
+                "output_tokens": int(usage["output_tokens"]),
+                "total_tokens": int(usage["total_tokens"]),
+            }
+        except (KeyError, TypeError, ValueError):
+            return None
 
     def _project_result(
         self,

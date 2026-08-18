@@ -196,6 +196,30 @@ def _deps(*, bundle: ScriptedFinalBundle, capabilities: ScriptedCapabilities | N
     )
 
 
+def _multi_conclusion_plan() -> ReadinessReportPlan:
+    """Non-degenerate plan (2 conclusions + 1 uncertainty): the composer path applies."""
+
+    return ReadinessReportPlan.model_validate(
+        {
+            "writable_conclusions": [
+                {
+                    "question": "What is established?",
+                    "conclusion_text": "The approved conclusion is retained verbatim.",
+                    "backing_claim_ids": [_LEDGER_HASH],
+                },
+                {
+                    "question": "What else is established?",
+                    "conclusion_text": "The second approved conclusion is retained verbatim.",
+                    "backing_claim_ids": [_LEDGER_HASH],
+                },
+            ],
+            "mandatory_uncertainties": [
+                {"question": "What remains uncertain?", "limitation": "The approved limitation is retained verbatim."}
+            ],
+        }
+    )
+
+
 def _state(bundle: ScriptedFinalBundle, *, accepted_refs: tuple[str, ...] = (_LEDGER_HASH,)) -> dict[str, object]:
     return {
         "bundle_id": _RID,
@@ -305,6 +329,35 @@ class TestRealFinalDelivery:
         assert bundle.final_reads == 1
 
     @pytest.mark.asyncio
+    async def test_degenerate_plan_renders_deterministically_without_the_composer(self) -> None:
+        """@bug BUG-053: a 0+1 plan's unique layout needs no model echo."""
+
+        plan = ReadinessReportPlan.model_validate(
+            {
+                "writable_conclusions": [],
+                "mandatory_uncertainties": [
+                    {
+                        "question": "What remains uncertain?",
+                        "limitation": "The approved limitation is retained verbatim.",
+                    },
+                ],
+            }
+        )
+        bundle = ScriptedFinalBundle(plan=plan)
+        capabilities = ScriptedCapabilities(fails=True)  # any model call would fail
+        dependencies = _deps(bundle=bundle, capabilities=capabilities)
+
+        result = await build_real(dependencies)(_state(bundle))
+
+        assert "terminal_status" not in result
+        assert capabilities.requests == []  # no composer invocation at all
+        assert len(result["report_refs"]) == 2
+        report, citation_map = dependencies.publication_bundle.calls[0]  # type: ignore[union-attr]
+        assert b"The approved limitation is retained verbatim." in report
+        assert json.loads(citation_map) == {"schema_version": 1, "claims": {}}
+        assert result[FINAL_DELIVERY_GATE_VIEW_KEY].published_refs == result["report_refs"]
+
+    @pytest.mark.asyncio
     async def test_missing_or_divergent_plan_calls_neither_composer_nor_publisher(self) -> None:
         bundle = ScriptedFinalBundle(plan=_plan())
         capabilities = ScriptedCapabilities()
@@ -333,8 +386,19 @@ class TestRealFinalDelivery:
     @pytest.mark.asyncio
     async def test_rejected_layout_and_readback_failure_never_publish_a_pass_view(self) -> None:
         rejected_candidate = json.dumps({"schema_version": 1, "conclusion_order": [], "uncertainty_order": []})
-        for response, readback_fails in (("not json", False), (rejected_candidate, False), (None, True)):
-            bundle = ScriptedFinalBundle(plan=_plan())
+        complete_candidate = json.dumps(
+            {
+                "schema_version": 1,
+                "conclusion_order": ["conclusion:0", "conclusion:1"],
+                "uncertainty_order": ["uncertainty:0"],
+            }
+        )
+        for response, readback_fails in (
+            ("not json", False),
+            (rejected_candidate, False),
+            (complete_candidate, True),
+        ):
+            bundle = ScriptedFinalBundle(plan=_multi_conclusion_plan())
             bundle.fail_final_read = readback_fails
             dependencies = _deps(bundle=bundle, capabilities=ScriptedCapabilities(response))
 
@@ -348,7 +412,7 @@ class TestRealFinalDelivery:
 
     @pytest.mark.asyncio
     async def test_bridge_and_publisher_failures_take_one_attempt_without_a_pass_view(self) -> None:
-        bridge_bundle = ScriptedFinalBundle(plan=_plan())
+        bridge_bundle = ScriptedFinalBundle(plan=_multi_conclusion_plan())
         failed_capabilities = ScriptedCapabilities(fails=True)
         bridge_dependencies = _deps(bundle=bridge_bundle, capabilities=failed_capabilities)
 

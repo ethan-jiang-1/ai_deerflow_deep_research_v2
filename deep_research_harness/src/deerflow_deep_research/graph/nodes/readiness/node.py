@@ -17,6 +17,7 @@ from typing import Any
 
 from deerflow_deep_research.domain.lifecycle import LifecycleStatus, TerminalReason
 from deerflow_deep_research.domain.node_spec import NodeBuildDependencies
+from deerflow_deep_research.domain.run_observation import RunEventCategory
 from deerflow_deep_research.domain.state import PhaseStatus, node_state_update
 from deerflow_deep_research.domain.workflow_outcomes import InvocationFailure, invoke_and_normalize
 from deerflow_deep_research.engine.gate_kernel import exhaustion_degradation_marker
@@ -33,6 +34,10 @@ from .hard_rules import has_structural_failure, run_hard_rules
 from .materializer import materialize_report_plan
 
 
+class _CriticExecutionFailed(Exception):
+    """Internal sentinel: the bounded critic invocation itself failed."""
+
+
 def build_real(dependencies: NodeBuildDependencies):
     if dependencies.work_units is None:
         raise ValueError("work_unit_capability_missing")
@@ -45,6 +50,7 @@ def build_real(dependencies: NodeBuildDependencies):
 
         # 2. Ledger-derived projection and bounded critic. A corrupted accepted
         # record is structural, while an untrusted model result is repairable.
+        fallback_reason: str | None = None
         if hard_failures:
             critic_output = ReadinessCriticOutput(schema_version=1)
         else:
@@ -64,15 +70,33 @@ def build_real(dependencies: NodeBuildDependencies):
                         phase="readiness",
                     )
                     if isinstance(outcome, InvocationFailure):
-                        raise ValueError("readiness_critic_execution_failed")
+                        raise _CriticExecutionFailed
                     candidate = parse_readiness_critic_output(outcome.result.summary)
                     critic_output = admit_readiness_candidate(
                         candidate,
                         must_answer_questions=must_answer,
                         accepted_submission_refs=accepted_refs,
                     )
-                except Exception:
+                except _CriticExecutionFailed:
+                    fallback_reason = "execution_failed"
                     critic_output = conservative_readiness_output(must_answer)
+                except Exception:
+                    fallback_reason = "candidate_invalid"
+                    critic_output = conservative_readiness_output(must_answer)
+        if fallback_reason is not None:
+            # BUG-048 item 3: the conservative substitution is a first-class
+            # observation, not prose buried in a limitation note. Observation
+            # failure cannot change the projection, route, or repair counting.
+            try:
+                if dependencies.event_recorder is not None:
+                    await dependencies.event_recorder.record(
+                        category=RunEventCategory.NODE,
+                        phase="readiness",
+                        attempt_id=dependencies.agent_context.attempt_id,
+                        failure_category=f"readiness_critic_fallback.{fallback_reason}",
+                    )
+            except Exception:
+                pass
 
         # 2b. Honest-gap disclosure: gate-recorded unresolved searchable gap ids
         #     joined against the canonical synthesis artifact (ids from state,
@@ -85,12 +109,26 @@ def build_real(dependencies: NodeBuildDependencies):
             except Exception:
                 gap_records = ()
 
+        # 2c. Rule-derived conclusions (BUG-054): high-confidence completely-
+        #     backed findings from the canonical synthesis artifact deliver as
+        #     writable conclusions the critic cannot veto away. The read is
+        #     structural evidence, so a failure lands as a hard failure instead
+        #     of silently zeroing delivery.
+        findings = ()
+        try:
+            findings = await dependencies.work_units.store.read_synthesis_findings()
+        except Exception:
+            hard_failures = (*hard_failures, HardRuleFailure(code="synthesis_findings_unavailable"))
+            findings = ()
+
         # 3. Materialize report plan
         report_plan = materialize_report_plan(
             critic_output,
             hard_failures,
             unresolved_gap_ids=unresolved_gap_ids,
             gap_records=gap_records,
+            findings=findings,
+            accepted_refs=accepted_refs,
         )
         try:
             report_plan_ref = await dependencies.work_units.store.write_readiness_report_plan(report_plan)

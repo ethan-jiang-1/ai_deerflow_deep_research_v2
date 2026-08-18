@@ -19,6 +19,7 @@ import secrets
 import shutil
 import subprocess
 import sys
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -130,24 +131,49 @@ def _latest_bundle_dir() -> Path | None:
     return candidates[0] if candidates else None
 
 
+def _archive_run_subtree(runs_root: Path, name: str) -> Path | None:
+    """Move one managed run subtree into a timestamped archive (BUG-052).
+
+    Retention keeps the three most recent archives per subtree name. Rename is
+    atomic on the same filesystem; ``archive/`` sits outside every discovery
+    scan root. Returns the archive path, or ``None`` when nothing was archived.
+    """
+
+    subtree = runs_root / name
+    if not subtree.exists() or not any(subtree.iterdir()):
+        return None
+    archive_root = runs_root / "archive"
+    archive_root.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now(UTC).strftime("%Y%m%d%H%M%S") + f"-{time.time_ns() % 1_000_000:06d}"
+    archive = archive_root / f"{name}-{stamp}"
+    suffix = 0
+    while archive.exists():
+        suffix += 1
+        archive = archive_root / f"{name}-{stamp}-{suffix}"
+    subtree.rename(archive)
+    kept = sorted(d for d in archive_root.iterdir() if d.name.startswith(f"{name}-"))
+    for stale in kept[:-3]:
+        shutil.rmtree(stale)
+    return archive
+
+
 def _clean_run_bundles() -> None:
-    """Remove prior operator run-bundle content before a fresh control run.
+    """Archive prior operator run-bundle content before a fresh control run.
 
     The Harness-managed ``deep-research`` subtree and scripted-real workspaces
-    are removed. Soft bundle records under ``soft-bundles`` are kept.
+    are moved into bounded timestamped archives (three most recent per name)
+    instead of being deleted, so failed-run forensics survive the rerun loop
+    (BUG-052). Soft bundle records under ``soft-bundles`` are kept.
     """
-    research_root = RUNS_ROOT / "deep-research"
-    if research_root.exists():
-        shutil.rmtree(research_root)
-        research_root.mkdir(parents=True, exist_ok=True)
-    else:
-        research_root.mkdir(parents=True, exist_ok=True)
-    scripted_root = RUNS_ROOT / "scripted-real"
-    if scripted_root.exists():
-        shutil.rmtree(scripted_root)
-        scripted_root.mkdir(parents=True, exist_ok=True)
-    else:
-        scripted_root.mkdir(parents=True, exist_ok=True)
+    archived = [
+        archive
+        for archive in (_archive_run_subtree(RUNS_ROOT, name) for name in ("deep-research", "scripted-real"))
+        if archive is not None
+    ]
+    (RUNS_ROOT / "deep-research").mkdir(parents=True, exist_ok=True)
+    (RUNS_ROOT / "scripted-real").mkdir(parents=True, exist_ok=True)
+    for archive in archived:
+        print(f"archived prior run bundles -> {_to_relative(archive)}")
 
 
 def _run_make(args: list[str], env_extra: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:

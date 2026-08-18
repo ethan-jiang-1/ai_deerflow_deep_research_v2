@@ -161,3 +161,84 @@ def test_topic_planning_policy_has_its_own_calibrated_output_envelope() -> None:
     assert policy.budget.structured_result_bytes == 16_384
     assert policy.budget.total_token_budget == 12_288
     assert policy.budget.wall_time_seconds == 60.0
+
+
+def test_evidence_embedding_requests_stay_within_admission_envelope() -> None:
+    """@bug BUG-047
+
+    A builder that embeds up to ``MAX_*_EVIDENCE_BYTES`` of evidence must stay
+    admissible under its node policy: max request payload plus the trusted
+    system prompt plus the per-call output cap cannot exceed the total token
+    budget, otherwise ``BudgetMiddleware`` refuses the call before the network
+    (observed as four consecutive ``token_admission`` stops in a real 003 run).
+    """
+    from deerflow_deep_research.agents.prompts import load_policy_prompt
+    from deerflow_deep_research.domain.readiness import (
+        ReadinessReportPlan,
+        ReportPlanConclusion,
+        ReportPlanUncertainty,
+    )
+    from deerflow_deep_research.domain.synthesis import SynthesisEvidence
+    from deerflow_deep_research.graph.nodes.final_delivery.composer import (
+        MAX_FINAL_DELIVERY_EVIDENCE_BYTES,
+        build_final_delivery_request,
+    )
+    from deerflow_deep_research.graph.nodes.readiness.critic import (
+        MAX_READINESS_EVIDENCE_BYTES,
+        build_readiness_critic_request,
+    )
+    from deerflow_deep_research.runtime.research import (
+        _final_delivery_node_agent_policy,
+        _readiness_node_agent_policy,
+    )
+
+    system_prompt_bytes = len(load_policy_prompt().encode("utf-8"))
+    evidence = (
+        SynthesisEvidence(
+            submission_ref="h_" + "A" * 43,
+            phase="wave1",
+            result_contract="claims.v1",
+            content="x" * MAX_READINESS_EVIDENCE_BYTES,
+            truncated=True,
+        ),
+    )
+    questions = ("What is one bounded fact about the market in 2024?",)
+
+    readiness_request = build_readiness_critic_request(questions, evidence)
+    readiness_payload = len(readiness_request.objective.encode("utf-8")) + len(
+        readiness_request.expected_output.encode("utf-8")
+    )
+    readiness_policy = _readiness_node_agent_policy(_graph_context())
+    assert (
+        readiness_payload + system_prompt_bytes + readiness_policy.budget.per_call_output_token_cap
+        <= readiness_policy.budget.total_token_budget
+    )
+
+    plan = ReadinessReportPlan(
+        writable_conclusions=(
+            ReportPlanConclusion(
+                question=questions[0],
+                conclusion_text="c" * 2_000,
+                backing_claim_ids=("h_" + "A" * 43,),
+            ),
+        ),
+        mandatory_uncertainties=(ReportPlanUncertainty(question=questions[0], limitation="u" * 500),),
+    )
+    delivery_evidence = (
+        SynthesisEvidence(
+            submission_ref="h_" + "A" * 43,
+            phase="wave1",
+            result_contract="claims.v1",
+            content="x" * MAX_FINAL_DELIVERY_EVIDENCE_BYTES,
+            truncated=True,
+        ),
+    )
+    delivery_request = build_final_delivery_request(plan, delivery_evidence)
+    delivery_payload = len(delivery_request.objective.encode("utf-8")) + len(
+        delivery_request.expected_output.encode("utf-8")
+    )
+    delivery_policy = _final_delivery_node_agent_policy(_graph_context())
+    assert (
+        delivery_payload + system_prompt_bytes + delivery_policy.budget.per_call_output_token_cap
+        <= delivery_policy.budget.total_token_budget
+    )

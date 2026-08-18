@@ -51,6 +51,7 @@ from deerflow_deep_research.domain.synthesis import (
     MAX_SYNTHESIS_EVIDENCE_TOTAL_BYTES,
     GapRecord,
     SynthesisEvidence,
+    SynthesisFinding,
     SynthesisResult,
 )
 from deerflow_deep_research.domain.wave1 import OpenQuestionState, Wave1SourceIntakeResult
@@ -168,8 +169,26 @@ StorageVerifier = Callable[..., Awaitable[WorkUnitStorageCheck]]
 FaultHook = Callable[[str, int], None]
 
 
-def _utc_now() -> datetime:
-    return datetime.now(UTC)
+def _dedupe_question_texts(entries: list[tuple[str, str, str]]) -> tuple[tuple[str, str], ...]:
+    """Collapse ``(work_id, question_id, text)`` entries to unique ``(id, text)``.
+
+    Repair reruns can mint the same ``q:w1_*`` id in two accepted work units
+    (BUG-051). An id resolving to byte-identical text deduplicates silently as
+    harmless idempotence; the same id resolving to different texts is a real
+    collision and fails typed so the synthesis pre-model guard terminates the
+    node bounded instead of ``dict()`` silently dropping one question text.
+    """
+
+    texts_by_id: dict[str, str] = {}
+    for _work_id, question_id, question in sorted(entries):
+        prior = texts_by_id.get(question_id)
+        if prior is not None and prior != question:
+            raise ValueError("wave1_open_question_id_collision")
+        texts_by_id[question_id] = question
+    return tuple(texts_by_id.items())
+
+
+def _utc_now() -> datetime:    return datetime.now(UTC)
 
 
 def _token() -> str:
@@ -352,6 +371,22 @@ class WorkUnitStore:
         result = SynthesisResult.model_validate(json.loads(raw))
         return result.gaps
 
+    async def read_synthesis_findings(self) -> tuple[SynthesisFinding, ...]:
+        """Read the canonical synthesis artifact's finding records (contained, bounded).
+
+        The persisted ``synthesis/findings.json`` stays the only finding content
+        authority (BUG-054): high-confidence findings with complete backing refs
+        become writable conclusions at readiness; checkpoint state carries ids
+        only.
+        """
+
+        raw = await self.read_canonical_bytes(
+            bundle_synthesis_findings_path(self.bundle),
+            max_bytes=MAX_SYNTHESIS_ARTIFACT_BYTES,
+        )
+        result = SynthesisResult.model_validate(json.loads(raw))
+        return result.findings
+
     async def read_synthesis_evidence(self, accepted_refs: tuple[str, ...]) -> tuple[SynthesisEvidence, ...]:
         records = await self.load_records()
         records_by_hash = {record.record_hash: record for record in records}
@@ -386,7 +421,14 @@ class WorkUnitStore:
         return tuple(evidence)
 
     async def read_wave1_open_questions(self, accepted_refs: tuple[str, ...]) -> tuple[tuple[str, str], ...]:
-        """Read verbatim targeted-search question texts from accepted Wave1 documents."""
+        """Read verbatim targeted-search question texts from accepted Wave1 documents.
+
+        Repair reruns can mint the same ``q:w1_*`` id in two accepted work
+        units (BUG-051): an id resolving to byte-identical text deduplicates
+        silently; different texts raise the typed collision error so the
+        synthesis pre-model guard terminates bounded instead of ``dict()``
+        silently dropping one question text.
+        """
 
         records = await self.load_records()
         records_by_hash = {record.record_hash: record for record in records}
@@ -406,7 +448,7 @@ class WorkUnitStore:
             for question in document.open_questions:
                 if question.state is OpenQuestionState.TARGETED_SEARCH:
                     entries.append((record.work_id, question.question_id, question.question))
-        return tuple((question_id, question) for _work_id, question_id, question in sorted(entries))
+        return _dedupe_question_texts(entries)
 
     async def publish_final(self, report: bytes, citation_map: bytes) -> tuple[ContentRef, ContentRef]:
         if not isinstance(report, bytes) or not report or len(report) > MAX_FINAL_ARTIFACT_BYTES:

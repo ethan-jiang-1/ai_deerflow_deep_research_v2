@@ -16,6 +16,8 @@ import asyncio
 import time
 from datetime import UTC, datetime
 
+import pytest
+
 from deerflow_deep_research.domain.bundle import BundleId, RunBundleRef
 from deerflow_deep_research.domain.publication import FinalDeliveryLayoutCandidate
 from deerflow_deep_research.domain.state import BundleLocalState
@@ -123,3 +125,122 @@ def test_readiness_plan_without_gaps_leaves_the_uncertainties_section_empty() ->
 
     assert isinstance(plan, ReadinessReportPlan)
     assert plan.mandatory_uncertainties == ()
+
+
+def test_open_question_id_collision_is_typed_and_identical_texts_dedupe() -> None:
+    """@bug BUG-051: cross-document id collisions fail typed; identical texts dedupe."""
+
+    from deerflow_deep_research.runtime.work_unit_store import _dedupe_question_texts
+
+    identical = _dedupe_question_texts(
+        [
+            ("w1", "q:w1_cost", "What does storage cost?"),
+            ("w2", "q:w1_cost", "What does storage cost?"),
+        ]
+    )
+    assert identical == (("q:w1_cost", "What does storage cost?"),)
+
+    with pytest.raises(ValueError, match="wave1_open_question_id_collision"):
+        _dedupe_question_texts(
+            [
+                ("w1", "q:w1_cost", "What does storage cost?"),
+                ("w2", "q:w1_cost", "What does transmission cost?"),
+            ]
+        )
+
+
+def test_high_confidence_findings_become_conclusions_despite_critic_veto() -> None:
+    """@bug BUG-054: rule-derived conclusions survive a non-substantive critic verdict."""
+
+    from deerflow_deep_research.domain.synthesis import Confidence, SynthesisFinding
+    from deerflow_deep_research.graph.nodes.readiness.contracts import PerQuestionVerdict
+
+    finding = SynthesisFinding(
+        finding_id="finding:installs-2024",
+        statement="China's 2024 power-storage installations reached 548.4 GWh.",
+        priority=1,
+        affected_topics=("storage",),
+        backing_refs=("claim:capbiia", "claim:gasgoo"),
+        confidence=Confidence.HIGH,
+    )
+    critic = ReadinessCriticOutput(
+        schema_version=1,
+        per_question=(
+            PerQuestionVerdict(
+                question="What were 2024 storage installations?",
+                verdict="ready_insufficient_judgment",
+                limitation_note="Single-question scope too narrow for a substantive answer.",
+            ),
+        ),
+    )
+
+    plan = materialize_report_plan(
+        critic,
+        (),
+        findings=(finding,),
+        accepted_refs=("claim:capbiia", "claim:gasgoo", "claim:other"),
+    )
+
+    assert [c.conclusion_text for c in plan.writable_conclusions] == [finding.statement]
+    assert plan.writable_conclusions[0].backing_claim_ids == ("claim:capbiia", "claim:gasgoo")
+    assert [u.limitation for u in plan.mandatory_uncertainties] == [
+        "Single-question scope too narrow for a substantive answer."
+    ]
+
+
+def test_findings_without_complete_backing_stay_out_of_conclusions() -> None:
+    """@bug BUG-054: the finding-derived source requires high confidence and complete refs."""
+
+    from deerflow_deep_research.domain.synthesis import Confidence, SynthesisFinding
+
+    def _finding(**overrides):
+        base = dict(
+            finding_id="finding:x",
+            statement="s",
+            priority=2,
+            backing_refs=("claim:a",),
+            confidence=Confidence.HIGH,
+        )
+        base.update(overrides)
+        return SynthesisFinding(**base)
+
+    plan = materialize_report_plan(
+        ReadinessCriticOutput(schema_version=1),
+        (),
+        findings=(
+            _finding(confidence=Confidence.MEDIUM),
+            _finding(finding_id="finding:norefs", backing_refs=()),
+            _finding(finding_id="finding:foreign", backing_refs=("claim:ghost",)),
+            _finding(finding_id="finding:search", search_required=True),
+        ),
+        accepted_refs=("claim:a",),
+    )
+
+    assert plan.writable_conclusions == ()
+
+
+def test_wave2_budget_handback_rides_the_gate_machinery_without_a_preview() -> None:
+    """@bug BUG-050: the projected budget failure follows budget/marker/degradation."""
+
+    state = _gate_state(repair_budget_by_phase={"wave2_synthesis": 1})
+    state.pop(WAVE2_GATE_PREVIEW_KEY, None)  # synthesis never completed this visit
+    state["wave2_budget_exhausted"] = True
+
+    repair = evaluate_gate_for_node(state, "wave2_synthesis", build_wave2_real_gate_def())
+    assert repair["route"] == "evidence_needed"
+    assert "terminal_status" not in repair
+
+    exhausted = _gate_state(repair_budget_by_phase={"wave2_synthesis": 0})
+    exhausted.pop(WAVE2_GATE_PREVIEW_KEY, None)
+    exhausted["wave2_budget_exhausted"] = True
+    degraded = evaluate_gate_for_node(exhausted, "wave2_synthesis", build_wave2_real_gate_def())
+
+    assert degraded["route"] == "pass"
+    assert "terminal_status" not in degraded
+    assert degraded["degraded_decisions"] == ("wave2_synthesis:exhaustion_degraded",)
+
+    marker_present = dict(exhausted)
+    marker_present["degraded_decisions"] = ("wave2_synthesis:exhaustion_degraded",)
+    blocked = evaluate_gate_for_node(marker_present, "wave2_synthesis", build_wave2_real_gate_def())
+    assert blocked["route"] == "exhausted"
+    assert blocked["terminal_status"] == "blocked"

@@ -1050,6 +1050,7 @@ async def test_bridge_projects_closed_safe_problem_for_each_runtime_source(
         "failure_category": expected.value,
         "worker_failure_category": expected_worker_failure_category,
         "provider_category": expected_provider_category,
+        "call_ordinal": 1,
     }
     assert sentinel not in str(recorder.events)
 
@@ -1666,3 +1667,65 @@ async def test_raw_or_invalid_custom_binding_cannot_infer_model_identity(monkeyp
         assert result.problem.provider_observation is not None
         assert result.problem.provider_observation.configured_service_label is None
         assert result.problem.provider_observation.configured_endpoint_authority is None
+
+
+async def test_model_tool_events_carry_call_ordinal_usage_and_budget_operands() -> None:
+    """@bug BUG-048 items 1/4/6: ordinals pair starts, usage rides completion,
+    and budget stops retain the arithmetic that failed."""
+
+    from deerflow_deep_research.agents.policies import ExecutionBudget
+
+    recorder = _JournalRecorder()
+    envelope = replace(_envelope(), event_recorder_factory=lambda _scope: recorder)
+
+    # Two successful calls in one attempt: ordinals 1 and 2, usage on completed.
+    two_call_bridge = _bridge(
+        lambda: ScriptedChatModel(responses=[ai_message("one"), ai_message("two")]),
+        envelope=envelope,
+    )
+    first = await two_call_bridge.run_agent(context=_context(), request=_request())
+    second = await two_call_bridge.run_agent(context=_context(), request=_request())
+    assert first.finish_reason is NodeFinishReason.SUCCESS
+    assert second.finish_reason is NodeFinishReason.SUCCESS
+
+    ordinals = [event.get("call_ordinal") for event in recorder.events]
+    assert ordinals == [1, 1, 2, 2]  # started/completed pairs share the ordinal
+    completed = [event for event in recorder.events if event["outcome"] == "completed"]
+    assert completed[0]["usage_tokens"] == {"input_tokens": 10, "output_tokens": 5, "total_tokens": 15}
+
+    # A budget stop: operands ride the failed event.
+    tight_budget = ExecutionBudget(
+        max_model_calls=2,
+        max_total_tool_calls=1,
+        max_tool_calls_per_response=1,
+        max_parallel_tool_calls=1,
+        total_token_budget=1,
+        per_call_output_token_cap=1,
+        per_tool_result_bytes=1024,
+        structured_result_bytes=65536,
+        wall_time_seconds=30,
+    )
+    stopped = await _bridge(
+        lambda: ScriptedChatModel(responses=[ai_message("never")]),
+        envelope=envelope,
+        policy=replace(_policy(), budget=tight_budget),
+    ).run_agent(context=_context(), request=_request())
+    assert stopped.finish_reason is NodeFinishReason.BUDGET_EXHAUSTED
+
+    failed = [event for event in recorder.events if event["outcome"] == "failed"][-1]
+    assert failed["budget_stop_reason"] == "token_admission"
+    assert failed["budget_operands"]["total_token_budget"] == 1
+    assert "projected_request_bytes" in failed["budget_operands"]
+    assert failed["call_ordinal"] == 1  # first invocation of this separate bridge attempt
+
+    # Partial/unusable usage metadata yields no usage field rather than junk:
+    # the bridge extracts closed integers or nothing.
+    assert (
+        RuntimeNodeAgentBridge._usage_tokens({"messages": [ai_message("x", input_tokens=None, output_tokens=None)]})
+        is None
+    )
+    assert RuntimeNodeAgentBridge._usage_tokens({"messages": []}) is None
+    assert RuntimeNodeAgentBridge._usage_tokens({}) is None
+    assert RuntimeNodeAgentBridge._usage_tokens(
+        {"messages": [ai_message("x", input_tokens=7, output_tokens=3)]}
+    ) == {"input_tokens": 7, "output_tokens": 3, "total_tokens": 10}

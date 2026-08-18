@@ -11,6 +11,9 @@ import re
 from collections.abc import Mapping
 from typing import Any
 
+from pydantic import ValidationError
+
+from deerflow_deep_research.domain.enums import NodeFinishReason
 from deerflow_deep_research.domain.lifecycle import LifecycleStatus, TerminalReason
 from deerflow_deep_research.domain.node_spec import NodeBuildDependencies
 from deerflow_deep_research.domain.run_experience import (
@@ -23,6 +26,7 @@ from deerflow_deep_research.domain.state import PhaseStatus, node_state_update
 from deerflow_deep_research.domain.synthesis import (
     WAVE2_GATE_PREVIEW_KEY,
     SynthesisEvidence,
+    Wave2GatePreview,
     build_wave2_gate_preview,
 )
 from deerflow_deep_research.domain.wave1 import Wave1OpenQuestionRef
@@ -58,8 +62,10 @@ def _pre_model_problem(error: ValueError) -> NodeProblem:
     ``synthesis_question_coverage_invalid``). Carry the concrete message as the
     validation category when it already matches the NodeProblem pattern;
     messages whose first segment carries digits (``wave1_...``) are namespaced
-    as ``input.<message>`` to stay pattern-safe; anything else falls back to
-    the generic bucket from ``_synthesis_validation_category``.
+    as ``input.<message>`` to stay pattern-safe; any other ValueError —
+    including multi-line pydantic ``ValidationError`` from request construction
+    — normalizes to ``synthesis_request_shape_invalid`` instead of collapsing
+    into the model-candidate ``candidate_invalid`` bucket (BUG-048 item 5).
     """
 
     message = str(error)
@@ -67,6 +73,8 @@ def _pre_model_problem(error: ValueError) -> NodeProblem:
         category = message
     elif _PRE_MODEL_SNAKE_RE.fullmatch(message):
         category = f"input.{message}"
+    elif isinstance(error, ValidationError) or "\n" in message:
+        category = "synthesis_request_shape_invalid"
     else:
         category = _synthesis_validation_category(error)
     return NodeProblem(
@@ -192,6 +200,32 @@ def _validate_synthesis_semantics(
     return output.model_copy(update={"findings": normalized_findings})
 
 
+def _budget_handback_update() -> dict[str, object]:
+    """Non-terminal hand-back of a budget-class failure to the wave2 gate (BUG-050).
+
+    Route authority stays with the gate: the node records the bounded signal the
+    gate's rules project, and the gate's existing budget / marker / degradation
+    machinery alone decides repair, one honest degraded pass, or blocked. The
+    node must not write terminal state for this failure class.
+
+    The builder contract requires a real non-terminal wave2 completion to carry
+    a gate preview. This visit's cognition never ran, so there are no fresh
+    searchable-gap facts: the preview publishes an empty gap set (never the
+    stale prior one), and the gate's budget rule — registered ahead of the gap
+    rule — projects the handed-back failure so the empty preview cannot mask it.
+    """
+
+    return node_state_update(
+        "wave2_synthesis",
+        wave2_budget_exhausted=True,
+        **{WAVE2_GATE_PREVIEW_KEY: Wave2GatePreview(searchable_gap_ids=())},
+    )
+
+
+def _is_budget_class(outcome: InvocationFailure) -> bool:
+    return outcome.finish_reason is NodeFinishReason.BUDGET_EXHAUSTED
+
+
 def _exhausted_update(
     problem: NodeProblem,
     *,
@@ -265,6 +299,8 @@ def build_real(dependencies: NodeBuildDependencies):
             phase="wave2_synthesis",
         )
         if isinstance(outcome, InvocationFailure):
+            if _is_budget_class(outcome):
+                return _budget_handback_update()
             return _exhausted_update(outcome.problem, state=state, dependencies=dependencies)
         result = outcome.result
         try:
@@ -288,6 +324,8 @@ def build_real(dependencies: NodeBuildDependencies):
                 phase="wave2_synthesis",
             )
             if isinstance(repair_outcome, InvocationFailure):
+                if _is_budget_class(repair_outcome):
+                    return _budget_handback_update()
                 return _exhausted_update(repair_outcome.problem, state=state, dependencies=dependencies)
             repaired = repair_outcome.result
             try:
@@ -316,6 +354,9 @@ def build_real(dependencies: NodeBuildDependencies):
         await materialize_synthesis(output, dependencies.synthesis_bundle)
         return node_state_update(
             "wave2_synthesis",
+            # Hygiene reset (BUG-050): a successful visit never leaves a stale
+            # budget signal for the gate to project on a later evaluation.
+            wave2_budget_exhausted=False,
             **{WAVE2_GATE_PREVIEW_KEY: build_wave2_gate_preview(output)},
         )
 

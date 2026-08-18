@@ -266,3 +266,53 @@ async def test_large_tool_result_history_uses_bounded_admission() -> None:
     await mw.awrap_model_call(FakeRequest(messages=messages), _handler_for(_ai(input_tokens=20, output_tokens=10)))
     assert mw.model_calls == 1
     assert len(bounded.content.encode()) < 200
+
+
+async def test_budget_stop_operands_carry_the_arithmetic_that_failed() -> None:
+    """@bug BUG-048 item 1: refusal events must retain projected/budget/cap."""
+
+    admission = BudgetMiddleware(_budget(total_token_budget=50, per_call_output_token_cap=40))
+    with pytest.raises(AgentBudgetError) as admission_exc:
+        await admission.awrap_model_call(FakeRequest(messages=[HumanMessage("x" * 200)]), _handler_for(_ai()))
+    assert admission_exc.value.budget_stop_reason is BudgetStopReason.TOKEN_ADMISSION
+    operands = admission_exc.value.operands
+    assert set(operands) == {
+        "projected_request_bytes",
+        "total_token_budget",
+        "per_call_output_token_cap",
+    }
+    assert operands["projected_request_bytes"] == 200 + 40
+    assert operands["total_token_budget"] == 50
+    assert operands["per_call_output_token_cap"] == 40
+
+
+def test_policy_envelope_table_projects_every_real_phase() -> None:
+    """@bug BUG-048 item 2: the table enumerates the assembled phase envelopes."""
+
+    from types import SimpleNamespace
+
+    from deerflow_deep_research.runtime.research import policy_envelope_table
+
+    graph_context = SimpleNamespace(
+        workspace_root="/mnt/user-data/workspace/deep-research/fixed",
+        uploads_root="/mnt/user-data/uploads",
+    )
+    table = policy_envelope_table(graph_context)
+    phases = [envelope.phase for envelope in table]
+    assert phases == [
+        "hitl1",
+        "topic_planning",
+        "wave0",
+        "targeted_evidence",
+        "wave1",
+        "wave2_synthesis",
+        "readiness",
+        "final_delivery",
+    ]
+    by_phase = {envelope.phase: envelope for envelope in table}
+    # targeted_evidence shares the Wave0 worker bridge, so identical numbers.
+    assert by_phase["targeted_evidence"] == by_phase["wave0"].model_copy(update={"phase": "targeted_evidence"})
+    # wave2 carries the real-output headroom envelope (BUG-050 calibration).
+    assert by_phase["wave2_synthesis"].total_token_budget == 64_000
+    assert by_phase["wave2_synthesis"].per_call_output_token_cap == 16_384
+    assert by_phase["wave2_synthesis"].policy_name == "wave2-evidence-synthesis"

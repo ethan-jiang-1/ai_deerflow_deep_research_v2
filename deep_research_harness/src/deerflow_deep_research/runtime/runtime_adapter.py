@@ -71,6 +71,9 @@ class TrustedRuntimeEnvelope:
     parent_sandbox: Any | None
     live_event_sink: LiveEventSink | None = None
     execution_profile: ExecutionProfileEvidence | None = None
+    # BUG-048 item 2: assembled per-phase policy envelopes; run-summary
+    # provenance only, never admission or routing authority.
+    policy_envelopes: tuple[Any, ...] = ()
     event_recorder_factory: Callable[[str], Any] | None = None
 
 

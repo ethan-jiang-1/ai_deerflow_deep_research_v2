@@ -25,6 +25,11 @@ def _work_unit_completion_rule() -> GateRule:
 
 def _wave2_searchable_gap_rule() -> GateRule:
     def evaluate(state: Mapping[str, Any]) -> Failure | None:
+        if state.get("wave2_budget_exhausted"):
+            # A budget hand-back (BUG-050) means synthesis cognition never ran
+            # this visit: there is deliberately no fresh preview, and stale gap
+            # routing from an earlier visit must not speak for this evaluation.
+            return None
         preview = state.get(WAVE2_GATE_PREVIEW_KEY)
         if not isinstance(preview, Wave2GatePreview):
             raise ValueError("wave2_gate_preview_missing")
@@ -207,10 +212,38 @@ def _wave2_minimal_pair_budget_resolver(state: Mapping[str, Any]) -> int | None:
     return None
 
 
+def _wave2_budget_handback_rule() -> GateRule:
+    """Project the node-owned budget-failure signal (BUG-050).
+
+    The wave2 node hands a budget-class invocation failure to this gate instead
+    of writing a terminal state. The projected failure rides the kernel's
+    existing budget / fatigue / exhaustion-degradation branches — no new
+    verdict, route, or degradation path exists for it.
+    """
+
+    def evaluate(state: Mapping[str, Any]) -> Failure | None:
+        if not state.get("wave2_budget_exhausted"):
+            return None
+        return Failure(
+            code=FailureCode.BUDGET_EXHAUSTED,
+            rule_name="wave2_budget_exhausted",
+            description="wave2 synthesis invocation stopped on its declared model budget",
+        )
+
+    return GateRule(
+        name="wave2_budget_exhausted",
+        evaluate=evaluate,
+        failure_code=FailureCode.BUDGET_EXHAUSTED,
+    )
+
+
 def build_wave2_real_gate_def() -> GateDefinition:
     return GateDefinition(
         phase="wave2_synthesis",
-        rules=(_wave2_searchable_gap_rule(),),
+        rules=(
+            _wave2_budget_handback_rule(),
+            _wave2_searchable_gap_rule(),
+        ),
         default_budget=1,
         route_map=_synthesis_route_map(),
         budget_resolver=_wave2_minimal_pair_budget_resolver,

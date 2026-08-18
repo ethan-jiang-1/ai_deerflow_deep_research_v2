@@ -827,3 +827,101 @@ async def test_lifecycle_resolved_publisher_writes_only_the_selected_bundle_jour
     assert inspection.summary is not None
     assert inspection.summary.bundle_id == bundle.bundle_id.value
     assert not (tmp_path / ".reports").exists()
+
+
+@pytest.mark.asyncio
+async def test_run_summary_carries_envelopes_only_for_executed_model_phases(tmp_path: Path) -> None:
+    """@bug BUG-048 item 2: the summary answers "what budget did each phase get"."""
+
+    from deerflow_deep_research.domain.run_observation import PolicyEnvelopeEvidence
+
+    bundle_root = tmp_path / "bundle"
+    (bundle_root / "diagnostics").mkdir(mode=0o700, parents=True)
+    os.chmod(bundle_root / "diagnostics", 0o700)
+    store = RunObservationStore(
+        bundle_root=bundle_root,
+        bundle_id=BUNDLE_ID,
+        policy_envelopes=(
+            PolicyEnvelopeEvidence(
+                phase="topic_planning",
+                policy_name="topic-planning",
+                total_token_budget=12_000,
+                per_call_output_token_cap=2_048,
+                max_model_calls=2,
+            ),
+            PolicyEnvelopeEvidence(
+                phase="hitl1",
+                policy_name="hitl1-brief",
+                total_token_budget=8_000,
+                per_call_output_token_cap=2_048,
+                max_model_calls=1,
+            ),
+        ),
+    )
+    recorder = RunObservationRecorder(store=store, bundle_id=BUNDLE_ID)
+    await recorder.establish(generation=0, phase="bootstrap", durability="restart_durable")
+    inspection = await store.inspect(bundle_id=BUNDLE_ID)
+    assert inspection.summary is not None
+    assert inspection.summary.policy_envelopes == ()  # nothing executed yet
+
+    await recorder.record(
+        category=RunEventCategory.MODEL_TOOL,
+        phase="topic_planning",
+        attempt_id="topic_planning_a00",
+        outcome="completed",
+    )
+    inspection = await store.inspect(bundle_id=BUNDLE_ID)
+    assert inspection.summary is not None
+    phases = [envelope.phase for envelope in inspection.summary.policy_envelopes]
+    assert phases == ["topic_planning"]  # hitl1 never executed
+
+
+@pytest.mark.asyncio
+async def test_journal_retains_call_ordinal_usage_and_budget_operands(tmp_path: Path) -> None:
+    """@bug BUG-048 items 1/4/6: safe observational fields ride the events."""
+
+    from deerflow_deep_research.domain.run_observation import UsageTokensEvidence
+
+    bundle_root = tmp_path / "bundle"
+    (bundle_root / "diagnostics").mkdir(mode=0o700, parents=True)
+    os.chmod(bundle_root / "diagnostics", 0o700)
+    store = RunObservationStore(bundle_root=bundle_root, bundle_id=BUNDLE_ID)
+    recorder = RunObservationRecorder(store=store, bundle_id=BUNDLE_ID)
+    await recorder.establish(generation=0, phase="bootstrap", durability="restart_durable")
+
+    await recorder.record(
+        category=RunEventCategory.MODEL_TOOL,
+        phase="wave1",
+        attempt_id="wave1_a00",
+        outcome="started",
+        call_ordinal=1,
+    )
+    await recorder.record(
+        category=RunEventCategory.MODEL_TOOL,
+        phase="wave1",
+        attempt_id="wave1_a00",
+        outcome="completed",
+        call_ordinal=1,
+        usage_tokens=UsageTokensEvidence(input_tokens=100, output_tokens=20, total_tokens=120),
+    )
+    await recorder.record(
+        category=RunEventCategory.MODEL_TOOL,
+        phase="wave1",
+        attempt_id="wave1_a00",
+        outcome="failed",
+        failure_category="budget.exhausted",
+        worker_failure_category="agent_invocation",
+        budget_stop_reason=BudgetStopReason.TOKEN_ADMISSION,
+        call_ordinal=2,
+        budget_operands={"projected_request_bytes": 900, "total_token_budget": 800, "per_call_output_token_cap": 64},
+    )
+    inspection = await store.inspect(bundle_id=BUNDLE_ID)
+
+    started, completed, failed = inspection.events[1:]
+    assert started.call_ordinal == 1
+    assert completed.call_ordinal == 1
+    assert completed.usage_tokens is not None
+    assert completed.usage_tokens.total_tokens == 120
+    assert failed.call_ordinal == 2
+    assert failed.budget_operands is not None
+    assert failed.budget_operands["projected_request_bytes"] == 900

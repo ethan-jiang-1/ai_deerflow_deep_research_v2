@@ -52,7 +52,7 @@ from deerflow_deep_research.graph.builder import _node_wrapper
 from deerflow_deep_research.graph.implementation_map import AdapterKind, NodeAdapter
 from deerflow_deep_research.graph.nodes.gate_adapter import real_wave2_gate_def
 from deerflow_deep_research.graph.nodes.wave2_synthesis import NODE_SPEC
-from deerflow_deep_research.graph.nodes.wave2_synthesis.node import _validate_synthesis_semantics
+from deerflow_deep_research.graph.nodes.wave2_synthesis.node import _pre_model_problem, _validate_synthesis_semantics
 from deerflow_deep_research.graph.nodes.wave2_synthesis.prompts import (
     build_synthesis_prompt,
     build_synthesis_repair_prompt,
@@ -448,6 +448,76 @@ def test_wave2_prompt_objectives_project_only_invocation_data() -> None:
                 "route authority",
             )
         )
+
+
+def test_synthesis_prompts_bound_evidence_projection_within_request_limits() -> None:
+    """@bug BUG-049
+
+    Accepted evidence grows with every targeted-evidence round (observed 14,821
+    content bytes at wave2 a3). The synthesis and repair prompts must deterministically
+    bound their evidence projection so the built request always satisfies the domain
+    objective cap and the wave2 admission envelope, instead of raising a pydantic
+    ValidationError that terminates the run blocked as ``candidate_invalid``.
+    """
+
+    evidence = tuple(
+        SynthesisEvidence(
+            submission_ref=SUBMISSION_REF,
+            phase="wave1",
+            result_contract="wave1.evidence-extraction",
+            content=("证据" * 5_000) + ("x" * 10_000),  # CJK+ASCII mix, 20k chars per entry
+            truncated=True,
+        )
+        for _ in range(4)
+    )
+
+    request = build_synthesis_prompt(
+        topic_registry=({"topic_id": "storage", "title": "Storage"},),
+        wave0_refs=(SUBMISSION_REF,) * 6,
+        evidence=evidence,
+        open_questions=(("q:w1_q1", "What is the exact 2024 installation total?"),),
+    )
+    assert len(request.objective) <= 16_384
+    assert len(request.objective.encode("utf-8")) <= 44_800
+
+    repair = build_synthesis_repair_prompt(
+        "model draft " * 1_500,
+        evidence,
+        validation_category="semantic_invalid",
+        open_questions=(("q:w1_q1", "What is the exact 2024 installation total?"),),
+        validation_detail={"missing_question_ids": ["q:w1_q1"]},
+    )
+    assert len(repair.objective) <= 16_384
+    assert len(repair.objective.encode("utf-8")) <= 44_800
+
+
+def test_pre_model_problem_preserves_concrete_input_categories() -> None:
+    """@bug BUG-048 item 5 (defense in depth for BUG-049's class)
+
+    Pre-model request-construction failures must carry a pattern-safe concrete
+    input category. Closed-form raise messages keep their own category; pydantic
+    ValidationErrors (multi-line messages that match no closed vocabulary) must
+    normalize to ``synthesis_request_shape_invalid`` instead of collapsing into
+    the model-candidate ``candidate_invalid`` bucket.
+    """
+
+    from pydantic import BaseModel, Field, ValidationError
+
+    class _Capped(BaseModel):
+        objective: str = Field(max_length=4)
+
+    captured: ValidationError | None = None
+    try:
+        _Capped(objective="x" * 20)
+    except ValidationError as exc:
+        captured = exc
+    else:  # pragma: no cover - construction guarantee
+        raise AssertionError("validation error expected")
+    assert captured is not None
+    assert isinstance(captured, ValueError)
+    normalized = _pre_model_problem(captured)
+    assert normalized.validation_category == "synthesis_request_shape_invalid"
+    assert normalized.validation_category != "candidate_invalid"
 
 
 async def test_real_synthesis_persists_searchable_gap_and_returns_typed_preview(tmp_path: Path) -> None:
@@ -1141,3 +1211,82 @@ async def test_pre_model_malformed_projection_terminates_bounded(tmp_path: Path)
     assert update["terminal_status"] == LifecycleStatus.BLOCKED.value
     assert update["latest_incident"]["validation_category"] == "input.wave1_open_question_projection_invalid"
     assert capabilities.requests == []
+
+
+async def test_real_synthesis_fails_typed_on_cross_document_question_id_collision(tmp_path: Path) -> None:
+    """@bug BUG-051
+
+    Repair reruns can mint the same ``q:w1_*`` id in two accepted Wave1 work
+    units. The resolution read must surface the collision as a typed
+    pre-model failure instead of letting ``dict()`` silently drop one question
+    text.
+    """
+
+    capabilities = _Capabilities(NodeExecutionResult(finish_reason=NodeFinishReason.SUCCESS, summary=_synthesis_json()))
+    dependencies = _dependencies(tmp_path, capabilities)
+    assert isinstance(dependencies.synthesis_bundle, _SynthesisStore)
+
+    class _CollidingQuestionStore(_SynthesisStore):
+        """Mirrors the real store read: same id, two different texts, typed raise."""
+
+        async def read_wave1_open_questions(self, accepted_refs: tuple[str, ...]) -> tuple[tuple[str, str], ...]:
+            raise ValueError("wave1_open_question_id_collision")
+
+    dependencies = replace(
+        dependencies, synthesis_bundle=_CollidingQuestionStore(dependencies.synthesis_bundle.delegate)
+    )
+
+    update = await NODE_SPEC.real_factory(dependencies)(_question_state())
+
+    assert update["route"] == "exhausted"
+    assert update["terminal_status"] == LifecycleStatus.BLOCKED.value
+    assert update["latest_incident"]["validation_category"] == "input.wave1_open_question_id_collision"
+    assert capabilities.requests == []
+
+
+async def test_budget_exhausted_invocation_hands_route_authority_to_the_gate(tmp_path: Path) -> None:
+    """@bug BUG-050
+
+    A budget-class invocation failure must not write a terminal state from the
+    node: it records the bounded gate-readable signal and returns non-terminal,
+    so the wave2 gate's existing degradation machinery decides the route.
+    """
+
+    problem = NodeProblem(
+        code=RunFailureCode.BUDGET_EXHAUSTED,
+        phase="wave2_synthesis",
+        certainty=FailureCertainty.DIRECT,
+    )
+    capabilities = _Capabilities(
+        NodeExecutionResult(finish_reason=NodeFinishReason.BUDGET_EXHAUSTED, problem=problem)
+    )
+    dependencies = _dependencies(tmp_path, capabilities)
+
+    update = await NODE_SPEC.real_factory(dependencies)(_state())
+
+    assert update.get("route") is None  # non-terminal: no route authority claimed
+    assert "terminal_status" not in update
+    assert "terminal_reason" not in update
+    assert "latest_incident" not in update
+    assert update["wave2_budget_exhausted"] is True
+    # Builder contract: a real non-terminal wave2 completion carries a preview;
+    # this visit's cognition never ran, so the fresh gap set is empty.
+    assert update[WAVE2_GATE_PREVIEW_KEY] == Wave2GatePreview(searchable_gap_ids=())
+
+
+async def test_non_budget_failures_keep_their_terminal_disposition(tmp_path: Path) -> None:
+    """@bug BUG-050: only the budget class hands back; provider failures block."""
+
+    problem = NodeProblem(
+        code=RunFailureCode.PROVIDER_TIMEOUT,
+        phase="wave2_synthesis",
+        certainty=FailureCertainty.DIRECT,
+    )
+    capabilities = _Capabilities(NodeExecutionResult(finish_reason=NodeFinishReason.FAILED, problem=problem))
+    dependencies = _dependencies(tmp_path, capabilities)
+
+    update = await NODE_SPEC.real_factory(dependencies)(_state())
+
+    assert update["route"] == "exhausted"
+    assert update["terminal_status"] == LifecycleStatus.BLOCKED.value
+    assert "wave2_budget_exhausted" not in update or update.get("wave2_budget_exhausted") is False

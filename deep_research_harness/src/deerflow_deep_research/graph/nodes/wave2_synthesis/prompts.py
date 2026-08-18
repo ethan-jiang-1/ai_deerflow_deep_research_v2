@@ -8,13 +8,73 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 
 from deerflow_deep_research.domain.context import NodeExecutionRequest
 from deerflow_deep_research.domain.synthesis import SynthesisEvidence, SynthesisResult
 from deerflow_deep_research.domain.untrusted import build_untrusted_data_block
 
 from .capabilities import WAVE2_EVIDENCE_SYNTHESIS, WAVE2_EVIDENCE_SYNTHESIS_REPAIR
+
+# Derived limits: the built request must always satisfy the domain objective cap
+# (NodeExecutionRequest.objective) and the wave2 admission envelope
+# (total_token_budget 64_000 minus per_call_output_token_cap 16_384 minus the
+# trusted system prompt ~1_268 and the expected-output contract ~1_468). The
+# invariant is locked by
+# test_synthesis_prompts_bound_evidence_projection_within_request_limits.
+_MAX_OBJECTIVE_CHARS = 16_384
+_MAX_OBJECTIVE_UTF8_BYTES = 44_800
+_EVIDENCE_PROJECTION_START_BYTES = 32_768
+_EVIDENCE_PROJECTION_FLOOR_BYTES = 1_024
+
+
+def _project_evidence(evidence: tuple[SynthesisEvidence, ...], byte_budget: int) -> list[dict[str, object]]:
+    """Deterministically truncate evidence contents under one shared byte budget."""
+
+    items: list[dict[str, object]] = [item.model_dump(mode="json") for item in evidence]
+    remaining = max(0, byte_budget)
+    for index, item in enumerate(items):
+        content = str(item.get("content") or "")
+        limit = max(0, remaining // max(1, len(items) - index))
+        truncated_content = content.encode("utf-8")[:limit].decode("utf-8", "ignore")
+        item["content"] = truncated_content
+        item["truncated"] = bool(item.get("truncated")) or len(truncated_content) < len(content)
+        remaining -= len(truncated_content.encode("utf-8"))
+    return items
+
+
+def _within_request_caps(objective: str) -> bool:
+    return len(objective) <= _MAX_OBJECTIVE_CHARS and len(objective.encode("utf-8")) <= _MAX_OBJECTIVE_UTF8_BYTES
+
+
+def _fitted_objective(
+    evidence: Iterable[SynthesisEvidence],
+    build_objective: Callable[[str], str],
+) -> str:
+    """Build an objective whose evidence projection fits the request caps.
+
+    Accepted evidence grows with every targeted-evidence round and previously
+    overflowed the domain objective cap as an unclassified pydantic
+    ValidationError (BUG-049). The projection budget shrinks geometrically
+    until the serialized objective fits both caps; at the floor an oversized
+    trusted scaffolding raises a typed, classifiable ValueError instead.
+    """
+
+    materialized = tuple(evidence)
+    budget = _EVIDENCE_PROJECTION_START_BYTES
+    while True:
+        payload_json = json.dumps(
+            _project_evidence(materialized, budget),
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        objective = build_objective(payload_json)
+        if _within_request_caps(objective) or budget <= _EVIDENCE_PROJECTION_FLOOR_BYTES:
+            if _within_request_caps(objective):
+                return objective
+            raise ValueError("synthesis_evidence_projection_overflow")
+        budget = max(_EVIDENCE_PROJECTION_FLOOR_BYTES, budget * 3 // 4)
 
 
 def _expected_synthesis_output() -> str:
@@ -104,7 +164,6 @@ def build_synthesis_prompt(
     """Build a bounded synthesis request from accumulated evidence."""
     topics = list(topic_registry or [])
     topic_names = [t.get("title", t.get("topic_id", "")) for t in topics if isinstance(t, dict)]
-    evidence_payload = [item.model_dump(mode="json") for item in evidence]
     question_pairs = [{"question_id": question_id, "question": question} for question_id, question in open_questions][
         :64
     ]
@@ -136,10 +195,11 @@ def build_synthesis_prompt(
         "references, and Wave1 open questions resolved from accepted evidence.\n\nTrusted assignment:\n"
         + assignment
         + disposition_contract
-        + "\n\nUntrusted accepted evidence:\n"
-        + build_untrusted_data_block(
-            [json.dumps(evidence_payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))]
-        )
+        + "\n\nUntrusted accepted evidence (deterministically truncated to the request budget):\n"
+    )
+    objective = _fitted_objective(
+        evidence,
+        lambda evidence_json: objective + build_untrusted_data_block([evidence_json]),
     )
     return NodeExecutionRequest(
         objective=objective,
@@ -169,7 +229,6 @@ def build_synthesis_repair_prompt(
     open_questions: Iterable[tuple[str, str]] = (),
     validation_detail: object | None = None,
 ) -> NodeExecutionRequest:
-    evidence_payload = [item.model_dump(mode="json") for item in evidence]
     question_pairs = [{"question_id": question_id, "question": question} for question_id, question in open_questions][
         :64
     ]
@@ -190,20 +249,19 @@ def build_synthesis_repair_prompt(
             sort_keys=True,
             separators=(",", ":"),
         )
-    objective = (
+    draft_text = draft[:8_192] if isinstance(draft, str) else ""
+    prefix = (
         "Use the activated zero-tool structured repair capability for one bounded assignment and closed output "
         "contract. The trusted validation category below is a parser or semantic category only.\n\n"
         f"Trusted validation category: {validation_category}"
         + disposition_contract
         + trusted
-        + "\n\nUntrusted draft and accepted evidence:\n"
-        + build_untrusted_data_block(
-            [
-                "model_draft:\n" + (draft[:8_192] if isinstance(draft, str) else ""),
-                "accepted_evidence:\n"
-                + json.dumps(evidence_payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")),
-            ]
-        )
+        + "\n\nUntrusted draft and accepted evidence (deterministically truncated to the request budget):\n"
+    )
+    objective = _fitted_objective(
+        evidence,
+        lambda evidence_json: prefix
+        + build_untrusted_data_block(["model_draft:\n" + draft_text, "accepted_evidence:\n" + evidence_json]),
     )
     return NodeExecutionRequest(
         objective=objective,

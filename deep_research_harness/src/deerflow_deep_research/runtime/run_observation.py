@@ -38,6 +38,7 @@ from deerflow_deep_research.domain.run_observation import (
     JournalIncompleteReason,
     ObservationCategory,
     ObservationInspectability,
+    PolicyEnvelopeEvidence,
     RecordBearingLifecycleFact,
     RetainedDiagnosticRecord,
     RetentionState,
@@ -91,15 +92,46 @@ class RunObservationStore:
         bundle_root: Path,
         bundle_id: str,
         max_event_records: int = MAX_EVENT_RECORDS,
+        policy_envelopes: tuple[PolicyEnvelopeEvidence, ...] = (),
     ) -> None:
         if not isinstance(max_event_records, int) or not 2 <= max_event_records <= MAX_EVENT_RECORDS:
             raise ValueError("journal_capacity_invalid")
         if not _valid_bundle_id(bundle_id):
             raise ValueError("bundle_id_invalid")
+        phases = [envelope.phase for envelope in policy_envelopes]
+        if len(set(phases)) != len(phases):
+            raise ValueError("policy_envelope_phases_duplicate")
         self._root = Path(bundle_root)
         self._bundle_id = bundle_id
         self._max_event_records = max_event_records
+        # BUG-048 item 2: the assembled per-phase envelope table supplied by the
+        # trusted composition root. Summary projection keeps only phases with a
+        # recorded model_tool fact.
+        self._policy_envelopes = tuple(policy_envelopes)
         self._lock = asyncio.Lock()
+
+    def _executed_policy_envelopes(
+        self,
+        events: tuple[RunEvent, ...],
+        prior_summary: RunSummary | None = None,
+    ) -> tuple[PolicyEnvelopeEvidence, ...]:
+        """Assembled envelopes of phases with a recorded model_tool fact.
+
+        The prior summary's envelopes are retained so a store without the
+        composition-root table (e.g. the lifecycle publisher's store) never
+        erases provenance a richer writer already projected. Supplied
+        envelopes take precedence over retained ones for the same phase.
+        """
+
+        table: dict[str, PolicyEnvelopeEvidence] = {}
+        for envelope in (prior_summary.policy_envelopes if prior_summary else ()):
+            table[envelope.phase] = envelope
+        for envelope in self._policy_envelopes:
+            table[envelope.phase] = envelope
+        executed_phases = {
+            event.phase for event in events if event.category is RunEventCategory.MODEL_TOOL
+        }
+        return tuple(table[phase] for phase in sorted(table) if phase in executed_phases)
 
     async def publish(self, fact: RecordBearingLifecycleFact) -> RunObservationView:
         """Persist a bounded observation without validating or touching a Bundle."""
@@ -183,6 +215,9 @@ class RunObservationStore:
         retry_ordinal: int | None = None,
         backoff_milliseconds: int | None = None,
         recovery_event_disposition: str | None = None,
+        call_ordinal: int | None = None,
+        usage_tokens: Any | None = None,
+        budget_operands: dict[str, int] | None = None,
     ) -> None:
         """Append a redacted event only to an already-published observation."""
 
@@ -215,6 +250,9 @@ class RunObservationStore:
                     retry_ordinal,
                     backoff_milliseconds,
                     recovery_event_disposition,
+                    call_ordinal,
+                    usage_tokens,
+                    budget_operands,
                 )
             except (OSError, ValueError, RunObservationError):
                 # Observations cannot perturb graph or lifecycle execution.
@@ -318,6 +356,7 @@ class RunObservationStore:
                 generation=generation,
                 durability=durability,
                 latest_event_sequence=events[-1].sequence,
+                events=events,
                 manifest=manifest,
                 execution_profile=persisted_profile,
             )
@@ -365,6 +404,7 @@ class RunObservationStore:
             generation=fact.generation,
             durability=fact.durability,
             latest_event_sequence=event.sequence,
+            events=events,
             manifest=manifest,
             terminal_outcome=fact.terminal_outcome,
             failure_category=fact.failure_category,
@@ -375,6 +415,10 @@ class RunObservationStore:
                 events=events,
                 summary=self._read_model(journal_root / _SUMMARY_FILENAME, RunSummary),
                 supplied=None,
+            ),
+            policy_envelopes=self._executed_policy_envelopes(
+                events,
+                self._read_model(journal_root / _SUMMARY_FILENAME, RunSummary),
             ),
         )
         self._atomic_write(journal_root / _SUMMARY_FILENAME, self._encode_model(summary))
@@ -448,6 +492,9 @@ class RunObservationStore:
         retry_ordinal: int | None,
         backoff_milliseconds: int | None,
         recovery_event_disposition: str | None,
+        call_ordinal: int | None,
+        usage_tokens: Any | None,
+        budget_operands: dict[str, int] | None,
     ) -> None:
         if generation is None:
             return
@@ -481,6 +528,9 @@ class RunObservationStore:
                 retry_ordinal=retry_ordinal,
                 backoff_milliseconds=backoff_milliseconds,
                 recovery_event_disposition=recovery_event_disposition,  # type: ignore[arg-type]
+                call_ordinal=call_ordinal,
+                usage_tokens=usage_tokens,
+                budget_operands=budget_operands,
             )
         except ValueError:
             return
@@ -495,6 +545,9 @@ class RunObservationStore:
                     "dropped_event_count": manifest.dropped_event_count,
                     "first_dropped_sequence": manifest.first_dropped_sequence,
                     "last_dropped_sequence": manifest.last_dropped_sequence,
+                    # BUG-048 item 2: executed-phase envelope projection refreshes
+                    # as model_tool facts arrive (phases only ever start executing).
+                    "policy_envelopes": self._executed_policy_envelopes(events, summary),
                 }
             )
             self._atomic_write(journal_root / _SUMMARY_FILENAME, self._encode_model(updated_summary))
@@ -755,6 +808,8 @@ class RunObservationStore:
         generation: int,
         durability: str,
         latest_event_sequence: int,
+        events: tuple[RunEvent, ...] = (),
+        policy_envelopes: tuple[PolicyEnvelopeEvidence, ...] | None = None,
         manifest: RunObservationManifest,
         terminal_outcome: str | None = None,
         failure_category: str | None = None,
@@ -782,6 +837,9 @@ class RunObservationStore:
             last_dropped_sequence=manifest.last_dropped_sequence,
             retained_recovery_summary=retained_recovery_summary,
             execution_profile=execution_profile,
+            policy_envelopes=(
+                policy_envelopes if policy_envelopes is not None else self._executed_policy_envelopes(events)
+            ),
         )
 
     @staticmethod

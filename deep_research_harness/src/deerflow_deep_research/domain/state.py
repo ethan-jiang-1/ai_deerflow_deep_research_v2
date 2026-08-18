@@ -1187,6 +1187,10 @@ class ResearchGraphState:
     unresolved_gaps: tuple[str, ...] = ()
     wave1_open_questions: tuple[Wave1OpenQuestionRef, ...] = ()
     degraded_decisions: tuple[str, ...] = ()
+    # Node-owned bounded signal (BUG-050): wave2 synthesis handed a budget-class
+    # invocation failure to its gate instead of writing a terminal state. The
+    # node writes and clears it; the wave2 gate reads it through its rules.
+    wave2_budget_exhausted: bool = False
     # delivery
     synthesis_ref: ContentRef | None = None
     decision_brief_ref: ContentRef | None = None
