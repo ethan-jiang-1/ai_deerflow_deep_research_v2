@@ -936,3 +936,158 @@ async def test_real_synthesis_repairs_question_coverage_once(tmp_path: Path) -> 
 
     assert len(capabilities.requests) == 2
     assert update[WAVE2_GATE_PREVIEW_KEY] == Wave2GatePreview(searchable_gap_ids=("gap:storage-cost",))
+
+
+def test_repair_prompt_carries_open_question_contract_and_trusted_detail() -> None:
+    """@impl WSN-010
+
+    The repair request now carries the same trusted open-question disposition
+    contract as the initial prompt, plus the concrete failing coverage detail,
+    so a coverage-class repair is non-blind.
+    """
+    evidence = (
+        SynthesisEvidence(
+            submission_ref=SUBMISSION_REF,
+            phase="wave1",
+            result_contract="wave1.evidence-extraction",
+            content="{}",
+        ),
+    )
+    request = build_synthesis_repair_prompt(
+        "draft",
+        evidence,
+        validation_category="semantic_invalid",
+        open_questions=(("q:w1_cost", QUESTION_TEXT),),
+        validation_detail={"missing_question_ids": ["q:w1_cost"], "foreign_question_ids": []},
+    )
+
+    objective = request.objective
+    assert "q:w1_cost" in objective
+    assert QUESTION_TEXT in objective
+    assert "missing_question_ids" in objective
+    assert "closed output contract" in objective
+    assert request.tools_enabled is False
+    assert request.capability_ref is not None
+    assert request.capability_ref.capability_id == "wave2-evidence-synthesis-repair"
+
+
+def test_expected_output_contract_has_example_and_negative_contrast() -> None:
+    """@impl WSN-011
+
+    The output contract is concrete: a minimal valid example object plus an
+    explicit "not a wave1 claims verdict list" contrast, so the evidence shape
+    no longer dominates.
+    """
+    request = build_synthesis_prompt()
+    expected = json.loads(request.expected_output)
+
+    assert "example" in expected
+    example = expected["example"]
+    assert "findings" in example and "relations" in example and "gaps" in example and "summary" in example
+    assert "claims" not in example
+    assert "claims[]" in expected["instruction"]
+    assert "claim_id" in expected["instruction"]
+
+
+async def test_repair_is_non_blind_for_coverage_with_open_question_contract(tmp_path: Path) -> None:
+    """@impl WSN-010
+
+    When the first candidate misses the projected question, the repair request
+    carries the full open-question list plus the missing-id detail, and the
+    repaired candidate (now covering the question) passes deterministically.
+    """
+
+    class _NonBlindCoverageRepairCapabilities:
+        def __init__(self) -> None:
+            self.requests: list[object] = []
+
+        async def run_agent(self, *, context: NodeAgentContext, request: object) -> NodeExecutionResult:
+            self.requests.append(request)
+            gap = _covered_gap("q:w1_cost") if len(self.requests) == 2 else _covered_gap()
+            return NodeExecutionResult(
+                finish_reason=NodeFinishReason.SUCCESS,
+                summary=_synthesis_json(gaps=(gap,)),
+            )
+
+    capabilities = _NonBlindCoverageRepairCapabilities()
+    dependencies = _dependencies(tmp_path, capabilities)  # type: ignore[arg-type]
+    assert isinstance(dependencies.synthesis_bundle, _SynthesisStore)
+    dependencies = replace(
+        dependencies,
+        synthesis_bundle=_QuestionStore(
+            dependencies.synthesis_bundle.delegate, questions=(("q:w1_cost", QUESTION_TEXT),)
+        ),
+    )
+
+    update = await NODE_SPEC.real_factory(dependencies)(_question_state())
+
+    assert len(capabilities.requests) == 2
+    repair_request = capabilities.requests[1]
+    assert "q:w1_cost" in repair_request.objective
+    assert "missing_question_ids" in repair_request.objective
+    assert "closed output contract" in repair_request.objective
+    assert update[WAVE2_GATE_PREVIEW_KEY] == Wave2GatePreview(searchable_gap_ids=("gap:storage-cost",))
+
+
+async def test_still_invalid_semantic_repair_projects_concrete_validation_category(tmp_path: Path) -> None:
+    """@impl WSN-001
+
+    A repaired candidate that still fails question-coverage validation reaches
+    the bounded exhausted terminal carrying the concrete semantic category
+    (synthesis_question_coverage_invalid) instead of only the generic code.
+    """
+
+    class _StillInvalidCoverageRepairCapabilities:
+        def __init__(self) -> None:
+            self.requests: list[object] = []
+
+        async def run_agent(self, *, context: NodeAgentContext, request: object) -> NodeExecutionResult:
+            self.requests.append(request)
+            return NodeExecutionResult(
+                finish_reason=NodeFinishReason.SUCCESS,
+                summary=_synthesis_json(gaps=(_covered_gap(),)),
+            )
+
+    capabilities = _StillInvalidCoverageRepairCapabilities()
+    dependencies = _dependencies(tmp_path, capabilities)  # type: ignore[arg-type]
+    assert isinstance(dependencies.synthesis_bundle, _SynthesisStore)
+    dependencies = replace(
+        dependencies,
+        synthesis_bundle=_QuestionStore(
+            dependencies.synthesis_bundle.delegate, questions=(("q:w1_cost", QUESTION_TEXT),)
+        ),
+    )
+
+    update = await NODE_SPEC.real_factory(dependencies)(_question_state())
+
+    assert update["route"] == "exhausted"
+    assert update["terminal_status"] == "blocked"
+    assert update["latest_incident"]["code"] == "output.structured_invalid"
+    assert update["latest_incident"]["validation_category"] == "synthesis_question_coverage_invalid"
+    assert len(capabilities.requests) == 2
+    assert not (tmp_path / bundle_host_relative_root(BUNDLE) / "synthesis" / "findings.json").exists()
+
+
+async def test_parse_terminal_keeps_generic_code_without_validation_category(tmp_path: Path) -> None:
+    """@impl WSN-001
+
+    A pure parser failure that survives repair keeps the generic
+    output.structured_invalid code and no validation_category is claimed.
+    """
+
+    class _StillInvalidParseRepairCapabilities:
+        def __init__(self) -> None:
+            self.requests: list[object] = []
+
+        async def run_agent(self, *, context: NodeAgentContext, request: object) -> NodeExecutionResult:
+            self.requests.append(request)
+            return NodeExecutionResult(finish_reason=NodeFinishReason.SUCCESS, summary="not-json")
+
+    capabilities = _StillInvalidParseRepairCapabilities()
+    dependencies = _dependencies(tmp_path, capabilities)  # type: ignore[arg-type]
+
+    update = await NODE_SPEC.real_factory(dependencies)(_state())
+
+    assert update["route"] == "exhausted"
+    assert update["latest_incident"]["code"] == "output.structured_invalid"
+    assert "validation_category" not in update["latest_incident"]

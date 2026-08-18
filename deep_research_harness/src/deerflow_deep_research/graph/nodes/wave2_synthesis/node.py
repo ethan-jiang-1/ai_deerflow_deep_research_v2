@@ -46,6 +46,21 @@ def _synthesis_validation_category(error: ValueError) -> str:
     return "candidate_invalid"
 
 
+class SynthesisValidationFailure(ValueError):
+    """A typed deterministic validation failure: concrete category plus a
+    bounded repair-time detail (missing/duplicated/foreign question ids).
+
+    It IS a ValueError, so existing `except ValueError:` seams keep catching it;
+    the concrete category and detail are additionally available to the
+    repair-prompt call site and the second-validation terminal call site.
+    """
+
+    def __init__(self, category: str, detail: object | None = None) -> None:
+        self.category = category
+        self.detail = detail
+        super().__init__(category)
+
+
 def _evidence_aliases(evidence: tuple[SynthesisEvidence, ...]) -> dict[str, str]:
     aliases = {item.submission_ref: item.submission_ref for item in evidence}
     for item in evidence:
@@ -95,31 +110,50 @@ def _validate_synthesis_semantics(
     accepted = set(accepted_refs)
     aliases = _evidence_aliases(evidence)
     if accepted and not output.findings:
-        raise ValueError("synthesis_findings_required")
+        raise SynthesisValidationFailure("synthesis_findings_required")
     for finding in output.findings:
         normalized_refs = tuple(aliases.get(ref, ref) for ref in finding.backing_refs)
         finding = finding.model_copy(update={"backing_refs": normalized_refs})
         backing_refs = set(normalized_refs)
         if not backing_refs:
-            raise ValueError("synthesis_finding_backing_refs_required")
+            raise SynthesisValidationFailure("synthesis_finding_backing_refs_required")
         if not backing_refs <= accepted:
-            raise ValueError("synthesis_finding_backing_ref_invalid")
+            raise SynthesisValidationFailure("synthesis_finding_backing_ref_invalid")
     if open_question_ids:
         expected = set(open_question_ids)
         gap_covered: set[str] = set()
         for gap in output.gaps:
             if not gap.search_required:
                 if gap.source_questions:
-                    raise ValueError("synthesis_question_coverage_invalid")
+                    raise SynthesisValidationFailure(
+                        "synthesis_question_coverage_invalid",
+                        detail={"non_searchable_gap_questions": sorted(gap.source_questions)},
+                    )
                 continue
-            if gap_covered & set(gap.source_questions):
-                raise ValueError("synthesis_question_coverage_invalid")
+            overlap = gap_covered & set(gap.source_questions)
+            if overlap:
+                raise SynthesisValidationFailure(
+                    "synthesis_question_coverage_invalid",
+                    detail={"duplicated_question_ids": sorted(overlap)},
+                )
             gap_covered |= set(gap.source_questions)
         resolved = set(output.resolved_questions)
-        if gap_covered & resolved:
-            raise ValueError("synthesis_question_coverage_invalid")
-        if (gap_covered | resolved) != expected:
-            raise ValueError("synthesis_question_coverage_invalid")
+        both = gap_covered & resolved
+        if both:
+            raise SynthesisValidationFailure(
+                "synthesis_question_coverage_invalid",
+                detail={"question_ids_in_both": sorted(both)},
+            )
+        missing = expected - (gap_covered | resolved)
+        foreign = (gap_covered | resolved) - expected
+        if missing or foreign:
+            raise SynthesisValidationFailure(
+                "synthesis_question_coverage_invalid",
+                detail={
+                    "missing_question_ids": sorted(missing),
+                    "foreign_question_ids": sorted(foreign),
+                },
+            )
     normalized_findings = tuple(
         finding.model_copy(update={"backing_refs": tuple(aliases.get(ref, ref) for ref in finding.backing_refs)})
         for finding in output.findings
@@ -153,6 +187,7 @@ def _exhausted_update(
             certainty=problem.certainty,
             diagnostic_ref=diagnostic_ref,
             provider_observation=problem.provider_observation,
+            validation_category=problem.validation_category,
         ).model_dump(mode="json", exclude_none=True),
     )
 
@@ -198,6 +233,7 @@ def build_real(dependencies: NodeBuildDependencies):
             )
         except ValueError as initial_error:
             validation_category = _synthesis_validation_category(initial_error)
+            repair_detail = getattr(initial_error, "detail", None)
             repair_outcome = await invoke_and_normalize(
                 lambda: dependencies.capabilities.run_agent(
                     context=dependencies.agent_context,
@@ -205,6 +241,8 @@ def build_real(dependencies: NodeBuildDependencies):
                         result.summary,
                         evidence,
                         validation_category=validation_category,
+                        open_questions=open_question_pairs,
+                        validation_detail=repair_detail,
                     ),
                 ),
                 phase="wave2_synthesis",
@@ -216,18 +254,25 @@ def build_real(dependencies: NodeBuildDependencies):
                 output = _validate_synthesis_semantics(
                     parse_synthesis_output(repaired.summary), wave0_refs, evidence, open_question_ids=open_question_ids
                 )
-            except ValueError:
+            except ValueError as final_error:
                 # A still-invalid repaired candidate is a bounded terminal, never
-                # an uncaught crash: route exhausted with a typed incident.
-                return _exhausted_update(
-                    NodeProblem(
+                # an uncaught crash: route exhausted with a typed incident and
+                # the concrete semantic category (when the failure is semantic).
+                final_category = getattr(final_error, "category", None)
+                if final_category is not None:
+                    problem = NodeProblem(
                         code=RunFailureCode.OUTPUT_STRUCTURED_INVALID,
                         phase="wave2_synthesis",
                         certainty=FailureCertainty.DIRECT,
-                    ),
-                    state=state,
-                    dependencies=dependencies,
-                )
+                        validation_category=final_category,
+                    )
+                else:
+                    problem = NodeProblem(
+                        code=RunFailureCode.OUTPUT_STRUCTURED_INVALID,
+                        phase="wave2_synthesis",
+                        certainty=FailureCertainty.DIRECT,
+                    )
+                return _exhausted_update(problem, state=state, dependencies=dependencies)
         await materialize_synthesis(output, dependencies.synthesis_bundle)
         return node_state_update(
             "wave2_synthesis",

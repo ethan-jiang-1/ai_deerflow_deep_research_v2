@@ -225,6 +225,12 @@ class TerminalIncidentProjection(FrozenRunContract):
     ) = None
     provider_recovery: ProviderRecoveryProjection | None = None
     provider_observation: ProviderObservation | None = None
+    validation_category: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=80,
+        pattern=r"^[a-z]+(?:[._][a-z0-9_]+)*$",
+    )
 
     @model_validator(mode="after")
     def validate_provider_terminal(self) -> TerminalIncidentProjection:
@@ -259,6 +265,12 @@ class NodeProblem(FrozenRunContract):
     certainty: FailureCertainty = FailureCertainty.UNKNOWN
     diagnostic_ref: str | None = Field(default=None, pattern=r"^diag_[A-Za-z0-9_-]{8,64}$")
     provider_observation: ProviderObservation | None = None
+    validation_category: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=80,
+        pattern=r"^[a-z]+(?:[._][a-z0-9_]+)*$",
+    )
 
     @model_validator(mode="after")
     def validate_provider_observation(self) -> NodeProblem:
@@ -381,6 +393,12 @@ class RunFailure(FrozenRunContract):
     provider_observation: ProviderObservation | None = None
     recovery_action: Literal["fresh_start"] | None = None
     diagnostic_location: Literal["bundle_journal", "unavailable"]
+    validation_category: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=80,
+        pattern=r"^[a-z]+(?:[._][a-z0-9_]+)*$",
+    )
 
     @model_validator(mode="after")
     def validate_provider_diagnostic_projection(self) -> RunFailure:

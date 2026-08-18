@@ -20,7 +20,12 @@ from .capabilities import WAVE2_EVIDENCE_SYNTHESIS, WAVE2_EVIDENCE_SYNTHESIS_REP
 def _expected_synthesis_output() -> str:
     return json.dumps(
         {
-            "instruction": "Return exactly one JSON object and no markdown, prose, or code fences.",
+            "instruction": (
+                "Return exactly one JSON object and no markdown, prose, or code fences. "
+                "Return findings, relations, gaps, and a summary — NOT a wave1 claims "
+                "verdict list (no `claims[]` with claim_id/verdict/support_refs/"
+                "counter_refs/reason)."
+            ),
             "schema_version": 1,
             "required_keys": ["schema_version", "findings", "relations", "gaps", "summary"],
             "optional_keys": ["resolved_questions"],
@@ -49,6 +54,40 @@ def _expected_synthesis_output() -> str:
                 "search_required",
             ],
             "gap_optional_keys": ["source_questions"],
+            "example": {
+                "schema_version": 1,
+                "findings": [
+                    {
+                        "finding_id": "f_1",
+                        "statement": "One bounded fact from the accepted evidence.",
+                        "priority": 1,
+                        "affected_topics": ["topic_a"],
+                        "backing_refs": ["q:w1_source_a"],
+                        "confidence": "high",
+                        "search_required": False,
+                    }
+                ],
+                "relations": [
+                    {
+                        "relation_id": "r_1",
+                        "source_finding": "f_1",
+                        "target_finding": "f_1",
+                        "relation_type": "supports",
+                    }
+                ],
+                "gaps": [
+                    {
+                        "gap_id": "gap_1",
+                        "description": "A question not answerable from accepted evidence.",
+                        "priority": 3,
+                        "affected_topics": ["topic_a"],
+                        "search_required": True,
+                        "source_questions": ["q:w1_q1"],
+                    }
+                ],
+                "summary": "One bounded summary.",
+                "resolved_questions": ["q:w1_q2"],
+            },
         },
         sort_keys=True,
         separators=(",", ":"),
@@ -127,13 +166,37 @@ def build_synthesis_repair_prompt(
     evidence: Iterable[SynthesisEvidence] = (),
     *,
     validation_category: str,
+    open_questions: Iterable[tuple[str, str]] = (),
+    validation_detail: object | None = None,
 ) -> NodeExecutionRequest:
     evidence_payload = [item.model_dump(mode="json") for item in evidence]
+    question_pairs = [{"question_id": question_id, "question": question} for question_id, question in open_questions][
+        :64
+    ]
+    disposition_contract = ""
+    if question_pairs:
+        disposition_contract = (
+            "\n\nWave1 open-question disposition (closed output contract): every question in the trusted "
+            "assignment's open_questions MUST be disposed exactly once — referenced by exactly one gap with "
+            "search_required=true through that gap's source_questions list, or listed in resolved_questions. "
+            "A question id MUST NOT appear twice or in both places, and no id absent from the assignment may "
+            "be used."
+        )
+    trusted = ""
+    if question_pairs or validation_detail is not None:
+        trusted = "\n\nTrusted open questions and validation detail:\n" + json.dumps(
+            {"open_questions": question_pairs, "validation_detail": validation_detail},
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
     objective = (
         "Use the activated zero-tool structured repair capability for one bounded assignment and closed output "
         "contract. The trusted validation category below is a parser or semantic category only.\n\n"
-        f"Trusted validation category: {validation_category}\n\n"
-        "Untrusted draft and accepted evidence:\n"
+        f"Trusted validation category: {validation_category}"
+        + disposition_contract
+        + trusted
+        + "\n\nUntrusted draft and accepted evidence:\n"
         + build_untrusted_data_block(
             [
                 "model_draft:\n" + (draft[:8_192] if isinstance(draft, str) else ""),

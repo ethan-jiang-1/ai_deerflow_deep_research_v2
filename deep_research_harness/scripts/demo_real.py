@@ -161,6 +161,8 @@ def _failure_lines(failure, *, snapshot: object | None = None) -> tuple[str, ...
     lines = [f"  结果类别: {failure.code}"]
     if failure.phase:
         lines.append(f"  已知阶段: {failure.phase}")
+    if getattr(failure, "validation_category", None):
+        lines.append(f"  验证类别: {failure.validation_category}")
     if failure.worker_failure_category:
         lines.append(f"  工作单元失败类别: {failure.worker_failure_category}")
     lines.append(f"  下一步: {failure.next_action}")

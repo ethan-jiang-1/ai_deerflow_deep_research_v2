@@ -630,11 +630,14 @@ class ResearchRunExperience:
         pending = control.pending_input
         failure_category = None
         if control.status is LifecycleStatus.BLOCKED:
-            failure_category = (
-                control.terminal_incident.code.value
-                if control.terminal_incident is not None
-                else RunFailureCode.RESEARCH_BLOCKED.value
-            )
+            if control.terminal_incident is not None and control.terminal_incident.validation_category is not None:
+                failure_category = control.terminal_incident.validation_category
+            else:
+                failure_category = (
+                    control.terminal_incident.code.value
+                    if control.terminal_incident is not None
+                    else RunFailureCode.RESEARCH_BLOCKED.value
+                )
         worker_failure_category = (
             control.terminal_incident.worker_failure_category if control.terminal_incident is not None else None
         )
@@ -962,6 +965,7 @@ class ResearchRunExperience:
                 provider_observation=incident.provider_observation,
                 diagnostic_location=diagnostic_location,
                 journal_record_created=journal_record_created,
+                validation_category=incident.validation_category,
             )
         return self._failure(
             RunFailureCode.RESEARCH_BLOCKED,
@@ -1024,6 +1028,7 @@ class ResearchRunExperience:
         diagnostic_location: Literal["bundle_journal", "unavailable"] = "unavailable",
         journal_record_created: bool = False,
         source: Any = None,
+        validation_category: str | None = None,
     ) -> RunFailure:
         message, next_action, retryable = _FAILURE_COPY[code]
         recovery_action = None
@@ -1051,6 +1056,7 @@ class ResearchRunExperience:
             provider_observation=provider_observation,
             recovery_action=recovery_action,
             diagnostic_location=diagnostic_location,
+            validation_category=validation_category,
         )
 
     @staticmethod
