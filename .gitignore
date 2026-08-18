@@ -158,8 +158,13 @@ env.bak/
 venv.bak/
 
 # Local runtime config (master template for profiles/; not committed)
-config.yaml
-config.yaml.bak
+# Anchored to the repo root: profiles/*/config.yaml is covered by
+# profiles/.gitignore, and deep_research_harness/openspec/config.yaml is a
+# tracked application OpenSpec configuration (see the negation below).
+/config.yaml
+/config.yaml.bak
+# Application-owned OpenSpec config under deep_research_harness/ is tracked.
+!deep_research_harness/openspec/config.yaml
 
 # Runtime-materialized profile root (configure.py writes the public skill here)
 skills/
