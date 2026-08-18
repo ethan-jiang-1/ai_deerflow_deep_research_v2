@@ -131,22 +131,28 @@ UV_NO_CACHE=1 make soft-bundle DEMO_ARGS="verify $ROOT"
 - 证据提交引用**真实 source URL**（`bundle` 内 evidence/submissions 或 report
   的引用列表）。
 
-### 5.1 honest gap 不收敛时的诚实交付（BUG-035 修复后的验收语义）
+### 5.1 honest gap 不收敛时的诚实交付（BUG-035 + BUG-044/046 修复后的验收语义）
 
 真实模型留 honest gap（如"两个来源数字为什么不同"、"精确全年总量是多少"）
-且 2 轮补证不收敛是**常态**，不再判负：
+且补证不收敛是**常态**，不再判负：
 
 - wave2 gate 预算耗尽时**首次**降级为 degraded pass，run 继续走
-  hitl2 → readiness → final_delivery，终态 `completed`，`RESULT: PASS`。
+  hitl2 → readiness → final_delivery，终态 `completed`，`RESULT: PASS`
+  （readiness 在降级后不再把流程送回补证循环——BUG-044 修复；即便
+  readiness critic 调用失败也走降级交付）。
 - `final/report.md` 的 `## Uncertainties` 段必须**披露**未收敛的 gap
   （描述来自 `synthesis/findings.json`；正文找不到描述时至少披露 gap id）。
-- 只有"降级后再次耗尽"才会 blocked——单次 003 run 预期不会触发。
+- blocked 只在两种情形出现：结构性失败；或"降级后再次耗尽"
+  （wave2 gate 每次预算 seeding 至多降级一次）——均带 typed incident 与
+  诊断引用（wave2 输入条件失败也走有界终止，不再裸崩溃——BUG-046）。
+  历史上"单次 003 run 预期不会触发 blocked"的表述已被 2/2 次真实 run
+  证伪，现按"可能触发、按第 8 节记录证据"处理。
 - 终端若出现 blocked（其他原因），journal 可用性行应如实显示
   `Event Journal: 已创建`（诊断 ref 已发布时），不再误报"不可用"。
 
 ## 6. 单 work unit 验收
 
-003 声明 minimal 意图 → planner `single_topic` → wave0/wave1 各恰好 1 个
+003 声明 minimal 意图 → planner `single_topic` → wave0/wave1 初始各恰好 1 个
 work unit：
 
 ```bash
@@ -154,9 +160,16 @@ BUNDLE=$(UV_NO_CACHE=1 make soft-bundle DEMO_ARGS="path $ROOT" | tail -1)
 ls "$BUNDLE/work"
 ```
 
-预期：`g0_wave0_w0000` 与 `g0_wave1_w0000` 各一个（没有 w0001 等多余 work
-unit）。若出现多个 work unit，说明 single_topic 推导没生效，按第 8 节走 bug
-流程。
+验收规则（BUG-045 修复后的准确口径）：
+
+- **初始 work unit**：`g0_wave0_w0000` 与 `g0_wave1_w0000` 各一个
+  （没有 w0001 等由 planner 多 topic 产生的多余初始 unit）。
+- **同 topic repair 重跑不计**：wave1 gate 有界 repair 会以**相同 scope**
+  重跑该 wave（`g0_wave1_w0001`，spec_hash 不同）——这是 repair 循环正常
+  工作，不是 single_topic 失效。判定 single_topic 是否生效看 **scope**：
+  所有 wave1 work unit 的 scope 相同（1 个 topic）即为正确；出现**不同
+  scope** 的额外 work unit 才说明 single_topic 没生效，按第 8 节走 bug
+  流程。
 
 ## 7. 模型挂起 / 卡死怎么办
 

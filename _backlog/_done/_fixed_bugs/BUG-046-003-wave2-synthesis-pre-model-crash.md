@@ -1,6 +1,6 @@
 # BUG-046: wave2_synthesis model 前阶段裸 ValueError 崩溃整个 run（internal.unexpected → bundle.unavailable）
 
-> 严重级别: P1 | 发现: 2026-08-18 | 状态: 活跃
+> 严重级别: P1 | 发现: 2026-08-18 | 状态: 已修复（fix-wave2-synthesis-bounded-input）
 
 ## 症状
 
@@ -45,7 +45,7 @@ run 能走到 wave2 第二访，此雷才暴露。
 ## 修复关联
 
 ✅ 已修复（2026-08-18，代码已落地）：OpenSpec change
-`openspec/changes/fix-wave2-synthesis-bounded-input/`（`wave2-synthesis-node`
+`openspec/changes/archive/2026-08-18-fix-wave2-synthesis-bounded-input/`（`wave2-synthesis-node`
 WSN-001 delta，propose → polish → apply）。
 
 修复 = `wave2_synthesis/node.py` 的 model 前输入推导段（topic_registry →

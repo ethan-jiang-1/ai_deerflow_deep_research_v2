@@ -1,6 +1,6 @@
 # BUG-044: 003 real-auto 在 wave2 honest gap 上 `research.blocked`（gate_blocked），未按 runbook 5.1 降级为 completed
 
-> 严重级别: P1 | 发现: 2026-08-18 | 状态: 活跃
+> 严重级别: P1 | 发现: 2026-08-18 | 状态: 已修复（fix-readiness-degraded-route）
 
 ## 症状
 
@@ -88,7 +88,7 @@ completed 交付（披露 gap）"；修 BUG-045 才让补证循环有收敛可�
 ## 修复关联
 
 ✅ 已修复（2026-08-18，代码已落地）：OpenSpec change
-`openspec/changes/fix-readiness-degraded-route/`（`readiness-node` REA-004
+`openspec/changes/archive/2026-08-18-fix-readiness-degraded-route/`（`readiness-node` REA-004
 delta，已 polish → apply）。修复 = readiness 路由判定新增 `wave2_degraded`
 条件（`exhaustion_degradation_marker("wave2_synthesis") in
 state["degraded_decisions"]`）：降级 run 中 `blocked_repair_required` 路由

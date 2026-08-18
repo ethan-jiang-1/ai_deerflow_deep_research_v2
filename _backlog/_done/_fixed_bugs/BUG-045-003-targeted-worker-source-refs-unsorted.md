@@ -1,6 +1,6 @@
 # BUG-045: targeted_evidence worker 未排序 source_refs，候选校验必败（`source_refs_not_canonical`）→ wave2 补证循环 9/9 零产出
 
-> 严重级别: P1 | 发现: 2026-08-18 | 状态: 活跃
+> 严重级别: P1 | 发现: 2026-08-18 | 状态: 已修复（fix-targeted-evidence-worker）
 
 ## 症状
 
@@ -49,7 +49,7 @@ exhaustion。
 ## 修复关联
 
 ✅ 已修复（2026-08-18，代码已落地）：OpenSpec change
-`openspec/changes/fix-targeted-evidence-worker/`（`targeted-evidence-loop`
+`openspec/changes/archive/2026-08-18-fix-targeted-evidence-worker/`（`targeted-evidence-loop`
 TEL-002 delta）。
 
 1. **排序修复**：`targeted_evidence/subgraph.py` worker 构建 source_refs 前按
