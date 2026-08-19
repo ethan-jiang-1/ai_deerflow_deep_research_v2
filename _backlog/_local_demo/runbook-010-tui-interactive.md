@@ -25,6 +25,10 @@ non_goals:
 
 # 010 Runbook：TUI 真人交互跑（HITL 专项）
 
+> **一键启动**：Finder 双击仓库根的 **`RUN-010-TUI.command`**（或终端里
+> `bash RUN-010-TUI.command`）——自动开菜单选 Stage A/B、显示应答脚本提示卡、
+> 在你眼前的终端窗口里起 TUI，退出后自动展示 bundle 位置 + 报告开头。
+>
 > **010 是什么**：`_backlog/_local_demo` 前四格全是 CLI 全自动；010 换轴——
 > **真人坐在 TUI 里做 hitl1/hitl2 决策**。入口 `make demo-tui-embedded-smoke`
 > 起本地全真实图（真实 DeepSeek + 真实 Tavily），问题由 composer 输入，
