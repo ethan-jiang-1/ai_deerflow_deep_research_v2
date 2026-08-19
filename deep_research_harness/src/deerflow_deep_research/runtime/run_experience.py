@@ -967,11 +967,18 @@ class ResearchRunExperience:
                 journal_record_created=journal_record_created,
                 validation_category=incident.validation_category,
             )
+        diagnostic_location: Literal["bundle_journal", "unavailable"] = "unavailable"
+        journal_record_created = False
+        if terminal_diagnostic_ref is not None:
+            diagnostic_location = self._incident_diagnostic_location(control, terminal_diagnostic_ref)
+            journal_record_created = diagnostic_location == "bundle_journal"
         return self._failure(
             RunFailureCode.RESEARCH_BLOCKED,
             phase=control.phase.value if control.phase is not None else None,
             certainty=FailureCertainty.UNKNOWN,
             diagnostic_ref=terminal_diagnostic_ref,
+            diagnostic_location=diagnostic_location,
+            journal_record_created=journal_record_created,
             source=control,
         )
 

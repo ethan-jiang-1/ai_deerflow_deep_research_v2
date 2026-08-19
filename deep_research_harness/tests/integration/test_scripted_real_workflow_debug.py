@@ -131,3 +131,47 @@ def test_scripted_real_repair_targeted_named_case_proves_the_bounded_loop(tmp_pa
     assert critic_facts, "no journal fact for the invalid source-diagnostic critic"
 
     assert elapsed < 10.0, f"wall time {elapsed:.2f}s exceeded the 10s contract"
+
+
+def test_scripted_real_readiness_cap_trip_degrades_to_completed_delivery(
+    tmp_path: Path,
+    _scripts_path: str,
+) -> None:
+    """@impl REA-008 REJ-010
+
+    The BUG-057 bridge cap failure still delivers.
+    """
+
+    import json
+
+    from debug_scripted_real_workflow import ScriptedRealRun, run_scripted_real_workflow
+
+    result = _await(
+        run_scripted_real_workflow(
+            workspace=tmp_path,
+            run_id="proof-readiness-cap-trip",
+            scenario="readiness-cap-trip",
+        )
+    )
+    assert isinstance(result, ScriptedRealRun)
+    assert result.terminal_status == "completed"
+    assert result.final_artifacts_published
+    assert result.backed_claim_count >= 1
+    assert "targeted_evidence" not in result.execution_trace
+
+    events = [
+        json.loads(line) for line in Path(result.journal_path).read_text(encoding="utf-8").splitlines() if line.strip()
+    ]
+    assert any(
+        event.get("phase") == "readiness"
+        and event.get("failure_category") == "budget.exhausted"
+        and event.get("budget_stop_reason") == "per_call_output_cap"
+        for event in events
+    )
+    assert any(event.get("failure_category") == "readiness_critic_fallback.execution_failed" for event in events)
+    assert any(
+        event.get("readiness_route") == "pass"
+        and event.get("readiness_blocked_count") == 0
+        and event.get("readiness_pass_guard") == "fallback_projection"
+        for event in events
+    )

@@ -9,6 +9,7 @@ Bundle lifecycle boundary remains the sole owner of those facts.
 @impl REJ-002
 @impl DRH-006
 @impl REJ-004
+@impl REJ-010
 @impl REG-014
 """
 
@@ -245,6 +246,21 @@ class RunEvent(FrozenRunObservationContract):
     call_ordinal: int | None = Field(default=None, ge=1, le=64)
     usage_tokens: UsageTokensEvidence | None = None
     budget_operands: dict[str, int] | None = Field(default=None)
+    readiness_route: Literal["pass", "repair_targeted", "exhausted"] | None = None
+    readiness_blocked_count: int | None = Field(default=None, ge=0, le=16)
+    readiness_pass_guard: Literal["wave2_degraded", "no_declared_gap_work", "fallback_projection"] | None = None
+    readiness_failure_codes: tuple[
+        Literal[
+            "citation_no_accepted_evidence",
+            "provenance_invalid_ref",
+            "synthesis_evidence_unavailable",
+            "synthesis_findings_unavailable",
+            "readiness_plan_persistence_unavailable",
+        ],
+        ...,
+    ] = Field(default=(), max_length=8)
+    targeted_evidence_reason: Literal["drained_no_op"] | None = None
+    targeted_gap_count: Literal[0] | None = None
 
     @field_validator("budget_operands")
     @classmethod
@@ -311,6 +327,34 @@ class RunEvent(FrozenRunObservationContract):
             raise ValueError("journal_usage_tokens_unexpected")
         if self.budget_operands is not None and self.budget_stop_reason is None:
             raise ValueError("journal_budget_operands_unexpected")
+        readiness_attribution_present = any(
+            value is not None
+            for value in (self.readiness_route, self.readiness_blocked_count, self.readiness_pass_guard)
+        ) or bool(self.readiness_failure_codes)
+        if self.readiness_route is None:
+            if readiness_attribution_present:
+                raise ValueError("journal_readiness_attribution_incomplete")
+        else:
+            if self.category is not RunEventCategory.NODE or self.phase != "readiness":
+                raise ValueError("journal_readiness_attribution_unexpected")
+            if self.readiness_blocked_count is None:
+                raise ValueError("journal_readiness_blocked_count_required")
+            if self.readiness_pass_guard is not None and self.readiness_route != "pass":
+                raise ValueError("journal_readiness_pass_guard_unexpected")
+            if self.readiness_route == "exhausted":
+                if not self.readiness_failure_codes:
+                    raise ValueError("journal_readiness_failure_codes_required")
+            elif self.readiness_failure_codes:
+                raise ValueError("journal_readiness_failure_codes_unexpected")
+        targeted_attribution_present = self.targeted_evidence_reason is not None or self.targeted_gap_count is not None
+        if targeted_attribution_present:
+            if (
+                self.category is not RunEventCategory.NODE
+                or self.phase != "targeted_evidence"
+                or self.targeted_evidence_reason != "drained_no_op"
+                or self.targeted_gap_count != 0
+            ):
+                raise ValueError("journal_targeted_no_op_attribution_invalid")
         recovery_control_fields_present = any(
             value is not None
             for value in (

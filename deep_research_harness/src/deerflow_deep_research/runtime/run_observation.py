@@ -216,6 +216,12 @@ class RunObservationStore:
         call_ordinal: int | None = None,
         usage_tokens: Any | None = None,
         budget_operands: dict[str, int] | None = None,
+        readiness_route: str | None = None,
+        readiness_blocked_count: int | None = None,
+        readiness_pass_guard: str | None = None,
+        readiness_failure_codes: tuple[str, ...] = (),
+        targeted_evidence_reason: str | None = None,
+        targeted_gap_count: int | None = None,
     ) -> None:
         """Append a redacted event only to an already-published observation."""
 
@@ -251,6 +257,12 @@ class RunObservationStore:
                     call_ordinal,
                     usage_tokens,
                     budget_operands,
+                    readiness_route,
+                    readiness_blocked_count,
+                    readiness_pass_guard,
+                    readiness_failure_codes,
+                    targeted_evidence_reason,
+                    targeted_gap_count,
                 )
             except (OSError, ValueError, RunObservationError):
                 # Observations cannot perturb graph or lifecycle execution.
@@ -493,6 +505,12 @@ class RunObservationStore:
         call_ordinal: int | None,
         usage_tokens: Any | None,
         budget_operands: dict[str, int] | None,
+        readiness_route: str | None,
+        readiness_blocked_count: int | None,
+        readiness_pass_guard: str | None,
+        readiness_failure_codes: tuple[str, ...],
+        targeted_evidence_reason: str | None,
+        targeted_gap_count: int | None,
     ) -> None:
         if generation is None:
             return
@@ -529,6 +547,12 @@ class RunObservationStore:
                 call_ordinal=call_ordinal,
                 usage_tokens=usage_tokens,
                 budget_operands=budget_operands,
+                readiness_route=readiness_route,  # type: ignore[arg-type]
+                readiness_blocked_count=readiness_blocked_count,
+                readiness_pass_guard=readiness_pass_guard,  # type: ignore[arg-type]
+                readiness_failure_codes=readiness_failure_codes,  # type: ignore[arg-type]
+                targeted_evidence_reason=targeted_evidence_reason,  # type: ignore[arg-type]
+                targeted_gap_count=targeted_gap_count,  # type: ignore[arg-type]
             )
         except ValueError:
             return

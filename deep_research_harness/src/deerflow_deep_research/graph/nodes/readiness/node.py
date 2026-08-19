@@ -9,6 +9,7 @@ Non-gated pattern (like hitl2, rerun): the node writes its own route.
 @impl REA-005
 @impl REA-006
 @impl REA-007
+@impl REA-008
 """
 
 from __future__ import annotations
@@ -121,6 +122,11 @@ def build_real(dependencies: NodeBuildDependencies):
             hard_failures = (*hard_failures, HardRuleFailure(code="synthesis_findings_unavailable"))
             findings = ()
 
+        blocked_count = sum(1 for pq in critic_output.per_question if pq.verdict == "blocked_repair_required")
+        wave2_degraded = exhaustion_degradation_marker("wave2_synthesis") in (state.get("degraded_decisions") or ())
+        has_declared_gap_work = bool(unresolved_gap_ids)
+        blocked_as_uncertainties = blocked_count > 0 and (wave2_degraded or not has_declared_gap_work)
+
         # 3. Materialize report plan
         report_plan = materialize_report_plan(
             critic_output,
@@ -129,6 +135,7 @@ def build_real(dependencies: NodeBuildDependencies):
             gap_records=gap_records,
             findings=findings,
             accepted_refs=accepted_refs,
+            blocked_as_uncertainties=blocked_as_uncertainties,
         )
         try:
             report_plan_ref = await dependencies.work_units.store.write_readiness_report_plan(report_plan)
@@ -137,8 +144,6 @@ def build_real(dependencies: NodeBuildDependencies):
             hard_failures = (*hard_failures, HardRuleFailure(code="readiness_plan_persistence_unavailable"))
 
         # 4. Route determination
-        blocked_count = sum(1 for pq in critic_output.per_question if pq.verdict == "blocked_repair_required")
-
         # Once the wave2 gate has already exhausted its repair budget and
         # degraded (gate-owned marker in ``degraded_decisions``), any further
         # ``repair_targeted`` route would be re-evaluated by the wave2 gate at
@@ -146,14 +151,12 @@ def build_real(dependencies: NodeBuildDependencies):
         # ``blocked`` without a report (BUG-044). In that state the only
         # non-terminal route is ``pass``, delivering the degraded-pass contract:
         # the report plan keeps disclosing the gate-recorded unresolved gaps.
-        wave2_degraded = exhaustion_degradation_marker("wave2_synthesis") in (state.get("degraded_decisions") or ())
-
         if has_structural_failure(hard_failures) or report_plan_ref is None:
             route = "exhausted"
             terminal_status = LifecycleStatus.BLOCKED.value
             terminal_reason = TerminalReason.GATE_BLOCKED.value
             phase_status = PhaseStatus.TERMINAL.value
-        elif blocked_count > 0 and not wave2_degraded:
+        elif blocked_count > 0 and has_declared_gap_work and not wave2_degraded:
             route = "repair_targeted"
             terminal_status = None
             terminal_reason = None
@@ -163,6 +166,30 @@ def build_real(dependencies: NodeBuildDependencies):
             terminal_status = None
             terminal_reason = None
             phase_status = PhaseStatus.WAITING.value
+
+        pass_guard: str | None = None
+        if route == "pass":
+            if fallback_reason is not None:
+                pass_guard = "fallback_projection"
+            elif blocked_count > 0 and wave2_degraded:
+                pass_guard = "wave2_degraded"
+            elif blocked_count > 0 and not has_declared_gap_work:
+                pass_guard = "no_declared_gap_work"
+        try:
+            if dependencies.event_recorder is not None:
+                await dependencies.event_recorder.record(
+                    category=RunEventCategory.NODE,
+                    phase="readiness",
+                    attempt_id=dependencies.agent_context.attempt_id,
+                    readiness_route=route,
+                    readiness_blocked_count=blocked_count,
+                    readiness_pass_guard=pass_guard,
+                    readiness_failure_codes=(
+                        tuple(failure.code for failure in hard_failures) if route == "exhausted" else ()
+                    ),
+                )
+        except Exception:
+            pass
 
         return {
             **node_state_update("readiness", route=route, phase_status=phase_status),

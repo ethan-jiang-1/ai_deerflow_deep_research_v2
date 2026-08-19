@@ -144,6 +144,32 @@ def _blocked_control(diagnostic_ref: str | None):
     )
 
 
+def _readiness_blocked_control_without_incident():
+    from deerflow_deep_research.domain.lifecycle import (
+        BundleAvailability,
+        BundleControlResult,
+        BundleRefinementProjection,
+        LifecycleAction,
+        LifecycleStatus,
+        LogicalPhase,
+        ResultCode,
+        TerminalReason,
+    )
+
+    return BundleControlResult(
+        action=LifecycleAction.START,
+        code=ResultCode.BLOCKED,
+        availability=BundleAvailability.AVAILABLE,
+        durability="restart_durable",
+        bundle_id=BUNDLE_ID,
+        status=LifecycleStatus.BLOCKED,
+        phase=LogicalPhase.READINESS,
+        generation=0,
+        terminal_reason=TerminalReason.GATE_BLOCKED,
+        refinement=BundleRefinementProjection(disposition="none"),
+    )
+
+
 def _experience_with_observation(terminal_diagnostic_ref: str | None):
     from deerflow_deep_research.domain.run_observation import ObservationInspectability, RunObservationView
 
@@ -171,6 +197,22 @@ def test_gate_blocked_terminal_with_published_reference_reports_journal_created(
     assert failure.diagnostic_location == "bundle_journal"
     assert failure.journal_record_created is True
     assert failure.diagnostic_ref == DIAG_REF
+
+
+def test_readiness_written_blocked_terminal_uses_published_journal_reference() -> None:
+    """@impl RER-009 — no incident object may hide successful publication."""
+
+    control = _readiness_blocked_control_without_incident()
+    experience = _experience_with_observation(DIAG_REF)
+    failure = experience._failure_for_terminal(control, terminal_diagnostic_ref=DIAG_REF)
+
+    assert failure is not None
+    assert failure.code is RunFailureCode.RESEARCH_BLOCKED
+    assert failure.phase == "readiness"
+    assert failure.certainty is FailureCertainty.UNKNOWN
+    assert failure.diagnostic_ref == DIAG_REF
+    assert failure.diagnostic_location == "bundle_journal"
+    assert failure.journal_record_created is True
 
 
 def test_gate_blocked_terminal_without_verified_publication_reports_unavailable() -> None:

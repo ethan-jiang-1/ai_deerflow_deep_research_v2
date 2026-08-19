@@ -2,6 +2,7 @@
 
 @impl EVC-001, EVC-002, EVC-003
 @impl TEL-001, TEL-002
+@impl TEL-008
 """
 
 from __future__ import annotations
@@ -12,6 +13,7 @@ from typing import Any
 from deerflow_deep_research.domain.critics import ClaimVerifierResult, SourceDiagnosticResult
 from deerflow_deep_research.domain.lifecycle import make_node_visit_id
 from deerflow_deep_research.domain.node_spec import NodeBuildDependencies
+from deerflow_deep_research.domain.run_observation import RunEventCategory
 from deerflow_deep_research.domain.state import node_state_update
 from deerflow_deep_research.domain.work_units import WORK_UNIT_GATE_VIEW_KEY, WorkUnitGateView
 
@@ -54,6 +56,17 @@ def build_real(dependencies: NodeBuildDependencies):
                 **node_state_update("targeted_evidence"),
                 WORK_UNIT_GATE_VIEW_KEY: _empty_drained_gate_view(),
             }
+            try:
+                if dependencies.event_recorder is not None:
+                    await dependencies.event_recorder.record(
+                        category=RunEventCategory.NODE,
+                        phase="targeted_evidence",
+                        attempt_id=dependencies.agent_context.attempt_id,
+                        targeted_evidence_reason="drained_no_op",
+                        targeted_gap_count=0,
+                    )
+            except Exception:
+                pass
 
         if work_items:
             results = await dispatch_critic(

@@ -323,6 +323,7 @@ REJ-006: run-event-journal — Admitted all-real demo Bundles retain matching tr
 REJ-007: run-event-journal — Journal attribution retains closed budget-stop subreasons and parser/materialization validation facts without changing recovery or lifecycle authority
 REJ-008: run-event-journal — Wave1 critic review dispatch validation facts carry exactly one closed critic kind and retain no raw critic output while remaining observation-only
 REJ-009: run-event-journal — Run summary retains per-phase policy-envelope snapshots of executed phases as provenance only, never admission or routing authority
+REJ-010: run-event-journal — Readiness route decisions, targeted-evidence drained no-op visits, and structural failure attribution retain only closed observation facts without changing control authority
 
 # research-run-experience
 RER-001: research-run-experience — One runtime-owned module converts lifecycle wire results into shared safe run updates for presentation adapters
@@ -544,6 +545,7 @@ REA-004: readiness-node — The node writes its own route based on hard-rule res
 REA-005: readiness-node — The node collects all hard-rule failures and critic verdicts before determining the route; no single failure short-circuits the collection
 REA-006: readiness-node — Readiness critic runs under read-only bounded policy with structured output schema; invalid or malformed critic output fails closed
 REA-007: readiness-node — Real readiness integrates into the all-real and explicitly composed mixed graph requiring the full real chain through hitl2 with unchanged topology; deterministic fixture test/demo readiness remains preserved
+REA-008: readiness-node — Every readiness visit retains one closed decision fact naming its deterministic route, blocked count, optional pass guard, and structural failure attribution without granting Journal control authority
 
 # final-delivery-node
 FID-001: final-delivery-node — Real final delivery invokes one bounded zero-tool composer for a closed complete layout permutation, then deterministic code renders exact admitted plan text and backing references before publication; explicit fixture composition remains fixture-controlled for tests and demos
@@ -599,6 +601,7 @@ TEL-003: targeted-evidence-loop — Post-submit critic invocation validates new 
 TEL-004: targeted-evidence-loop — Real targeted evidence loop integrates into mixed graph requiring full real chain through wave2_synthesis with unchanged topology
 TEL-005: targeted-evidence-loop — Targeted worker, repair, and critics remain capability-bound, gap-scoped, read-only by role, and unable to admit evidence or control outcomes outside existing deterministic owners
 TEL-007: targeted-evidence-loop — The real targeted evidence node returns the reconciled WorkUnitGateView on every visit including empty-gap visits
+TEL-008: targeted-evidence-loop — A targeted-evidence visit with zero declared gap intents retains one closed drained no-op fact and dispatches no work
 
 # work-unit-kernel
 WOU-001: work-unit-kernel — Immutable work, attempt, candidate, and submission contracts preserve controller-assigned identity and spec integrity

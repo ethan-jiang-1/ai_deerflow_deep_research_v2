@@ -96,6 +96,7 @@ class TemplateScriptedModel(BaseChatModel):
     templates: list[str]
     calls: int = 0
     consumed: list[str] = field(default_factory=list)
+    trip_readiness_output_cap: bool = False
 
     def _render(self, template: str, incoming: str) -> str:
         def first_submission_ref(_m: re.Match) -> str:
@@ -131,9 +132,15 @@ class TemplateScriptedModel(BaseChatModel):
         self.calls += 1
         usage = {
             "input_tokens": baseline.MODEL_INPUT_TOKENS,
-            "output_tokens": baseline.MODEL_OUTPUT_TOKENS,
+            "output_tokens": (
+                4_097
+                if self.trip_readiness_output_cap
+                and "Assess answerability for exactly the assigned questions" in incoming
+                else baseline.MODEL_OUTPUT_TOKENS
+            ),
             "total_tokens": baseline.MODEL_TOTAL_TOKENS,
         }
+        usage["total_tokens"] = usage["input_tokens"] + usage["output_tokens"]
         if template.startswith("TOOL_CALL:"):
             name = template.split(":", 1)[1]
             message = AIMessage(
@@ -363,7 +370,7 @@ def build_world(workspace: Path, *, run_id: str, scenario: str = "baseline") -> 
         model_script = baseline.REPAIR_TARGETED_SCRIPT
         search_responses = baseline.REPAIR_TARGETED_SEARCH_RESPONSES
         fetch_responses = baseline.REPAIR_TARGETED_FETCH_RESPONSES
-    elif scenario == "baseline":
+    elif scenario in {"baseline", "readiness-cap-trip"}:
         model_script = baseline.MODEL_SCRIPT
         search_responses = baseline.WEB_SEARCH_RESPONSES
         fetch_responses = baseline.WEB_FETCH_RESPONSES
@@ -389,7 +396,10 @@ def build_world(workspace: Path, *, run_id: str, scenario: str = "baseline") -> 
             fault_hook=None,
         )
 
-    model = TemplateScriptedModel(templates=list(model_script))
+    model = TemplateScriptedModel(
+        templates=list(model_script),
+        trip_readiness_output_cap=scenario == "readiness-cap-trip",
+    )
     search = _ScriptedWebTool("web_search", search_responses)
     fetch = _ScriptedWebTool("web_fetch", fetch_responses)
     recipe = ResearchGraphRecipe.all_real(
@@ -543,20 +553,25 @@ async def run_scripted_real_workflow(
     started_at = time.monotonic()
     world = build_world(workspace, run_id=run_id, scenario=scenario)
     try:
-        completed = await _drive(world, expected_code="completed" if scenario == "baseline" else "blocked")
-        result = await _observe(world, completed, allow_targeted_evidence=scenario != "baseline")
+        expected_code = "blocked" if scenario == "repair-targeted" else "completed"
+        completed = await _drive(world, expected_code=expected_code)
+        result = await _observe(world, completed, allow_targeted_evidence=scenario == "repair-targeted")
         result.wall_seconds = time.monotonic() - started_at
         expected_model_calls = (
-            baseline.EXPECTED_MODEL_CALLS if scenario == "baseline" else baseline.EXPECTED_REPAIR_TARGETED_MODEL_CALLS
+            baseline.EXPECTED_REPAIR_TARGETED_MODEL_CALLS
+            if scenario == "repair-targeted"
+            else 10
+            if scenario == "readiness-cap-trip"
+            else baseline.EXPECTED_MODEL_CALLS
         )
         expected_search_calls = (
             baseline.EXPECTED_WEB_SEARCH_CALLS
-            if scenario == "baseline"
+            if scenario != "repair-targeted"
             else baseline.EXPECTED_REPAIR_TARGETED_SEARCH_CALLS
         )
         expected_fetch_calls = (
             baseline.EXPECTED_WEB_FETCH_CALLS
-            if scenario == "baseline"
+            if scenario != "repair-targeted"
             else baseline.EXPECTED_REPAIR_TARGETED_FETCH_CALLS
         )
         if result.model_calls != expected_model_calls:
@@ -576,7 +591,7 @@ async def run_scripted_real_workflow(
             raise AssertionError(f"scripted run accepted fewer than 2 work-unit records: {result.record_count}")
         if {"source-diagnostic.json", "claim-verifier.json"} - set(result.wave1_review_artifacts):
             raise AssertionError(f"scripted run missing Wave1 critic review artifacts: {result.wave1_review_artifacts}")
-        if scenario == "baseline":
+        if scenario in {"baseline", "readiness-cap-trip"}:
             if not result.final_artifacts_published:
                 raise AssertionError("baseline did not publish the final report and citation-map pair")
             if result.backed_claim_count < 1:

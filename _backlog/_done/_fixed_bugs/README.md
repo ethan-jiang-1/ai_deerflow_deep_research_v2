@@ -73,6 +73,8 @@ bug 修完后从 `_backlog/bugs/` 通过 `git mv` 移入本目录：
 | BUG-053 | 2026-08-19 | final_delivery 退化计划确定性渲染不走 composer（honest-degraded-delivery） |
 | BUG-054 | 2026-08-19 | 高置信 findings 规则化为结论不被 critic 否决（honest-degraded-delivery） |
 | BUG-055 | 2026-08-19 | final_delivery layout 回显 3/3 拒绝致 blocked——归一化+降级+观测（fix-final-delivery-layout-fragility） |
+| BUG-056 | 2026-08-19 | readiness 零工具 conformance fake store 未跟随结构性读取扩展（94c8087 已修） |
+| BUG-057 | 2026-08-19 | readiness critic cap fallback 误入 gapless repair 自旋——披露降级交付 + 闭合观测 |
 
 **Next available bug ID: BUG-058**
 

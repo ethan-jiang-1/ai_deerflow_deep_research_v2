@@ -31,6 +31,7 @@ from deerflow_deep_research.domain.run_experience import (
     ProviderObservation,
     RunFailureCode,
 )
+from deerflow_deep_research.domain.run_observation import RunEventCategory
 from deerflow_deep_research.domain.state import BundleLocalState
 from deerflow_deep_research.graph.nodes.targeted_evidence import NODE_SPEC
 from deerflow_deep_research.graph.nodes.targeted_evidence.prompts import (
@@ -76,6 +77,14 @@ class _ResultCapabilities:
         if not self.results:
             raise AssertionError("targeted_script_exhausted")
         return self.results.pop(0)
+
+
+class _RecordingEventRecorder:
+    def __init__(self) -> None:
+        self.events: list[dict[str, object]] = []
+
+    async def record(self, **event: object) -> None:
+        self.events.append(dict(event))
 
 
 class _Resolver:
@@ -530,7 +539,7 @@ async def test_targeted_worker_provider_shape_materializes_canonical_sources(tmp
     assert "observed_relevance" not in payload
 
 
-def _targeted_harness(tmp_path: Path, capabilities: _ResultCapabilities):
+def _targeted_harness(tmp_path: Path, capabilities: _ResultCapabilities, *, event_recorder=None):
     graph = GraphContextView(
         research_scope_id=BUNDLE_ID,
         workspace_root=f"/mnt/user-data/workspace/deep-research/{BUNDLE_ID}",
@@ -563,6 +572,7 @@ def _targeted_harness(tmp_path: Path, capabilities: _ResultCapabilities):
         ),
         capabilities=capabilities,
         work_units=controller,
+        event_recorder=event_recorder,
     )
     state = {
         "bundle_id": BUNDLE_ID,
@@ -809,7 +819,12 @@ async def test_targeted_node_returns_the_reconciled_gate_view_for_a_gap_visit(tm
 
     from deerflow_deep_research.domain.work_units import WORK_UNIT_GATE_VIEW_KEY, WorkUnitGateView
 
-    store, run, state = _targeted_harness(tmp_path, _Capabilities(_targeted_summary()))
+    recorder = _RecordingEventRecorder()
+    store, run, state = _targeted_harness(
+        tmp_path,
+        _Capabilities(_targeted_summary()),
+        event_recorder=recorder,
+    )
 
     update = await run(state)
 
@@ -820,14 +835,20 @@ async def test_targeted_node_returns_the_reconciled_gate_view_for_a_gap_visit(tm
     assert len(view.accepted_record_by_work_id) == 1
     records = await store.load_records()
     assert tuple(view.accepted_record_by_work_id.values()) == (records[0].record_hash,)
+    assert all(event.get("targeted_evidence_reason") is None for event in recorder.events)
 
 
 async def test_targeted_node_returns_a_drained_gate_view_for_an_empty_gap_visit(tmp_path: Path) -> None:
-    """@impl TEL-007"""
+    """@impl TEL-007 TEL-008"""
 
     from deerflow_deep_research.domain.work_units import WORK_UNIT_GATE_VIEW_KEY, WorkUnitGateView
 
-    _store, run, state = _targeted_harness(tmp_path, _Capabilities(_targeted_summary()))
+    recorder = _RecordingEventRecorder()
+    _store, run, state = _targeted_harness(
+        tmp_path,
+        _Capabilities(_targeted_summary()),
+        event_recorder=recorder,
+    )
     state = {**state, "unresolved_gaps": ()}
 
     update = await run(state)
@@ -838,6 +859,15 @@ async def test_targeted_node_returns_a_drained_gate_view_for_an_empty_gap_visit(
     assert view.drained is True
     assert view.planned_work_ids == ()
     assert view.accepted_record_by_work_id == {}
+    assert recorder.events == [
+        {
+            "category": RunEventCategory.NODE,
+            "phase": "targeted_evidence",
+            "attempt_id": "g0-targeted-evidence-a1",
+            "targeted_evidence_reason": "drained_no_op",
+            "targeted_gap_count": 0,
+        }
+    ]
 
 
 def _unsorted_targeted_summary(*, gap_id: str = "gap:storage-cost") -> str:

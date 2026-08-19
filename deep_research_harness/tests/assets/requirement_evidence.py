@@ -561,7 +561,7 @@ REQUIREMENT_IMPACTS = (
         "REA-004",
         "readiness-node",
         StableSeam.NODE_INTERFACE,
-        "tests/unit/test_readiness_real.py::TestRealReadiness::test_bridge_failure_projects_repair_without_all_ready",
+        "tests/unit/test_readiness_real.py::TestRealReadiness::test_bridge_failure_projects_disclosed_insufficiency_and_delivers",
         "a bridge failure cannot silently restore an all-ready route",
     ),
     RequirementImpact(

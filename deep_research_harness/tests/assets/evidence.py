@@ -1806,7 +1806,7 @@ EVIDENCE_CLAIMS = (
     ),
     _correctness_claim(
         "readiness-critic-conservative-failure",
-        "tests/unit/test_readiness_real.py::TestRealReadiness::test_bridge_failure_projects_repair_without_all_ready",
+        "tests/unit/test_readiness_real.py::TestRealReadiness::test_bridge_failure_projects_disclosed_insufficiency_and_delivers",
         StableSeam.NODE_INTERFACE,
         requirement_ids=("REA-002", "REA-004", "REA-006", "EVH-021"),
         authenticity=AuthenticityLevel.REAL_NODE_FAKE_CAPABILITIES,

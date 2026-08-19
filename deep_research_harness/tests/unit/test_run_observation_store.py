@@ -7,6 +7,7 @@
 @impl REJ-004
 @impl REJ-006
 @impl REJ-007
+@impl REJ-010
 """
 
 from __future__ import annotations
@@ -213,6 +214,76 @@ def test_v3_critic_kind_is_closed_to_wave1_post_candidate_validation_facts() -> 
             phase="wave1",
             critic_kind="claim_verifier",
         )
+
+
+def test_visit_decision_attribution_rejects_open_or_impossible_combinations() -> None:
+    base = {
+        "schema_version": 3,
+        "sequence": 2,
+        "timestamp": datetime.now(UTC),
+        "category": RunEventCategory.NODE,
+        "generation": 0,
+        "phase": "readiness",
+        "readiness_route": "pass",
+        "readiness_blocked_count": 1,
+    }
+    assert RunEvent(**{**base, "readiness_pass_guard": "no_declared_gap_work"}).readiness_blocked_count == 1
+
+    with pytest.raises(ValueError, match="journal_readiness_pass_guard_unexpected"):
+        RunEvent(
+            **{
+                **base,
+                "readiness_route": "repair_targeted",
+                "readiness_pass_guard": "no_declared_gap_work",
+            }
+        )
+    with pytest.raises(ValueError, match="journal_readiness_failure_codes_required"):
+        RunEvent(**{**base, "readiness_route": "exhausted", "readiness_blocked_count": 0})
+    with pytest.raises(ValueError):
+        RunEvent(**{**base, "readiness_failure_codes": ("raw_exception_text",)})
+    with pytest.raises(ValueError, match="journal_targeted_no_op_attribution_invalid"):
+        RunEvent(
+            **{
+                **base,
+                "readiness_route": None,
+                "readiness_blocked_count": None,
+                "targeted_evidence_reason": "drained_no_op",
+                "targeted_gap_count": 0,
+            }
+        )
+
+
+@pytest.mark.asyncio
+async def test_journal_retains_closed_readiness_and_targeted_visit_facts(tmp_path: Path) -> None:
+    bundle_root = tmp_path / "bundle"
+    (bundle_root / "diagnostics").mkdir(mode=0o700, parents=True)
+    os.chmod(bundle_root / "diagnostics", 0o700)
+    store = RunObservationStore(bundle_root=bundle_root, bundle_id=BUNDLE_ID)
+    recorder = RunObservationRecorder(store=store, bundle_id=BUNDLE_ID)
+    await recorder.establish(generation=0, phase="bootstrap", durability="restart_durable")
+
+    await recorder.record(
+        category=RunEventCategory.NODE,
+        phase="readiness",
+        attempt_id="g0-readiness-a1",
+        readiness_route="exhausted",
+        readiness_blocked_count=0,
+        readiness_failure_codes=("synthesis_evidence_unavailable",),
+    )
+    await recorder.record(
+        category=RunEventCategory.NODE,
+        phase="targeted_evidence",
+        attempt_id="g0-targeted-evidence-a1",
+        targeted_evidence_reason="drained_no_op",
+        targeted_gap_count=0,
+    )
+
+    inspection = await store.inspect(bundle_id=BUNDLE_ID)
+    readiness, targeted = inspection.events[1:]
+    assert readiness.readiness_route == "exhausted"
+    assert readiness.readiness_failure_codes == ("synthesis_evidence_unavailable",)
+    assert targeted.targeted_evidence_reason == "drained_no_op"
+    assert targeted.targeted_gap_count == 0
 
 
 @pytest.mark.asyncio

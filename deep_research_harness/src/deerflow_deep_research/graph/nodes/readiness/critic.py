@@ -123,14 +123,14 @@ def admit_readiness_candidate(
 
 
 def conservative_readiness_output(must_answer_questions: tuple[str, ...]) -> ReadinessCriticOutput:
-    """Return the only fallback permitted after bridge or candidate failure."""
+    """Project critic observation failure as disclosed insufficient judgment."""
 
     return ReadinessCriticOutput(
         schema_version=1,
         per_question=tuple(
             PerQuestionVerdict(
                 question=question,
-                verdict="blocked_repair_required",
+                verdict="ready_insufficient_judgment",
                 limitation_note="Readiness critic did not produce an admissible answerability verdict.",
             )
             for question in must_answer_questions

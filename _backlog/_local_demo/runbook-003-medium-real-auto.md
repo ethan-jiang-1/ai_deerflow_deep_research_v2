@@ -131,7 +131,7 @@ UV_NO_CACHE=1 make soft-bundle DEMO_ARGS="verify $ROOT"
 - 证据提交引用**真实 source URL**（`bundle` 内 evidence/submissions 或 report
   的引用列表）。
 
-### 5.1 honest gap 不收敛时的诚实交付（BUG-035/044/046/050/053/054 修复后的验收语义）
+### 5.1 honest gap 不收敛时的诚实交付（BUG-035/044/046/050/053/054/057 修复后的验收语义）
 
 真实模型留 honest gap（如"两个来源数字为什么不同"、"精确全年总量是多少"）
 且补证不收敛是**常态**，不再判负：
@@ -140,6 +140,14 @@ UV_NO_CACHE=1 make soft-bundle DEMO_ARGS="verify $ROOT"
   hitl2 → readiness → final_delivery，终态 `completed`，`RESULT: PASS`
   （readiness 在降级后不再把流程送回补证循环——BUG-044 修复；即便
   readiness critic 调用失败也走降级交付）。
+- **readiness 观察失败不是修复需求**（BUG-057 修复）：critic 被预算截停、
+  调用失败或候选不可采纳时，保守投影为 `ready_insufficient_judgment`，每个
+  must-answer 进入强制不确定项，直接 `pass` 交付；不得投影为 blocked、进入
+  targeted repair 或单独导致终态 blocked。
+- **没有申报 gap 工作时不得空转修复**（BUG-057 修复）：即使已采纳的 critic
+  判定是 `blocked_repair_required`，只要 `unresolved_gaps` 为空，readiness 仍
+  `pass` 并把每个 blocked 判定披露为强制不确定项；只有 gap 非空且 wave2
+  尚未降级时才允许 `repair_targeted`。
 - **节点级预算失败同样交还 gate**（BUG-050 修复）：wave2 synthesis 的
   模型调用被策略预算拒绝/截停时，节点不再直写 terminal blocked，而是写
   `wave2_budget_exhausted` 信号非终止返回；wave2 gate 把它投影为规则失败，
@@ -167,6 +175,10 @@ UV_NO_CACHE=1 make soft-bundle DEMO_ARGS="verify $ROOT"
   证伪，现按"可能触发、按第 8 节记录证据"处理。
 - 终端若出现 blocked（其他原因），journal 可用性行应如实显示
   `Event Journal: 已创建`（诊断 ref 已发布时），不再误报"不可用"。
+- Journal 检查点：每次 readiness visit 应有一条闭合 decision fact（route、
+  blocked count、可选 pass guard；`exhausted` 时含结构失败码）；若历史 run
+  进入 0 gap 的 targeted-evidence 空转，则应有 `drained_no_op` + gap count 0
+  事实。新 run 不应再出现 readiness `repair_targeted` 后紧接该 no-op 的自旋链。
 
 ## 6. 单 work unit 验收
 

@@ -76,6 +76,12 @@ class RunEventRecorderProtocol(Protocol):
         retry_ordinal: int | None = None,
         backoff_milliseconds: int | None = None,
         recovery_event_disposition: str | None = None,
+        readiness_route: str | None = None,
+        readiness_blocked_count: int | None = None,
+        readiness_pass_guard: str | None = None,
+        readiness_failure_codes: tuple[str, ...] = (),
+        targeted_evidence_reason: str | None = None,
+        targeted_gap_count: int | None = None,
     ) -> None: ...
 
 

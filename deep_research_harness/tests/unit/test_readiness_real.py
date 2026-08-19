@@ -5,6 +5,7 @@
 @impl REA-004
 @impl REA-006
 @impl REA-007
+@impl REA-008
 """
 
 from __future__ import annotations
@@ -271,16 +272,21 @@ class TestRealReadiness:
         unknown = _candidate(("Q1", "unknown"))
         duplicate = _candidate(("Q1", "Q1"))
         for response in (unknown, duplicate, "not-json"):
-            dependencies, _capabilities, _store = _deps(response=response)
+            dependencies, _capabilities, store = _deps(response=response)
             result = asyncio.run(build_real(dependencies)(_state()))
-            assert result["route"] == "repair_targeted"
-            assert result["readiness_critic_summary"]["per_question"][0]["verdict"] == "blocked_repair_required"
+            assert result["route"] == "pass"
+            assert result["readiness_critic_summary"]["per_question"][0]["verdict"] == ("ready_insufficient_judgment")
+            assert store.written_plans[0].mandatory_uncertainties[0].limitation == (
+                "Readiness critic did not produce an admissible answerability verdict."
+            )
 
     def test_candidate_rejects_unknown_backing_ref(self) -> None:
-        dependencies, _capabilities, _store = _deps(response=_candidate(("Q1",), "h_" + "B" * 43))
+        dependencies, _capabilities, store = _deps(response=_candidate(("Q1",), "h_" + "B" * 43))
         result = asyncio.run(build_real(dependencies)(_state()))
-        assert result["route"] == "repair_targeted"
+        assert result["route"] == "pass"
         assert result["readiness_critic_summary"]["per_question"][0]["backing_claim_ids"] == []
+        assert result["readiness_critic_summary"]["per_question"][0]["verdict"] == ("ready_insufficient_judgment")
+        assert len(store.written_plans[0].mandatory_uncertainties) == 1
 
     def test_parseable_unused_fields_are_not_checkpointed(self) -> None:
         dependencies, _capabilities, _store = _deps(response=_candidate(("Q1",), extras=True))
@@ -289,14 +295,43 @@ class TestRealReadiness:
         assert set(summary) == {"schema_version", "per_question"}
         assert "unretained" not in json.dumps(summary)
 
-    def test_bridge_failure_projects_repair_without_all_ready(self) -> None:
-        dependencies, capabilities, _store = _deps(raises=True)
+    def test_bridge_failure_projects_disclosed_insufficiency_and_delivers(self) -> None:
+        dependencies, capabilities, store = _deps(raises=True)
         result = asyncio.run(build_real(dependencies)(_state(questions=("Q1", "Q2"))))
-        assert result["route"] == "repair_targeted"
+        assert result["route"] == "pass"
         assert len(capabilities.requests) == 1
         assert {item["verdict"] for item in result["readiness_critic_summary"]["per_question"]} == {
-            "blocked_repair_required"
+            "ready_insufficient_judgment"
         }
+        assert {item.question for item in store.written_plans[0].mandatory_uncertainties} == {"Q1", "Q2"}
+        assert {item.limitation for item in store.written_plans[0].mandatory_uncertainties} == {
+            "Readiness critic did not produce an admissible answerability verdict."
+        }
+
+    def test_gapless_admitted_blocked_verdict_delivers_with_disclosure(self) -> None:
+        dependencies, _capabilities, store = _deps(response=_candidate(("Q1",), verdict="blocked_repair_required"))
+
+        result = asyncio.run(build_real(dependencies)(_state()))
+
+        assert result["route"] == "pass"
+        assert result["readiness_blocked_count"] == 1
+        assert len(store.written_plans[0].mandatory_uncertainties) == 1
+        assert store.written_plans[0].mandatory_uncertainties[0].question == "Q1"
+        assert store.written_plans[0].mandatory_uncertainties[0].limitation == "Bounded fixture limitation."
+
+    def test_admitted_blocked_verdict_with_declared_gap_still_repairs(self) -> None:
+        dependencies, _capabilities, store = _deps(
+            response=_candidate(("Q1",), verdict="blocked_repair_required"),
+            gaps=(GAP_CONFLICT,),
+        )
+        state = _state()
+        state["unresolved_gaps"] = (GAP_CONFLICT.gap_id,)
+
+        result = asyncio.run(build_real(dependencies)(state))
+
+        assert result["route"] == "repair_targeted"
+        assert result["readiness_blocked_count"] == 1
+        assert all(item.question != "Q1" for item in store.written_plans[0].mandatory_uncertainties)
 
     def test_store_integrity_failure_is_structural_and_skips_model(self) -> None:
         dependencies, capabilities, _store = _deps(store_fail=True)
@@ -351,9 +386,9 @@ class TestWave2DegradedRoute:
         result = asyncio.run(build_real(dependencies)(state))
 
         assert result["route"] == "pass"
-        assert result["readiness_blocked_count"] == 1
+        assert result["readiness_blocked_count"] == 0
         assert {item["verdict"] for item in result["readiness_critic_summary"]["per_question"]} == {
-            "blocked_repair_required"
+            "ready_insufficient_judgment"
         }
         uncertainties = store.written_plans[0].mandatory_uncertainties
         assert any(
@@ -371,7 +406,7 @@ class TestWave2DegradedRoute:
             result = asyncio.run(build_real(dependencies)(state))
 
             assert result["route"] == "pass"
-            assert result["readiness_critic_summary"]["per_question"][0]["verdict"] == "blocked_repair_required"
+            assert result["readiness_critic_summary"]["per_question"][0]["verdict"] == ("ready_insufficient_judgment")
             assert any(
                 u.question == f"Unresolved research gap {GAP_CONFLICT.gap_id}"
                 for u in store.written_plans[0].mandatory_uncertainties
@@ -470,23 +505,35 @@ def test_critic_fallback_is_a_first_class_event_with_closed_reasons() -> None:
     recorder = _RecordingEventRecorder()
     deps = replace(deps, event_recorder=recorder)
     result = asyncio.run(build_real(deps)(_state()))
-    assert [e["failure_category"] for e in recorder.events] == ["readiness_critic_fallback.execution_failed"]
+    assert [e.get("failure_category") for e in recorder.events if e.get("failure_category")] == [
+        "readiness_critic_fallback.execution_failed"
+    ]
+    assert recorder.events[-1]["readiness_route"] == "pass"
+    assert recorder.events[-1]["readiness_blocked_count"] == 0
+    assert recorder.events[-1]["readiness_pass_guard"] == "fallback_projection"
+    assert recorder.events[-1]["readiness_failure_codes"] == ()
     assert all(e["category"] is RunEventCategory.NODE for e in recorder.events)
-    assert result.get("route") is not None  # projection and route unchanged
+    assert result["route"] == "pass"
 
     # Inadmissible candidate -> candidate_invalid.
     deps2, _caps2, _store2 = _deps(response="not-json")
     recorder2 = _RecordingEventRecorder()
     deps2 = replace(deps2, event_recorder=recorder2)
     asyncio.run(build_real(deps2)(_state()))
-    assert [e["failure_category"] for e in recorder2.events] == ["readiness_critic_fallback.candidate_invalid"]
+    assert [e.get("failure_category") for e in recorder2.events if e.get("failure_category")] == [
+        "readiness_critic_fallback.candidate_invalid"
+    ]
+    assert recorder2.events[-1]["readiness_pass_guard"] == "fallback_projection"
 
-    # Admitted candidate -> no fallback event at all.
+    # Admitted candidate -> only the minimal decision fact.
     deps3, _caps3, _store3 = _deps(response=_candidate(("Q1",), LEDGER_HASH))
     recorder3 = _RecordingEventRecorder()
     deps3 = replace(deps3, event_recorder=recorder3)
     asyncio.run(build_real(deps3)(_state()))
-    assert recorder3.events == []
+    assert len(recorder3.events) == 1
+    assert recorder3.events[0]["readiness_route"] == "pass"
+    assert recorder3.events[0]["readiness_blocked_count"] == 0
+    assert recorder3.events[0]["readiness_pass_guard"] is None
 
     # A failing recorder cannot change the projection.
     class FailingRecorder:

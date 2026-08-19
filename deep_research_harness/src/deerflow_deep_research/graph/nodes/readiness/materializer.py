@@ -40,12 +40,13 @@ def materialize_report_plan(
     gap_records: tuple[GapRecord, ...] = (),
     findings: tuple[SynthesisFinding, ...] = (),
     accepted_refs: tuple[str, ...] = (),
+    blocked_as_uncertainties: bool = False,
 ) -> ReadinessReportPlan:
     """Produce an immutable report plan from critic verdicts and hard-rule results.
 
     - ready_substantive → writable conclusions
     - ready_insufficient_judgment → mandatory uncertainties
-    - blocked_repair_required → absent from both (counted by caller)
+    - blocked_repair_required → mandatory uncertainty only in a delivering posture
     - gate-recorded unresolved searchable gaps → mandatory uncertainties
       (gap bodies come only from the canonical synthesis artifact; a recorded
       id without a body still discloses the id honestly)
@@ -71,6 +72,13 @@ def materialize_report_plan(
                 ReportPlanUncertainty(
                     question=pq.question,
                     limitation=pq.limitation_note or "Evidence insufficient for definitive judgment.",
+                )
+            )
+        elif blocked_as_uncertainties:
+            uncertainties.append(
+                ReportPlanUncertainty(
+                    question=pq.question,
+                    limitation=pq.limitation_note or "Evidence requires targeted repair before definitive judgment.",
                 )
             )
 
