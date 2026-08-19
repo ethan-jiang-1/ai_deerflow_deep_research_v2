@@ -1,6 +1,7 @@
 """Strict-msgpack compatibility for the persisted Deep Research value types.
 
 @impl RUI-008
+@impl REG-022
 """
 
 from __future__ import annotations

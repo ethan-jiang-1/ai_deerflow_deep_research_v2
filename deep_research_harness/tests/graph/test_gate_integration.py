@@ -146,6 +146,10 @@ class TestRealWave2GateOutcomes:
 
         The wave2 gate budget resolver reads the HITL-owned profile intent
         fields: the minimal pair yields two evidence rounds.
+
+        @impl EXI-001
+        @impl LSA-001  # deterministic two-round gate budget wiring; real-run
+                       # evidence is separately carried by runbook-003
         """
         state = _state() | {
             "cost_tolerance": "minimal",

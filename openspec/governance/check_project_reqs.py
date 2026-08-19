@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # check_project_reqs.py — 项目级 Requirement ID registry 一致性检查（只读，不修改）
-# Usage: python3 check_project_reqs.py [projectRoot]
+# Usage: python3 check_project_reqs.py [projectRoot] [--change <name>]
 #
 # 借鉴自 deep-research 的 check-project-reqs.mjs，逻辑等价、技术栈换成本仓库的 Python
 # 标准库（不引入 pyyaml——registry 的 ID 行用正则直接扫描，零外部依赖，永远可跑）。
@@ -11,16 +11,26 @@
 #   pending — 出现在 openspec/changes/<active>/specs/ (未归档 change 的 delta)
 #   retired — 在 openspec/governance/req-registry.yaml 该行标记 [DEPRECATED] (合法废弃, id 占位永不复用)
 #
-# 四项检查:
+# 默认模式（无 --change）四项检查:
 #   1. duplicate      — 同一 id 被 ≥2 个不同的 main spec 文件 **声明** (归属冲突)
 #   2. unregistered   — 出现在 specs/delta 但 registry 没有 (BUG-\d+ 是 bug ID, 不是 req ID, 不参与)
 #   3. orphan         — registry 有, 但三态都不是 (静默丢失探测器)
 #   4. reusedRetired  — 未归档 change **声明** 了已 [DEPRECATED] 的 id (禁止旧 id 指新语义)
 #
+# --change <name> 模式（planning scope, 只读, 不写 registry）: 只审视选中 active change
+# 的 delta 声明的 ID, 复用与默认模式相同的 registry/header 扫描语义:
+#   - 未登记且未被其它 active change 声明 → `reservation: <ID> (<capability>)`, 不失败
+#   - 未登记但已被另一 active change 声明 → 非零 collision
+#   - 已登记且同 capability → `already-assigned: <ID> (<capability>)`, 不失败
+#   - 已登记但属不同 capability → 非零 already-assigned ownership violation
+#   - 已登记但 [DEPRECATED] → 非零 reused-retired（禁止旧 id 指新语义）
+# 缺失/非 active change fail closed。该模式只读, 不掩盖默认全树检查。
+#
 # 声明 vs 引用: 只有 `> req: XXX-001, ...` 头部行算"声明"(归属)。正文 prose 里的
 # 交叉引用 (如 "see CUT-002"、"per MEP-001") 只算"引用"——引用参与 unregistered/orphan
 # 存在性判定, 但不参与 duplicate/reusedRetired 归属判定。
 
+import argparse
 import re
 import sys
 from pathlib import Path
@@ -99,6 +109,130 @@ def _active_delta_header_ids_by_capability(root: Path) -> dict[str, set[str]]:
     return declared_by_capability
 
 
+def _selected_change_declared(root: Path, change_name: str) -> dict[str, set[str]]:
+    """Header-declared IDs of one selected active change, grouped by capability.
+
+    Returns {} (and the caller decides fail-closed) when the change is not an
+    active directory beneath openspec/changes/.
+    """
+    change_dir = root / "openspec" / "changes" / change_name
+    delta_specs_dir = change_dir / "specs"
+    declared_by_capability: dict[str, set[str]] = {}
+    if not change_dir.is_dir() or not delta_specs_dir.is_dir():
+        return {}
+    for spec_path in sorted(delta_specs_dir.rglob("spec.md")):
+        relative_path = spec_path.relative_to(delta_specs_dir)
+        if not relative_path.parts:
+            continue
+        capability = relative_path.parts[0]
+        declared_by_capability.setdefault(capability, set()).update(
+            _header_ids(spec_path.read_text(encoding="utf-8"))
+        )
+    return declared_by_capability
+
+
+def _active_change_declarations(root: Path, exclude_change: str | None = None) -> dict[tuple[str, str], set[str]]:
+    """Header-declared IDs across every active change, keyed by (change, capability).
+
+    Reuses `_header_ids` per delta spec file, mirroring the default full-tree
+    scan semantics. The selected change itself is excluded so its own
+    declaration is never treated as another active change.
+    """
+    changes_dir = root / "openspec" / "changes"
+    declarations: dict[tuple[str, str], set[str]] = {}
+    if not changes_dir.exists():
+        return declarations
+
+    for change_dir in sorted(changes_dir.iterdir(), key=lambda path: path.name):
+        if not change_dir.is_dir() or change_dir.name == "archive":
+            continue
+        if exclude_change is not None and change_dir.name == exclude_change:
+            continue
+        delta_specs_dir = change_dir / "specs"
+        if not delta_specs_dir.is_dir():
+            continue
+        for spec_path in sorted(delta_specs_dir.rglob("spec.md")):
+            relative_path = spec_path.relative_to(delta_specs_dir)
+            if not relative_path.parts:
+                continue
+            capability = relative_path.parts[0]
+            declarations.setdefault((change_dir.name, capability), set()).update(
+                _header_ids(spec_path.read_text(encoding="utf-8"))
+            )
+    return declarations
+
+
+def validate_selected_change_planning(root: Path, change_name: str) -> int:
+    """Planning scope for one selected active change: read-only ID admission.
+
+    Reuses this module's registry/header scanning semantics. Prints
+    `reservation: <ID> (<capability>)` for legal new IDs and
+    `already-assigned: <ID> (<capability>)` for registry-owned IDs, writes
+    nothing, and fails closed on a missing/non-active selected change.
+
+    @impl EVH-005
+    @impl PRS-009
+    """
+    registry_path = root / "openspec" / "governance" / "req-registry.yaml"
+    change_dir = root / "openspec" / "changes" / change_name
+    if not change_dir.is_dir():
+        print(f"Selected active change not found: {change_dir}", file=sys.stderr)
+        return 1
+    if not registry_path.is_file():
+        print(f"Registry not found: {registry_path}", file=sys.stderr)
+        return 1
+
+    entries = parse_registry_ids(registry_path.read_text(encoding="utf-8"))
+    retired = {k for k, v in entries.items() if "DEPRECATED" in str(v).upper()}
+    selected = _selected_change_declared(root, change_name)
+    # Collision detection is selected-change-aware: the same unregistered ID
+    # declared by ANY other active change is a collision even when both deltas
+    # use the same capability directory. The selected change's own declaration
+    # is excluded so it is never treated as another active change.
+    other_active: dict[str, list[str]] = {}
+    for (other_change, other_capability), ids in _active_change_declarations(
+        root, exclude_change=change_name
+    ).items():
+        for requirement_id in sorted(ids):
+            other_active.setdefault(requirement_id, []).append(
+                f"{other_change} ({other_capability})"
+            )
+
+    failures: list[str] = []
+    for capability in sorted(selected):
+        for requirement_id in sorted(selected[capability]):
+            if requirement_id in retired:
+                failures.append(f"reused-retired: {requirement_id} ({capability}) re-declares a [DEPRECATED] id")
+                continue
+            if requirement_id not in entries:
+                other_owners = sorted(other_active.get(requirement_id, []))
+                if other_owners:
+                    failures.append(
+                        f"collision: {requirement_id} ({capability}) is already declared by active change(s): {', '.join(other_owners)}"
+                    )
+                else:
+                    print(f"reservation: {requirement_id} ({capability})")
+                continue
+            value = entries[requirement_id]
+            owner, separator, _description = str(value).partition(" — ")
+            if not separator or not owner:
+                failures.append(f"registry capability missing for {requirement_id}")
+                continue
+            if owner == capability:
+                print(f"already-assigned: {requirement_id} ({capability})")
+            else:
+                failures.append(
+                    f"already-assigned ownership violation: {requirement_id} is registered to {owner}, not {capability}"
+                )
+
+    if failures:
+        print("Selected-change requirement planning failures:", file=sys.stderr)
+        for failure in failures:
+            print(f"  {failure}", file=sys.stderr)
+        return 1
+    return 0
+
+
 def collect_active_main_requirements(root: Path, entries: dict[str, str]) -> tuple[set[str], list[str]]:
     """Validate alive/pending ownership and return only alive main-spec IDs."""
     specs_dir = root / "openspec" / "specs"
@@ -156,7 +290,30 @@ def walk_into(dir_path: Path, sink: list):
 
 
 def main() -> int:
-    root = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path.cwd()
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "project_root",
+        nargs="?",
+        type=Path,
+        default=Path("."),
+        help="repository root (default: current working directory)",
+    )
+    parser.add_argument(
+        "--change",
+        metavar="NAME",
+        default=None,
+        help="planning scope: validate only the named active change's declared IDs "
+             "(read-only; prints reservation/already-assigned lines)",
+    )
+    args = parser.parse_args()
+    root = args.project_root.resolve()
+
+    if args.change is not None:
+        return validate_selected_change_planning(root, args.change)
+
     registry_path = root / "openspec" / "governance" / "req-registry.yaml"
     specs_dir = root / "openspec" / "specs"
     changes_dir = root / "openspec" / "changes"

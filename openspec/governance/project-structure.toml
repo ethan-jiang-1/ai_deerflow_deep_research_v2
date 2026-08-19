@@ -37,7 +37,7 @@ recipe_factories = ["from_adapters"]
 
 [ignored_paths]
 path = "deep_research_harness/.gitignore"
-entries = [".deep-research-demo-runs/", ".reports/", ".pytest_cache/", ".ruff_cache/", ".node-prompt-review/", "evals/runs/", ".venv/", ".agents/", ".claude/"]
+entries = [".deep-research-demo-runs/", ".reports/", ".pytest_cache/", ".ruff_cache/", ".node-prompt-review/", "evals/runs/", ".venv/", ".agents/", ".claude/", ".repro-tmp/"]
 
 [[required_paths]]
 path = "deep_research_harness/AGENTS.md"
@@ -986,6 +986,41 @@ owner = "PRS-009"
 
 [[required_paths]]
 path = "openspec/governance/check_harness_dependency_direction.py"
+kind = "file"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/governance/check_project_gate.py"
+kind = "file"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/governance/check_project_reqs.py"
+kind = "file"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/governance/check_project_specs.py"
+kind = "file"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/governance/check_project_req_coverage.py"
+kind = "file"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/tests"
+kind = "directory"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/tests/governance"
+kind = "directory"
+owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/tests/governance/test_project_gate.py"
 kind = "file"
 owner = "PRS-009"
 

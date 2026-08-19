@@ -109,10 +109,51 @@ SHALL continue to use `deep_research_harness/`, while `backend/`, `frontend/`, a
 SHALL not rename the existing rapid workflow display name, job/status identity, test
 lane, or evidence semantic. (`EVH-005`, `EVH-032`)
 
+OpenSpec governance evidence SHALL NOT be part of the Harness `make verify`
+composition. The project SHALL maintain one OpenSpec root governance aggregate that
+combines every registered OpenSpec checker — requirements registry, main-spec
+structure, project architecture, Change Guidance, requirement evidence coverage, and
+Harness dependency direction — as an OpenSpec-side gate run from the repository root.
+The aggregate SHALL be orchestration-only: it SHALL invoke each component checker,
+preserve its exit code, and aggregate results without owning rule semantics, writing
+the requirement registry, or reimplementing delta/registry parsing. The aggregate
+SHALL expose a read-only planning phase that delegates active-change admission checks
+to the owning components (Change Guidance for the Focus Card, the selected-change
+scope of the specification checker for delta headers and titles, the planning scope
+of the requirement checker for reservations and collisions, and native strict change
+validation for MODIFIED requirement/scenario preservation) and a closeout phase that
+requires a zero exit from every component checker before a change SHALL be archived
+through repository agent workflows; closeout SHALL NOT add a separate consistency
+checker because the component checkers own registry, header, and evidence
+consistency. Harness verification SHALL remain independently runnable without the
+OpenSpec tree, and no Harness guide, documentation, Makefile, application test, or
+asset SHALL read, import, execute, or link OpenSpec content. (`EVH-005`)
+
 #### Scenario: Canonical verification starts from the Harness root
 - **WHEN** a developer runs the complete rapid deterministic verification gate
 - **THEN** `cd deep_research_harness && UV_OFFLINE=1 make verify` performs the existing
   local aggregate without resolving a former downstream root
+
+#### Scenario: Governance gate runs beside Harness verification
+- **WHEN** archive closeout runs for an active change
+- **THEN** the OpenSpec root aggregate runs every registered checker from the
+  repository root with component exit codes preserved and no duplicate consistency
+  check, and `cd deep_research_harness && UV_OFFLINE=1 make verify` completes
+  independently without executing or linking OpenSpec content
+
+#### Scenario: A failing closeout stops repository archive workflows
+- **WHEN** any component checker exits non-zero at closeout
+- **THEN** the aggregate exits non-zero and repository archive agent workflows stop
+  with the failing checker identified before native archive runs; a direct native
+  `openspec archive` invocation is not blocked
+
+#### Scenario: Planning admission delegates to component owners
+- **WHEN** the read-only planning phase checks an active change
+- **THEN** Focus Card grammar is evaluated by the Change Guidance checker, delta
+  header/title rules by the specification checker's selected-change scope, ID
+  reservations and collisions by the requirement checker's planning scope, and
+  MODIFIED requirement/scenario preservation by native strict change validation,
+  with no parsing reimplemented inside the aggregate
 
 ### Requirement: Deterministic test selection references only live markers and passes from a clean checkout
 

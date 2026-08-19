@@ -670,6 +670,10 @@ async def test_non_interactive_declared_minimal_intent_seeds_trio_and_must_answe
 
     A declared minimal intent constructs the single-topic profile trio and the
     must-answer question, without a model call.
+
+    @impl EXI-001
+    @impl LSA-001  # deterministic single-topic profile wiring; real-provider
+                   # behavior is separately evidenced by runbook-003
     """
     caps = _Caps()
     store = _RequestStore()

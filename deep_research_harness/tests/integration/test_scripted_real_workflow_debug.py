@@ -33,7 +33,10 @@ def _await(coro: object) -> object:
 
 
 def test_scripted_real_baseline_proves_every_wave_action(tmp_path: Path, _scripts_path: str) -> None:
-    """SCR-002/SCR-003: the fixed baseline drives and proves one bounded action per wave."""
+    """SCR-002/SCR-003: the fixed baseline drives and proves one bounded action per wave.
+
+    @impl SCR-006
+    """
 
     from debug_scripted_real_workflow import ScriptedRealRun, run_scripted_real_workflow
 

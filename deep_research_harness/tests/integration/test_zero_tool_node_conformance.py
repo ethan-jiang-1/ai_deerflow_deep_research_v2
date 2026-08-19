@@ -331,6 +331,12 @@ async def test_readiness_critic_crosses_real_zero_tool_bridge_and_uses_ledger_pr
                 ),
             )
 
+        async def read_synthesis_gaps(self):
+            return ()
+
+        async def read_synthesis_findings(self):
+            return ()
+
         async def write_readiness_report_plan(self, plan):
             raw = canonical_json_bytes(plan.model_dump(mode="json"))
             digest = base64.urlsafe_b64encode(hashlib.sha256(raw).digest()).decode("ascii").rstrip("=")

@@ -1726,6 +1726,8 @@ async def test_model_tool_events_carry_call_ordinal_usage_and_budget_operands() 
     )
     assert RuntimeNodeAgentBridge._usage_tokens({"messages": []}) is None
     assert RuntimeNodeAgentBridge._usage_tokens({}) is None
-    assert RuntimeNodeAgentBridge._usage_tokens(
-        {"messages": [ai_message("x", input_tokens=7, output_tokens=3)]}
-    ) == {"input_tokens": 7, "output_tokens": 3, "total_tokens": 10}
+    assert RuntimeNodeAgentBridge._usage_tokens({"messages": [ai_message("x", input_tokens=7, output_tokens=3)]}) == {
+        "input_tokens": 7,
+        "output_tokens": 3,
+        "total_tokens": 10,
+    }

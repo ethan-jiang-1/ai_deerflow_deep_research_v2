@@ -1,6 +1,6 @@
 # research-graph-lifecycle Specification
 
-> req: REG-001, REG-002, REG-003, REG-004, REG-005, REG-006, REG-007, REG-008, REG-009, REG-010, REG-011, REG-012, REG-013, REG-014, REG-015, REG-016, REG-017, REG-018, REG-019, REG-020, REG-021
+> req: REG-001, REG-002, REG-003, REG-004, REG-005, REG-006, REG-007, REG-008, REG-009, REG-010, REG-011, REG-012, REG-013, REG-014, REG-015, REG-016, REG-017, REG-018, REG-019, REG-020, REG-021, REG-022
 
 ## Purpose
 The stable Deep Research graph topology, deterministic implementation selection,
@@ -819,7 +819,7 @@ checkpoints persist — `deerflow_deep_research.domain.state.ContentRef`,
 mode SHALL keep failing closed for every other project type. Reading or resuming a
 research checkpoint SHALL produce no unregistered-project-type deserialization
 warnings, and the set of registered types SHALL stay equal to the set of project
-types actually persisted in research checkpoints. (`RGL-014`)
+types actually persisted in research checkpoints. (`REG-022`)
 
 #### Scenario: The bundle graph store opens with the registered serializer
 - **WHEN** a run opens its Bundle-contained graph checkpoint store

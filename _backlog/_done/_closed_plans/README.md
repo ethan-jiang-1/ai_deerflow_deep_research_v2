@@ -1,6 +1,6 @@
 # Closed Plans Index — 已完成 plan 归档
 
- > 最后更新: 2026-08-18 | `_backlog/_done/_closed_plans/` — 已完成 plan 的归档目录。
+ > 最后更新: 2026-08-19 | `_backlog/_done/_closed_plans/` — 已完成 plan 的归档目录。
 > 接收来自 [`../../plans/`](../../plans/) 的 plan。`_` 前缀 = coding agent 默认忽略。
 >
 > **plan 完成后文件名不变，位置即状态。** 移入时分配 `CLS-NNN` 序号（Closed），按完成时间递增。
@@ -68,5 +68,7 @@ plan 完成后从 `_backlog/plans/` 通过 `git mv` 移入本目录：
 | CLS-046 | 2026-08-18 | [low-scale-real-auto-runs.md](low-scale-real-auto-runs.md) | Mode 003 real-auto 最低规模跑通设计（决策点 1/2/3 已拍板）已按 plan 重写 `low-scale-real-auto` change 并实施、同步主规格、归档；修复后 003 真机复跑暴露的 BUG-040..043 经 wave2-synthesis-validation-feedback-contract 与 soft-bundle-bind-blocked-run-bundle 两个 change 全部修复关闭 |
 
 | CLS-047 | 2026-08-19 | [fix-003-blocking-bugs-three-changes.md](fix-003-blocking-bugs-three-changes.md) | 003 阻断 bug 三 change 战役完成：fix-request-envelope-coherence（047/049）、honest-degraded-delivery（050/051/053/054）、run-forensics（048.1-4/6）+ 提前的 preserve-failed-run-bundles（052）全部实施、测试门全绿、归档并同步主 specs；真实 003 复跑 RESULT: PASS（9 阶段 completed，真实 findings + 诚实 Uncertainties）；BUG-048 第 7 项（state.json 投影）留 follow-up |
+| CLS-048 | 2026-08-19 | [openspec-materials-feedback-from-bugfix-campaign.md](openspec-materials-feedback-from-bugfix-campaign.md) | 003 bugfix campaign feedback absorbed by openspec-rule-reachability — delta mechanics (full MODIFIED/scenario carry), archive gate, ID reachability (plan-time reservation), and direct exit-code measurement |
+| CLS-049 | 2026-08-19 | [openspec-rule-reachability.md](openspec-rule-reachability.md) | Design + execution implemented and archived via OpenSpec change `openspec-rule-reachability`; T0–T3 landed, T4 route-table single-sourcing deliberately deferred / not part of this change |
 
-**Next available plan ID: CLS-048**
+**Next available plan ID: CLS-050**

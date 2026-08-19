@@ -1,17 +1,6 @@
-# Execution Intent Specification
-
 > req: EXI-001
 
-## Purpose
-
-The optional research-intent declaration for non-interactive automatic runs and its
-deterministic consumption: a declared minimal intent flows through existing channels
-(minimal profile → the existing `single_topic` planner derivation; profile intent
-fields in graph state → the wave2 gate budget resolver), while an absent intent keeps
-today's behavior byte-identical. No envelope, recipe, or capability API change carries
-the intent.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Non-interactive runs may declare research intent
 

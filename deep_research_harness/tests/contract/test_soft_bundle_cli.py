@@ -397,7 +397,10 @@ def test_run_mode_002_parses_journal_path_and_binds(tmp_path: Path, capsys) -> N
 
 
 def test_run_mode_003_binds_the_real_auto_bundle(tmp_path: Path, capsys) -> None:
-    """@impl SBC-004"""
+    """@impl SBC-004
+
+    @impl LSA-001
+    """
     with _patch_paths(tmp_path):
         root = tmp_path / "harness" / "r"
         root.mkdir()
@@ -478,7 +481,10 @@ def test_inspect_mode_003_renders_recorded_diagnostics(tmp_path: Path, capsys) -
 
 
 def test_verify_mode_003_requires_report(tmp_path: Path, capsys) -> None:
-    """@impl SBC-004"""
+    """@impl SBC-004
+
+    @impl LSA-001
+    """
     with _patch_paths(tmp_path):
         root = tmp_path / "harness" / "r"
         root.mkdir()
@@ -729,7 +735,6 @@ def _seed_run_subtree(runs: Path, name: str, sentinel: str) -> None:
     (subtree / sentinel).write_text(sentinel, encoding="utf-8")
 
 
-
 def test_clean_run_bundles_archives_prior_subtrees(tmp_path: Path, capsys) -> None:
     """@bug BUG-052: a fresh control run archives instead of destroying prior trees."""
 
@@ -766,11 +771,7 @@ def test_clean_run_bundles_prunes_to_three_archives(tmp_path: Path) -> None:
 
         soft_bundle._clean_run_bundles()
 
-        kept = sorted(
-            d.name
-            for d in (runs / "archive").iterdir()
-            if d.name.startswith("deep-research-")
-        )
+        kept = sorted(d.name for d in (runs / "archive").iterdir() if d.name.startswith("deep-research-"))
         assert len(kept) == 3
         assert "deep-research-1754000000000" not in kept
         assert (runs / "archive" / kept[-1] / "fresh").exists()

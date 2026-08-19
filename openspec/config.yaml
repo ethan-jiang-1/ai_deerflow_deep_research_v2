@@ -66,6 +66,9 @@ rules:
   specs:
     - "Requirements describe observable or mechanically verifiable downstream behavior and do not redefine DeerFlow internals. Main specs and active deltas declare owned requirement IDs before their first heading."
     - "Retain zero-API deterministic evidence at the lowest responsible seam. Credentialed live/release evidence is supplemental and needs explicit bounds."
+    - "A MODIFIED block SHALL carry the complete requirement statement and every scenario that survives the change (verbatim); scenarios the main spec still has SHALL NOT be dropped from the delta."
+    - "Requirement titles are stable semantic anchors and SHALL NOT embed requirement IDs; IDs live on `> req:` headers, in registry entries, and in `@impl` evidence annotations."
+    - "New requirement IDs SHALL be declared on the delta's `> req:` line before its first heading; the change's own apply task SHALL register them in `openspec/governance/req-registry.yaml`. Planning stages only reserve; they never write the registry."
   design:
     - "Separate verified current behavior, approved decisions, and unresolved questions. Define ownership for state, checkpoints, artifacts, evidence, and recovery; do not create competing controllers or authorities."
     - "New downstream code lives under deep_research_harness/ and may use public deerflow.* APIs. Keep blocking I/O off the async event loop."
@@ -75,12 +78,12 @@ rules:
       tool posture 或 candidate admission 读取
       `openspec/change-guidance/profiles/node-agent/node-agent.md`，而 model、tool、
       provider、retry、terminal、diagnostic 或 lifecycle projection 读取
-      `openspec/change-guidance/profiles/workflow-control/workflow-outcome-review.md`。随后在 design 识别 owning
+      `openspec/change-guidance/profiles/workflow-control/workflow-control.md`。随后在 design 识别 owning
       StateGraph transition/predicate、typed input/output、writer/reducer、evaluator/materializer、
       bounded recovery/terminal disposition 与 deterministic test；不得创建 competing controller 或 authority。
   tasks:
     - "Pair changed behavior with a red-before-green deterministic test and include the narrowest relevant verification command."
-    - "Before archive, run `cd deep_research_harness && UV_OFFLINE=1 make verify`, `openspec validate <change-name> --strict`, and `git diff HEAD --check`; record `git status --porcelain=v1 --untracked-files=all`, `git ls-files --stage deerflow`, `git submodule status -- deerflow`, `git -C deerflow status --porcelain=v1 --untracked-files=all`, and review `git diff --submodule=short`. These are supplementary manual scope/diff evidence for the observed gitlink pointer and nested worktree; full architecture governance separately performs its declared metadata-only gitlink validation. Neither kind of evidence approves a pointer bump or proves upstream runtime compatibility."
+    - "Before archive, from the repository root, run the OpenSpec root governance gate `python3 openspec/governance/check_project_gate.py --phase closeout`; from `deep_research_harness/`, independently run `UV_OFFLINE=1 make verify`; then, from the repository root, run `openspec validate <change-name> --strict` and `git diff HEAD --check`. Measure every exit code directly — a `| tail` (or any pipe) pipeline returns the last command's status and swallows the gate's real result. Record `git status --porcelain=v1 --untracked-files=all`, `git ls-files --stage deerflow`, `git submodule status -- deerflow`, `git -C deerflow status --porcelain=v1 --untracked-files=all`, and review `git diff --submodule=short`. These are supplementary manual scope/diff evidence for the observed gitlink pointer and nested worktree; full architecture governance separately performs its declared metadata-only gitlink validation, and neither kind of evidence approves a pointer bump or proves upstream runtime compatibility. The Harness gate stays application-independent: `make verify` neither reads, imports, executes, nor links OpenSpec content, and no Harness target invokes the OpenSpec gate."
     # @impl DRC-010
     - "When `Triggered review policies` includes `control-placement`, tasks.md MUST retain a plan-review and archive-closeout-review obligation. Each names its current apply/archive agent owner, minimal review or correction action, and deterministic or bounded-evidence done condition; another policy alone does not require either obligation."
 

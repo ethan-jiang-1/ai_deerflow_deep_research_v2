@@ -24,6 +24,24 @@ OpenSpec governance and retain `openspec/governance/check_change_guidance.py` as
 Deep Research local wrapper/CLI without registering the portable module as a general
 project architecture, requirement, specification, coverage, or runtime checker.
 
+The canonical structure SHALL register one OpenSpec root governance aggregate script
+beneath `openspec/governance/` as the combined gate over the registered OpenSpec
+checkers. The aggregate SHALL be orchestration-only: it SHALL invoke each component
+checker, preserve its exit code, and aggregate results without owning any rule
+semantics, writing the requirement registry, judging prose, or reimplementing
+delta/registry regex or parsing. The aggregate SHALL expose a read-only `plan` phase
+that delegates active-change admission checks to the owning components (the Change
+Guidance checker for the Focus Card, the selected-change scope of the specification
+checker for delta headers and titles, the planning scope of the requirement checker
+for reservations and collisions, and native strict change validation for MODIFIED
+requirement/scenario preservation) and a `closeout` phase requiring zero exit from
+every component checker; closeout SHALL NOT add a separate consistency checker
+because the component checkers own registry, header, and evidence consistency. The
+aggregate and its focused tests SHALL be registered in `project-structure.toml`.
+Registering the aggregate SHALL NOT register the portable validation module as a
+general project architecture, requirement, specification, coverage, or runtime
+checker.
+
 The canonical structure SHALL register `openspec/product/` as the sole product-context
 directory and SHALL require its exact current member set to be `README.md`. It SHALL
 reject `deep-research.md`, `instance.yaml`, an extra index, a compatibility copy, or
@@ -79,6 +97,14 @@ governance script's `@impl` declaration and SHALL NOT require a parallel pytest 
 #### Scenario: Upstream boundary is preserved
 - **WHEN** the Program closes its structural migration
 - **THEN** metadata evidence shows the `deerflow` gitlink pointer and nested worktree are unchanged, without source-browsing or modifying the submodule
+
+#### Scenario: Aggregate is orchestration-only and registered
+- **WHEN** architecture governance inspects the OpenSpec governance gate
+- **THEN** the aggregate is registered beneath `openspec/governance/`, invokes every
+  component checker with exit-code preservation and read-only behavior, delegates
+  plan-phase semantics to the owning component scopes, adds no duplicate closeout
+  consistency checker, and never writes the requirement registry or judges prose
+
 ### Requirement: Reader-interface validation uses canonical downstream governance paths
 
 The non-runtime cognitive-node reader checker, its fixtures, and its focused contract

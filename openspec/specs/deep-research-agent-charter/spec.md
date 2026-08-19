@@ -594,6 +594,16 @@ record is non-authoritative and that operation guidance remains advisory: neithe
 surface executes commands, creates or completes tasks, infers a finding, validates
 semantic quality, nor blocks a native OpenSpec operation. (`DRC-010`)
 
+The project SHALL maintain an independent canonical project governance gate that
+combines the registered OpenSpec component checkers and MAY stop the
+repository-managed archive agent workflow when any component checker exits non-zero.
+This stopping authority SHALL derive solely from the deterministic component
+checkers' exit statuses; it SHALL NOT derive from operation guidance or from
+selected-change closeout evidence, which remain advisory and non-authoritative as
+stated above. The gate SHALL NOT block or directly change a native `openspec
+archive` invocation. Recovery from a stopped repository-managed workflow SHALL be
+to fix the named finding and re-run the gate until it exits zero. (`DRC-010`)
+
 #### Scenario: A selected control-placement change is resumed for apply
 - **WHEN** an agent receives apply instructions for an active proposal that selects
   `control-placement`
@@ -632,6 +642,15 @@ semantic quality, nor blocks a native OpenSpec operation. (`DRC-010`)
   finding
 - **THEN** it neither changes native apply/archive state nor claims that a task,
   checker, semantic review, or archive transition was executed
+
+#### Scenario: A deterministic gate stop leaves guidance and native authority unchanged
+- **WHEN** the canonical project governance gate exits non-zero during a
+  repository-managed archive agent workflow
+- **THEN** the workflow stops with the failing component checker named, the gate's
+  stopping authority comes from the deterministic component checkers rather than
+  from operation guidance or selected-change evidence, and a direct native
+  `openspec archive` invocation is neither blocked nor modified; recovery is to fix
+  the named finding and re-run the gate
 
 ### Requirement: Operation-guidance integration evidence stays bounded
 

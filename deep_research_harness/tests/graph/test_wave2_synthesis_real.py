@@ -515,9 +515,42 @@ def test_pre_model_problem_preserves_concrete_input_categories() -> None:
         raise AssertionError("validation error expected")
     assert captured is not None
     assert isinstance(captured, ValueError)
+    from deerflow_deep_research.domain.workflow_outcomes import is_structured_validation_error
+
+    assert is_structured_validation_error(captured) is True
     normalized = _pre_model_problem(captured)
     assert normalized.validation_category == "synthesis_request_shape_invalid"
     assert normalized.validation_category != "candidate_invalid"
+
+
+def test_structured_validation_error_predicate_distinguishes_pydantic_from_plain_value_error() -> None:
+    """@impl WFO-001
+
+    The domain predicate is the only pydantic-aware surface node code may use:
+    a Pydantic ValidationError (including a single-line one, which the
+    multi-line fallback would otherwise miss) is classified as a structured
+    validation failure, while a plain ValueError keeps its caller-defined
+    semantics.
+    """
+
+    from pydantic import BaseModel, Field, ValidationError
+
+    from deerflow_deep_research.domain.workflow_outcomes import is_structured_validation_error
+
+    class _SingleLine(BaseModel):
+        value: int = Field(ge=0)
+
+    captured: ValidationError | None = None
+    try:
+        _SingleLine(value=-1)
+    except ValidationError as exc:
+        captured = exc
+    else:  # pragma: no cover - construction guarantee
+        raise AssertionError("validation error expected")
+    assert captured is not None
+    assert is_structured_validation_error(captured) is True
+    assert is_structured_validation_error(ValueError("synthesis_question_coverage_invalid")) is False
+    assert is_structured_validation_error(TypeError("unrelated")) is False
 
 
 async def test_real_synthesis_persists_searchable_gap_and_returns_typed_preview(tmp_path: Path) -> None:
@@ -1257,9 +1290,7 @@ async def test_budget_exhausted_invocation_hands_route_authority_to_the_gate(tmp
         phase="wave2_synthesis",
         certainty=FailureCertainty.DIRECT,
     )
-    capabilities = _Capabilities(
-        NodeExecutionResult(finish_reason=NodeFinishReason.BUDGET_EXHAUSTED, problem=problem)
-    )
+    capabilities = _Capabilities(NodeExecutionResult(finish_reason=NodeFinishReason.BUDGET_EXHAUSTED, problem=problem))
     dependencies = _dependencies(tmp_path, capabilities)
 
     update = await NODE_SPEC.real_factory(dependencies)(_state())

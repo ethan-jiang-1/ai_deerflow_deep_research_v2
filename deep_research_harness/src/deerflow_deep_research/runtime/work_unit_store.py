@@ -188,7 +188,8 @@ def _dedupe_question_texts(entries: list[tuple[str, str, str]]) -> tuple[tuple[s
     return tuple(texts_by_id.items())
 
 
-def _utc_now() -> datetime:    return datetime.now(UTC)
+def _utc_now() -> datetime:
+    return datetime.now(UTC)
 
 
 def _token() -> str:

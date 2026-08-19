@@ -1,6 +1,6 @@
 # Plans — plan/分析文档索引
 
-> 最后更新: 2026-08-18 | `_backlog/plans/` — 活跃 plan 在此，完成的普通 plan 移入 [`../_done/_closed_plans/`](../_done/_closed_plans/)。
+> 最后更新: 2026-08-19 | `_backlog/plans/` — 活跃 plan 在此，完成的普通 plan 移入 [`../_done/_closed_plans/`](../_done/_closed_plans/)。
 >
 > **plan 没有编号，文件名即标识。完成后文件名不变，位置即状态。**
 
@@ -21,11 +21,7 @@
 |------|------|--------|
 | [openspec-product-boundary-portability.md](openspec-product-boundary-portability.md) | 设计 | 将 OpenSpec practice 分为 portable core/profiles、Deep Research local composition 与 product front door，并在本仓完成机械验证 |
 
-| [openspec-materials-feedback-from-bugfix-campaign.md](openspec-materials-feedback-from-bugfix-campaign.md) | 反馈/复盘 | 裁定 4 条建议是否立 change（delta 机械卡 / checker 入归档门 / ID 登记 CLI 化 / 路由表单源化） |
-
-| [openspec-rule-reachability.md](openspec-rule-reachability.md) | 设计+执行 | **待采纳**（决策点 A/B）：单 change `openspec-rule-reachability`，T0 清 drift → T1 delta 机械卡 → T2 checker 归档门禁 → T3 ID 前移 polish → T4 单源化（可拆） |
-
-**Next available plan ID: CLS-047**（移入 `_closed_plans/` 时分配）
+**Next available plan ID: CLS-050**（移入 `_closed_plans/` 时分配）
 
 ## 已归档（移至 `_done/_closed_plans/`）
 

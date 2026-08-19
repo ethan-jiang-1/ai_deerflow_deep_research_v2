@@ -66,18 +66,45 @@ Never merely list a mechanically resolvable defect for someone else to repair. C
 After the final clean risk-led pass, require all of the following before saying `ready for apply`:
 
 1. Every artifact in `applyRequires` is complete, and no required planning artifact has an unresolved contradiction or decision.
-2. Run:
+2. Run, from the repository root:
 
    ```bash
-   openspec validate "<name>" --strict
+   python3 openspec/governance/check_project_gate.py --phase plan --change "<name>"
    git diff --check
    ```
+
+   The plan gate is the canonical project planning check when
+   `openspec/governance/check_project_gate.py` exists. It sequences the owning
+   component checks (Change Guidance for the Focus Card, the selected-change scope of
+   the specification checker for delta headers/titles, the planning scope of the
+   requirement checker for reservations/collisions/retired reuse, and native strict
+   validation for MODIFIED preservation) and runs every subprocess from the repository
+   root with exact exit-code propagation. The gate already invokes
+   `openspec validate "<name>" --strict` as its strict-validation owner, so the
+   canonical existing-gate path runs the plan aggregate once and does NOT run a
+   separate native strict invocation — a second strict run would duplicate the same
+   owner and could drift apart from the gate's composition.
+
+   **Bootstrap (gate not yet present):** when `check_project_gate.py` does not exist in
+   this checkout (for example while the change that introduces it is still being
+   applied), do not claim the missing gate passed. Instead run the existing checks it
+   would sequence: `openspec validate "<name>" --strict`, the Change Guidance checker
+   (`python3 openspec/governance/check_change_guidance.py`), any named standalone
+   project checks the discovered repository guidance or change instructions explicitly
+   require, and `git diff --check`. Report plainly which checks ran and that the gate
+   itself was not available.
 
    Also run any project-specific planning or governance checks that the discovered
    repository guidance, change instructions, or verification plan explicitly names.
    Do not assume a particular script name, runtime, or governance layout exists.
 
-3. Treat an unrelated pre-existing project-wide check failure as an external blocker, not as permission to edit unrelated files or to call the change fully ready.
+3. The plan output may print `reservation: <id> (capability)` lines for legal new
+   requirement IDs. Use those lines only as an advisory report: separately read the
+   change's `tasks.md` and require every reservation to map to an explicit apply task
+   that registers that ID in the requirement registry. The gate never parses
+   `tasks.md`; this mapping check is the polish pass's own obligation. A reservation
+   without a matching registration task is `not ready`.
+4. Treat an unrelated pre-existing project-wide check failure as an external blocker, not as permission to edit unrelated files or to call the change fully ready.
 
 ## Report
 

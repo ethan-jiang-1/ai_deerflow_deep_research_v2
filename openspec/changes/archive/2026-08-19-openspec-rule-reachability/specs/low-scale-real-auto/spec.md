@@ -1,16 +1,6 @@
-# Low-Scale Real-Auto Specification
-
 > req: LSA-001
 
-## Purpose
-
-End-to-end acceptance for mode 003: a fully automatic real run (real model + real
-web tools, fixed bounded question) started through `soft-bundle run <root> --mode
-003` with a declared minimal intent completes at `final_delivery` with a real
-`final/report.md` and one wave0 + one wave1 work unit. Runs without the declared
-intent promise no single-topic breadth.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Mode 003 real-auto runs complete with a real report
 

@@ -11,8 +11,6 @@ import re
 from collections.abc import Mapping
 from typing import Any
 
-from pydantic import ValidationError
-
 from deerflow_deep_research.domain.enums import NodeFinishReason
 from deerflow_deep_research.domain.lifecycle import LifecycleStatus, TerminalReason
 from deerflow_deep_research.domain.node_spec import NodeBuildDependencies
@@ -34,6 +32,7 @@ from deerflow_deep_research.domain.workflow_outcomes import (
     InvocationFailure,
     derive_provider_diagnostic_reference,
     invoke_and_normalize,
+    is_structured_validation_error,
 )
 
 from .materializer import materialize_synthesis
@@ -73,7 +72,7 @@ def _pre_model_problem(error: ValueError) -> NodeProblem:
         category = message
     elif _PRE_MODEL_SNAKE_RE.fullmatch(message):
         category = f"input.{message}"
-    elif isinstance(error, ValidationError) or "\n" in message:
+    elif is_structured_validation_error(error) or "\n" in message:
         category = "synthesis_request_shape_invalid"
     else:
         category = _synthesis_validation_category(error)

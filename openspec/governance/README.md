@@ -16,6 +16,7 @@
 | `check_project_architecture.py` | 结构治理是否通过？ | 脚本 docstring |
 | `check_change_guidance.py` | Change Guidance / policy 路由 / Focus Card 是否通过？ | 脚本 docstring |
 | `check_project_req_coverage.py` | 应用 requirement 是否有测试证据、OpenSpec 治理 requirement 是否有执行脚本证据？ | 测试或治理脚本 docstring |
+| `check_harness_dependency_direction.py` | Harness 是否反向依赖 OpenSpec？ | 脚本 docstring |
 | `test-evidence-policy.md` | 测试证据的 authority、lifecycle、synchronized-change？ | [test-evidence-policy.md](test-evidence-policy.md)；批准语义由 `evaluation-hardening` main spec 拥有 |
 | `change-guidance/README.md` | 先按什么原则、再选哪个 policy？ | [change-guidance/README.md](../change-guidance/README.md) |
 
@@ -33,9 +34,38 @@ python3 openspec/governance/check_project_specs.py
 python3 openspec/governance/check_project_architecture.py
 python3 openspec/governance/check_change_guidance.py
 python3 openspec/governance/check_project_req_coverage.py
+python3 openspec/governance/check_harness_dependency_direction.py
 ```
+
+共六个 component checker。每个 checker 拥有自己规则的全部语义；它们只读、不写
+registry，也不修改任何文件。
+
+## Canonical aggregate gate
+
+`openspec/governance/check_project_gate.py`（标准库、零外部依赖、在 repo 根运行）
+只编排并聚合上述六个 component checker 的退出码，不拥有规则语义、不写 registry、
+不复刻任何解析。命令：
+
+```bash
+python3 openspec/governance/check_project_gate.py --phase plan --change <name>
+python3 openspec/governance/check_project_gate.py --phase closeout
+```
+
+- `--phase plan --change <name>`：只读 admission 检查。调用各语义 owner 的 scoped
+  模式（Change Guidance 检查 Focus Card；specs checker 的 selected-change scope 检查
+  delta header 与标题；reqs checker 的 planning scope 检查 reservation/冲突/retired
+  reuse；native strict validation 检查 MODIFIED 场景保留）。合法的新 ID 输出为
+  `reservation: <id> (capability)`——reservation 只是只读占号提示，非权威、不写文件；
+  正式登记 registry 由 apply 任务完成。
+- `--phase closeout`：运行六个 component checker 并聚合退出码；任一非零即整体非零，
+  并点名失败的 checker。归档 agent workflow 在非零时停止；这是仓内 workflow 的
+  确定性门禁，不阻断、不改变直接调用 native `openspec archive`。
 
 正常校验路径 `0` = PASS，`1` = 有违规。注意：stderr 也可能包含 non-failing warning
 （仍返回 0）；argparse usage error 属于命令用法错误，不属于 0/1 contract。
+
+**退出码必须直测**：普通管道如 `cmd | tail` 只返回最后一个命令的退出码，会掩盖上游
+checker 的非零结果。验证时直接读取命令自身的 exit code（例如 `echo $?` 或脚本内
+`subprocess.run(...).returncode`），不要用管道产物判断通过与否。
 
 `config.yaml` 的 `rules.tasks` 把归档前门禁固化为每个 change 的硬性收尾 task。

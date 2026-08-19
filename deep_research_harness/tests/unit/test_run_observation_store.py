@@ -876,7 +876,10 @@ async def test_lifecycle_resolved_publisher_writes_only_the_selected_bundle_jour
 
 @pytest.mark.asyncio
 async def test_run_summary_carries_envelopes_only_for_executed_model_phases(tmp_path: Path) -> None:
-    """@bug BUG-048 item 2: the summary answers "what budget did each phase get"."""
+    """@bug BUG-048 item 2: the summary answers "what budget did each phase get".
+
+    @impl REJ-009
+    """
 
     from deerflow_deep_research.domain.run_observation import PolicyEnvelopeEvidence
 

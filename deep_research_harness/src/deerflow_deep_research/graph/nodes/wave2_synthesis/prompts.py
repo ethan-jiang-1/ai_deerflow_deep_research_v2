@@ -260,8 +260,9 @@ def build_synthesis_repair_prompt(
     )
     objective = _fitted_objective(
         evidence,
-        lambda evidence_json: prefix
-        + build_untrusted_data_block(["model_draft:\n" + draft_text, "accepted_evidence:\n" + evidence_json]),
+        lambda evidence_json: (
+            prefix + build_untrusted_data_block(["model_draft:\n" + draft_text, "accepted_evidence:\n" + evidence_json])
+        ),
     )
     return NodeExecutionRequest(
         objective=objective,

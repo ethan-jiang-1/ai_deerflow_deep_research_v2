@@ -14,7 +14,7 @@ import json
 from collections.abc import Awaitable, Callable, Mapping
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 from deerflow_deep_research.domain.context import NodeExecutionResult
 from deerflow_deep_research.domain.enums import NodeFinishReason
@@ -98,6 +98,18 @@ async def invoke_and_normalize(
     except Exception as exc:
         source = exc
     return normalize_invocation_outcome(source, phase=phase)
+
+
+def is_structured_validation_error(error: BaseException) -> bool:
+    """Return whether an exception is a structured Pydantic validation failure.
+
+    The domain layer owns this narrow identity check so ordinary node modules
+    (whose import boundary permits only domain/engine/langgraph) can classify
+    request-construction failures without importing ``pydantic`` themselves.
+    Only the Pydantic ``ValidationError`` type is treated as structured; other
+    ``ValueError`` subclasses keep their caller-defined semantics.
+    """
+    return isinstance(error, ValidationError)
 
 
 def worker_failure_for_invocation(problem: NodeProblem) -> WorkerAttemptFailure:
@@ -322,6 +334,7 @@ __all__ = [
     "derive_provider_diagnostic_reference",
     "derive_controller_worker_incident",
     "invoke_and_normalize",
+    "is_structured_validation_error",
     "normalize_invocation_outcome",
     "worker_failure_for_invocation",
 ]

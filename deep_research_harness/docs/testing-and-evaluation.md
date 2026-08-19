@@ -29,7 +29,7 @@ first, then use `UV_OFFLINE=1 make verify` as the complete deterministic gate.
 | Deterministic real-loop workflow conformance | `make test-workflow` |
 | Maintained low-frequency clean-copy entry regression | `UV_OFFLINE=1 make test-entry-environment-regression` |
 | Viability, durability, or blocking-I/O slices | `make test-viability`, `make test-durability`, `make test-blocking-io` |
-| Asset and requirement-coverage governance | `make test-assets`, `make test-req-coverage` |
+| Asset governance | `make test-assets` |
 | Credentialed bounded live canaries | `make test-live` |
 
 ## Test Directory Taxonomy
@@ -163,9 +163,13 @@ implementation defect, or release result.
 Selection is intentionally non-overlapping. The rapid gate is `make test-fast`,
 `make test-integration`, and `make test-workflow`; `make test` is their pytest-only
 union and excludes `requires_llm`, `release_e2e`, and `periodic`. `make verify` is the
-canonical complete rapid deterministic gate and adds root governance, lock consistency,
-lint, asset governance, and requirement coverage; it also leaves
+canonical complete rapid deterministic gate for this application and composes exactly
+`lock-check lint test-assets test-fast test-integration test-workflow`; it runs from
+this directory, is offline-capable via `UV_OFFLINE=1 make verify`, and leaves
 `.reports/test-fast.xml` for the separate CI/local `make test-duration-policy` check.
+Project-level planning and closeout governance for OpenSpec changes runs as an
+independent repository-root column and is never part of this Makefile gate; this
+application does not read, import, execute, or link that column.
 Requirement impact metadata is maintained beside the existing evidence policy in
 `tests/assets/requirement_evidence.py`. Prepare the project with `make install` and run
 the rapid gate offline as `UV_OFFLINE=1 make verify`.

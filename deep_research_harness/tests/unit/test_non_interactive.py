@@ -88,6 +88,8 @@ async def test_tool_allows_declared_minimal_profile_intent_for_start(tmp_path: P
     """@impl RUI-009
 
     The closed non-interactive policy admits ``profile_intent=minimal``.
+
+    @impl EXI-001
     """
     adapter = _Adapter(_envelope(tmp_path))
     result = await run_deep_research(

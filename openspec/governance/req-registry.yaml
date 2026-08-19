@@ -41,11 +41,13 @@ prefixes:
   DRC: deep-research-agent-charter
   DRH: deep-research-harness-run-bundles
   EVC: evidence-critic-nodes
+  EXI: execution-intent
   GAK: gate-kernel
   GOO: gateway-operator-observer
   HIC: human-interaction-contract
   HIN: hitl1-node
   HIT: hitl2-node
+  LSA: low-scale-real-auto
   NOA: node-agent-runtime
   NAC: node-agent-capabilities
   NRI: node-agent-reader-interface
@@ -172,6 +174,9 @@ DER-004: deep-research-delivery-efficiency — Focused developer verification ta
 DER-005: deep-research-delivery-efficiency — Deterministic CI reports its twenty slowest fast-lane tests and rejects an over-budget test without a reviewed bounded waiver
 DER-006: deep-research-delivery-efficiency — Reference fast-lane performance evidence attributes collection, setup, and call time and demonstrates the documented aggregate delivery budget
 
+# execution-intent
+EXI-001: execution-intent — The non-interactive start policy accepts an optional declared profile_intent (minimal) and drives it through the existing channels: the minimal profile single-topic planner derivation and the wave2 gate budget resolver yielding two evidence rounds, while absent intent keeps today's behavior
+
 # gateway-operator-observer
 GOO-001: gateway-operator-observer — The local real observer creates and follows only configured public Gateway turns for the deep-research Agent without embedded graph, private store, caller identity, or lifecycle authority
 GOO-002: gateway-operator-observer — Structured SSE projections admit only safe assistant text, validated typed Deep Research results, predecessor-owned custom progress, and bounded transport facts without lifecycle inference or recovery side effects
@@ -184,6 +189,9 @@ LCP-003: local-configuration-profiles — Local profile selection prevents state
 LCP-004: local-configuration-profiles — Profile validation and startup diagnostics truthfully identify the selected safe profile label and restart-required configuration state without exposing host paths or secret values
 LCP-005: local-configuration-profiles — Local profile changes compose with Deep Research startup fingerprinting and run-session storage without changing lifecycle authority, artifact ownership, or Docker behavior
 LCP-006: local-configuration-profiles — Local profile commands and state references use the canonical Harness root without restoring a deleted Run Bundle
+
+# low-scale-real-auto
+LSA-001: low-scale-real-auto — A fully automatic real mode-003 run started through soft-bundle run --mode 003 declares profile_intent=minimal, exercises single-topic planning with one wave0 and one wave1 work unit and a two-round wave2 gate budget, completes at final_delivery with a real final/report.md and claim-citation map, and degrades a non-converging searchable gap to a bounded honest pass that discloses the gap
 
 HIT-001: hitl2-node — Deterministic brief builder generates decision brief from accepted findings and quality state with confirmed conclusions, uncertainties, gaps, and cost options
 HIT-002: hitl2-node — HITL2 continues autonomously without a human interrupt: the real path selects validated proceed and an explicitly composed fixture path consumes its configured fixture route without pending input
@@ -419,6 +427,7 @@ REG-018: research-graph-lifecycle — ResearchState retains only controller-owne
 REG-019: research-graph-lifecycle — Every generic graph recipe supplies a complete explicit real-or-injected adapter/gate selection before compilation; the fixed all-real factory is the only production-owned selection, no compatibility factory remains, and no default fixture selection exists
 REG-020: research-graph-lifecycle — Deep Research graph lifecycle persists only through the selected Run Bundle rather than a generic external checkpoint
 REG-021: research-graph-lifecycle — Graph lifecycle actions use Bundle identity and safe refinement transitions
+REG-022: research-graph-lifecycle — Bundle graph checkpoints cross one explicit registered serialization boundary that registers exactly the persisted project value types (ContentRef, AttemptStatus, Wave1OpenQuestionRef) and keeps strict msgpack failing closed for every other project type
 
 # fixture-source-isolation
 FSI-001: fixture-source-isolation — Deterministic fixture implementations live in deep_research_harness/src_fake/deerflow_deep_research_fixtures, a separate non-production package that production source, wheel, editable runtime, and Docker paths never import or include
@@ -624,6 +633,7 @@ SCR-002: scripted-real-workflow-debug — The fixed narrow baseline drives one b
 SCR-003: scripted-real-workflow-debug — Script exhaustion is strict: missing responses, surplus model/tool calls, skipped wave actions, or entering targeted/rerun fail the command
 SCR-004: scripted-real-workflow-debug — Completion output labels composition, authenticity, zero-network/zero-credential assertions, per-wave counters, Bundle id, Journal entry, wall time, and the proved/unproved boundary
 SCR-005: scripted-real-workflow-debug — A dedicated Make target exposes the operator-only debug command with a CLI contract of zero env, zero network, strict exhaustion, and a sub-10-second wall time
+SCR-006: scripted-real-workflow-debug — The debug command publishes its terminal lifecycle observation into the completed run bundle's journal so diagnostics/run-summary.json reflects terminal status, phase, generation, and outcome with a matching terminal event, remaining observation-only and never changing Bundle State, lifecycle authority, or control results
 
 # soft-bundle-session-cli
 SBC-001: soft-bundle-session-cli — An operator CLI creates a stateless soft bundle root with optional root/name/question/mode, a default root under the operator workspace, and idempotent non-overwrite behavior

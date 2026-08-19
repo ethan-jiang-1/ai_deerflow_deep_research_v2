@@ -124,13 +124,11 @@ class RunObservationStore:
         """
 
         table: dict[str, PolicyEnvelopeEvidence] = {}
-        for envelope in (prior_summary.policy_envelopes if prior_summary else ()):
+        for envelope in prior_summary.policy_envelopes if prior_summary else ():
             table[envelope.phase] = envelope
         for envelope in self._policy_envelopes:
             table[envelope.phase] = envelope
-        executed_phases = {
-            event.phase for event in events if event.category is RunEventCategory.MODEL_TOOL
-        }
+        executed_phases = {event.phase for event in events if event.category is RunEventCategory.MODEL_TOOL}
         return tuple(table[phase] for phase in sorted(table) if phase in executed_phases)
 
     async def publish(self, fact: RecordBearingLifecycleFact) -> RunObservationView:
