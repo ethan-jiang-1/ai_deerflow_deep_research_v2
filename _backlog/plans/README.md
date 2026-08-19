@@ -20,6 +20,7 @@
 | Plan | 类型 | 下一步 |
 |------|------|--------|
 | [openspec-product-boundary-portability.md](openspec-product-boundary-portability.md) | 设计 | 将 OpenSpec practice 分为 portable core/profiles、Deep Research local composition 与 product front door，并在本仓完成机械验证 |
+| [tui-interactive-campaign.md](tui-interactive-campaign.md) | 设计 | TUI 真人交互跑通真实 Deep Research（010 交互专项探路）；v1 提案，D1-D4 待用户收敛 |
 
 **Next available plan ID: CLS-052**（移入 `_closed_plans/` 时分配）
 
