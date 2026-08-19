@@ -179,6 +179,23 @@ completed）与 readiness critic 首次承受多 topic 负载。撞出新形状�
 bug 流程；readiness/final 预算 exhausted 首现 → bug 流程实证放宽（003 留的
 口子，004 正好补实证）。
 
+### 6.4 已收口观察（2026-08-19 首跑战役，PASS bundle `b_cuTRGqwJysx...`）
+
+- **6.1 结论**：planner 在自由 1–8 topic 下实际产出 **1 个 wave0 + 1 个
+  wave1 work unit**（`g0_wave0_w0000`/`g0_wave1_w0000`），topic_registry
+  空——广度按契约"观察不断言"记录；证据提交引用 10+ 真实 source URL。
+- **6.2 结论**：subjects 跛脚对（`['China', 'US EV battery market in
+  2024.']`）依旧进入 planner 上下文，但 findings/gaps **双市场覆盖无实际
+  伤害**（China 侧 LFP/BYD/CATL 与 US 侧 IRA/产能/价格均有覆盖）——按 D2
+  决策记录"观察无伤害"，不预修。
+- **6.3 结论**：多结论真实排版路径走通（final_delivery a1 一次过），
+  readiness critic 无可采信 verdict → 诚实披露降级交付（3 个 unresolved
+  gaps 进 Uncertainties），未撞出新形状失败。
+- **战役副产出**：5 次尝试连破 2 个 P0（BUG-058 wave1 critic bool 标签、
+  BUG-059 claim ref 别名盲区，均为 003 minimal 路径踩不到的盲区），经
+  `fix-wave1-critic-label-shapes` / `fix-synthesis-claim-ref-aliases` 修复
+  归档；环境性失败（进程回收/合盖断网/SDK 挂起）见 §7 与 git 历史。
+
 ## 7. 模型挂起 / 卡死怎么办
 
 - DeepSeek SDK 偶发阻塞 `ainvoke`，bridge 的 `asyncio.timeout` 无法中断
