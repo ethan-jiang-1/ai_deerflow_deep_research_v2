@@ -15,6 +15,8 @@ import re
 from collections.abc import Sequence
 from dataclasses import dataclass
 
+from pydantic import ValidationError
+
 from deerflow_deep_research.domain.bundle import (
     RunBundleRef,
     bundle_source_content_path,
@@ -93,6 +95,12 @@ def _review_cache_name(kind: Wave1CriticKind) -> str:
 def _canonical_critic_code(error: ValueError) -> str:
     """Keep only a closed Wave1 critic-boundary code, never exception detail."""
 
+    # A pydantic ValidationError (a ValueError subclass) means the critic's JSON
+    # parsed but the typed shape failed — keep that distinct from JSON decode
+    # failures and the opaque fallback so real-shape defects are diagnosable
+    # from the event journal alone (BUG-058 lesson).
+    if isinstance(error, ValidationError):
+        return "wave1_review_output_shape_invalid"
     candidate = str(error)
     if re.fullmatch(r"^wave1_[a-z0-9_]+$", candidate):
         return candidate

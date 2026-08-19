@@ -10,7 +10,7 @@ import re
 from enum import StrEnum
 from typing import Annotated, Literal
 
-from pydantic import Field, model_validator
+from pydantic import Field, field_validator, model_validator
 
 from deerflow_deep_research.domain.work_units import (
     SOURCE_ID_RE,
@@ -55,6 +55,29 @@ class ClaimVerdict(StrEnum):
 # Per-source assessment (embedded in SourceDiagnosticResult)
 # ---------------------------------------------------------------------------
 
+# Real providers express the two assessment flags as severity labels even when
+# the prompt asks for booleans (observed: `marketing_risk: "low"` blocking a
+# real wave1 run — BUG-058). The parse boundary maps a closed, casefolded
+# label set; every other value fails closed exactly as before. The ambiguous
+# `medium` is deliberately unmapped: no observed occurrence, and forcing an
+# explicit semantic choice by failing is safer than guessing one.
+_FLAG_TRUE_LABELS = frozenset({"high", "yes", "true", "elevated", "needed", "required"})
+_FLAG_FALSE_LABELS = frozenset({"low", "none", "no", "false", "minimal", "minor", "unlikely", "not_needed"})
+
+
+def _normalize_flag(value: object) -> object:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        label = value.strip().casefold()
+        if label in _FLAG_TRUE_LABELS:
+            return True
+        if label in _FLAG_FALSE_LABELS:
+            return False
+    # Everything else — novel tokens, the ambiguous `medium`, numbers that
+    # pydantic would otherwise coerce to booleans — fails closed here instead.
+    raise ValueError("critic_flag_value_invalid")
+
 
 class CriticSourceAssessment(_FrozenModel):
     """One source's trust and materiality assessment."""
@@ -64,6 +87,10 @@ class CriticSourceAssessment(_FrozenModel):
     materiality: SourceMateriality
     marketing_risk: bool
     cross_verification_need: bool
+
+    _normalize_flag_labels = field_validator("marketing_risk", "cross_verification_need", mode="before")(
+        _normalize_flag
+    )
 
 
 # ---------------------------------------------------------------------------

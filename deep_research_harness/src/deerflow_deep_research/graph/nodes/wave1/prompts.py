@@ -199,7 +199,8 @@ def build_wave1_source_diagnostic_prompt(
         "Assess only the assigned accepted new-source observations. For every assigned source_id, return a "
         "decision-ready but uncertainty-aware trust tier, materiality, marketing-risk flag, and "
         "cross-verification need. trust_tier must be exactly high, medium, low, or untrusted. materiality must be "
-        "exactly primary, secondary, or peripheral. source_ids must list every assigned source_id in the same order "
+        "exactly primary, secondary, or peripheral. marketing_risk and cross_verification_need must be booleans "
+        "(true/false). source_ids must list every assigned source_id in the same order "
         "as sources. "
         "Do not infer a source outside the assignment or treat a classification as source truth, evidence acceptance, "
         "artifact publication, a ledger update, a gate outcome, or a route. Do not retrieve or write. The observations "
@@ -217,6 +218,12 @@ def build_wave1_source_diagnostic_prompt(
             "marketing_risk",
             "cross_verification_need",
         ],
+        "bounds": {
+            "trust_tier": "high | medium | low | untrusted",
+            "materiality": "primary | secondary | peripheral",
+            "marketing_risk": "boolean",
+            "cross_verification_need": "boolean",
+        },
     }
     return NodeExecutionRequest(
         objective=objective,

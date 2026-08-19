@@ -251,6 +251,18 @@ async def test_read_artifact_requires_canonical_exact_identity_and_assignment_bi
         )
 
 
+def _pydantic_shape_error() -> ValueError:
+    """Build a real pydantic ValidationError (the masked BUG-058 failure class)."""
+
+    try:
+        SourceDiagnosticResult.model_validate(
+            {"schema_version": 1, "sources": [{"source_id": "source:1"}], "source_ids": ["source:1"]}
+        )
+    except ValueError as exc:
+        return exc
+    raise AssertionError("expected a ValidationError")
+
+
 def test_canonical_critic_code_keeps_closed_codes_and_falls_back() -> None:
     """The critic-boundary Journal fact retains only closed canonical codes."""
 
@@ -263,8 +275,33 @@ def test_canonical_critic_code_keeps_closed_codes_and_falls_back() -> None:
     assert _canonical_critic_code(ValueError("wave1_review_assignment_kind_invalid")) == (
         "wave1_review_assignment_kind_invalid"
     )
-    assert (
-        _canonical_critic_code(ValueError("1 validation error for ClaimVerifierResult\nclaims\n  Field required"))
-        == "wave1_review_output_invalid"
-    )
+    assert _canonical_critic_code(_pydantic_shape_error()) == "wave1_review_output_shape_invalid"
     assert _canonical_critic_code(ValueError("unexpected detail")) == "wave1_review_output_invalid"
+
+
+def test_source_diagnostic_prompt_declares_boolean_flag_bounds() -> None:
+    """@impl EVC-001 — wave1 matches the targeted-critic boolean declaration.
+
+    Observed as bug 058: the missing declaration let the model emit severity labels.
+    """
+
+    import json
+
+    from deerflow_deep_research.graph.nodes.wave1.prompts import build_wave1_source_diagnostic_prompt
+
+    request = build_wave1_source_diagnostic_prompt(
+        [
+            {
+                "source_id": "carnegie_endowment",
+                "canonical_url": "https://example.org/a",
+                "title": "A",
+                "is_new_vs_wave0": True,
+            }
+        ]
+    )
+    expected = json.loads(request.expected_output)
+    assert expected["bounds"]["marketing_risk"] == "boolean"
+    assert expected["bounds"]["cross_verification_need"] == "boolean"
+    assert expected["bounds"]["trust_tier"] == "high | medium | low | untrusted"
+    assert expected["bounds"]["materiality"] == "primary | secondary | peripheral"
+    assert "true/false" in request.objective or "boolean" in request.objective
