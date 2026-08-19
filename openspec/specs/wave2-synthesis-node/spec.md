@@ -121,9 +121,25 @@ the existing gate budget/fatigue contract: while budget remains they route
 same phase after that degradation SHALL route `exhausted` to the typed blocked
 terminal exactly as before. (`WSN-004`)
 
+For reference validation, a finding reference SHALL be considered backed when it
+equals an accepted submission reference OR deterministically projects onto one
+through the alias map derived from the accepted evidence contents: the extraction
+SHALL recognize `source_id`, `canonical_url`, `support_refs`/`counter_refs`
+values, and `claim_id` values present inside an accepted evidence document.
+References matching none of these (fabricated ids, invented shorthand) SHALL fail
+closed. (`WSN-004`)
+
 #### Scenario: Dangling reference fails gate
 - **WHEN** a finding references a source not in accepted submissions
 - **THEN** the gate routes repair
+
+#### Scenario: Claim-id reference projects to its accepted evidence
+- **WHEN** a finding's `backing_refs` cite a `claim:*` id that verifiably exists inside an accepted wave1 evidence document
+- **THEN** the deterministic alias projection maps the claim id to that evidence's submission ref and reference validation passes without any prompt or model change
+
+#### Scenario: Fabricated claim id fails closed
+- **WHEN** a finding's `backing_refs` cite a `claim:*` id absent from every accepted evidence document
+- **THEN** reference validation fails exactly as for any dangling reference and the bounded repair path is entered
 
 #### Scenario: Searchable gap routes targeted evidence
 - **WHEN** validated Wave2 output produces a typed preview with one or more searchable gap ids

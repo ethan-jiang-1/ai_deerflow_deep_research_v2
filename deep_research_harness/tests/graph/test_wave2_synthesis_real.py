@@ -1321,3 +1321,59 @@ async def test_non_budget_failures_keep_their_terminal_disposition(tmp_path: Pat
     assert update["route"] == "exhausted"
     assert update["terminal_status"] == LifecycleStatus.BLOCKED.value
     assert "wave2_budget_exhausted" not in update or update.get("wave2_budget_exhausted") is False
+
+
+def _claim_evidence() -> tuple[SynthesisEvidence, ...]:
+    content = json.dumps(
+        {
+            "phase": "wave1",
+            "claims": [
+                {"claim_id": "claim:w1_c1", "statement": "CATL leads.", "support_refs": []},
+                {"claim_id": "claim:w1_c2", "statement": "BYD second.", "support_refs": []},
+            ],
+            "sources": [{"source_id": "cnevpost-top-battery-makers", "canonical_url": "https://example.org/a"}],
+        }
+    )
+    return (
+        SynthesisEvidence(
+            submission_ref=SUBMISSION_REF,
+            phase="wave1",
+            result_contract="wave1",
+            content=content,
+            truncated=False,
+        ),
+    )
+
+
+def test_evidence_aliases_collect_claim_ids_inside_evidence() -> None:
+    """@impl WSN-004 — claim ids are projectable evidence identifiers.
+
+    Observed as bug 059: claim refs inside accepted evidence hit the alias blind spot.
+    """
+
+    from deerflow_deep_research.graph.nodes.wave2_synthesis.node import _evidence_aliases
+
+    aliases = _evidence_aliases(_claim_evidence())
+    assert aliases["claim:w1_c1"] == SUBMISSION_REF
+    assert aliases["claim:w1_c2"] == SUBMISSION_REF
+    assert aliases["cnevpost-top-battery-makers"] == SUBMISSION_REF
+    assert aliases["https://example.org/a"] == SUBMISSION_REF
+
+
+def test_finding_backed_by_real_claim_id_passes_semantic_validation() -> None:
+    """@impl WSN-004 — citing a claim that exists in accepted evidence is backed."""
+
+    from deerflow_deep_research.graph.nodes.wave2_synthesis.prompts import parse_synthesis_output
+
+    output = parse_synthesis_output(_synthesis_json(backing_refs=("claim:w1_c1", "claim:w1_c2")))
+    _validate_synthesis_semantics(output, (SUBMISSION_REF,), _claim_evidence())
+
+
+def test_fabricated_claim_id_still_fails_closed() -> None:
+    """@impl WSN-004 — claim ids absent from evidence stay dangling."""
+
+    from deerflow_deep_research.graph.nodes.wave2_synthesis.prompts import parse_synthesis_output
+
+    output = parse_synthesis_output(_synthesis_json(backing_refs=("claim:w9_missing",)))
+    with pytest.raises(ValueError, match="synthesis_finding_backing_ref_invalid"):
+        _validate_synthesis_semantics(output, (SUBMISSION_REF,), _claim_evidence())

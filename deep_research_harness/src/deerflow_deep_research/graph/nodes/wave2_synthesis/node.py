@@ -110,7 +110,7 @@ def _evidence_aliases(evidence: tuple[SynthesisEvidence, ...]) -> dict[str, str]
         while pending:
             current = pending.pop()
             if isinstance(current, dict):
-                for key in ("source_id", "canonical_url"):
+                for key in ("source_id", "canonical_url", "claim_id"):
                     value = current.get(key)
                     if isinstance(value, str):
                         aliases[value] = item.submission_ref
