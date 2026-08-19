@@ -19,6 +19,7 @@ import asyncio
 import sys
 from collections.abc import Mapping
 from pathlib import Path
+from typing import Literal
 
 from _demo_core import (
     PHASE_META,
@@ -454,7 +455,12 @@ async def _run_gateway_demo(*, question: str | None, profile: str | None, script
         await transport.aclose()
 
 
-async def _run_embedded_smoke(*, question: str | None, scripted: bool) -> int:
+async def _run_embedded_smoke(
+    *,
+    question: str | None,
+    scripted: bool,
+    profile_intent: str | None = None,
+) -> int:
     """Retain the pre-existing all-real graph only behind explicit smoke selection."""
 
     _print_banner(embedded_smoke=True)
@@ -477,6 +483,15 @@ async def _run_embedded_smoke(*, question: str | None, scripted: bool) -> int:
         print("  已退出，未启动研究。")
         return 130
 
+    # Explicit "none" declines the intent declaration (default product path);
+    # an absent selection keeps the credentialed automatic demo's minimal
+    # declaration (modes 003 and prior behavior) exactly as before.
+    declared_intent: Literal["minimal"] | None
+    if scripted:
+        declared_intent = None if profile_intent == "none" else "minimal"
+    else:
+        declared_intent = None
+
     adapter: DemoAdapter | None = None
     try:
         adapter = DemoAdapter.for_real()
@@ -487,10 +502,7 @@ async def _run_embedded_smoke(*, question: str | None, scripted: bool) -> int:
             StartRun(
                 question=selected_question,
                 scripted=scripted,
-                # Credentialed demo automatic runs declare the minimal research
-                # intent at the entry (mode 003 inherits it); the real product
-                # path consumes it (single-topic planning, two-round gate).
-                profile_intent="minimal" if scripted else None,
+                profile_intent=declared_intent,
             ),
             observer=_dispatch_observer(),
         )
@@ -526,11 +538,12 @@ async def run_demo(
     scripted: bool,
     profile: str | None = None,
     embedded_smoke: bool = False,
+    profile_intent: str | None = None,
 ) -> int:
     """Run the default public Gateway observer or the explicit embedded smoke route."""
 
     if embedded_smoke:
-        return await _run_embedded_smoke(question=question, scripted=scripted)
+        return await _run_embedded_smoke(question=question, scripted=scripted, profile_intent=profile_intent)
     return await _run_gateway_demo(question=question, profile=profile, scripted=scripted)
 
 
@@ -559,9 +572,18 @@ def main() -> None:
         action="store_true",
         help="Use the direct local graph smoke path without Gateway history, trace, or SSE claims.",
     )
+    parser.add_argument(
+        "--profile-intent",
+        choices=["minimal", "none"],
+        default=None,
+        help="Research intent declaration for the embedded-smoke --scripted route only "
+        "(absent = minimal; 'none' runs the default product path without a declaration).",
+    )
     args = parser.parse_args()
     if args.embedded_smoke and args.profile is not None:
         parser.error("--profile applies only to the default Gateway observer mode")
+    if args.profile_intent is not None and not (args.embedded_smoke and args.scripted):
+        parser.error("--profile-intent applies only to the embedded-smoke --scripted route")
     try:
         code = asyncio.run(
             run_demo(
@@ -569,6 +591,7 @@ def main() -> None:
                 scripted=args.scripted,
                 profile=args.profile,
                 embedded_smoke=args.embedded_smoke,
+                profile_intent=args.profile_intent,
             )
         )
     except KeyboardInterrupt:

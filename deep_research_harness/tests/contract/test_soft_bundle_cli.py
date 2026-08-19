@@ -529,6 +529,143 @@ def test_verify_mode_003_requires_report(tmp_path: Path, capsys) -> None:
         assert "003 should publish final/report.md" in err
 
 
+def test_run_mode_004_binds_the_real_auto_bundle_without_intent_declaration(tmp_path: Path, capsys) -> None:
+    """@impl SBC-004
+
+    @impl HRA-001
+    """
+    with _patch_paths(tmp_path):
+        root = tmp_path / "harness" / "r"
+        root.mkdir()
+        (root / "manifest.json").write_text(
+            json.dumps({"schema_version": 1, "name": "n", "mode": "004", "question": "", "current_bundle_id": None})
+        )
+        bundle_id = "b_123456789012345678901234"
+        bundle_dir = (
+            tmp_path
+            / "harness"
+            / ".deep-research-demo-runs"
+            / "workspace"
+            / "deep-research"
+            / "scopes"
+            / "s_test"
+            / bundle_id
+        )
+        bundle_dir.mkdir(parents=True)
+        fake_make = subprocess.CompletedProcess(args=[], returncode=0, stdout=f"Run Bundle: {bundle_id}\n", stderr="")
+        with (
+            patch.object(soft_bundle, "_run_make", return_value=fake_make) as fake_make_call,
+            patch.object(soft_bundle, "_clean_run_bundles"),
+            patch.object(soft_bundle, "_verify_bundle", return_value=(True, [])),
+        ):
+            code = soft_bundle.cmd_run(_args(root="r", question=None, mode="004"))
+            assert code == 0
+            assert fake_make_call.call_args.args[0][1] == "demo-real-scripted"
+            demo_args = fake_make_call.call_args.args[0][2]
+            assert demo_args.startswith('DEMO_ARGS=--question "Compare China and US EV battery market in 2024."')
+            assert "--profile-intent none" in demo_args
+        manifest = json.loads((root / "manifest.json").read_text())
+        assert manifest["current_bundle_id"] == bundle_id
+        assert manifest["question"] == soft_bundle.MODE_QUESTIONS["004"]
+        out = capsys.readouterr().out
+        assert "bound_bundle_id=" in out
+        assert "RESULT: PASS" in out
+
+
+def test_inspect_mode_004_renders_recorded_diagnostics(tmp_path: Path, capsys) -> None:
+    """@impl SBC-004
+
+    @impl HRA-001
+    """
+    with _patch_paths(tmp_path):
+        root = tmp_path / "harness" / "r"
+        root.mkdir()
+        bundle_id = "b_" + "A" * 43
+        bundle_dir = (
+            tmp_path
+            / "harness"
+            / ".deep-research-demo-runs"
+            / "workspace"
+            / "deep-research"
+            / "scopes"
+            / "s_test"
+            / bundle_id
+        )
+        bundle_dir.mkdir(parents=True)
+        asyncio.run(
+            RunObservationStore(bundle_root=bundle_dir, bundle_id=bundle_id).publish(
+                RecordBearingLifecycleFact(
+                    bundle_id=bundle_id,
+                    action="status",
+                    status="suspended",
+                    phase="bootstrap",
+                    generation=0,
+                    durability="restart_durable",
+                )
+            )
+        )
+        (root / "manifest.json").write_text(
+            json.dumps(
+                {"schema_version": 1, "name": "n", "mode": "004", "question": "", "current_bundle_id": bundle_id}
+            )
+        )
+        code = soft_bundle.cmd_inspect(_args(root="r"))
+        out = capsys.readouterr().out
+        assert code == 0
+        assert "Observed summary: suspended@bootstrap generation 0" in out
+        assert "Journal health: complete" in out
+        assert "Event Journal is read-only; lifecycle controls remain independent." in out
+
+
+def test_verify_mode_004_requires_report(tmp_path: Path, capsys) -> None:
+    """@impl SBC-004
+
+    @impl HRA-001
+    """
+    with _patch_paths(tmp_path):
+        root = tmp_path / "harness" / "r"
+        root.mkdir()
+        bundle_id = "b_123456789012345678901234"
+        bundle_dir = (
+            tmp_path
+            / "harness"
+            / ".deep-research-demo-runs"
+            / "workspace"
+            / "deep-research"
+            / "scopes"
+            / "s_test"
+            / bundle_id
+        )
+        bundle_dir.mkdir(parents=True)
+        (bundle_dir / "state.json").write_text(
+            json.dumps(
+                {
+                    "terminal_status": "completed",
+                    "phase_status": "terminal",
+                    "phase": "final_delivery",
+                    "execution_trace": list(soft_bundle.REQUIRED_TRACE),
+                }
+            )
+        )
+        diag = bundle_dir / "diagnostics"
+        diag.mkdir()
+        events = []
+        for phase in soft_bundle.REQUIRED_TRACE:
+            events.append({"category": "node", "outcome": "completed", "phase": phase})
+        events.append({"category": "terminal", "outcome": "completed", "phase": "final_delivery"})
+        (diag / "events.jsonl").write_text("\n".join(json.dumps(e) for e in events) + "\n")
+        (root / "manifest.json").write_text(
+            json.dumps(
+                {"schema_version": 1, "name": "n", "mode": "004", "question": "", "current_bundle_id": bundle_id}
+            )
+        )
+        code = soft_bundle.cmd_verify(_args(root="r"))
+        err = capsys.readouterr().err
+        assert code == 1
+        assert "RESULT: FAIL" in err
+        assert "004 should publish final/report.md" in err
+
+
 def test_verify_reports_pass(tmp_path: Path, capsys) -> None:
     with _patch_paths(tmp_path):
         root = tmp_path / "harness" / "r"

@@ -18,7 +18,7 @@
 | 001 | [`runbook-001-easiest-fixture-graph.md`](runbook-001-easiest-fixture-graph.md) | 花（少） | 无 | 最简单：只用假数据把图从第一节点跑到最后节点，验证“路通不通” | `What is the capital of France?` |
 | 002 | [`runbook-002-easy-scripted-real.md`](runbook-002-easy-scripted-real.md) | 花（少） | 无 | 稍难：用脚本化的真实控制链路跑一遍，验证“真适配器+门+持久化通不通”，且会产出 Markdown report | `What is one bounded fact about grid energy storage?` |
 | 003 | [`runbook-003-medium-real-auto.md`](runbook-003-medium-real-auto.md) | 花（中） | `.env` 三个变量（`DEEPSEEK_API_KEY`、`TAVILY_API_KEY`、`DEERFLOW_DEMO_MODEL`）+ 网络 | 更难：接真实模型和网页工具，全自动跑完，不等人（声明 minimal 意图 → 单 topic / 每 wave 1 work unit） | `What is one bounded fact about China's EV battery market in 2024?` |
-| 004 | `runbook-004-hard-real-auto.md`（待建） | 花（多） | 真机全自动（入口待定，同 003 的凭据与 minimal 意图机制） | 最难：真机全自动跑，专门用来找茬 | `Compare China and US EV battery market in 2024.` |
+| 004 | [`runbook-004-hard-real-auto.md`](runbook-004-hard-real-auto.md) | 花（多） | 同 003 的 `.env` 三变量 + 网络 | 最难：真机全自动跑**默认意图**（不声明 minimal），固定比较题压多 topic 链路，专门用来找茬 | `Compare China and US EV battery market in 2024.` |
 
 > 📐 手册命名规则固定为 `runbook-00X-难度-用途.md`，以后按这个补。
 
@@ -38,7 +38,9 @@
 
 - 001 / 002：零前置，不联网，花费少。
 - 003：需要本地有真实模型/Tavily 凭据（不需要 Gateway）。
-- 004：真机全自动（入口待定；可能是 embedded smoke 或 Gateway 自动路线）：
+- 004：同 003 的凭据前置（`.env` 三变量 + 网络）。入口已定为 embedded
+  smoke（`soft-bundle run <root> --mode 004`，显式 `--profile-intent none`
+  走默认产品路径）；Gateway 非交互自动化是独立产品关切，不在 001~004 内：
 
 ```bash
 cd deep_research_harness

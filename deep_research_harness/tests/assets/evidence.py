@@ -1075,6 +1075,24 @@ EVIDENCE_CLAIMS = (
         requirement_ids=("REC-001", "REC-002", "REC-003"),
     ),
     _correctness_claim(
+        "demo-real-scripted-intent-selection",
+        "tests/integration/test_demo_real.py::test_scripted_cli_declares_minimal_intent_by_default",
+        StableSeam.LIFECYCLE_MIXED_GRAPH,
+        requirement_ids=("DPL-003", "HRA-001"),
+    ),
+    _correctness_claim(
+        "demo-real-scripted-none-intent-default-path",
+        "tests/integration/test_demo_real.py::test_scripted_cli_explicit_none_intent_omits_the_declaration",
+        StableSeam.LIFECYCLE_MIXED_GRAPH,
+        requirement_ids=("DPL-003", "HRA-001"),
+    ),
+    _correctness_claim(
+        "demo-real-intent-flag-route-validation",
+        "tests/integration/test_demo_real.py::test_profile_intent_selection_is_rejected_outside_embedded_smoke_scripted",
+        StableSeam.LIFECYCLE_MIXED_GRAPH,
+        requirement_ids=("DPL-003",),
+    ),
+    _correctness_claim(
         "demo-real-terminal-redaction",
         "tests/integration/test_demo_run_update_adapters.py::test_shared_failure_never_leaks_raw_exception_into_either_adapter",
         StableSeam.LIFECYCLE_MIXED_GRAPH,

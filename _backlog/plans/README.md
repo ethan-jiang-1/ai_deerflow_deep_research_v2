@@ -21,7 +21,7 @@
 |------|------|--------|
 | [openspec-product-boundary-portability.md](openspec-product-boundary-portability.md) | 设计 | 将 OpenSpec practice 分为 portable core/profiles、Deep Research local composition 与 product front door，并在本仓完成机械验证 |
 
-**Next available plan ID: CLS-050**（移入 `_closed_plans/` 时分配）
+**Next available plan ID: CLS-052**（移入 `_closed_plans/` 时分配）
 
 ## 已归档（移至 `_done/_closed_plans/`）
 

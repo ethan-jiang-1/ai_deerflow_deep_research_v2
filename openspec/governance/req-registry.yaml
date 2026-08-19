@@ -47,6 +47,7 @@ prefixes:
   HIC: human-interaction-contract
   HIN: hitl1-node
   HIT: hitl2-node
+  HRA: hard-real-auto
   LSA: low-scale-real-auto
   NOA: node-agent-runtime
   NAC: node-agent-capabilities
@@ -192,6 +193,9 @@ LCP-006: local-configuration-profiles — Local profile commands and state refer
 
 # low-scale-real-auto
 LSA-001: low-scale-real-auto — A fully automatic real mode-003 run started through soft-bundle run --mode 003 declares profile_intent=minimal, exercises single-topic planning with one wave0 and one wave1 work unit and a two-round wave2 gate budget, completes at final_delivery with a real final/report.md and claim-citation map, and degrades a non-converging searchable gap to a bounded honest pass that discloses the gap
+
+# hard-real-auto
+HRA-001: hard-real-auto — A fully automatic real mode-004 run started through soft-bundle run --mode 004 runs the fixed comparison question with no declared research intent (explicit --profile-intent none), so free multi-topic planning, per-topic work units, the default one-round wave2 gate budget, and the real multi-conclusion final layout path run unchanged while the embedded-smoke default stays minimal, and the run completes at final_delivery with a real comparative final/report.md covering both comparison subjects, observed-not-asserted topic breadth, and inherited honest-gap degraded delivery
 
 HIT-001: hitl2-node — Deterministic brief builder generates decision brief from accepted findings and quality state with confirmed conclusions, uncertainties, gaps, and cost options
 HIT-002: hitl2-node — HITL2 continues autonomously without a human interrupt: the real path selects validated proceed and an explicitly composed fixture path consumes its configured fixture route without pending input

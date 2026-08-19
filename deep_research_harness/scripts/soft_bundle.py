@@ -42,6 +42,7 @@ MODE_QUESTIONS = {
     "001": "What is the capital of France?",
     "002": "What is one bounded fact about grid energy storage?",
     "003": "What is one bounded fact about China's EV battery market in 2024?",
+    "004": "Compare China and US EV battery market in 2024.",
 }
 REQUIRED_TRACE = (
     "bootstrap",
@@ -282,7 +283,7 @@ def _verify_bundle(bundle_dir: Path, bundle_id: str, mode: str) -> tuple[bool, l
     report = bundle_dir / "final" / "report.md"
     if mode == "001" and report.exists():
         problems.append("001 should not publish final/report.md")
-    if mode in {"002", "003"} and not report.exists():
+    if mode in {"002", "003", "004"} and not report.exists():
         problems.append(f"{mode} should publish final/report.md")
 
     return (not problems, problems)
@@ -469,6 +470,27 @@ def cmd_run(args: argparse.Namespace) -> int:
         if run_exit:
             # Preserve the underlying failure reason before binding.
             print(output, file=sys.stderr)
+    elif mode == "004":
+        # Hard real-auto: same real-auto entry, but the run explicitly declines
+        # the intent declaration so the default product path (free multi-topic
+        # planning, default one-round wave2 gate) is what gets exercised.
+        make_args = ["make", "demo-real-scripted", f'DEMO_ARGS=--question "{question}" --profile-intent none']
+        proc = _run_make(make_args)
+        output = (proc.stdout or "") + (proc.stderr or "")
+        bundle_id = _parse_bundle_id(output)
+
+        if bundle_id is None:
+            print(output, file=sys.stderr)
+            return proc.returncode or 1
+
+        bundle_dir = _find_bundle_dir(bundle_id)
+        if bundle_dir is None:
+            print(output, file=sys.stderr)
+            return proc.returncode or 1
+        run_exit = proc.returncode
+        if run_exit:
+            # Preserve the underlying failure reason before binding.
+            print(output, file=sys.stderr)
     else:
         print(f"error: unsupported mode {mode}", file=sys.stderr)
         return 2
@@ -565,7 +587,7 @@ def cmd_inspect(args: argparse.Namespace) -> int:
     if not bundle_id:
         print("error: current_bundle_id not bound", file=sys.stderr)
         return 1
-    if manifest.get("mode", "001") in {"002", "003"}:
+    if manifest.get("mode", "001") in {"002", "003", "004"}:
         return _inspect_mode_002(bundle_id)
     proc = _run_make(["make", "demo-sessions", f"DEMO_ARGS=inspect {bundle_id}"])
     if proc.stdout:

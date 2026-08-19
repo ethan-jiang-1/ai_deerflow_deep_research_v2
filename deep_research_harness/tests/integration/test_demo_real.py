@@ -261,6 +261,59 @@ async def test_scripted_cli_is_stdin_free_and_preserves_explicit_question(
     assert "自动策略" in capsys.readouterr().out
 
 
+async def test_scripted_cli_declares_minimal_intent_by_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """@impl DPL-003 — absent explicit selection, embedded-smoke scripted stays minimal."""
+
+    _install_experience(monkeypatch, report=_ready_report(), updates=[run_updates.completed()])
+
+    assert await demo_real.run_demo(question="Compare storage costs", scripted=True, embedded_smoke=True) == 0
+
+    start = _ScriptedExperience.instances[0].intents[0]
+    assert isinstance(start, StartRun)
+    assert start.profile_intent == "minimal"
+
+
+async def test_scripted_cli_explicit_none_intent_omits_the_declaration(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """@impl DPL-003, HRA-001 — --profile-intent none runs the default product path."""
+
+    _install_experience(monkeypatch, report=_ready_report(), updates=[run_updates.completed()])
+
+    assert (
+        await demo_real.run_demo(
+            question="Compare China and US EV battery market in 2024.",
+            scripted=True,
+            embedded_smoke=True,
+            profile_intent="none",
+        )
+        == 0
+    )
+
+    start = _ScriptedExperience.instances[0].intents[0]
+    assert isinstance(start, StartRun)
+    assert start.profile_intent is None
+
+
+def test_profile_intent_selection_is_rejected_outside_embedded_smoke_scripted(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """@impl DPL-003 — an explicit intent selection is a usage error off its route."""
+
+    for argv in (
+        ["demo_real.py", "--profile-intent", "none"],
+        ["demo_real.py", "--embedded-smoke", "--profile-intent", "none"],
+    ):
+        monkeypatch.setattr(sys, "argv", argv)
+        with pytest.raises(SystemExit) as excinfo:
+            demo_real.main()
+        assert excinfo.value.code == 2
+        assert "--profile-intent" in capsys.readouterr().err
+
+
 def test_scripted_real_question_has_a_supported_language_and_explicit_comparison_pair() -> None:
     seed = derive_comparison_intake_seed(demo_real.SCRIPTED_DEFAULT_QUESTION)
 
