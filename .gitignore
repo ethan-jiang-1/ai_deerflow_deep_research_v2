@@ -235,3 +235,5 @@ __marimo__/
 # Local editor / tooling dirs (not shared via git)
 .claude/
 .vscode/
+
+RUN*.command
