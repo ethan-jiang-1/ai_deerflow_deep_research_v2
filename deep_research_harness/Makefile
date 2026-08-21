@@ -1,4 +1,4 @@
-.PHONY: install entry-preflight verify lock-check format lint test test-fast test-integration test-workflow test-entry-environment-regression test-live test-unit test-contract test-viability test-durability test-blocking-io test-assets test-intake test-retained-observation test-work-unit test-strict-checkpoint test-duration-policy benchmark-fast prompt-dump prompt-dump-check profile-setup profile-preflight profiles profile-init profile-check profile-dev demo demo-scripted demo-fixture-graph demo-real demo-real-embedded-smoke demo-real-scripted demo-tui demo-tui-embedded-smoke demo-tui-fixture demo-sessions session-workbench debug-scripted-real-workflow soft-bundle
+.PHONY: install entry-preflight verify lock-check format lint test test-fast test-integration test-workflow test-entry-environment-regression test-live test-unit test-contract test-viability test-durability test-blocking-io test-assets test-intake test-retained-observation test-work-unit test-strict-checkpoint test-duration-policy benchmark-fast prompt-dump prompt-dump-check profile-setup profile-preflight profiles profile-init profile-check profile-dev demo demo-scripted demo-fixture-graph demo-real demo-real-embedded-smoke demo-real-scripted demo-tui demo-tui-embedded-smoke demo-tui-fixture demo-tui-real-auto demo-sessions session-workbench debug-scripted-real-workflow soft-bundle
 
 DEMO_ARGS ?=
 # Operator demo/session/soft-bundle/profile entry commands default to no uv cache:
@@ -87,6 +87,12 @@ demo-tui-embedded-smoke: entry-preflight
 # Credential-free Textual fixture-graph route using the same lifecycle presentation shell.
 demo-tui-fixture: entry-preflight
 	PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) --extra operations --extra demo-tui python scripts/demo_tui.py --fixture $(DEMO_ARGS)
+
+# 010 auto TUI: embedded real graph that answers HITL1/HITL2 by graph-owned
+# policy (scripted start, default product path). The human watches and never
+# types. Companion of demo-tui-embedded-smoke (020 manual, same fixed question).
+demo-tui-real-auto: entry-preflight
+	$(ENTRY_RUN) $(LOCAL_ENV_ARG) --extra operations --extra demo-real --extra demo-tui python scripts/demo_tui.py --embedded-smoke --auto $(DEMO_ARGS)
 
 demo-sessions: entry-preflight
 	PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) --extra operations python scripts/demo_sessions.py $(DEMO_ARGS)

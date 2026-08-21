@@ -371,16 +371,19 @@ class DeepResearchDemoTUI(App[None]):
     BINDINGS = [("ctrl+c", "quit", "Quit")]
     _WORKER_GROUP = "research-lifecycle"
     _EXAMPLE_QUESTION = "Compare renewable-energy storage approaches"
+    AUTO_QUESTION = "What is one bounded fact about China's EV battery market in 2024?"
 
     def __init__(
         self,
         *,
         mode: Literal["fixture", "gateway", "embedded_smoke"] = "gateway",
         profile: str | None = None,
+        auto: bool = False,
     ) -> None:
         super().__init__()
         self.mode = mode
         self.profile = profile
+        self.auto = auto
         self._adapter: DemoAdapter | None = None
         self._gateway_transport: GatewayObserver | None = None
         if self.mode == "gateway":
@@ -436,6 +439,8 @@ class DeepResearchDemoTUI(App[None]):
             "gateway": "local Gateway observer",
             "embedded_smoke": "embedded smoke",
         }[self.mode]
+        if self.auto:
+            mode_label += " · auto"
         self.query_one("#banner", Static).update(Text(f"Deep Research · {mode_label} demo", style="bold cyan"))
         self._render_view(
             TuiRenderedUpdate(
@@ -484,6 +489,13 @@ class DeepResearchDemoTUI(App[None]):
                 self._experience.set_observation_publisher(adapter.observation_publisher)
             self._adapter = adapter
             self.apply_run_update(Ready(report=report))
+            if self.mode == "embedded_smoke" and self.auto:
+                # 010 auto TUI: dispatch the fixed scripted question with the
+                # default product path (no profile_intent). Graph-owned policy
+                # answers HITL1/HITL2; the human never types.
+                self._dispatch(
+                    StartRun(question=self.AUTO_QUESTION, scripted=True, profile_intent=None)
+                )
         except asyncio.CancelledError:
             raise
         except Exception:
@@ -640,11 +652,22 @@ def main() -> None:
         action="store_true",
         help="Use the direct local graph smoke route without Gateway history, trace, or SSE claims.",
     )
+    parser.add_argument(
+        "--auto",
+        action="store_true",
+        help=(
+            "Auto TUI: after preflight, dispatch one fixed scripted question (010 run; "
+            "HITL1/HITL2 answered by graph-owned policy, no human typing). "
+            "Applies only with --embedded-smoke."
+        ),
+    )
     args = parser.parse_args()
     if args.fixture and args.embedded_smoke:
         parser.error("--fixture and --embedded-smoke cannot be combined")
     if args.profile is not None and (args.fixture or args.embedded_smoke):
         parser.error("--profile applies only to the default Gateway observer mode")
+    if args.auto and not args.embedded_smoke:
+        parser.error("--auto applies only with --embedded-smoke")
     mode: Literal["fixture", "gateway", "embedded_smoke"]
     if args.fixture:
         mode = "fixture"
@@ -652,7 +675,7 @@ def main() -> None:
         mode = "embedded_smoke"
     else:
         mode = "gateway"
-    app = DeepResearchDemoTUI(mode=mode, profile=args.profile)
+    app = DeepResearchDemoTUI(mode=mode, profile=args.profile, auto=args.auto)
     try:
         app.run()
     finally:

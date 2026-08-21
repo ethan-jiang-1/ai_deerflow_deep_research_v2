@@ -1,12 +1,16 @@
-# 010 TUI 交互战役 · OpenSpec 落地进度计划
+# 020 TUI 交互战役（= 原 010 手动 TUI）· OpenSpec 落地进度计划
 
+> ⚠️ **编号更新（2026-08-21）**：按 01x/02x 命名轴，本战役是 **020 手动 TUI**
+> （runbook-020-tui-manual.md）；**010 = 自动 TUI 孪生**（runbook-010-tui-auto.md，
+> BUG-061，入口 `make demo-tui-real-auto`）。下文"010"均指本战役的 020 内容。
+>
 > 生成: 2026-08-21 | 状态: **进行中（Phase 0 已完成）**
 > 用途: 以最少 openspec change 落地 [`tui-interactive-campaign.md`](tui-interactive-campaign.md)（v4）
 > 与 [`../bugs/BUG-060-demo-tui-choice-option-unprojected.md`](../bugs/BUG-060-demo-tui-choice-option-unprojected.md)，
 > 并全程 track 战役进展。
 >
 > **怎么用本文件**：完成一项就勾一项；每个 Phase 收尾在 §4 进展记录表加一行；
-> Phase 状态改 §3 表头。证据细节进 handoff-010 / runbook 附录，本文件只记进度与判定。
+> Phase 状态改 §3 表头。证据细节进 handoff-020 / runbook 附录，本文件只记进度与判定。
 
 ## 1. 落地策略：为什么只需 1 个预规划 change
 

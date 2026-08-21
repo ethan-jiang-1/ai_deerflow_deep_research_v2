@@ -433,6 +433,49 @@ async def _wait_for_hitl1_prompt(app: DeepResearchDemoTUI, pilot, *, mode: str, 
 
 
 @pytest.mark.asyncio
+async def test_tui_auto_mode_submits_fixed_scripted_question(monkeypatch: pytest.MonkeyPatch) -> None:
+    """010 auto TUI: after preflight the adapter dispatches one scripted start.
+
+    The human never types: the graph-owned policy answers HITL1/HITL2, and the
+    default product path is used (no ``profile_intent`` declaration).
+    """
+    _install_scripted(
+        monkeypatch,
+        report=_ready_report("real"),
+        updates=[run_updates.completed()],
+    )
+    app = DeepResearchDemoTUI(mode="embedded_smoke", auto=True)
+    async with app.run_test() as pilot:
+        await _wait_for(app, pilot, Terminal)
+
+    intents = _ScriptedExperience.instances[0].intents
+    assert len(intents) == 1
+    assert isinstance(intents[0], StartRun)
+    assert intents[0].scripted is True
+    assert intents[0].profile_intent is None
+    assert intents[0].question == demo_tui.DeepResearchDemoTUI.AUTO_QUESTION
+
+
+@pytest.mark.asyncio
+async def test_tui_auto_mode_stays_interactive_when_embedded_only(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The auto flag applies only to the direct local real-graph route."""
+    _install_scripted(
+        monkeypatch,
+        report=_ready_report(),
+        updates=[run_updates.awaiting_hitl1()],
+    )
+    app = DeepResearchDemoTUI(mode="fixture", auto=True)
+    async with app.run_test() as pilot:
+        await _wait_for(app, pilot, demo_tui.Ready)
+        await pilot.press("enter")
+        await _wait_for(app, pilot, AwaitingInput)
+
+    intents = _ScriptedExperience.instances[0].intents
+    assert isinstance(intents[0], StartRun)
+    assert intents[0].scripted is False
+
+
+@pytest.mark.asyncio
 async def test_tui_renders_advertised_hitl1_language_choice_options(monkeypatch: pytest.MonkeyPatch) -> None:
     """@impl RED-009"""
     _install_scripted(

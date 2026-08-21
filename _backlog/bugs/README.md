@@ -16,8 +16,9 @@
 
 | Bug | 标题 | 发现 | 状态 |
 |-----|------|------|------|
+| BUG-061 | Demo TUI 缺少 010 自动全跑入口（--auto / scripted start） | 2026-08-21 | 活跃（已带修复，待 openspec change 载体） |
 
-**Next available bug ID: BUG-061**
+**Next available bug ID: BUG-062**
 
 
 ---

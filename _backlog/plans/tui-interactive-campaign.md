@@ -1,5 +1,10 @@
 # Plan: TUI 交互战役（v4 消化版）
 
+> ⚠️ **编号更新（2026-08-21）**：本战役的"手动交互"主线按新命名轴
+> **010/020 拆分**后成为 **020**（runbook-020-tui-manual.md，入口
+> `make demo-tui-embedded-smoke`）；**010 = 自动 TUI 孪生**（runbook-010-tui-auto.md，
+> 入口 `make demo-tui-real-auto`，BUG-061）。本文件描述的 010 即现在的 020 内容。
+>
 > 生成: 2026-08-20 | 更新: 2026-08-20 | 状态: **v4——已消化独立审阅并逐条核验代码，尚未执行**
 > 前置: 001-004 战役完结（全 CLI、全自动）；本战役换轴——**HITL1 真人交互与 TUI 观察性**。
 > v4 变更: 全量消化 `tui-interactive-campaign-review.md`（另一 agent 的独立审阅）——

@@ -1,13 +1,13 @@
 #!/bin/bash
 # ============================================================================
-#  010 TUI 战役启动器 —— 双击即跑（或终端里 bash RUN-010-TUI.command）
+#  020 手动 TUI 启动器 —— 双击即跑（或终端里 bash RUN-020.command）
 #
 #  在【你眼前】的 Terminal 窗口里起 Deep Research TUI：
 #    Stage A:  fixture 图（零凭证，已知形状 UI smoke，分钟级）
 #    Stage B1: 真实图（真模型 + 真网页，你在 TUI 里做 HITL1 决策；
 #              HITL2 是自主 continuation，不需要你）
 #
-#  完整操作单: _backlog/_local_demo/runbook-010-tui-interactive.md
+#  完整操作单: _backlog/_local_demo/runbook-020-tui-manual.md
 # ============================================================================
 
 # --- 定位仓库（双击打开时 cwd 是 home，必须自己 cd） -----------------------
@@ -23,7 +23,7 @@ C_CYAN=$'\033[36m'; C_YELLOW=$'\033[33m'; C_GREEN=$'\033[32m'; C_RED=$'\033[31m'
 
 clear
 echo "${C_CYAN}════════════════════════════════════════════════════════════════════════${C_OFF}"
-echo "${C_CYAN}  Deep Research · 010 TUI 交互战役  (runbook-010)${C_OFF}"
+echo "${C_CYAN}  Deep Research · 020 手动 TUI 交互（runbook-020）${C_OFF}"
 echo "${C_CYAN}════════════════════════════════════════════════════════════════════════${C_OFF}"
 echo
 echo "选一个阶段："
@@ -116,5 +116,5 @@ else
   echo "${C_DIM}(Stage A fixture 不产出真实 run bundle；交互面结论记入战役记录即可)${C_OFF}"
 fi
 echo
-echo "${C_DIM}完整验收/PASS 判据/报 bug 流程: _backlog/_local_demo/runbook-010-tui-interactive.md${C_OFF}"
+echo "${C_DIM}完整验收/PASS 判据/报 bug 流程: _backlog/_local_demo/runbook-020-tui-manual.md${C_OFF}"
 read -r -p "按回车关闭本窗口..."

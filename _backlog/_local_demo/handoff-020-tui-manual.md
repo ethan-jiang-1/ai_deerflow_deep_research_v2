@@ -1,4 +1,4 @@
-# Handoff: Mode 010 TUI 真人交互战役 + change `fix-demo-tui-choice-option`
+# Handoff: Mode 020 TUI 真人交互战役（= 原 010 手动 TUI）+ change `fix-demo-tui-choice-option`
 
 > 生成: 2026-08-21 | 用途: 战役进行中新会话 pick up 后继续（Stage A/B1 跑次 / 茬处置 / 收口）
 > 位置: 本文件在 `_backlog/_local_demo/`；设计文档在 `_backlog/plans/tui-interactive-campaign.md`（v4 消化版）；
@@ -22,7 +22,7 @@ report。HITL2 是自主 continuation **不需要人**。PASS 判据 7 条见 ru
 - **Stage 0 校准（2026-08-21，commit 前史）**：独立 review 九项事实主张全部
   代码核验成立并消化——plan v4 重写（hitl2 自主性 / CHOICE 拆 B2 / 条件式修订
   证据链 / exact bundle 绑定 / Journal 归因限制 / preflight 三要素）；runbook-010
-  与 `RUN-010-TUI.command` 重写（合法应答卡 + 启动前后 bundle 目录集合 diff）；
+  与 `RUN-020.command` 重写（合法应答卡 + 启动前后 bundle 目录集合 diff）；
   阶梯表 010 行修正。
 - **BUG-060 修复（2026-08-21，commit `cd053d6`）**：change
   `fix-demo-tui-choice-option` 全流程（propose → polish 三 pass → apply TDD →
@@ -44,7 +44,7 @@ report。HITL2 是自主 continuation **不需要人**。PASS 判据 7 条见 ru
 
 | 尝试 | 阶段 | bundle / 证据 | 结果 | 判定 |
 | --- | --- | --- | --- | --- |
-| Stage A（2026-08-21 15:40-16:17，`RUN-010-TUI.command` 选 1） | A | fixture scope `s_At5E33X…` 6 个 bundle（15:40/15:55×2/15:59×2/16:17） | 全部 `terminal_status: completed`、`implementation_mode: fixture`；每次 hitl1 完整往返（4 事件）；图走完 final_delivery | ✅ PASS（交互面/启动/退出均正常；Cancel 分支未跑，可选项） |
+| Stage A（2026-08-21 15:40-16:17，`RUN-020.command` 选 1） | A | fixture scope `s_At5E33X…` 6 个 bundle（15:40/15:55×2/15:59×2/16:17） | 全部 `terminal_status: completed`、`implementation_mode: fixture`；每次 hitl1 完整往返（4 事件）；图走完 final_delivery | ✅ PASS（交互面/启动/退出均正常；Cancel 分支未跑，可选项） |
 | （待填：Stage B1 第 1 跑） | B1 | — | — | — |
 
 > Stage A 观察备注：①"没跑出什么"= 预期形态——fixture 图 `final/` 为空
@@ -61,7 +61,7 @@ report。HITL2 是自主 continuation **不需要人**。PASS 判据 7 条见 ru
 cd deep_research_harness && make demo-tui-fixture
 ```
 
-（或仓库根双击 `RUN-010-TUI.command` 选 1。）预期形状：banner（fixture-graph
+（或仓库根双击 `RUN-020.command` 选 1。）预期形状：banner（fixture-graph
 demo）→ composer 出示例问题 → 回车起 run → hitl1 TEXT 提示 → 随便答一句回车
 → Terminal completed → Ctrl-C/q 退出无异常。把"看到什么、有没有卡"报给我，
 我记进战况表。（可选加跑一次中途 Cancel。）

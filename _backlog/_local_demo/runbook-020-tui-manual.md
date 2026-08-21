@@ -1,6 +1,6 @@
 ---
-title: "010 - TUI Interactive Real Run (Human HITL1)"
-runbook_id: "010"
+title: "020 - TUI Manual Interactive Run (Human HITL1)"
+runbook_id: "020"
 difficulty: "medium-hard"
 mode: "real-interactive"
 cost: "medium"
@@ -11,12 +11,13 @@ prerequisites:
   - "与 selector 匹配的模型凭证（如 DEEPSEEK_API_KEY）"
   - "TAVILY_API_KEY"
   - "demo-tui extra 已安装（make install）"
-purpose: "以真人在 TUI 里做 HITL1 交互（profile proposal 修订 + 显式确认，semantic intake 真模型分类自由文本）跑通一次真实 Deep Research；HITL2 是被观察的自主 continuation，无人工决策。压 001-004 从未触达的交互认知面。"
+purpose: "以真人在 TUI 里做 HITL1 交互（profile proposal 修订 + 显式确认，semantic intake 真模型分类自由文本）跑通一次真实 Deep Research；HITL2 是被观察的自主 continuation，无人工决策。压 001-004 从未触达的交互认知面。020 与 010 是同一例子：010 自动全跑（交互自动化补），020 手动跑（交互由真人补）。"
 how_to_run: |
   # Stage A（零凭证，已知形状 UI smoke）
   cd deep_research_harness && make demo-tui-fixture
   # Stage B1（本地凭证，真交互真实跑——用户本人操作 TUI）
   make demo-tui-embedded-smoke
+  # 或双击 RUN-020.command（选 1/2，提示卡齐全）
 expected_result: "exact bundle（启动前记录目录集合、退出后唯一新增）+ 四步证据链（初始 proposal → 真人必然不同的修订 → 修订后 proposal → 显式确认）+ request/profile.json 与 State 匹配修订后 proposal 且 degraded_profile=false + terminal_status=completed + final/report.md 真实内容。HITL2 作为自主 phase 经过、无人工 prompt。"
 non_goals:
   - "不做 language CHOICE 覆盖（英文固定问题确定性 en，不触发 CHOICE；CHOICE 专项是条件性 B2，前置 BUG-060 修复）。"
@@ -24,20 +25,25 @@ non_goals:
   - "不是 Gateway observer 路径（Stage C 可选，另见）。"
   - "不修改研究问题（control environment：固定问题 + 条件式应答脚本）。"
   - "不做 capability 精确归因（Journal model_tool fact 无 capability 字段，见 §4.3 证据限制）。"
+  - "不替代 010 自动跑（010 的交互由自动化补，见 runbook-010-tui-auto.md）。"
 ---
 
-# 010 Runbook：TUI 真人交互跑（HITL1 专项）
+# 020 Runbook：TUI 真人交互跑（HITL1 专项）
 
-> **一键启动**：Finder 双击仓库根的 **`RUN-010-TUI.command`**（或终端里
-> `bash RUN-010-TUI.command`）——选 Stage A/B1、显示应答脚本提示卡、在眼前
+> **一键启动**：Finder 双击仓库根的 **`RUN-020.command`**（或终端里
+> `bash RUN-020.command`）——选 Stage A/B1、显示应答脚本提示卡、在眼前
 > 的终端窗口起 TUI，退出后按 exact-bundle 绑定规则展示证据位置。
 >
-> **010 是什么**：`_backlog/_local_demo` 前四格全是 CLI 全自动；010 换轴——
+> **020 是什么**：`_backlog/_local_demo` 前四格全是 CLI 全自动；020 换轴——
 > **真人坐在 TUI 里做 HITL1 决策**。入口 `make demo-tui-embedded-smoke`
 > 起本地全真实图（真实模型 + 真实 Tavily），问题由 composer 输入，hitl1
 > 提 profile proposal、你用自由文本修订（真实模型 semantic intake 分类你的
 > 话）、修订后显式确认。**HITL2 不需要你**：它是自主 continuation，作为
 > 被观察的 phase 自动经过。001-004 的 auto 短路（scripted）全部不触发。
+>
+> **020 与 010 是同一例子（同一固定问题、同一真实图）**，唯一差别是交互点：
+> 010 由自动化补（TUI 自动全跑，真人零操作，见 `runbook-010-tui-auto.md`）；
+> 020 由真人补（本 runbook）。先跑 010 自动验证通路，再跑 020 手动压交互面。
 >
 > **本 runbook 是"给用户的操作单"**：agent 负责环境与 bundle 侧证据收集，
 > TUI 里的按键由你本人完成。
@@ -79,7 +85,7 @@ fixture 图**已知**发出一个 `mode=TEXT` 的 hitl1 interrupt（集成测试
 ```bash
 cd deep_research_harness
 BROOT=.deep-research-demo-runs/workspace/deep-research/scopes
-ls -d $BROOT/*/b_* 2>/dev/null | sort > /tmp/bundles_before_010.txt
+ls -d $BROOT/*/b_* 2>/dev/null | sort > /tmp/bundles_before_020.txt
 make demo-tui-embedded-smoke
 ```
 
@@ -126,8 +132,8 @@ human-caused change）**：
 ```bash
 cd deep_research_harness
 BROOT=.deep-research-demo-runs/workspace/deep-research/scopes
-ls -d $BROOT/*/b_* 2>/dev/null | sort > /tmp/bundles_after_010.txt
-NEW=$(comm -13 /tmp/bundles_before_010.txt /tmp/bundles_after_010.txt)
+ls -d $BROOT/*/b_* 2>/dev/null | sort > /tmp/bundles_after_020.txt
+NEW=$(comm -13 /tmp/bundles_before_020.txt /tmp/bundles_after_020.txt)
 COUNT=$(echo "$NEW" | grep -c . || true)
 if [ "$COUNT" -ne 1 ]; then
   echo "证据未绑定：新增 bundle 数 = $COUNT（启动前失败或并发写入）——不得使用历史 bundle"
@@ -173,7 +179,7 @@ visit/resume 事件、HITL1 model-tool ordinal（辅助）、最终
 
 ### 3.6 与 003 的对照观察（战役观察点）
 
-| 维度 | 003（auto minimal） | 010（真人交互） |
+| 维度 | 003（CLI auto minimal） | 020（TUI 真人交互） |
 | --- | --- | --- |
 | profile 来源 | scripted 三字段硬编码 | 真人修订 + semantic intake 分类 + 显式确认 |
 | degraded_profile | True | 期望 False（真人确认过） |
@@ -181,7 +187,7 @@ visit/resume 事件、HITL1 model-tool ordinal（辅助）、最终
 | hitl2 | auto_proceed 标记短路 | 自主 `recommend_hitl2_route` 决策（被观察） |
 | 时间 | ~2-3 分钟 | 更长（交互往返 + 模型分类调用） |
 
-## 4. Stage B2：language CHOICE 专项（条件式，不在 010 PASS 范围）
+## 4. Stage B2：language CHOICE 专项（条件式，不在 020 PASS 范围）
 
 仅当 (a) ~~BUG-060（Demo TUI typed OPTION 缺失，已登记）修复并有确定性
 回归~~（✅ 已满足：change `fix-demo-tui-choice-option`，2026-08-21，RED-009
@@ -219,7 +225,7 @@ visualizer，不是当前产品入口）。执行前预写有限观察问题清�
 
 - exact bundle id + 四步证据链记录（三值 + 确认方式）+ `state.json`
   profile 片段 + `request/profile.json` + report.md 开头 → 战役记录
-  （handoff-010 或 runbook 附录）；
+  （handoff-020 或 runbook 附录）；
 - hitl1 交互轮数 / 各轮耗时 / hitl2 自主经过的观察 → 观察点数据；
 - bug 按 `_backlog/bugs/` 流程；修复走 openspec change（004 先例），
   primary causal owner 从 presentation adapter 与 shared typed
