@@ -61,7 +61,7 @@
 
 ### Phase 1 — Stage A：fixture TUI 已知形状 smoke ⬜ 未开始
 
-- [ ] 建 handoff-010（战役进行中记录，完结收口删除——004 先例）
+- [x] 建 handoff-010（战役进行中记录，完结收口删除——004 先例）——`_backlog/_local_demo/handoff-010-tui-interactive.md`；agent 侧前置已过（textual 8.2.8 + entry-preflight EXIT=0）
 - [ ] 用户跑 `make demo-tui-fixture`：Ready → StartRun → AwaitingInput(hitl1/text) → 回答 → Terminal completed → 退出无异常
 - [ ] （可选）再跑一次验证 Cancel 分支
 - [ ] 记录 UI 形状结论进 handoff-010（不声称 real cognition / CHOICE / 报告质量）
