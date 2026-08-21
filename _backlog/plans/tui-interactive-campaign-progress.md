@@ -59,12 +59,12 @@
 - [x] BUG-060 登记（P1）+ bugs/README + _fixed_bugs 编号权威 → BUG-061
 - [x] _local_demo/README.md 阶梯表 010 行修正
 
-### Phase 1 — Stage A：fixture TUI 已知形状 smoke ⬜ 未开始
+### Phase 1 — Stage A：fixture TUI 已知形状 smoke ✅ 完成（2026-08-21）
 
 - [x] 建 handoff-010（战役进行中记录，完结收口删除——004 先例）——`_backlog/_local_demo/handoff-010-tui-interactive.md`；agent 侧前置已过（textual 8.2.8 + entry-preflight EXIT=0）
-- [ ] 用户跑 `make demo-tui-fixture`：Ready → StartRun → AwaitingInput(hitl1/text) → 回答 → Terminal completed → 退出无异常
-- [ ] （可选）再跑一次验证 Cancel 分支
-- [ ] 记录 UI 形状结论进 handoff-010（不声称 real cognition / CHOICE / 报告质量）
+- [x] 用户跑 `make demo-tui-fixture`：Ready → StartRun → AwaitingInput(hitl1/text) → 回答 → Terminal completed → 退出无异常——经 `RUN-010-TUI.command` 选 1，6 个 bundle 全部 completed（详见 handoff-010 战况表）
+- [ ] （可选）再跑一次验证 Cancel 分支（未跑，可选项，不阻塞）
+- [x] 记录 UI 形状结论进 handoff-010（不声称 real cognition / CHOICE / 报告质量）
 
 ### Phase 2 — Stage B1：embedded 真人 HITL1 真实跑（战役主体）⬜ 未开始
 
@@ -120,6 +120,7 @@
 | 2026-08-21 | 3 | polish 完成：三 pass（RED-009 注册修正 + value==option_id 契约修正 + ReplayTransport 接受证据 + Focus Card）；plan gate 全绿 | ✅ ready for apply |
 | 2026-08-21 | 3 | apply 完成：TDD 红→绿（集成 18/18 + contract 回放 2）；verify 全绿（fast 2641 + integration 261 + workflow 35） | ✅ 实施完毕 |
 | 2026-08-21 | 3 | 归档完成：delta 同步主 spec（RED-009）、closeout 六项全绿、change → `archive/2026-08-21-fix-demo-tui-choice-option`、BUG-060 → `_done/_fixed_bugs/` | ✅ Phase 3 闭环 |
+| 2026-08-21 | 1 | Stage A PASS：用户经 launcher 选 1 跑 fixture TUI，6 bundle 全 completed，hitl1 往返完整；"无输出"= fixture 无 report 的预期形态 | ✅ Phase 1 主体完成（Cancel 可选项未跑） |
 
 ## 5. 条件性 change 追踪（战役撞出的 bug，按需追加行）
 

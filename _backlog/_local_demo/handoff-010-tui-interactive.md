@@ -44,8 +44,16 @@ report。HITL2 是自主 continuation **不需要人**。PASS 判据 7 条见 ru
 
 | 尝试 | 阶段 | bundle / 证据 | 结果 | 判定 |
 | --- | --- | --- | --- | --- |
-| （待填：Stage A fixture smoke） | A | — | — | — |
+| Stage A（2026-08-21 15:40-16:17，`RUN-010-TUI.command` 选 1） | A | fixture scope `s_At5E33X…` 6 个 bundle（15:40/15:55×2/15:59×2/16:17） | 全部 `terminal_status: completed`、`implementation_mode: fixture`；每次 hitl1 完整往返（4 事件）；图走完 final_delivery | ✅ PASS（交互面/启动/退出均正常；Cancel 分支未跑，可选项） |
 | （待填：Stage B1 第 1 跑） | B1 | — | — | — |
+
+> Stage A 观察备注：①"没跑出什么"= 预期形态——fixture 图 `final/` 为空
+> （不产 report.md），终态只有 "Research complete" + bundle 信息，真实内容
+> 属 B1；②每次 run 的 hitl1 首个 attempt 记 `failed` 后 retry completed——
+> 这是 journal 对 interrupt 挂起-恢复的记账形态，非故障；③launcher fixture
+> 分支提示"不产出真实 run bundle"措辞偏严（fixture bundle 实际写入同一
+> demo workspace 的 fixture scope，只是非真实模型 run），不影响绑定逻辑
+> （exact-bundle 绑定仅用于 real 模式）。
 
 ## 你要做的事（Stage A，现在就可以）
 
