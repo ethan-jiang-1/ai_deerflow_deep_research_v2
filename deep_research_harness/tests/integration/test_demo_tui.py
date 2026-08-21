@@ -10,6 +10,7 @@
 @impl RDO-001
 @impl RDO-004
 @impl REC-006
+@impl RED-009
 """
 
 from __future__ import annotations
@@ -414,3 +415,136 @@ def test_tui_omits_unsafe_endpoint_components_from_a_provider_terminal() -> None
     assert "deepseek-v4-pro" in rendered
     for unsafe in ("/v1", "token=secret", "fragment", "question=private", "answer=private", "prompt=private"):
         assert unsafe not in rendered
+
+
+async def _wait_for_hitl1_prompt(app: DeepResearchDemoTUI, pilot, *, mode: str, max_wait: float = 4.0) -> None:
+    elapsed = 0.0
+    while elapsed < max_wait and not (
+        isinstance(app.last_update, AwaitingInput)
+        and app.last_update.prompt.phase == "hitl1"
+        and app.last_update.prompt.mode == mode
+    ):
+        await pilot.pause()
+        await asyncio.sleep(0.02)
+        elapsed += 0.02
+    assert isinstance(app.last_update, AwaitingInput)
+    assert app.last_update.prompt.phase == "hitl1"
+    assert app.last_update.prompt.mode == mode
+
+
+@pytest.mark.asyncio
+async def test_tui_renders_advertised_hitl1_language_choice_options(monkeypatch: pytest.MonkeyPatch) -> None:
+    """@impl RED-009"""
+    _install_scripted(
+        monkeypatch,
+        report=_ready_report(),
+        updates=[run_updates.awaiting_hitl1_language_choice(), run_updates.completed()],
+    )
+    app = DeepResearchDemoTUI(mode="fixture")
+    async with app.run_test() as pilot:
+        await _wait_for(app, pilot, demo_tui.Ready)
+        await pilot.press("enter")
+        await _wait_for_hitl1_prompt(app, pilot, mode="choice")
+        for option_id in ("zh", "en"):
+            button = app.query_one(f"#option-{option_id}", demo_tui.Button)
+            assert button.display is True
+        assert app.query_one("#options").display is True
+
+
+@pytest.mark.asyncio
+async def test_tui_submits_typed_option_when_an_advertised_language_button_is_clicked(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """@impl RED-009"""
+    _install_scripted(
+        monkeypatch,
+        report=_ready_report(),
+        updates=[run_updates.awaiting_hitl1_language_choice(), run_updates.completed()],
+    )
+    app = DeepResearchDemoTUI(mode="fixture")
+    async with app.run_test() as pilot:
+        await _wait_for(app, pilot, demo_tui.Ready)
+        await pilot.press("enter")
+        await _wait_for_hitl1_prompt(app, pilot, mode="choice")
+        await pilot.click("#option-zh")
+        await _wait_for(app, pilot, Terminal)
+
+    intents = _ScriptedExperience.instances[0].intents
+    assert isinstance(intents[1], AnswerRun)
+    assert intents[1].response_kind == "option"
+    assert intents[1].option_id == "zh"
+    assert intents[1].value == "zh"
+
+
+@pytest.mark.asyncio
+async def test_tui_exact_match_composer_entry_answers_hitl1_language_choice(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """@impl RED-009"""
+    _install_scripted(
+        monkeypatch,
+        report=_ready_report(),
+        updates=[run_updates.awaiting_hitl1_language_choice(), run_updates.completed()],
+    )
+    app = DeepResearchDemoTUI(mode="fixture")
+    async with app.run_test() as pilot:
+        await _wait_for(app, pilot, demo_tui.Ready)
+        await pilot.press("enter")
+        await _wait_for_hitl1_prompt(app, pilot, mode="choice")
+        await pilot.press(*"zh")
+        await pilot.press("enter")
+        await _wait_for(app, pilot, Terminal)
+
+    intents = _ScriptedExperience.instances[0].intents
+    assert isinstance(intents[1], AnswerRun)
+    assert intents[1].response_kind == "option"
+    assert intents[1].option_id == "zh"
+    assert intents[1].value == "zh"
+
+
+@pytest.mark.asyncio
+async def test_tui_non_matching_composer_text_is_not_dispatched_for_hitl1_language_choice(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """@impl RED-009
+
+    Non-matching text during a HITL1 CHOICE prompt dispatches no answer at all,
+    and the option group disappears once the prompt returns to TEXT mode with
+    free-text semantic intake intact.
+    """
+    _install_scripted(
+        monkeypatch,
+        report=_ready_report(),
+        updates=[
+            run_updates.awaiting_hitl1_language_choice(),
+            run_updates.awaiting_hitl1(),
+            run_updates.completed(),
+        ],
+    )
+    app = DeepResearchDemoTUI(mode="fixture")
+    async with app.run_test() as pilot:
+        await _wait_for(app, pilot, demo_tui.Ready)
+        await pilot.press("enter")
+        await _wait_for_hitl1_prompt(app, pilot, mode="choice")
+        await pilot.press(*"not-a-language")
+        await pilot.press("enter")
+        for _ in range(5):
+            await pilot.pause()
+        assert isinstance(app.last_update, AwaitingInput)
+        assert app.last_update.prompt.mode == "choice"
+        assert len(_ScriptedExperience.instances[0].intents) == 1
+
+        await pilot.click("#option-en")
+        await _wait_for_hitl1_prompt(app, pilot, mode="text")
+        assert app.query_one("#options").display is False
+        await pilot.press(*"make it quick")
+        await pilot.press("enter")
+        await _wait_for(app, pilot, Terminal)
+
+    intents = _ScriptedExperience.instances[0].intents
+    assert isinstance(intents[1], AnswerRun)
+    assert intents[1].response_kind == "option"
+    assert intents[1].option_id == "en"
+    assert isinstance(intents[2], AnswerRun)
+    assert intents[2].response_kind == "text"
+    assert intents[2].value == "make it quick"

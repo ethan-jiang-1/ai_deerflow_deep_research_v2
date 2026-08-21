@@ -91,6 +91,24 @@ def awaiting_hitl1(*, feedback: InteractionFeedback | None = None) -> AwaitingIn
     )
 
 
+def awaiting_hitl1_language_choice() -> AwaitingInput:
+    """Return the HITL-1 language CHOICE prompt with advertised zh/en options."""
+    update = awaiting_hitl1()
+    pending = update.snapshot.pending_input
+    assert pending is not None
+    snapshot = update.snapshot.model_copy(update={"pending_input": pending.model_copy(update={"mode": "choice"})})
+    prompt = update.prompt.model_copy(
+        update={
+            "mode": "choice",
+            "options": (
+                PromptOption(id="zh", label="Chinese", consequence="Write the report in Chinese."),
+                PromptOption(id="en", label="English", consequence="Write the report in English."),
+            ),
+        }
+    )
+    return update.model_copy(update={"snapshot": snapshot, "prompt": prompt})
+
+
 def awaiting_complete_typed_hitl1() -> AwaitingInput:
     """Return one complete shared proposal with every bounded display line."""
     interaction = InteractionProjection(

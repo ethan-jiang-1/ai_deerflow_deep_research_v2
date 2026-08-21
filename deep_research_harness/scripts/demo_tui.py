@@ -40,6 +40,7 @@ from textual.app import App, ComposeResult
 from textual.containers import Horizontal
 from textual.widgets import Button, Input, RichLog, Static
 
+from deerflow_deep_research.domain.lifecycle import SupportedLanguageOption
 from deerflow_deep_research.domain.run_experience import (
     AnswerRun,
     AwaitingInput,
@@ -421,6 +422,9 @@ class DeepResearchDemoTUI(App[None]):
         yield Static(id="pipeline")
         yield RichLog(id="log", wrap=True, markup=False, max_lines=100)
         yield Static(id="prompt")
+        with Horizontal(id="options"):
+            for language in SupportedLanguageOption:
+                yield Button(language.value, id=f"option-{language.value}", classes="advertised-option")
         with Horizontal(id="controls"):
             yield Input(value=self._EXAMPLE_QUESTION, placeholder="Research question", id="composer")
             yield Button("Start proposal", id="accept")
@@ -515,6 +519,15 @@ class DeepResearchDemoTUI(App[None]):
             and any(control.id == "accept_current_proposal" for control in self.last_update.prompt.visible_controls)
         )
         accept.disabled = not accept.display
+        advertised_options = self._advertised_language_options()
+        options_bar = self.query_one("#options", Horizontal)
+        options_bar.display = bool(advertised_options)
+        for button in options_bar.query(Button):
+            option = advertised_options.get(str(button.id).removeprefix("option-"))
+            button.display = option is not None
+            button.disabled = option is None
+            if option is not None:
+                button.label = option.label
         if view.accepts_input:
             composer.value = self._EXAMPLE_QUESTION if isinstance(self.last_update, Ready) else ""
             composer.focus()
@@ -535,6 +548,23 @@ class DeepResearchDemoTUI(App[None]):
         ):
             return
         self._dispatch(SelectControlRun(control_id="accept_current_proposal"))
+
+    def _advertised_language_options(self) -> dict[str, object]:
+        """Project only the current HITL1 language CHOICE advertisement."""
+
+        if not isinstance(self.last_update, AwaitingInput):
+            return {}
+        prompt = self.last_update.prompt
+        if prompt.mode != "choice" or prompt.phase != "hitl1":
+            return {}
+        return {option.id: option for option in prompt.options}
+
+    def _select_advertised_option(self, option_id: str) -> None:
+        """Submit one currently advertised language option as a typed OPTION answer."""
+
+        if option_id not in self._advertised_language_options():
+            return
+        self._dispatch(AnswerRun(value=option_id, response_kind="option", option_id=option_id))
 
     def _gateway_transport_observer(self, observation: GatewayTransportObservation) -> None:
         if observation.kind == "assistant_text" and observation.detail:
@@ -574,11 +604,21 @@ class DeepResearchDemoTUI(App[None]):
         if isinstance(self.last_update, Ready) and self.last_update.report.ready:
             self._dispatch(StartRun(question=value))
         elif isinstance(self.last_update, AwaitingInput):
+            prompt = self.last_update.prompt
+            if prompt.mode == "choice" and prompt.phase == "hitl1":
+                # The shared contract requires a typed OPTION here; an exact
+                # match of one advertised option id is the only legal composer
+                # entry, and any other text dispatches nothing.
+                if value in self._advertised_language_options():
+                    self._dispatch(AnswerRun(value=value, response_kind="option", option_id=value))
+                return
             self._dispatch(AnswerRun(value=value))
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "accept":
             self._select_current_proposal()
+        elif event.button.id is not None and event.button.id.startswith("option-"):
+            self._select_advertised_option(event.button.id.removeprefix("option-"))
         elif event.button.id == "cancel" and self.mode != "gateway" and isinstance(self.last_update, AwaitingInput):
             self._dispatch(CancelRun())
 

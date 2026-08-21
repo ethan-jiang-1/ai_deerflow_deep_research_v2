@@ -306,6 +306,7 @@ RED-005: research-demo-tui — The Textual demo exposes a safe run reference and
 RED-006: research-demo-tui — The demo TUI renders shared typed profile-input actions and safe run updates without lifecycle inference
 RED-007: research-demo-tui — The standalone demo TUI renders shared visible controls, submits only their ids through generic control selection, and forwards ordinary HITL1 text unchanged without aliases, action construction, or prompt-context inspection
 RED-008: research-demo-tui — Demo TUI projects the shared Bundle lifecycle contract without local state inference or recovery
+RED-009: research-demo-tui — The standalone demo TUI answers the current advertised HITL1 language CHOICE prompt with the shared typed option answer for that advertised option id while TEXT prompts and non-language CHOICE forwarding stay unchanged
 
 # research-cli-onboarding
 REC-001: research-cli-onboarding — The standalone real CLI asks for or clearly confirms a non-blank research question before a model call and gives a first-time user a bounded explanation of the two graph-owned human-input checkpoint types

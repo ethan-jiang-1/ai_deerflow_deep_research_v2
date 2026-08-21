@@ -77,8 +77,9 @@ bug 修完后从 `_backlog/bugs/` 通过 `git mv` 移入本目录：
 | BUG-057 | 2026-08-19 | readiness critic cap fallback 误入 gapless repair 自旋——披露降级交付 + 闭合观测 |
 | BUG-058 | 2026-08-19 | wave1 source-diagnostic critic bool 字段被真实模型字符串标签击穿，004 必然 blocked（fix-wave1-critic-label-shapes） |
 | BUG-059 | 2026-08-19 | wave2 synthesis 别名映射不收录 evidence 内 claim_id，模型引用 claim 被拒（fix-synthesis-claim-ref-aliases） |
+| BUG-060 | 2026-08-21 | Demo TUI 把 composer 输入一律按 text 提交，hitl1 language CHOICE 轮无法被合法回答（fix-demo-tui-choice-option） |
 
-**Next available bug ID: BUG-060**
+**Next available bug ID: BUG-061**
 
 ---
 

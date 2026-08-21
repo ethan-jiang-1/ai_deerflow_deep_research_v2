@@ -28,6 +28,7 @@ from deerflow_deep_research.domain.lifecycle import (
     BundleRefinementProjection,
     Durability,
     HumanInputMode,
+    HumanInputOption,
     HumanInputRequest,
     LegalNextAction,
     LifecycleAction,
@@ -35,6 +36,7 @@ from deerflow_deep_research.domain.lifecycle import (
     LogicalPhase,
     PendingResearchInterrupt,
     ResultCode,
+    SupportedLanguageOption,
 )
 from deerflow_deep_research.domain.run_experience import (
     AnswerRun,
@@ -42,6 +44,7 @@ from deerflow_deep_research.domain.run_experience import (
     Fault,
     PendingInputProjection,
     RefineRun,
+    RunFailureCode,
     StartRun,
     StatusRun,
     Terminal,
@@ -405,3 +408,94 @@ async def test_malformed_result_fails_closed_without_creating_a_control_projecti
 
     assert isinstance(update, Fault)
     assert update.failure.code.value == "protocol.invalid_result"
+
+
+def _language_pending() -> PendingResearchInterrupt:
+    return PendingResearchInterrupt(
+        request=HumanInputRequest(
+            request_id="drh_language",
+            mode=HumanInputMode.CHOICE,
+            title="Language",
+            context="Choose the research language.",
+            options=tuple(
+                HumanInputOption(id=value, value=value, label=value.value) for value in SupportedLanguageOption
+            ),
+        ),
+        suspension_cursor="start-message",
+        phase="hitl1",
+        generation=0,
+    )
+
+
+def _language_suspended() -> BundleControlResult:
+    return BundleControlResult(
+        action=LifecycleAction.START,
+        code=ResultCode.SUSPENDED,
+        availability=BundleAvailability.AVAILABLE,
+        durability=Durability.RESTART_DURABLE,
+        bundle_id=BUNDLE_ID,
+        status=LifecycleStatus.SUSPENDED,
+        phase=LogicalPhase.HITL1,
+        generation=0,
+        request_id="drh_language",
+        pending_input=PendingInputProjection(
+            request_id="drh_language",
+            pending_phase="hitl1",
+            generation=0,
+            mode="choice",
+        ),
+        refinement=BundleRefinementProjection(disposition="none"),
+        legal_next_action=LegalNextAction.RESUME,
+        execution_trace=("bootstrap", "hitl1"),
+    )
+
+
+@pytest.mark.asyncio
+async def test_hitl1_language_choice_accepts_current_typed_option_answer() -> None:
+    """@impl RED-009
+
+    The TUI dispatch seam (``ResearchRunExperience.handle``) accepts the typed
+    OPTION ``AnswerRun`` for the current advertised HITL1 language CHOICE and
+    resumes the run; text answers are rejected with the shared boundary error.
+    """
+    transport = ReplayTransport(
+        [
+            project_suspension(pending=_language_pending(), result=_language_suspended(), tool_call_id="call-1"),
+            _completed(),
+        ]
+    )
+    experience = ResearchRunExperience(transport=transport, mode="fixture")
+
+    awaiting = await experience.handle(StartRun(question="Compare storage options"))
+    assert isinstance(awaiting, AwaitingInput)
+    assert awaiting.prompt.mode == "choice"
+    assert awaiting.prompt.phase == "hitl1"
+
+    update = await experience.handle(AnswerRun(value="zh", response_kind="option", option_id="zh"))
+
+    assert isinstance(update, Terminal)
+    assert update.outcome == "completed"
+    assert transport.calls[-1] == ("resume", BUNDLE_ID, None)
+
+
+@pytest.mark.asyncio
+async def test_hitl1_language_choice_rejects_text_answer_at_the_dispatch_seam() -> None:
+    """@impl RED-009
+
+    A text-kind answer for the current HITL1 language CHOICE is rejected by the
+    shared boundary as a bounded ``input.invalid_response`` Fault projection —
+    the ValueError itself never escapes ``handle`` — and no resume is dispatched.
+    """
+    transport = ReplayTransport(
+        [project_suspension(pending=_language_pending(), result=_language_suspended(), tool_call_id="call-1")]
+    )
+    experience = ResearchRunExperience(transport=transport, mode="fixture")
+
+    await experience.handle(StartRun(question="Compare storage options"))
+
+    update = await experience.handle(AnswerRun(value="zh please"))
+
+    assert isinstance(update, Fault)
+    assert update.failure is not None
+    assert update.failure.code == RunFailureCode.INPUT_INVALID_RESPONSE
+    assert transport.calls == [("start", None, None)]
