@@ -356,6 +356,7 @@ class DemoAdapter:
         uploads = root / "uploads"
         outputs = root / "outputs"
         self._root = root
+        self.bundle_root = root
         self._paths = (root, workspace, uploads, outputs)
         self._opened = False
         self._closed = False

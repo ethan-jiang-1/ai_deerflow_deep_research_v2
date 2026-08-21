@@ -591,3 +591,21 @@ async def test_tui_non_matching_composer_text_is_not_dispatched_for_hitl1_langua
     assert isinstance(intents[2], AnswerRun)
     assert intents[2].response_kind == "text"
     assert intents[2].value == "make it quick"
+
+
+@pytest.mark.asyncio
+async def test_tui_rich_log_text_extracts_middle_conversation() -> None:
+    from rich.text import Text as RichText
+    from textual.widgets import RichLog
+
+    app = demo_tui.DeepResearchDemoTUI(mode="fixture")
+    async with app.run_test() as pilot:
+        await _wait_for(app, pilot, demo_tui.Ready)
+        log = app.query_one("#log", RichLog)
+        log.write(RichText("第一行对话"))
+        log.write(RichText("第二行进度"))
+        await pilot.pause()
+
+        text = app._rich_log_text()
+        assert "第一行对话" in text
+        assert "第二行进度" in text

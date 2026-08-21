@@ -11,6 +11,7 @@
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 from typing import Any
@@ -179,3 +180,128 @@ async def test_shared_failure_never_leaks_raw_exception_into_either_adapter(tmp_
     assert sentinel not in cli
     assert sentinel not in tui
     assert not (tmp_path / "records.jsonl").exists()
+
+
+def _write_journal_bundle(
+    root: Path,
+    *,
+    scope: str,
+    bundle: str,
+    updated_at: str,
+    events: list[dict[str, Any]],
+) -> Path:
+    bundle_dir = root / "workspace" / "deep-research" / "scopes" / scope / bundle
+    diag = bundle_dir / "diagnostics"
+    diag.mkdir(parents=True)
+    (diag / "run-summary.json").write_text(
+        json.dumps({"status": "active", "updated_at": updated_at, "bundle_id": bundle}),
+        encoding="utf-8",
+    )
+    (diag / "events.jsonl").write_text(
+        "\n".join(json.dumps(event) for event in events) + "\n",
+        encoding="utf-8",
+    )
+    return bundle_dir
+
+
+def test_live_progress_lines_reports_active_bundle_journal(tmp_path: Path) -> None:
+    bundle = _write_journal_bundle(
+        tmp_path,
+        scope="s_demo",
+        bundle="b_demo",
+        updated_at="2026-08-21T11:00:00Z",
+        events=[
+            {"category": "node", "outcome": "started", "phase": "bootstrap", "timestamp": "2026-08-21T10:59:50Z"},
+            {"category": "node", "outcome": "completed", "phase": "bootstrap", "timestamp": "2026-08-21T10:59:50Z"},
+            {"category": "node", "outcome": "started", "phase": "wave0", "timestamp": "2026-08-21T10:59:56Z"},
+            {
+                "category": "model_tool",
+                "outcome": "completed",
+                "phase": "wave0",
+                "usage_tokens": {"total_tokens": 10415},
+                "timestamp": "2026-08-21T11:00:27Z",
+            },
+            {"category": "node", "outcome": "completed", "phase": "wave0", "timestamp": "2026-08-21T11:00:27Z"},
+            {"category": "node", "outcome": "started", "phase": "wave1", "timestamp": "2026-08-21T11:00:27Z"},
+        ],
+    )
+    assert bundle.is_dir()
+
+    lines = demo_tui.live_progress_lines(tmp_path)
+    assert lines
+    text = "\n".join(lines)
+    assert "进度: bootstrap → wave0 → wave1（进行中）" in text
+    assert "模型调用: 1 次完成 · 10.4k tokens" in text
+    assert "journal 事件: 6" in text
+    assert "最近:" in text
+
+
+def test_live_progress_lines_picks_most_recent_active_bundle(tmp_path: Path) -> None:
+    _write_journal_bundle(
+        tmp_path,
+        scope="s_old",
+        bundle="b_old",
+        updated_at="2026-08-21T09:00:00Z",
+        events=[
+            {"category": "node", "outcome": "started", "phase": "bootstrap", "timestamp": "2026-08-21T09:00:00Z"},
+            {"category": "node", "outcome": "completed", "phase": "bootstrap", "timestamp": "2026-08-21T09:00:01Z"},
+        ],
+    )
+    _write_journal_bundle(
+        tmp_path,
+        scope="s_new",
+        bundle="b_new",
+        updated_at="2026-08-21T11:05:00Z",
+        events=[
+            {"category": "node", "outcome": "started", "phase": "wave2_synthesis", "timestamp": "2026-08-21T11:05:00Z"},
+        ],
+    )
+
+    lines = demo_tui.live_progress_lines(tmp_path)
+    text = "\n".join(lines)
+    assert "b_new" not in text  # bundle id is not rendered; the *phase* is what matters
+    assert "wave2_synthesis（进行中）" in text
+    assert "bootstrap" not in text  # the older bundle was not selected
+
+
+def test_live_progress_lines_returns_empty_without_active_bundle(tmp_path: Path) -> None:
+    assert demo_tui.live_progress_lines(None) == ()
+    assert demo_tui.live_progress_lines(tmp_path) == ()
+    (tmp_path / "workspace" / "deep-research" / "scopes").mkdir(parents=True)
+    assert demo_tui.live_progress_lines(tmp_path) == ()
+
+
+def test_find_bundle_dir_and_report_path(tmp_path: Path) -> None:
+    bundle_dir = _write_journal_bundle(
+        tmp_path,
+        scope="s_demo",
+        bundle="b_report",
+        updated_at="2026-08-21T12:00:00Z",
+        events=[
+            {"category": "node", "outcome": "started", "phase": "bootstrap", "timestamp": "2026-08-21T12:00:00Z"},
+            {"category": "node", "outcome": "completed", "phase": "bootstrap", "timestamp": "2026-08-21T12:00:01Z"},
+        ],
+    )
+    final = bundle_dir / "final"
+    final.mkdir()
+    (final / "report.md").write_text("# Report\n", encoding="utf-8")
+
+    assert demo_tui.find_bundle_dir(tmp_path, "b_report") == bundle_dir
+    assert demo_tui.find_bundle_dir(tmp_path, "b_missing") is None
+    assert demo_tui.find_bundle_dir(None, "b_report") is None
+
+    report = demo_tui.report_path(tmp_path, "b_report")
+    assert report is not None and report.name == "report.md" and report.is_file()
+    assert demo_tui.report_path(tmp_path, "b_missing") is None
+    assert demo_tui.report_path(tmp_path, None) is None
+
+
+def test_render_terminal_includes_report_path_when_provided(tmp_path: Path) -> None:
+    completed = run_updates.completed()
+    view = demo_tui.render_run_update(completed, report_path=tmp_path / "final" / "report.md")
+    assert view.terminal
+    assert "Report:" in view.detail
+    assert "report.md" in view.detail
+
+    view_without = demo_tui.render_run_update(completed)
+    assert "Report:" not in view_without.detail

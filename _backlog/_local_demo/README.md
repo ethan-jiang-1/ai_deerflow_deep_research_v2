@@ -76,6 +76,42 @@
 > 红线照旧：010 自动跑 ends-to-end 成功或明确失败类别才算数，能调出 TUI 不算 PASS；
 > 撞茬按 `_backlog/bugs/` 流程，修复走独立 openspec change。
 
+## 01x（自动跑法）怎么做更合理：自带进度播报
+
+> **原则（2026-08-21 定）**：凡是 `01x` 这类"真人零操作、坐等跑完"的自动跑法，
+> **必须自带进度播报**——run 进行中要持续告诉人"当前在哪个阶段、已完成哪些、
+> 最近在干什么"，**不能只显示一个等待秒数**。否则人无法区分"在跑"与"死了"，
+> 体感就是"等个没完、以为它死了"（010 首跑实测教训）。
+
+**播报的合理形态**（对应 010 现状，已落地）：
+
+```text
+进度: bootstrap → hitl1 → wave0 → wave1（进行中）
+最近: 18:54:33 · wave2_synthesis model_tool started
+模型调用: 11 次完成 · 55.9k tokens
+journal 事件: 56
+```
+
+- **实时**：每 1 秒随 Working 心跳刷新（不是固定文案）；
+- **来自 run 现场**：读当前 active bundle 的 `diagnostics/events.jsonl` +
+  `run-summary.json`（被忽略的本地 retained-run 文件），聚合出阶段链/最近事件/
+  模型调用数——实现是 `demo_tui.py::live_progress_lines()` 纯函数（TUI 层只读，
+  不碰运行时，读不到就退化静态文案）；
+- **判别标准**：进度行 / journal 事件数在变 = 活着（模型调用一次几十秒很正常）；
+  只有等待秒数在涨、其余全不动且持续数分钟 = 卡死，才需要 Ctrl-C 重跑。
+
+**自动跑法的另外两条体感底线（2026-08-21 定，010 已落地）**：
+
+1. **报告必须给路径**：run 完成时明确显示
+   `Report: <bundle>/final/report.md`，人不用翻目录找产出；
+2. **运行中必须能拷贝**：**中间对话区（RichLog）保证可拷**——双击复制全文、
+   Copy details 按钮复制全文、Option+拖拽选中一段、且每次渲染详情落盘
+   `logs/tui-<pid>.log`（出问题时打开文件拷全量，不依赖屏幕选择）。
+
+**以后新增 01x 跑法时照此办理**：任何自动全跑入口（TUI 或 CLI）都要有等价播报 +
+报告路径 + 可拷贝，runbook 里写明"怎么看它在动、什么才算卡死"。没有这些的自动
+跑法不算合格体验。
+
 ## 每天固定怎么跑
 
 1. 打开 [`runbook-001-easiest-fixture-graph.md`](runbook-001-easiest-fixture-graph.md)

@@ -13,10 +13,13 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-from collections.abc import Mapping
+import json
+import os
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
-from typing import Literal
+from typing import Literal, TextIO
 
 from _demo_core import (
     PHASE_META,
@@ -35,7 +38,7 @@ from _terminal_failure_presentation import (
 from local_profiles import ProfileError, validate_observer_profile
 from rich.table import Table
 from rich.text import Text
-from textual import work
+from textual import events, work
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal
 from textual.widgets import Button, Input, RichLog, Static
@@ -223,7 +226,136 @@ def _gateway_readiness_failure(*, summary: str, detail: str, next_action: str) -
     )
 
 
-def render_run_update(update: object) -> TuiRenderedUpdate:
+def _format_timestamp(value: object) -> str:
+    """Best-effort local HH:MM:SS from an ISO-8601 journal timestamp."""
+    if not isinstance(value, str):
+        return "?"
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return parsed.astimezone().strftime("%H:%M:%S")
+    except ValueError:
+        return value[-8:]
+
+
+def live_progress_lines(bundle_root: Path | None) -> tuple[str, ...]:
+    """Read the most-recently updated *active* bundle's journal and return
+    human-readable live-progress lines for the Working heartbeat.
+
+    The TUI dispatch itself carries no phase/trace while the graph runs, so the
+    presentation layer reads the ignored retained-run journal on disk. Returns
+    () when there is no readable active bundle (preflight, fixture mode, no run
+    yet, or an I/O failure) so the heartbeat degrades to the static message.
+    """
+    if bundle_root is None:
+        return ()
+    scopes_dir = bundle_root / "workspace" / "deep-research" / "scopes"
+    if not scopes_dir.is_dir():
+        return ()
+    candidates: list[tuple[str, Path]] = []
+    for scope in scopes_dir.iterdir():
+        if not scope.is_dir():
+            continue
+        for bundle in scope.iterdir():
+            summary = bundle / "diagnostics" / "run-summary.json"
+            try:
+                data = json.loads(summary.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                continue
+            if data.get("status") != "active":
+                continue
+            candidates.append((str(data.get("updated_at", "")), bundle))
+    if not candidates:
+        return ()
+    _, bundle = max(candidates)
+    events_path = bundle / "diagnostics" / "events.jsonl"
+    try:
+        raw = events_path.read_text(encoding="utf-8")
+    except OSError:
+        return ()
+
+    done: list[str] = []
+    seen: set[str] = set()
+    last_node_phase: str | None = None
+    last_node_outcome: str | None = None
+    model_calls = 0
+    total_tokens = 0
+    event_count = 0
+    last_event: dict[str, object] | None = None
+    for line in raw.splitlines():
+        try:
+            event = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(event, dict):
+            continue
+        event_count += 1
+        last_event = event
+        phase = event.get("phase")
+        category = event.get("category")
+        outcome = event.get("outcome")
+        if category == "node":
+            last_node_phase = phase if isinstance(phase, str) else None
+            last_node_outcome = outcome if isinstance(outcome, str) else None
+            if outcome == "completed" and isinstance(phase, str) and phase not in seen:
+                seen.add(phase)
+                done.append(phase)
+        if category == "model_tool" and outcome == "completed":
+            model_calls += 1
+            tokens = event.get("usage_tokens")
+            if isinstance(tokens, dict):
+                total = tokens.get("total_tokens")
+                if isinstance(total, (int, float)):
+                    total_tokens += int(total)
+
+    lines: list[str] = []
+    if done or last_node_phase:
+        chain = " → ".join(done)
+        if last_node_outcome == "started" and last_node_phase is not None:
+            chain = f"{chain} → {last_node_phase}（进行中）" if chain else f"{last_node_phase}（进行中）"
+        lines.append(f"进度: {chain}")
+    if last_event is not None:
+        stamp = _format_timestamp(last_event.get("timestamp"))
+        phase = str(last_event.get("phase") or "")
+        category = str(last_event.get("category") or "")
+        outcome = str(last_event.get("outcome") or "")
+        lines.append(f"最近: {stamp} · {phase} {category} {outcome}".rstrip())
+    if model_calls or total_tokens:
+        lines.append(f"模型调用: {model_calls} 次完成 · {total_tokens / 1000:.1f}k tokens")
+    if event_count:
+        lines.append(f"journal 事件: {event_count}")
+    return tuple(lines)
+
+
+def find_bundle_dir(bundle_root: Path | None, bundle_id: str | None) -> Path | None:
+    """Locate the retained bundle directory for a bundle id (scopes/<scope>/<bundle>/)."""
+    if bundle_root is None or not bundle_id:
+        return None
+    scopes_dir = bundle_root / "workspace" / "deep-research" / "scopes"
+    if not scopes_dir.is_dir():
+        return None
+    for scope in scopes_dir.iterdir():
+        if not scope.is_dir():
+            continue
+        bundle = scope / bundle_id
+        if bundle.is_dir():
+            return bundle
+    return None
+
+
+def report_path(bundle_root: Path | None, bundle_id: str | None) -> Path | None:
+    """Return the final report path for a bundle id, or None when not yet produced."""
+    bundle_dir = find_bundle_dir(bundle_root, bundle_id)
+    if bundle_dir is None:
+        return None
+    report = bundle_dir / "final" / "report.md"
+    return report if report.is_file() else None
+
+
+def render_run_update(
+    update: object,
+    progress: Sequence[str] = (),
+    report_path: Path | None = None,
+) -> TuiRenderedUpdate:
     """Return a native view model using only safe shared ``RunUpdate`` values."""
     if isinstance(update, Ready):
         return TuiRenderedUpdate(
@@ -238,7 +370,7 @@ def render_run_update(update: object) -> TuiRenderedUpdate:
             terminal=not update.report.ready,
         )
     if isinstance(update, Working):
-        details = [update.message]
+        details = [*progress, update.message]
         if update.snapshot.bundle_id:
             details.append(f"Run Bundle: {update.snapshot.bundle_id}")
         if update.snapshot.lifecycle_phase:
@@ -300,6 +432,8 @@ def render_run_update(update: object) -> TuiRenderedUpdate:
             detail_lines.append("Retained records are inspectable, but this run cannot continue after process exit.")
         elif update.snapshot.durability == "restart_durable":
             detail_lines.append("Authorized local session operations may inspect or continue this durable run.")
+        if update.outcome == "completed" and report_path is not None:
+            detail_lines.append(f"Report: {report_path}")
         detail = "\n".join(detail_lines)
         return TuiRenderedUpdate(
             heading="Research complete" if update.outcome == "completed" else "Research ended",
@@ -364,8 +498,10 @@ class DeepResearchDemoTUI(App[None]):
     #prompt { height: auto; margin: 0 2; color: #fde68a; text-style: bold; }
     #controls { height: 3; margin: 0 2 1 2; }
     #composer { width: 1fr; }
+    #copy-details { width: 14; margin-left: 1; }
     #accept { width: 16; margin-left: 1; }
     #cancel { width: 14; margin-left: 1; }
+    #hint { height: 1; margin: 0 2 1 2; color: #94a3b8; }
     """
 
     BINDINGS = [("ctrl+c", "quit", "Quit")]
@@ -419,6 +555,10 @@ class DeepResearchDemoTUI(App[None]):
         )
         self.last_update: RunUpdate | None = None
         self.last_view: TuiRenderedUpdate | None = None
+        self._last_detail = ""
+        self._last_logged = ""
+        self._tui_log: TextIO | None = None
+        self._tui_log_path: Path | None = None
 
     def compose(self) -> ComposeResult:
         yield Static(id="banner")
@@ -430,8 +570,13 @@ class DeepResearchDemoTUI(App[None]):
                 yield Button(language.value, id=f"option-{language.value}", classes="advertised-option")
         with Horizontal(id="controls"):
             yield Input(value=self._EXAMPLE_QUESTION, placeholder="Research question", id="composer")
+            yield Button("Copy details", id="copy-details")
             yield Button("Start proposal", id="accept")
             yield Button("Cancel", id="cancel", variant="error")
+        yield Static(
+            "中间对话区: 双击=复制全文 · Option+拖拽=选中一段 · Copy details=复制全部 · Ctrl-C 退出",
+            id="hint",
+        )
 
     def on_mount(self) -> None:
         mode_label = {
@@ -458,6 +603,9 @@ class DeepResearchDemoTUI(App[None]):
         self._initialize()
 
     async def on_unmount(self) -> None:
+        if self._tui_log is not None:
+            log, self._tui_log = self._tui_log, None
+            log.close()
         self._close_adapter()
         if self._gateway_transport is not None:
             transport, self._gateway_transport = self._gateway_transport, None
@@ -503,10 +651,65 @@ class DeepResearchDemoTUI(App[None]):
                 adapter.close()
             self.apply_run_update(_presentation_fault())
 
+    def _live_progress(self) -> tuple[str, ...]:
+        """Live journal progress for the Working heartbeat (best effort)."""
+        adapter = self._adapter
+        if adapter is None:
+            return ()
+        return live_progress_lines(getattr(adapter, "bundle_root", None))
+
+    def _terminal_report_path(self, update: RunUpdate) -> Path | None:
+        """Resolve the produced report path for a completed terminal update."""
+        if not isinstance(update, Terminal) or update.outcome != "completed":
+            return None
+        adapter = self._adapter
+        if adapter is None:
+            return None
+        return report_path(
+            getattr(adapter, "bundle_root", None),
+            update.snapshot.bundle_id,
+        )
+
+    def _append_tui_log(self, detail: str) -> None:
+        """Persist each distinct rendered detail to logs/tui-<pid>.log (best effort).
+
+        Gives the operator a plain file to open and copy from when terminal text
+        selection is inconvenient; never affects run behavior.
+        """
+        if not detail or detail == self._last_logged:
+            return
+        self._last_logged = detail
+        if self._tui_log is None:
+            adapter = self._adapter
+            root = getattr(adapter, "bundle_root", None) if adapter is not None else None
+            if root is None:
+                return
+            log_dir = root / "logs"
+            try:
+                log_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
+                path = log_dir / f"tui-{os.getpid()}.log"
+                self._tui_log = open(path, "a", encoding="utf-8")
+                self._tui_log_path = path
+            except OSError:
+                self._tui_log = None
+                return
+        try:
+            self._tui_log.write(detail + "\n---\n")
+            self._tui_log.flush()
+        except OSError:
+            pass
+
     def apply_run_update(self, update: RunUpdate) -> None:
         """Public adapter seam: consume a shared update without lifecycle parsing."""
         self.last_update = update
-        self._render_view(render_run_update(update))
+        view = render_run_update(
+            update,
+            progress=self._live_progress(),
+            report_path=self._terminal_report_path(update),
+        )
+        self._render_view(view)
+        self._last_detail = view.detail
+        self._append_tui_log(view.detail)
 
     def _render_view(self, view: TuiRenderedUpdate) -> None:
         self.last_view = view
@@ -626,9 +829,41 @@ class DeepResearchDemoTUI(App[None]):
                 return
             self._dispatch(AnswerRun(value=value))
 
+    def _rich_log_text(self) -> str:
+        """Extract the full plain text currently shown in the middle log area."""
+        log = self.query_one("#log", RichLog)
+        return "\n".join(strip.text for strip in log.lines)
+
+    def _copy_details(self) -> None:
+        """Copy the middle conversation log (falling back to the latest detail)."""
+        log = self.query_one("#log", RichLog)
+        text = self._rich_log_text()
+        source = "中间对话全文"
+        if not text.strip():
+            text = self._last_detail or ""
+            source = "当前详情"
+        try:
+            self.copy_to_clipboard(text)
+            copied = bool(text.strip())
+        except Exception:
+            copied = False
+        if copied:
+            self.notify(f"已复制{source}到剪贴板。", title="Copy", severity="information")
+        else:
+            self.notify("没有可复制的内容。", title="Copy", severity="warning")
+        if self._tui_log_path is not None:
+            log.write(Text(f"TUI 日志文件: {self._tui_log_path}", style="dim"))
+
+    def on_double_click(self, event: events.DoubleClick) -> None:
+        """Double-clicking the middle log copies the full conversation text."""
+        if event.widget is not None and event.widget.id == "log":
+            self._copy_details()
+
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "accept":
             self._select_current_proposal()
+        elif event.button.id == "copy-details":
+            self._copy_details()
         elif event.button.id is not None and event.button.id.startswith("option-"):
             self._select_advertised_option(event.button.id.removeprefix("option-"))
         elif event.button.id == "cancel" and self.mode != "gateway" and isinstance(self.last_update, AwaitingInput):

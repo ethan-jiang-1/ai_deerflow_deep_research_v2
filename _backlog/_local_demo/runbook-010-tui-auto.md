@@ -79,6 +79,20 @@ make demo-tui-real-auto
   短路，无 AwaitingInput）→ topic_planning → wave0 → wave1 →
   wave2_synthesis →（targeted_evidence）→ hitl2（**自动**，auto_proceed
   短路，无人工 prompt）→ readiness → final_delivery；RichLog 滚动日志；
+- **进度播报（010 的必备体验，2026-08-21 起）**：run 进行中 TUI 的
+  Working 心跳会**实时读当前 active bundle 的 journal（events.jsonl）**，
+  每 1 秒刷新并播报四行——`进度: bootstrap → hitl1 → wave0 → wave1（进行中）`、
+  `最近: HH:MM:SS · <phase> <category> <outcome>`、`模型调用: N 次完成 · X.Xk tokens`、
+  `journal 事件: N`。看到进度行在变 = run 活着；只看到等待秒数在涨 = 卡住
+  （见 §6 判别法）。播报实现：`demo_tui.py::live_progress_lines()`（纯函数，
+  只读被忽略的本地 retained-run 文件，读不到就退化为静态文案，不影响 run）。
+- **报告路径（2026-08-21 起）**：run 完成（Research complete）时，TUI 在
+  详情末尾显示 **`Report: <路径>/final/report.md`**，直接照路径打开即可。
+- **可拷贝（2026-08-21 起）**：**中间对话区（RichLog，LLM 对话/日志那
+  一块）保证能拷**——**双击该区域 = 复制对话全文**到剪贴板；底部
+  **Copy details** 按钮同样复制中间对话全文；要选一段则 **Option+拖拽**
+  选中屏幕文本（Textual 内置文本选择）；每次渲染的详情还落盘到
+  **`logs/tui-<pid>.log`**（路径在 Copy 后提示），出问题打开文件即可拷全量。
 - 观察点：TUI 对 scripted 全跑的渲染（hitl1/hitl2 以 phase 形式经过而非
   interrupt）、provider 失败呈现、长 run 下 RichLog 行为、耗时叙事；
 - 全程分钟级到十数分钟（真实模型 + 真实 web）；**不要合盖/断网**（004 教训）。
@@ -126,9 +140,11 @@ ls "$B/final/report.md" 2>/dev/null && echo REPORT_OK
 
 ## 6. 撞上问题怎么办
 
-- **TUI 卡死/模型挂起**：Ctrl-C 退出 TUI（bundle 侧状态由 checkpoint
-  决定，不猜）；重跑 §2 起（新 bundle；旧 bundle 不会被自动清理或归档——
-  real DemoAdapter 每进程独立 scope 但不删历史）。
+- **TUI 卡死/模型挂起**：先看 §3 进度播报——**进度行/journal 事件数在动 = 活着
+  （模型调用本来就要几十秒，别急）**；只有"等待秒数在涨、其余全不动"持续数分钟
+  才算卡死。Ctrl-C 退出 TUI（bundle 侧状态由 checkpoint 决定，不猜）；重跑 §2
+  起（新 bundle；旧 bundle 不会被自动清理或归档——real DemoAdapter 每进程独立
+  scope 但不删历史）。
 - **出现 AwaitingInput（不应发生）**：scripted 策略短路了 hitl1/hitl2，
   出现 interrupt = 偏离契约。截图/抄录 TUI 日志行 + 保留 bundle → 按
   `_backlog/bugs/` 流程登记。
