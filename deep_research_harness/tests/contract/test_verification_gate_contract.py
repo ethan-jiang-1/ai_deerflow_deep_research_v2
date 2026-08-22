@@ -31,16 +31,20 @@ def test_makefile_exposes_exact_non_mutating_verify_composition() -> None:
     assert ("\t\ttests/assets tests/contract tests/domain tests/engine tests/unit tests/graph tests/eval \\\n") in text
     assert "--durations=20 --junitxml=.reports/test-fast.xml" in text
     assert "PYTEST := python -m pytest" in text
-    # Gate lanes default to serial (parallel has not been carefully reviewed);
-    # PYTEST_XDIST is the opt-in parallel knob, carried by every gate lane, and
-    # must be declared with a `?=` (empty default = serial).
-    assert "PYTEST_XDIST ?=" in text
+    # Gate lanes default to parallel (-n 4; L2 parallel-safety review complete,
+    # see _backlog/plans/test-regression-speedup.md). PYTEST_XDIST is carried by
+    # every gate lane via `?=` and may be emptied for serial (`PYTEST_XDIST=`).
+    assert "PYTEST_XDIST ?= -n 4" in text
     for lane in ("test:", "test-fast:", "test-integration:", "test-workflow:"):
         body = text.split(lane, 1)[1].split("\n\n", 1)[0]
         assert "uv run $(PYTEST) $(PYTEST_XDIST)" in body
     for target in ("test-intake", "test-retained-observation", "test-work-unit", "test-strict-checkpoint"):
         assert re.search(rf"^{target}:\n\t@started=.* elapsed:", text, re.MULTILINE)
-    assert ("test-duration-policy:\n\tuv run python scripts/check_test_durations.py .reports/test-fast.xml") in text
+    assert (
+        "test-duration-policy:\n"
+        "\tuv run python scripts/check_test_durations.py .reports/test-fast.xml "
+        "$(if $(PYTEST_XDIST),--parallel)"
+    ) in text
     assert ('uv run $(PYTEST) $(PYTEST_XDIST) -m "not (requires_llm or release_e2e or periodic)"') in text
     assert (
         "test-entry-environment-regression:\n"

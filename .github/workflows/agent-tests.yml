@@ -31,5 +31,6 @@ jobs:
           cache-dependency-glob: "deep_research_harness/uv.lock"
           prune-cache: false
       - run: make install
-      - run: UV_OFFLINE=1 make verify
+      # 显式 -n 4（runner vCPU 固定 4 核，比 -n auto 可预期）；L2 并行安全 review 已完成。
+      - run: UV_OFFLINE=1 make verify PYTEST_XDIST="-n 4"
       - run: UV_OFFLINE=1 make test-duration-policy

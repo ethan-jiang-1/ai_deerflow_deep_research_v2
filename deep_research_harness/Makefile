@@ -12,9 +12,11 @@ UV_NO_CACHE ?= 1
 PROFILE ?= demo
 LOCAL_ENV_ARG := $(if $(wildcard .env),--env-file .env,)
 PYTEST := python -m pytest
-# 默认串行（测试未经精心并行 review，串行最稳）。并行是 opt-in：
-# 需要加速时显式 `make verify PYTEST_XDIST="-n 4"`（或 -n auto）。
-PYTEST_XDIST ?=
+# 默认并行（-n 4；CLS-052 第三轮 L2 review 完成：静态扫描无共享状态风险，
+# 两次 -n 4 全绿。实测 -n 4 三 lane 均优于串行；-n auto 在 8 核机上对
+# workflow lane 过订阅更慢，故用固定 -n 4 而非 auto）。需要串行时显式
+# `make verify PYTEST_XDIST=`（空）。
+PYTEST_XDIST ?= -n 4
 ENTRY_RUN = PYTHONDONTWRITEBYTECODE=1 env -u VIRTUAL_ENV UV_NO_CACHE=$(UV_NO_CACHE) uv run --locked --no-sync
 ENTRY_REQUIRED_DISTRIBUTIONS = python-dotenv ruamel.yaml textual tavily-python
 ENTRY_SETUP_MESSAGE = Command environment is not prepared. Run 'make install' from deep_research_harness/.
@@ -150,7 +152,7 @@ test-strict-checkpoint:
 	@started=$$(date +%s); echo "strict-checkpoint: serde and current-only checkpoint admission"; LANGGRAPH_STRICT_MSGPACK=true uv run $(PYTEST) tests/unit/test_checkpoint_msgpack.py tests/unit/test_retained_checkpoint_cutover.py tests/unit/test_state_contracts.py tests/unit/test_bundle_graph_journal.py tests/engine/test_gate_kernel.py; status=$$?; echo "strict-checkpoint elapsed: $$(( $$(date +%s) - started ))s"; exit $$status
 
 test-duration-policy:
-	uv run python scripts/check_test_durations.py .reports/test-fast.xml
+	uv run python scripts/check_test_durations.py .reports/test-fast.xml $(if $(PYTEST_XDIST),--parallel)
 
 # Verify or re-pin the source-controlled eval control digests. Run --check
 # before/after any change to a pinned source file (prompts, domain modules);

@@ -11,6 +11,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import subprocess
 import sys
@@ -134,12 +135,82 @@ DEFAULT_COLLECTION_COMMAND = (sys.executable,)
 CATALOG_SCRIPT = AGENT_ROOT / "scripts" / "collect_test_catalog.py"
 _CATALOG_CACHE: dict[tuple[Path, tuple[str, ...]], tuple[tuple[str, frozenset[str]], ...]] = {}
 _DIRECT_COLLECTION_CACHE: dict[tuple[Path, tuple[str, ...], str, tuple[str, ...], bool], frozenset[str]] = {}
+# Cross-process disk cache for the whole-tree catalog: make verify runs four
+# pytest processes (fast/integration/workflow/test-assets), each of which would
+# otherwise re-run a ~3-4s `pytest --collect-only` subprocess for the same tree.
+# The cache is keyed by a fingerprint of test-relevant sources so it self-invalidates
+# on any source change; written atomically so concurrent processes never read a
+# partial file. Cleared by reset_collection_cache() so cache-behavior contract
+# tests keep forcing a fresh subprocess.
+CATALOG_CACHE_PATH = AGENT_ROOT / ".reports" / "catalog-cache.json"
+_CATALOG_FINGERPRINT_ROOTS = (
+    AGENT_ROOT / "tests",
+    AGENT_ROOT / "scripts",
+    AGENT_ROOT / "src",
+    AGENT_ROOT / "pyproject.toml",
+)
 CALIBRATION_REGISTRIES = (
     CALIBRATION_CASES,
     EVIDENCE_INTAKE_CALIBRATION_CASES,
     EVIDENCE_JUDGMENT_CALIBRATION_CASES,
     FINAL_COMPOSITION_CALIBRATION_CASES,
 )
+
+
+def _catalog_fingerprint() -> str:
+    """Cheap content fingerprint of everything that can change the catalog."""
+    digest = hashlib.sha256()
+    for root in _CATALOG_FINGERPRINT_ROOTS:
+        if root.is_dir():
+            files = sorted(p for p in root.rglob("*.py") if p.is_file())
+        elif root.is_file():
+            files = [root]
+        else:
+            continue
+        for path in files:
+            try:
+                stat = path.stat()
+            except OSError:
+                continue
+            digest.update(f"{path.relative_to(AGENT_ROOT)}\0{stat.st_mtime_ns}\0{stat.st_size}\0".encode())
+    return digest.hexdigest()
+
+
+def _read_catalog_cache() -> tuple[tuple[str, frozenset[str]], ...] | None:
+    """Return the disk catalog when it matches the current tree fingerprint."""
+    try:
+        payload = json.loads(CATALOG_CACHE_PATH.read_text(encoding="utf-8"))
+        if payload.get("fingerprint") != _catalog_fingerprint():
+            return None
+        entries = payload.get("entries")
+        if not isinstance(entries, list):
+            return None
+        catalog = tuple(
+            (entry["nodeid"], frozenset(entry["markers"]))
+            for entry in entries
+            if isinstance(entry, dict)
+            and isinstance(entry.get("nodeid"), str)
+            and isinstance(entry.get("markers"), list)
+            and all(isinstance(marker, str) for marker in entry["markers"])
+        )
+        return catalog or None
+    except (OSError, ValueError, TypeError, KeyError):
+        return None
+
+
+def _write_catalog_cache(catalog: tuple[tuple[str, frozenset[str]], ...]) -> None:
+    """Atomically persist the catalog for other pytest processes."""
+    try:
+        CATALOG_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "fingerprint": _catalog_fingerprint(),
+            "entries": [{"nodeid": nodeid, "markers": sorted(markers)} for nodeid, markers in catalog],
+        }
+        tmp_path = CATALOG_CACHE_PATH.with_suffix(".json.tmp")
+        tmp_path.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
+        tmp_path.replace(CATALOG_CACHE_PATH)
+    except OSError:
+        pass
 
 
 class CognitiveEvidenceGateError(ValueError):
@@ -150,6 +221,10 @@ def reset_collection_cache() -> None:
     """Clear successful selector collections for a test-owned process."""
     _CATALOG_CACHE.clear()
     _DIRECT_COLLECTION_CACHE.clear()
+    try:
+        CATALOG_CACHE_PATH.unlink(missing_ok=True)
+    except OSError:
+        pass
 
 
 def _catalog_for_project(*, agent_root: Path, command: tuple[str, ...]) -> tuple[tuple[str, frozenset[str]], ...]:
@@ -157,6 +232,11 @@ def _catalog_for_project(*, agent_root: Path, command: tuple[str, ...]) -> tuple
     cached = _CATALOG_CACHE.get(key)
     if cached is not None:
         return cached
+    if agent_root.resolve() == AGENT_ROOT and command == DEFAULT_COLLECTION_COMMAND:
+        disk_cached = _read_catalog_cache()
+        if disk_cached is not None:
+            _CATALOG_CACHE[key] = disk_cached
+            return disk_cached
     with tempfile.TemporaryDirectory(prefix="deep-research-test-catalog-") as directory:
         output_path = Path(directory) / "catalog.json"
         result = subprocess.run(
@@ -182,6 +262,8 @@ def _catalog_for_project(*, agent_root: Path, command: tuple[str, ...]) -> tuple
             raise CoverageError(f"project pytest catalog invalid: {exc}") from exc
     if not catalog:
         raise CoverageError("project pytest catalog returned no selectors")
+    if agent_root.resolve() == AGENT_ROOT and command == DEFAULT_COLLECTION_COMMAND:
+        _write_catalog_cache(catalog)
     _CATALOG_CACHE[key] = catalog
     return catalog
 

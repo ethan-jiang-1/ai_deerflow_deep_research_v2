@@ -12,11 +12,11 @@ Run commands from `deep_research_harness/`. During an ordinary edit, run the sma
 first, then use `UV_OFFLINE=1 make verify` as the complete deterministic gate.
 
 The pytest lanes (`test`, `test-fast`, `test-integration`, `test-workflow`) run
-serially by default. pytest-xdist is an opt-in speed knob that has not been
-carefully reviewed for parallel safety yet: `make test-fast PYTEST_XDIST="-n 4"`
-(or `-n auto`). The test-required runtime extras (textual, python-dotenv,
-ruamel.yaml) live in the `dev` dependency group, so pytest targets run plain
-`uv run pytest` without `--extra` flags.
+in parallel by default (`-n 4`; parallel safety reviewed in
+`_backlog/plans/test-regression-speedup.md` §L2). Serial is opt-out:
+`make test-fast PYTEST_XDIST=` (empty). The test-required runtime extras
+(textual, python-dotenv, ruamel.yaml) live in the `dev` dependency group, so
+pytest targets run plain `uv run pytest` without `--extra` flags.
 
 | Goal | Command |
 | --- | --- |

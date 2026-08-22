@@ -13,6 +13,9 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 
 MAX_FAST_TEST_SECONDS = 5.0
+# xdist 并行档下用例耗时被放大（实测 3.22s→4.90s，~1.5x）；并行报告用独立阈值
+# 避免误杀，串行报告仍用 MAX_FAST_TEST_SECONDS。
+MAX_FAST_TEST_SECONDS_PARALLEL = 8.0
 MAX_PERIODIC_TEST_SECONDS = 180.0
 
 
@@ -56,12 +59,17 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("report", type=Path)
     parser.add_argument("--lane", choices=("fast", "periodic"), default="fast")
-    args = parser.parse_args()
-    max_seconds, waivers = (
-        (MAX_FAST_TEST_SECONDS, DURATION_WAIVERS)
-        if args.lane == "fast"
-        else (MAX_PERIODIC_TEST_SECONDS, PERIODIC_DURATION_WAIVERS)
+    parser.add_argument(
+        "--parallel",
+        action="store_true",
+        help="report was produced by an xdist run; use the parallel threshold (8s)",
     )
+    args = parser.parse_args()
+    if args.lane == "fast":
+        max_seconds = MAX_FAST_TEST_SECONDS_PARALLEL if args.parallel else MAX_FAST_TEST_SECONDS
+        waivers = DURATION_WAIVERS
+    else:
+        max_seconds, waivers = MAX_PERIODIC_TEST_SECONDS, PERIODIC_DURATION_WAIVERS
     failures = slow_selectors(
         args.report,
         now=datetime.now(UTC).date(),
