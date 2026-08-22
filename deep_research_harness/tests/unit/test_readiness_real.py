@@ -544,3 +544,58 @@ def test_critic_fallback_is_a_first_class_event_with_closed_reasons() -> None:
     deps4 = replace(deps4, event_recorder=FailingRecorder())
     result4 = asyncio.run(build_real(deps4)(_state()))
     assert result4.get("route") is not None
+
+
+def test_ready_substantive_conclusion_uses_backing_finding_statement() -> None:
+    from deerflow_deep_research.domain.synthesis import Confidence, SynthesisFinding
+    from deerflow_deep_research.graph.nodes.readiness.contracts import (
+        PerQuestionVerdict,
+        ReadinessCriticOutput,
+    )
+    from deerflow_deep_research.graph.nodes.readiness.materializer import materialize_report_plan
+
+    finding = SynthesisFinding(
+        finding_id="finding:f_1",
+        statement="In 2024, China's cumulative installed capacity of power batteries was 548.4 GWh, up 41.5%.",
+        confidence=Confidence.MEDIUM,
+        priority=1,
+        backing_refs=("h_A",),
+        affected_topics=("China EV battery market 2024",),
+    )
+    critic = ReadinessCriticOutput(
+        per_question=(
+            PerQuestionVerdict(
+                question="What is one bounded fact about China's EV battery market in 2024?",
+                verdict="ready_substantive",
+                backing_claim_ids=("h_A",),
+                limitation_note="",
+            ),
+        )
+    )
+
+    plan = materialize_report_plan(critic, (), findings=(finding,), accepted_refs=("h_A",))
+
+    assert len(plan.writable_conclusions) == 1
+    assert plan.writable_conclusions[0].conclusion_text == finding.statement
+    assert "Evidence supports" not in plan.writable_conclusions[0].conclusion_text
+
+
+def test_ready_substantive_without_backing_finding_keeps_honest_template() -> None:
+    from deerflow_deep_research.graph.nodes.readiness.contracts import (
+        PerQuestionVerdict,
+        ReadinessCriticOutput,
+    )
+    from deerflow_deep_research.graph.nodes.readiness.materializer import materialize_report_plan
+
+    critic = ReadinessCriticOutput(
+        per_question=(
+            PerQuestionVerdict(
+                question="Q1",
+                verdict="ready_substantive",
+                backing_claim_ids=(),
+                limitation_note="",
+            ),
+        )
+    )
+    plan = materialize_report_plan(critic, ())
+    assert plan.writable_conclusions[0].conclusion_text == "Evidence supports a substantive answer for: Q1"

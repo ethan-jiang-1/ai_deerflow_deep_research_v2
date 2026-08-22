@@ -20,6 +20,30 @@ from .hard_rules import HardRuleFailure
 _MAX_PLAN_BACKING_REFS = 16
 
 
+def _substantive_conclusion_text(
+    question: str,
+    backing_claim_ids: tuple[str, ...],
+    findings: tuple[SynthesisFinding, ...],
+) -> str:
+    """Real conclusion when a backing finding exists; else the honest template.
+
+    The previous hard-coded "Evidence supports a substantive answer for: …"
+    silently dropped the actual answer even when the critic judged the run
+    ready_substantive and a backing finding carried the statement. Prefer the
+    highest-confidence backing finding's statement; only fall back to the
+    template when no backing finding is available.
+    """
+    backing = set(backing_claim_ids)
+    best: SynthesisFinding | None = None
+    for finding in findings:
+        if finding.backing_refs and backing.intersection(finding.backing_refs):
+            if best is None or finding.confidence.value <= best.confidence.value:
+                best = finding
+    if best is not None and best.statement.strip():
+        return best.statement.strip()
+    return f"Evidence supports a substantive answer for: {question}"
+
+
 def _gap_uncertainty(gap_id: str, gap: GapRecord | None) -> ReportPlanUncertainty:
     """Project one gate-recorded unresolved gap as a mandatory uncertainty."""
 
@@ -63,7 +87,7 @@ def materialize_report_plan(
             conclusions.append(
                 ReportPlanConclusion(
                     question=pq.question,
-                    conclusion_text=f"Evidence supports a substantive answer for: {pq.question}",
+                    conclusion_text=_substantive_conclusion_text(pq.question, pq.backing_claim_ids, findings),
                     backing_claim_ids=pq.backing_claim_ids,
                 )
             )
