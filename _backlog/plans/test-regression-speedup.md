@@ -14,7 +14,7 @@
 > 维护规则: 完成一项 → 在对应表填 ✅ + 日期 + 验证证据；新决策 → 追加"历史决策记录"；
 > 新待办 → 追加文末"待办"；被撤回/否决的项保留记录（原因即价值）。
 
-### 第三轮 · 已完成（R3-1 ~ R3-8）
+### 第三轮 · 已完成（R3-1 ~ R3-9）
 
 | # | 事项 | 完成 | 验证证据（实测） |
 | --- | --- | --- | --- |
@@ -26,14 +26,14 @@
 | R3-6 | **护栏②：TUI `_wait_for` 上限 4.0 → 8.0s** | ✅ 2026-08-22 | 并行争用下慢 worker 不会偶发 flake |
 | R3-7 | **L-A 落地：跨进程 catalog 磁盘缓存**（用户拍板"转做 L-A"） | ✅ 2026-08-22 | 整树 `--collect-only` 子进程 **4.4s → 1.4s**（warm 命中）；`verify` 4 进程收集税 ~15s → ~5s；指纹失效自验证通过；63 个收集契约测试全绿；`make test-assets` 绿 |
 | R3-8 | **L-C 实测否决**：数据矩阵"1 case per table"合并 | ✅ 2026-08-22 | 9 候选文件 538 用例仅占 fast lane 4.42s；大头被 425 claims 证据契约逐 row 绑定（合并即红）；安全合并面仅 43 行、极限省 ~0.2s，代价丢失败定位粒度。**用户拍板砍掉** |
+| R3-9 | **L-B 落地：套件级用例预算门禁**（用户"继续"指令推进） | ✅ 2026-08-22 | `check_test_assets.py` 新增 `CASE_BUDGETS`（fast≤2900/integration≤400/workflow≤60/live≤80/periodic≤10）+ `DETERMINISTIC_TOTAL_BUDGET=3300` + `CaseBudgetWaiver` 机制；超限即红 `make test-assets`；新增 2 个契约测试（超限拒收 / 活 waiver 放行 / 过期 waiver 拒收 / 当前 collection 通过）22 passed；lint/format 绿 |
 
 ### 第三轮 · 待办
 
 | # | 事项 | 状态 | 触发条件 / 说明 |
 | --- | --- | --- | --- |
-| R3-9 | L3：CI checkout 加 `submodules: recursive` | ⏸️ 搁置 | 存量 CI 问题（CLS-052 T20）：当前 CI `make install` 必挂；用户此前"CI 以后再说"，本轮痛点=本地，仍搁置 |
-| R3-10 | L4：entry-env 工作流触发收窄（去 `src/**`/`src_fake/**` 或改 cron+dispatch） | ⏸️ 搁置 | 需改契约 `test_entry_environment_regression_workflow.py::EXPECTED_PATHS`；CI 相关，非本轮痛点 |
-| R3-11 | L5 套件级时长预算（growth gate） | ❌ 不折腾 | 本轮用户未选；若用例数/时长再次失控，作为治理手段重估 |
+| R3-10 | L3：CI checkout 加 `submodules: recursive` | ⏸️ 搁置 | 存量 CI 问题（CLS-052 T20）：当前 CI `make install` 必挂；用户此前"CI 以后再说"，本轮痛点=本地，仍搁置 |
+| R3-11 | L4：entry-env 工作流触发收窄（去 `src/**`/`src_fake/**` 或改 cron+dispatch） | ⏸️ 搁置 | 需改契约 `test_entry_environment_regression_workflow.py::EXPECTED_PATHS`；CI 相关，非本轮痛点 |
 | R3-12 | 治理层 claim 合并（425 claims 逐 row 绑定是用例数天花板） | 📋 远期 | L-C 实测证明用例数大头被证据契约钉死；只有合并 claims 才能实质减数，需单独立项（动 traceability） |
 
 ---

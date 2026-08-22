@@ -505,3 +505,72 @@ def test_project_catalog_serves_different_marker_queries_once(monkeypatch: pytes
     }
     assert calls == 1
     check_test_assets.reset_collection_cache()
+
+
+def test_case_budgets_reject_unwaived_lane_or_total_overrun() -> None:
+    from datetime import UTC, date, datetime
+
+    check_test_assets.reset_collection_cache()
+    now = datetime.now(UTC).date()
+    focused = {
+        FocusedSelection.FAST: {"tests/unit/test_a.py::test_a"},
+        FocusedSelection.INTEGRATION: {"tests/integration/test_b.py::test_b"},
+        FocusedSelection.WORKFLOW: {"tests/integration/test_c.py::test_c"},
+        FocusedSelection.LIVE: {"tests/live/test_d.py::test_d"},
+        FocusedSelection.PERIODIC: {"tests/scenarios_periodic/test_e.py::test_e"},
+    }
+    # All lanes under budget, total under budget -> pass.
+    check_test_assets.validate_case_budgets(focused, deterministic_total=100, now=now)
+    # FAST over budget -> fail, even with total in range.
+    over_fast = {**focused, FocusedSelection.FAST: {f"tests/unit/test_a.py::t{i}" for i in range(3000)}}
+    with pytest.raises(CoverageError, match="fast=3000 > budget"):
+        check_test_assets.validate_case_budgets(over_fast, deterministic_total=100, now=now)
+    # Deterministic total over budget -> fail.
+    with pytest.raises(CoverageError, match="deterministic-total=4000 > budget"):
+        check_test_assets.validate_case_budgets(focused, deterministic_total=4000, now=now)
+    # A live waiver for the fast lane passes.
+    waiver = check_test_assets.CaseBudgetWaiver(
+        lane=FocusedSelection.FAST,
+        reason="temporary growth during campaign",
+        owner="test",
+        expires_on=now,
+    )
+    check_test_assets.validate_case_budgets(over_fast, deterministic_total=100, now=now, waivers=(waiver,))
+    # An expired waiver does not pass.
+    expired = (
+        check_test_assets.CaseBudgetWaiver(
+            lane=FocusedSelection.FAST,
+            reason="stale",
+            owner="test",
+            expires_on=date(2000, 1, 1),
+        ),
+    )
+    with pytest.raises(CoverageError, match="fast=3000 > budget"):
+        check_test_assets.validate_case_budgets(over_fast, deterministic_total=100, now=now, waivers=expired)
+
+
+def test_case_budget_gate_passes_on_current_collection() -> None:
+    """The live gate must pass today; this pins the budget baseline floor."""
+    from datetime import UTC, datetime
+
+    check_test_assets.reset_collection_cache()
+    focused = {
+        selection: check_test_assets.collect_pytest_selectors(
+            paths=paths,
+            expression=expression,
+            label=selection.value,
+        )
+        for selection, paths, expression in (
+            (FocusedSelection.FAST, check_test_assets.FAST_PATHS, check_test_assets.FAST_EXPRESSION),
+            (
+                FocusedSelection.INTEGRATION,
+                check_test_assets.INTEGRATION_PATHS,
+                check_test_assets.INTEGRATION_EXPRESSION,
+            ),  # noqa: E501
+            (FocusedSelection.WORKFLOW, check_test_assets.WORKFLOW_PATHS, check_test_assets.WORKFLOW_EXPRESSION),
+            (FocusedSelection.LIVE, check_test_assets.LIVE_PATHS, check_test_assets.LIVE_EXPRESSION),
+            (FocusedSelection.PERIODIC, check_test_assets.PERIODIC_PATHS, check_test_assets.PERIODIC_EXPRESSION),
+        )
+    }
+    collected = check_test_assets.collect_deterministic_selectors()
+    check_test_assets.validate_case_budgets(focused, deterministic_total=len(collected), now=datetime.now(UTC).date())

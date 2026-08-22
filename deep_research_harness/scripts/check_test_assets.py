@@ -17,6 +17,8 @@ import subprocess
 import sys
 import tempfile
 from collections.abc import Mapping
+from dataclasses import dataclass
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 AGENT_ROOT = Path(__file__).resolve().parents[1]
@@ -133,6 +135,22 @@ PROVIDER_DISCOVERY_DISPOSITIONS = (
 )
 DEFAULT_COLLECTION_COMMAND = (sys.executable,)
 CATALOG_SCRIPT = AGENT_ROOT / "scripts" / "collect_test_catalog.py"
+
+# Suite-level case budget: the deterministic gate must not grow without review.
+# Baselines are the measured 2026-08-22 counts (fast=2648, integration=304,
+# workflow=35, live=50, periodic=2, deterministic total=2987) plus headroom for
+# bounded, evidence-backed additions. Crossing a budget without a current waiver
+# fails `make test-assets`/CI so test bloat is an explicit, reviewed decision
+# instead of an unnoticed accumulation.
+CASE_BUDGETS: tuple[tuple[FocusedSelection, int], ...] = (
+    (FocusedSelection.FAST, 2900),
+    (FocusedSelection.INTEGRATION, 400),
+    (FocusedSelection.WORKFLOW, 60),
+    (FocusedSelection.LIVE, 80),
+    (FocusedSelection.PERIODIC, 10),
+)
+DETERMINISTIC_TOTAL_BUDGET = 3300
+
 _CATALOG_CACHE: dict[tuple[Path, tuple[str, ...]], tuple[tuple[str, frozenset[str]], ...]] = {}
 _DIRECT_COLLECTION_CACHE: dict[tuple[Path, tuple[str, ...], str, tuple[str, ...], bool], frozenset[str]] = {}
 # Cross-process disk cache for the whole-tree catalog: make verify runs four
@@ -215,6 +233,40 @@ def _write_catalog_cache(catalog: tuple[tuple[str, frozenset[str]], ...]) -> Non
 
 class CognitiveEvidenceGateError(ValueError):
     pass
+
+
+@dataclass(frozen=True)
+class CaseBudgetWaiver:
+    """Authorized lane/count overage for a bounded period (like DurationWaiver)."""
+
+    lane: FocusedSelection | None  # None = deterministic total
+    reason: str
+    owner: str
+    expires_on: date
+
+
+CASE_BUDGET_WAIVERS: tuple[CaseBudgetWaiver, ...] = ()
+
+
+def validate_case_budgets(
+    focused: Mapping[FocusedSelection, set[str]],
+    deterministic_total: int,
+    *,
+    now: date,
+    waivers: tuple[CaseBudgetWaiver, ...] = CASE_BUDGET_WAIVERS,
+) -> None:
+    """Fail the asset gate when a lane (or the deterministic total) exceeds its
+    unwaived case budget. Lanes not listed in CASE_BUDGETS are not bounded."""
+    valid = {waiver.lane for waiver in waivers if waiver.reason and waiver.owner and waiver.expires_on >= now}
+    failures: list[str] = []
+    for selection, budget in CASE_BUDGETS:
+        count = len(focused.get(selection, ()))
+        if count > budget and selection not in valid:
+            failures.append(f"{selection.value}={count} > budget {budget}")
+    if deterministic_total > DETERMINISTIC_TOTAL_BUDGET and None not in valid:
+        failures.append(f"deterministic-total={deterministic_total} > budget {DETERMINISTIC_TOTAL_BUDGET}")
+    if failures:
+        raise CoverageError("unwaived case budget overrun: " + ", ".join(failures))
 
 
 def reset_collection_cache() -> None:
@@ -452,6 +504,11 @@ def main() -> int:
         }
         claims = claim_index(EVIDENCE_CLAIMS)
         validate_claim_selections(EVIDENCE_CLAIMS, focused_selectors=focused)
+        validate_case_budgets(
+            focused,
+            deterministic_total=len(collected),
+            now=datetime.now(UTC).date(),
+        )
         deterministic_impl_ids = collected_deterministic_impl_ids(AGENT_ROOT, collected)
         declared_requirement_ids = {
             *(requirement_id for claim in EVIDENCE_CLAIMS for requirement_id in claim.requirement_ids),

@@ -181,6 +181,16 @@ canonical complete rapid deterministic gate for this application and composes ex
 `lock-check lint test-assets test-fast test-integration test-workflow`; it runs from
 this directory, is offline-capable via `UV_OFFLINE=1 make verify`, and leaves
 `.reports/test-fast.xml` for the separate CI/local `make test-duration-policy` check.
+
+The asset gate (`make test-assets`, part of `verify`) enforces a **suite-level case
+budget** in addition to coverage: each lane (fast / integration / workflow / live /
+periodic) and the deterministic total must stay under the limits declared in
+`scripts/check_test_assets.py::CASE_BUDGETS` / `DETERMINISTIC_TOTAL_BUDGET`. Adding
+tests beyond a budget without a current `CaseBudgetWaiver` (reason + owner +
+expiry) turns the gate red, so test-count growth is an explicit reviewed decision
+rather than silent accumulation. Budget baselines are the 2026-08-22 measured counts
+plus headroom; raise a budget deliberately (or add a waiver) when a bounded,
+evidence-backed addition needs the room, and re-run `make test-assets`.
 Project-level planning and closeout governance for OpenSpec changes runs as an
 independent repository-root column and is never part of this Makefile gate; this
 application does not read, import, execute, or link that column.
