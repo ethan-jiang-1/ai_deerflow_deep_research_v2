@@ -579,7 +579,8 @@ async def test_tui_non_matching_composer_text_is_not_dispatched_for_hitl1_langua
 
         await pilot.click("#option-en")
         await _wait_for_hitl1_prompt(app, pilot, mode="text")
-        assert app.query_one("#options").display is False
+        # hitl1 TEXT prompts now advertise quick-revision buttons (020 UX).
+        assert app.query_one("#options").display is True
         await pilot.press(*"make it quick")
         await pilot.press("enter")
         await _wait_for(app, pilot, Terminal)
@@ -609,3 +610,399 @@ async def test_tui_rich_log_text_extracts_middle_conversation() -> None:
         text = app._rich_log_text()
         assert "第一行对话" in text
         assert "第二行进度" in text
+
+
+@pytest.mark.asyncio
+async def test_tui_embedded_smoke_recon_starts_with_empty_composer(monkeypatch: pytest.MonkeyPatch) -> None:
+    _install_scripted(monkeypatch, report=_ready_report("real"), updates=[run_updates.awaiting_hitl1()])
+    app = demo_tui.DeepResearchDemoTUI(mode="embedded_smoke")
+    async with app.run_test() as pilot:
+        await _wait_for(app, pilot, demo_tui.Ready)
+        assert app.query_one("#composer").value == ""
+        assert app._onboarding is True
+
+
+@pytest.mark.asyncio
+async def test_tui_fixture_prefills_example_question(monkeypatch: pytest.MonkeyPatch) -> None:
+    _install_scripted(monkeypatch, report=_ready_report("fixture"), updates=[run_updates.awaiting_hitl1()])
+    app = demo_tui.DeepResearchDemoTUI(mode="fixture")
+    async with app.run_test() as pilot:
+        await _wait_for(app, pilot, demo_tui.Ready)
+        assert app.query_one("#composer").value == demo_tui.DeepResearchDemoTUI._EXAMPLE_QUESTION
+
+
+def test_research_trigger_classification() -> None:
+    for trigger in (
+        "start deep research",
+        "deep research",
+        "开始 Deep Research",
+        "开始深度研究",
+        "我要让你 deep research",
+        "  Deep Research  ",
+    ):
+        assert demo_tui.is_research_trigger(trigger), trigger
+    for casual in (
+        "what is deep research?",
+        "什么是 deep research",
+        "how do I start?",
+        "hello there",
+        "开始",
+        "deep research 是什么",
+    ):
+        assert not demo_tui.is_research_trigger(casual), casual
+
+
+def test_env_inspect_classification() -> None:
+    for command in ("env", "环境", "看看环境", "bundle 日志在哪", "where are the runs"):
+        assert demo_tui.is_env_inspect(command), command
+    for casual in ("hello", "开始 deep research", "今天天气"):
+        assert not demo_tui.is_env_inspect(casual), casual
+
+
+@pytest.mark.asyncio
+async def test_tui_onboarding_chat_does_not_start_research(monkeypatch: pytest.MonkeyPatch) -> None:
+    _install_scripted(monkeypatch, report=_ready_report("real"), updates=[run_updates.awaiting_hitl1()])
+    monkeypatch.setattr(demo_tui.DeepResearchDemoTUI, "_build_chat_model", lambda self: None)
+    app = demo_tui.DeepResearchDemoTUI(mode="embedded_smoke")
+    async with app.run_test() as pilot:
+        await _wait_for(app, pilot, demo_tui.Ready)
+        await pilot.press(*"hello there")
+        await pilot.press("enter")
+        await pilot.pause()
+
+    assert _ScriptedExperience.instances[0].intents == []
+    assert app._onboarding is True
+
+
+@pytest.mark.asyncio
+async def test_tui_onboarding_trigger_starts_fixed_research(monkeypatch: pytest.MonkeyPatch) -> None:
+    _install_scripted(monkeypatch, report=_ready_report("real"), updates=[run_updates.awaiting_hitl1()])
+    app = demo_tui.DeepResearchDemoTUI(mode="embedded_smoke")
+    async with app.run_test() as pilot:
+        await _wait_for(app, pilot, demo_tui.Ready)
+        await pilot.press(*"start deep research")
+        await pilot.press("enter")
+        await _wait_for(app, pilot, AwaitingInput)
+
+    intents = _ScriptedExperience.instances[0].intents
+    assert len(intents) == 1
+    assert isinstance(intents[0], StartRun)
+    assert intents[0].question == demo_tui.DeepResearchDemoTUI.AUTO_QUESTION
+    assert intents[0].scripted is False
+
+
+@pytest.mark.asyncio
+async def test_tui_recon_start_button_dispatches_fixed_research(monkeypatch: pytest.MonkeyPatch) -> None:
+    _install_scripted(monkeypatch, report=_ready_report("real"), updates=[run_updates.awaiting_hitl1()])
+    app = demo_tui.DeepResearchDemoTUI(mode="embedded_smoke")
+    async with app.run_test() as pilot:
+        await _wait_for(app, pilot, demo_tui.Ready)
+        assert app.query_one("#start-research").display is True
+        await pilot.click("#start-research")
+        await _wait_for(app, pilot, AwaitingInput)
+
+    intents = _ScriptedExperience.instances[0].intents
+    assert len(intents) == 1
+    assert isinstance(intents[0], StartRun)
+    assert intents[0].question == demo_tui.DeepResearchDemoTUI.AUTO_QUESTION
+
+
+@pytest.mark.asyncio
+async def test_tui_returns_to_recon_after_research_completes(monkeypatch: pytest.MonkeyPatch) -> None:
+    _install_scripted(monkeypatch, report=_ready_report("real"), updates=[run_updates.completed()])
+    app = demo_tui.DeepResearchDemoTUI(mode="embedded_smoke")
+    async with app.run_test() as pilot:
+        await _wait_for(app, pilot, demo_tui.Ready)
+        await pilot.press(*"start deep research")
+        await pilot.press("enter")
+        await _wait_for(app, pilot, Terminal)
+        await pilot.pause()
+
+        assert app._onboarding is True
+        assert app._last_terminal_bundle is not None
+        assert app.query_one("#composer").disabled is False
+        assert app.query_one("#start-research").display is True
+        assert "侦察模式" in app.last_view.detail
+        assert "报告" in app.last_view.detail or "bundle" in app.last_view.detail
+
+
+@pytest.mark.asyncio
+async def test_tui_recon_loop_supports_second_research_round(monkeypatch: pytest.MonkeyPatch) -> None:
+    _install_scripted(
+        monkeypatch,
+        report=_ready_report("real"),
+        updates=[run_updates.completed(), run_updates.awaiting_hitl1()],
+    )
+    app = demo_tui.DeepResearchDemoTUI(mode="embedded_smoke")
+    async with app.run_test() as pilot:
+        await _wait_for(app, pilot, demo_tui.Ready)
+        await pilot.press(*"start deep research")
+        await pilot.press("enter")
+        await _wait_for(app, pilot, Terminal)
+        await pilot.pause()
+        # back in recon; start a second round via trigger phrase
+        await pilot.press(*"start deep research")
+        await pilot.press("enter")
+        await _wait_for(app, pilot, AwaitingInput)
+
+    intents = _ScriptedExperience.instances[0].intents
+    assert len(intents) == 2
+    assert all(isinstance(i, StartRun) for i in intents)
+    assert intents[1].question == demo_tui.DeepResearchDemoTUI.AUTO_QUESTION
+
+
+@pytest.mark.asyncio
+async def test_tui_hitl1_quick_revision_button_dispatches_text_answer(monkeypatch: pytest.MonkeyPatch) -> None:
+    _install_scripted(
+        monkeypatch,
+        report=_ready_report(),
+        updates=[run_updates.awaiting_hitl1(), run_updates.completed()],
+    )
+    app = demo_tui.DeepResearchDemoTUI(mode="fixture")
+    async with app.run_test() as pilot:
+        await _wait_for(app, pilot, demo_tui.Ready)
+        await pilot.press("enter")
+        await _wait_for_hitl1_prompt(app, pilot, mode="text")
+        await pilot.click("#revision-depth-quick")
+        await _wait_for(app, pilot, Terminal)
+
+    intents = _ScriptedExperience.instances[0].intents
+    assert len(intents) == 2
+    assert isinstance(intents[1], AnswerRun)
+    assert intents[1].response_kind == "text"
+    assert intents[1].value == "depth: quick_overview"
+
+
+@pytest.mark.asyncio
+async def test_tui_hitl1_input_is_echoed_before_dispatch(monkeypatch: pytest.MonkeyPatch) -> None:
+
+    _install_scripted(
+        monkeypatch,
+        report=_ready_report(),
+        updates=[run_updates.awaiting_hitl1(), run_updates.completed()],
+    )
+    app = demo_tui.DeepResearchDemoTUI(mode="fixture")
+    async with app.run_test() as pilot:
+        await _wait_for(app, pilot, demo_tui.Ready)
+        await pilot.press("enter")
+        await _wait_for_hitl1_prompt(app, pilot, mode="text")
+        await pilot.press(*"depth: deep dive")
+        await pilot.press("enter")
+        await _wait_for(app, pilot, Terminal)
+
+    assert app._last_typed == "depth: deep dive"
+    # The echo line is written to the log before dispatch; it is later cleared by
+    # the terminal render. The durable "you typed X" path is exercised by the
+    # rejection-detail rendering (last_typed surfaced on rejection).
+
+
+def test_env_inspect_recognizes_workspace_phrasing() -> None:
+    for command in ("workspace", "当前 workspace", "工作区", "工作区在哪", "workspace 目录"):
+        assert demo_tui.is_env_inspect(command), command
+
+
+@pytest.mark.asyncio
+async def test_tui_env_command_shows_workspace_structure(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+
+    _install_scripted(monkeypatch, report=_ready_report("real"), updates=[])
+    monkeypatch.setattr(_Adapter, "bundle_root", tmp_path, raising=False)
+    # Build a tiny workspace skeleton so env has something to show.
+    scopes = tmp_path / "workspace" / "deep-research" / "scopes" / "s_demo"
+    (scopes / "b_demo").mkdir(parents=True)
+    (scopes / "b_demo" / "state.json").write_text('{"terminal_status": "completed"}', encoding="utf-8")
+    (scopes / "b_demo" / "final").mkdir(parents=True)
+    (scopes / "b_demo" / "final" / "report.md").write_text("# R", encoding="utf-8")
+    (tmp_path / "workspace" / "soft-bundles").mkdir(parents=True)
+
+    app = demo_tui.DeepResearchDemoTUI(mode="embedded_smoke")
+    async with app.run_test() as pilot:
+        await _wait_for(app, pilot, demo_tui.Ready)
+        await pilot.press(*"workspace")
+        await pilot.press("enter")
+        await pilot.pause()
+        log_text = app._rich_log_text()
+        assert "workspace" in log_text
+        assert "deep-research/" in log_text
+        assert "b_demo" in log_text
+        assert "completed" in log_text
+
+
+def test_list_directory_renders_entries_with_sizes(tmp_path: Path) -> None:
+    (tmp_path / "deep-research").mkdir()
+    (tmp_path / "scopes").mkdir()
+    (tmp_path / "note.md").write_text("x", encoding="utf-8")
+
+    lines = demo_tui._list_directory(tmp_path, tmp_path)
+    text = "\n".join(lines)
+    assert "deep-research/" in text
+    assert "note.md" in text
+
+
+def test_cat_file_previews_json_and_tails_jsonl(tmp_path: Path) -> None:
+    (tmp_path / "state.json").write_text('{"a": 1}', encoding="utf-8")
+    (tmp_path / "events.jsonl").write_text("\n".join(f'{{"n": {i}}}' for i in range(20)), encoding="utf-8")
+
+    json_lines = demo_tui._cat_file(tmp_path / "state.json", tmp_path)
+    assert "a" in "\n".join(json_lines)
+
+    jsonl_lines = demo_tui._cat_file(tmp_path / "events.jsonl", tmp_path)
+    text = "\n".join(jsonl_lines)
+    assert "尾部" in text
+    assert '{"n": 19}' in text
+
+
+def test_inspect_bundle_summarizes_state_and_report(tmp_path: Path) -> None:
+    bundle = tmp_path / "b_demo"
+    (bundle / "diagnostics").mkdir(parents=True)
+    (bundle / "state.json").write_text(
+        '{"terminal_status": "completed", "phase": "final_delivery", "phase_status": "terminal",'
+        ' "hitl1_visit_count": 2, "must_answer_questions": ["q1"]}',
+        encoding="utf-8",
+    )
+    (bundle / "diagnostics" / "run-summary.json").write_text(
+        '{"journal_availability": "complete", "latest_event_sequence": 30, "dropped_event_count": 0}',
+        encoding="utf-8",
+    )
+    (bundle / "work").mkdir()
+    (bundle / "work" / "g0_wave0_w0000").mkdir()
+    (bundle / "final").mkdir()
+    (bundle / "final" / "report.md").write_text("# R", encoding="utf-8")
+
+    lines = demo_tui._inspect_bundle(bundle)
+    text = "\n".join(lines)
+    assert "completed" in text
+    assert "journal: complete" in text
+    assert "g0_wave0_w0000" in text
+    assert "report.md" in text
+
+
+@pytest.mark.asyncio
+async def test_tui_slash_ls_renders_persistent_inspect_panel(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    _install_scripted(monkeypatch, report=_ready_report("real"), updates=[])
+    monkeypatch.setattr(_Adapter, "bundle_root", tmp_path, raising=False)
+    (tmp_path / "workspace" / "deep-research").mkdir(parents=True)
+
+    app = demo_tui.DeepResearchDemoTUI(mode="embedded_smoke")
+    async with app.run_test() as pilot:
+        await _wait_for(app, pilot, demo_tui.Ready)
+        await pilot.press(*"/ls")
+        await pilot.press("enter")
+        await pilot.pause()
+        panel = app.query_one("#inspect").content
+        text = str(panel.plain)
+        assert "deep-research" in text
+
+
+@pytest.mark.asyncio
+async def test_tui_slash_command_never_dispatches_research_during_hitl1(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _install_scripted(
+        monkeypatch,
+        report=_ready_report("real"),
+        updates=[run_updates.awaiting_hitl1()],
+    )
+    app = demo_tui.DeepResearchDemoTUI(mode="embedded_smoke")
+    async with app.run_test() as pilot:
+        await _wait_for(app, pilot, demo_tui.Ready)
+        await pilot.press(*"start deep research")
+        await pilot.press("enter")
+        await _wait_for_hitl1_prompt(app, pilot, mode="text")
+        intents_before = len(_ScriptedExperience.instances[0].intents)
+
+        await pilot.press(*"/ls")
+        await pilot.press("enter")
+        await pilot.pause()
+
+        assert len(_ScriptedExperience.instances[0].intents) == intents_before
+        assert isinstance(app.last_update, AwaitingInput)
+
+
+@pytest.mark.asyncio
+async def test_tui_input_echo_persists_in_inspect_panel(monkeypatch: pytest.MonkeyPatch) -> None:
+    _install_scripted(
+        monkeypatch,
+        report=_ready_report("real"),
+        updates=[run_updates.awaiting_hitl1(), run_updates.awaiting_hitl1()],
+    )
+    app = demo_tui.DeepResearchDemoTUI(mode="embedded_smoke")
+    async with app.run_test() as pilot:
+        await _wait_for(app, pilot, demo_tui.Ready)
+        await pilot.press(*"start deep research")
+        await pilot.press("enter")
+        await _wait_for_hitl1_prompt(app, pilot, mode="text")
+        await pilot.press(*"quick overview")
+        await pilot.press("enter")
+        await _wait_for(app, pilot, demo_tui.AwaitingInput)
+        await pilot.pause()
+
+        panel = str(app.query_one("#inspect").content.plain)
+        assert "你: quick overview" in panel
+
+
+@pytest.mark.asyncio
+async def test_tui_hitl1_feedback_surfaces_in_persistent_panel(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    update = run_updates.awaiting_hitl1()
+    prompt = update.prompt
+    rejected = update.model_copy(
+        update={"prompt": prompt.model_copy(update={"rejection_category": "profile_input_unrecognized"})}
+    )
+    _install_scripted(monkeypatch, report=_ready_report("real"), updates=[run_updates.awaiting_hitl1(), rejected])
+    app = demo_tui.DeepResearchDemoTUI(mode="embedded_smoke")
+    async with app.run_test() as pilot:
+        await _wait_for(app, pilot, demo_tui.Ready)
+        await pilot.press(*"start deep research")
+        await pilot.press("enter")
+        await _wait_for_hitl1_prompt(app, pilot, mode="text")
+        await pilot.press(*"random text")
+        await pilot.press("enter")
+        await _wait_for(app, pilot, demo_tui.AwaitingInput)
+        await pilot.pause()
+
+        panel = str(app.query_one("#inspect").content.plain)
+        assert "你: random text" in panel
+        assert "未识别" in panel
+
+
+def test_recon_tools_are_read_only_and_contained(tmp_path: Path) -> None:
+    (tmp_path / "deep-research").mkdir()
+    (tmp_path / "note.md").write_text("hello", encoding="utf-8")
+    (tmp_path / ".." / "outside.txt").write_text("secret", encoding="utf-8")
+
+    tools = {tool.name: tool for tool in demo_tui._recon_tools(tmp_path)}
+
+    listing = tools["list_workspace"].invoke({"path": ""})
+    assert "deep-research" in listing
+    assert "note.md" in listing
+
+    content = tools["read_workspace_file"].invoke({"path": "note.md"})
+    assert "hello" in content
+
+    escaped = tools["read_workspace_file"].invoke({"path": "../outside.txt"})
+    assert "越界" in escaped
+    assert "secret" not in escaped
+
+    bad = tools["list_workspace"].invoke({"path": "../../etc"})
+    assert "越界" in bad
+
+
+def test_recon_inspect_bundle_tool_summarizes_bundle(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    bundle = workspace / "deep-research" / "scopes" / "s_demo" / "b_demo"
+    (bundle / "final").mkdir(parents=True)
+    (bundle / "state.json").write_text(
+        '{"terminal_status": "completed", "phase": "final_delivery", "phase_status": "terminal",'
+        ' "hitl1_visit_count": 0, "must_answer_questions": ["q"]}',
+        encoding="utf-8",
+    )
+    (bundle / "final" / "report.md").write_text("# R", encoding="utf-8")
+
+    tools = {tool.name: tool for tool in demo_tui._recon_tools(workspace)}
+    result = tools["inspect_bundle"].invoke({"bundle_id": "b_demo"})
+    assert "completed" in result
+    assert "report.md" in result
+
+    missing = tools["inspect_bundle"].invoke({"bundle_id": "b_nope"})
+    assert "未找到" in missing

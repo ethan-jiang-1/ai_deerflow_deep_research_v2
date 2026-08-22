@@ -19,7 +19,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Literal, TextIO
+from typing import Any, Literal, TextIO
 
 from _demo_core import (
     PHASE_META,
@@ -326,6 +326,206 @@ def live_progress_lines(bundle_root: Path | None) -> tuple[str, ...]:
     return tuple(lines)
 
 
+_RESEARCH_TRIGGER_PHRASES = frozenset(
+    {
+        "start deep research",
+        "deep research",
+        "go deep research",
+        "开始 deep research",
+        "开始深度研究",
+        "deep research 开始",
+        "我要让你 deep research",
+        "开始 deep research 吧",
+    }
+)
+
+
+_RECON_SYSTEM_PROMPT = (
+    "你是 Deep Research 工作台的侦察助手（020 手动 TUI 的启动阶段）。"
+    "用户还没有启动正式研究，正在看环境或和你闲聊。"
+    "你有三个只读工具可以查看本地 workspace：list_workspace（列目录）、"
+    "read_workspace_file（预览文件）、inspect_bundle（bundle 摘要）。"
+    "用户问 workspace 里有什么、某个 run/bundle 在哪、文件内容等，就调用工具查"
+    "真实文件系统来回答，不要猜。"
+    "规则：用户说「开始 Deep Research」（或 start deep research）会触发正式研究，"
+    "那由界面处理——你只在被问到时说明这个规则。"
+    "回答保持简洁（3-6 句）；不要替用户做研究。"
+)
+
+_HITL1_QUICK_REVISIONS = {
+    "depth-quick": {"label": "深度: 快速概览", "value": "depth: quick_overview"},
+    "depth-deep": {"label": "深度: 深入", "value": "depth: deep_dive"},
+    "audience-general": {"label": "受众: 普通读者", "value": "audience: layperson"},
+    "audience-expert": {"label": "受众: 领域专家", "value": "audience: domain_expert"},
+}
+
+
+def is_research_trigger(text: str) -> bool:
+    """True only when the whole line is an explicit research-start command.
+
+    Exact whole-line matching protects the control environment: casual chat
+    (questions containing "deep research") never starts a run.
+    """
+    normalized = " ".join(text.strip().lower().split()).strip("?？。.!！")
+    return normalized in _RESEARCH_TRIGGER_PHRASES
+
+
+def is_env_inspect(text: str) -> bool:
+    """True when the line asks to inspect the local environment."""
+    normalized = " ".join(text.strip().lower().split())
+    if normalized in {
+        "env",
+        "ls",
+        "list",
+        "inspect",
+        "环境",
+        "看看环境",
+        "看环境",
+        "跑过什么",
+        "workspace",
+        "工作区",
+    }:
+        return True
+    return any(
+        token in normalized
+        for token in ("环境", "bundle", "日志", "where", "在哪", "run 在哪", "workspace", "工作区")
+    )
+
+
+def _safe_workspace_path(workspace: Path, raw: str) -> Path | None:
+    """Resolve a workspace-relative path with escape containment (read-only)."""
+    candidate = (workspace / raw.strip("/")).resolve()
+    try:
+        candidate.relative_to(workspace.resolve())
+    except ValueError:
+        return None
+    return candidate
+
+
+def _recon_tools(workspace: Path) -> list[Any]:
+    """Read-only workspace tools bound to the recon chat model.
+
+    The chat model may inspect the same retained-run workspace the operator
+    sees: list directories, preview files, summarize bundles. All paths are
+    workspace-relative and containment-checked; nothing is writable.
+    """
+    from langchain_core.tools import tool
+
+    @tool
+    def list_workspace(path: str = "") -> str:
+        """List a directory inside the local Deep Research workspace.
+        `path` is relative to the workspace root; empty string lists the root."""
+        target = _safe_workspace_path(workspace, path) if path else workspace
+        if target is None:
+            return "路径越界：只允许 workspace 内的相对路径。"
+        if not target.exists():
+            return f"不存在: {path or '/'}"
+        if not target.is_dir():
+            return "目标是文件，请用 read_workspace_file 读取。"
+        return "\n".join(_list_directory(target, workspace))
+
+    @tool
+    def read_workspace_file(path: str) -> str:
+        """Preview a text file inside the workspace (bounded).
+        Example: deep-research/scopes/<scope>/<bundle>/state.json"""
+        target = _safe_workspace_path(workspace, path)
+        if target is None:
+            return "路径越界：只允许 workspace 内的相对路径。"
+        if not target.is_file():
+            return f"不是文件或不存在: {path}"
+        return "\n".join(_cat_file(target, workspace))
+
+    @tool
+    def inspect_bundle(bundle_id: str) -> str:
+        """Summarize one retained run bundle by its id (b_...)."""
+        bundle_dir = find_bundle_dir(workspace.parent, bundle_id)
+        if bundle_dir is None:
+            return f"未找到 bundle: {bundle_id}。可用 list_workspace 查看 deep-research/scopes 下有哪些。"
+        return "\n".join(_inspect_bundle(bundle_dir))
+
+    return [list_workspace, read_workspace_file, inspect_bundle]
+
+
+def _list_directory(path: Path, workspace: Path) -> tuple[str, ...]:
+    """One human-readable directory listing (entries + size + mtime)."""
+    lines: list[str] = [f"📁 {path.relative_to(workspace) if path != workspace else '/'}"]
+    try:
+        entries = sorted(path.iterdir(), key=lambda p: (p.is_file(), p.name.lower()))
+    except OSError as exc:
+        return (f"读取失败: {exc}",)
+    if not entries:
+        lines.append("  （空）")
+    for entry in entries:
+        try:
+            if entry.is_dir():
+                count = sum(1 for _ in entry.iterdir())
+                lines.append(f"  📁 {entry.name}/  ({count} 项)")
+            else:
+                size = entry.stat().st_size
+                lines.append(f"  📄 {entry.name}  ({size}B)")
+        except OSError:
+            lines.append(f"  ? {entry.name}")
+    return tuple(lines)
+
+
+def _cat_file(path: Path, workspace: Path) -> tuple[str, ...]:
+    """Preview a file's content (bounded; JSON pretty-printed, journal tailed)."""
+    try:
+        raw = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return (f"读取失败: {exc}",)
+    relative = path.relative_to(workspace) if path != workspace else path.name
+    name = path.name
+    if name in {"state.json", "run-summary.json", "journal-manifest.json", "manifest.json"}:
+        try:
+            pretty = json.dumps(json.loads(raw), ensure_ascii=False, indent=1)
+        except ValueError:
+            pretty = raw
+        return (f"── {relative} ──", *pretty.splitlines()[:60])
+    if name.endswith(".jsonl"):
+        tail = raw.splitlines()[-15:]
+        return (f"── {relative}（尾部 {len(tail)} 行）──", *tail)
+    lines = raw.splitlines()
+    return (f"── {relative}（{len(lines)} 行）──", *lines[:40])
+
+
+def _inspect_bundle(bundle_dir: Path) -> tuple[str, ...]:
+    """One bundle summary: terminal state, journal health, work units, report."""
+    lines: list[str] = [f"bundle: {bundle_dir.name}"]
+    state_path = bundle_dir / "state.json"
+    if state_path.is_file():
+        try:
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+            lines.append(
+                f"  状态: {state.get('terminal_status') or 'active'} · phase {state.get('phase')} "
+                f"{state.get('phase_status')} · hitl1 访问 {state.get('hitl1_visit_count', 0)}"
+            )
+            question = state.get("must_answer_questions") or ()
+            if question:
+                lines.append(f"  问题: {str(question[0])[:90]}")
+        except (OSError, ValueError):
+            lines.append("  state.json 不可读")
+    summary = bundle_dir / "diagnostics" / "run-summary.json"
+    if summary.is_file():
+        try:
+            data = json.loads(summary.read_text(encoding="utf-8"))
+            lines.append(
+                f"  journal: {data.get('journal_availability')} · 事件 {data.get('latest_event_sequence')} · "
+                f"dropped {data.get('dropped_event_count')}"
+            )
+        except (OSError, ValueError):
+            pass
+    work = bundle_dir / "work"
+    if work.is_dir():
+        units = sorted(p.name for p in work.iterdir() if p.is_dir())
+        if units:
+            lines.append(f"  work: {', '.join(units[:6])}")
+    report = bundle_dir / "final" / "report.md"
+    lines.append(f"  报告: {report if report.is_file() else '(未产出)'}")
+    lines.append(f"  详情: `make demo-sessions DEMO_ARGS=\"inspect {bundle_dir.name}\"`")
+    return tuple(lines)
+
+
 def find_bundle_dir(bundle_root: Path | None, bundle_id: str | None) -> Path | None:
     """Locate the retained bundle directory for a bundle id (scopes/<scope>/<bundle>/)."""
     if bundle_root is None or not bundle_id:
@@ -355,6 +555,7 @@ def render_run_update(
     update: object,
     progress: Sequence[str] = (),
     report_path: Path | None = None,
+    last_typed: str | None = None,
 ) -> TuiRenderedUpdate:
     """Return a native view model using only safe shared ``RunUpdate`` values."""
     if isinstance(update, Ready):
@@ -399,7 +600,13 @@ def render_run_update(
         if prompt.rejection_category == "choice_input_invalid":
             details.append("The last choice was invalid. Enter an advertised option ID, for example proceed.")
         elif prompt.rejection_category:
-            details.append("The last response was not recognized. Use an advertised value or complete JSON.")
+            details.append("未识别上次输入。")
+            if last_typed:
+                details.append(f"你输入的是: {last_typed}")
+            details.append(
+                "可用格式: `字段: 值`（如 depth: quick overview）、`confirm`、或完整 JSON（见 Example）；"
+                "也可以点下方快捷按钮。"
+            )
         if prompt.accepted_rounds_remaining:
             details.append(f"Accepted answers remaining: {prompt.accepted_rounds_remaining}")
         if prompt.rejection_retries_remaining:
@@ -495,9 +702,11 @@ class DeepResearchDemoTUI(App[None]):
     #banner { height: 3; padding: 1 2; background: #164e63; color: #ecfeff; text-style: bold; }
     #pipeline { height: auto; margin: 1 2; min-height: 3; }
     #log { height: 1fr; border: round #475569; margin: 0 2; padding: 0 1; }
+    #inspect { height: auto; max-height: 12; margin: 0 2; padding: 0 1; border: round #334155; color: #a5f3fc; }
     #prompt { height: auto; margin: 0 2; color: #fde68a; text-style: bold; }
     #controls { height: 3; margin: 0 2 1 2; }
     #composer { width: 1fr; }
+    #start-research { width: 24; margin-left: 1; }
     #copy-details { width: 14; margin-left: 1; }
     #accept { width: 16; margin-left: 1; }
     #cancel { width: 14; margin-left: 1; }
@@ -559,22 +768,32 @@ class DeepResearchDemoTUI(App[None]):
         self._last_logged = ""
         self._tui_log: TextIO | None = None
         self._tui_log_path: Path | None = None
+        self._onboarding = False
+        self._chat_model: Any | None = None
+        self._chat_history: list[tuple[str, str]] = []
+        self._last_terminal_bundle: str | None = None
+        self._last_typed = ""
 
     def compose(self) -> ComposeResult:
         yield Static(id="banner")
         yield Static(id="pipeline")
         yield RichLog(id="log", wrap=True, markup=False, max_lines=100)
+        yield Static(id="inspect")
         yield Static(id="prompt")
         with Horizontal(id="options"):
             for language in SupportedLanguageOption:
                 yield Button(language.value, id=f"option-{language.value}", classes="advertised-option")
+            for revision_id in _HITL1_QUICK_REVISIONS:
+                yield Button("", id=f"revision-{revision_id}", classes="advertised-option")
         with Horizontal(id="controls"):
             yield Input(value=self._EXAMPLE_QUESTION, placeholder="Research question", id="composer")
+            yield Button("Start Deep Research", id="start-research")
             yield Button("Copy details", id="copy-details")
             yield Button("Start proposal", id="accept")
             yield Button("Cancel", id="cancel", variant="error")
         yield Static(
-            "中间对话区: 双击=复制全文 · Option+拖拽=选中一段 · Copy details=复制全部 · Ctrl-C 退出",
+            "「Start Deep Research」按钮启动研究 · 中间对话区: 双击=复制全文 · "
+            "Option+拖拽=选中一段 · Copy details=复制全部 · Ctrl-C 退出",
             id="hint",
         )
 
@@ -644,6 +863,12 @@ class DeepResearchDemoTUI(App[None]):
                 self._dispatch(
                     StartRun(question=self.AUTO_QUESTION, scripted=True, profile_intent=None)
                 )
+            elif self.mode == "embedded_smoke":
+                # 020 manual TUI: start in recon mode. The operator may inspect
+                # the environment and chat freely; only an explicit
+                # research-start phrase dispatches the fixed question.
+                self._onboarding = True
+                self._render_recon()
         except asyncio.CancelledError:
             raise
         except Exception:
@@ -706,10 +931,18 @@ class DeepResearchDemoTUI(App[None]):
             update,
             progress=self._live_progress(),
             report_path=self._terminal_report_path(update),
+            last_typed=self._last_typed,
         )
         self._render_view(view)
         self._last_detail = view.detail
         self._append_tui_log(view.detail)
+        self._render_interaction_status(update)
+        if isinstance(update, Terminal) and self.mode == "embedded_smoke" and not self.auto:
+            # Research finished: return to recon mode for another inspect / chat
+            # / next run. The report path is carried into the recon screen.
+            self._onboarding = True
+            self._last_terminal_bundle = update.snapshot.bundle_id
+            self._render_recon(research_just_completed=True)
 
     def _render_view(self, view: TuiRenderedUpdate) -> None:
         self.last_view = view
@@ -729,22 +962,31 @@ class DeepResearchDemoTUI(App[None]):
         cancel_allowed = view.show_cancel and self.mode != "gateway"
         cancel.display = cancel_allowed
         cancel.disabled = not cancel_allowed
+        start_button = self.query_one("#start-research", Button)
+        start_button.display = self._onboarding
+        start_button.disabled = not self._onboarding
         accept.display = bool(
             isinstance(self.last_update, AwaitingInput)
             and any(control.id == "accept_current_proposal" for control in self.last_update.prompt.visible_controls)
         )
         accept.disabled = not accept.display
-        advertised_options = self._advertised_language_options()
+        advertised_options = self._advertised_options()
         options_bar = self.query_one("#options", Horizontal)
         options_bar.display = bool(advertised_options)
         for button in options_bar.query(Button):
-            option = advertised_options.get(str(button.id).removeprefix("option-"))
+            key = str(button.id).removeprefix("option-").removeprefix("revision-")
+            option = advertised_options.get(key)
             button.display = option is not None
             button.disabled = option is None
             if option is not None:
-                button.label = option.label
+                button.label = option.label if hasattr(option, "label") else option["label"]
         if view.accepts_input:
-            composer.value = self._EXAMPLE_QUESTION if isinstance(self.last_update, Ready) else ""
+            if self._onboarding:
+                composer.value = ""
+            elif isinstance(self.last_update, Ready):
+                composer.value = self.AUTO_QUESTION if self.mode == "embedded_smoke" else self._EXAMPLE_QUESTION
+            else:
+                composer.value = ""
             composer.focus()
 
     @work(group=_WORKER_GROUP, exclusive=True, exit_on_error=False)
@@ -774,12 +1016,34 @@ class DeepResearchDemoTUI(App[None]):
             return {}
         return {option.id: option for option in prompt.options}
 
-    def _select_advertised_option(self, option_id: str) -> None:
-        """Submit one currently advertised language option as a typed OPTION answer."""
+    def _hitl1_quick_revisions(self) -> dict[str, dict[str, str]]:
+        """Advertise bounded one-field revision buttons for a hitl1 text prompt."""
 
-        if option_id not in self._advertised_language_options():
+        if not isinstance(self.last_update, AwaitingInput):
+            return {}
+        prompt = self.last_update.prompt
+        if prompt.mode != "text" or prompt.phase != "hitl1":
+            return {}
+        return dict(_HITL1_QUICK_REVISIONS)
+
+    def _advertised_options(self) -> dict[str, object]:
+        """Merge language CHOICE options with hitl1 quick-revision buttons."""
+
+        options: dict[str, object] = dict(self._advertised_language_options())
+        options.update(self._hitl1_quick_revisions())
+        return options
+
+    def _select_advertised_option(self, option_id: str) -> None:
+        """Submit one currently advertised option: a typed OPTION or a text revision."""
+
+        options = self._advertised_options()
+        if option_id not in options:
             return
-        self._dispatch(AnswerRun(value=option_id, response_kind="option", option_id=option_id))
+        option = options[option_id]
+        if isinstance(option, dict):
+            self._dispatch(AnswerRun(value=option["value"], response_kind="text"))
+        else:
+            self._dispatch(AnswerRun(value=option_id, response_kind="option", option_id=option_id))
 
     def _gateway_transport_observer(self, observation: GatewayTransportObservation) -> None:
         if observation.kind == "assistant_text" and observation.detail:
@@ -809,10 +1073,30 @@ class DeepResearchDemoTUI(App[None]):
         line = f"Deep Research progress: {label}" + (f" (bundle {scope})" if scope else "")
         self.query_one("#log", RichLog).write(Text(line))
 
+    def _echo_input(self, value: str) -> None:
+        """Persistently echo the operator's latest input into the #inspect panel.
+
+        The #log area is cleared by every Working heartbeat render, so an echo
+        written there vanishes within a second — the exact "I typed it but
+        nothing happened" failure. The #inspect panel is never cleared by
+        renders, so the operator always sees their latest input and its status.
+        """
+        self._last_typed = value
+        self._render_inspect((f"你: {value}", "（已收到，正在处理…）"))
+
     async def on_input_submitted(self, event: Input.Submitted) -> None:
         raw_value = event.value
         value = raw_value.strip()
         if not value:
+            return
+        if value.startswith("/"):
+            # Global inspect commands work at any time (recon or mid-research)
+            # and are never routed as chat or research answers.
+            self._handle_slash_command(value)
+            return
+        self._echo_input(value)
+        if self._onboarding:
+            await self._handle_onboarding_input(value)
             return
         if self.last_update is None:
             return
@@ -854,6 +1138,283 @@ class DeepResearchDemoTUI(App[None]):
         if self._tui_log_path is not None:
             log.write(Text(f"TUI 日志文件: {self._tui_log_path}", style="dim"))
 
+    def _render_recon(self, *, research_just_completed: bool = False) -> None:
+        """Render the 020 recon-mode screen (before and after each research run)."""
+        adapter = self._adapter
+        root = getattr(adapter, "bundle_root", None) if adapter is not None else None
+        lines: list[str] = []
+        if research_just_completed:
+            lines.append("上一轮研究已完成，你现在回到侦察模式。")
+            if self._last_terminal_bundle and root is not None:
+                report = report_path(root, self._last_terminal_bundle)
+                if report is not None:
+                    lines.append(f"· 报告: {report}")
+            lines.append("")
+        lines.extend(
+            [
+                "这是 Deep Research 手动 TUI（020）的侦察模式——看环境、闲聊，都不会启动正式研究。",
+                "",
+                "· 看环境 / workspace / 之前跑过什么: 输入 `环境` 或 `env`（显示 workspace 路径与结构）",
+                "· 随时查文件系统（研究中也能用）: `/ls [路径]` · `/cat <文件>` · `/inspect <bundle_id>` · `/clear`",
+                "· 随便聊: 直接输入任何内容（真模型低成本回应）",
+                "· 启动正式 Deep Research: 点「Start Deep Research」按钮，或输入「开始 Deep Research」",
+                "  — 触发后运行固定问题: What is one bounded fact about China's EV battery market in 2024?",
+            ]
+        )
+        if self._last_terminal_bundle:
+            lines.append(f"· 上一轮研究 bundle: {self._last_terminal_bundle}")
+        if root is not None:
+            lines.append(f"· bundle 根: {root}")
+        if self._tui_log_path is not None:
+            lines.append(f"· TUI 日志: {self._tui_log_path}")
+        view = TuiRenderedUpdate(
+            heading="侦察模式 · 看环境 / 闲聊 / 点「Start Deep Research」或说触发语启动研究",
+            detail="\n".join(lines),
+            placeholder="随便聊，或说「开始 Deep Research」",
+            completed_trace=(),
+            pending_phase=None,
+            options=(),
+            accepts_input=True,
+            show_cancel=False,
+            terminal=False,
+        )
+        self._render_view(view)
+        self._last_detail = view.detail
+        self._append_tui_log(view.detail)
+
+    def _start_research(self) -> None:
+        """Explicit operator command: leave recon mode and start the fixed research."""
+        if not self._onboarding:
+            return
+        self._onboarding = False
+        self._dispatch(StartRun(question=self.AUTO_QUESTION, scripted=False))
+
+    def _write_env_summary(self) -> None:
+        """Print a bounded local-environment / workspace summary into the log."""
+        adapter = self._adapter
+        root = getattr(adapter, "bundle_root", None) if adapter is not None else None
+        log = self.query_one("#log", RichLog)
+        log.write(Text("── 本地环境 / workspace ──", style="bold"))
+        if root is None:
+            log.write(Text("（无本地 bundle 根：非 embedded 模式）", style="dim"))
+            return
+        log.write(Text(f"bundle 根: {root}", style="dim"))
+        workspace = root / "workspace"
+        log.write(Text(f"workspace: {workspace}", style="dim"))
+        for name in ("deep-research", "scripted-real", "soft-bundles", "archive"):
+            sub = workspace / name
+            if not sub.is_dir():
+                continue
+            if name == "deep-research":
+                scopes = [p for p in sub.iterdir() if p.is_dir()]
+                bundles = [b for scope in scopes for b in scope.iterdir() if b.is_dir()]
+                log.write(Text(f"  {name}/: {len(scopes)} scopes · {len(bundles)} bundles", style="dim"))
+            elif name == "soft-bundles":
+                entries = [p for p in sub.iterdir() if p.is_dir()]
+                log.write(Text(f"  {name}/: {len(entries)} soft-bundle 会话", style="dim"))
+            else:
+                entries = [p for p in sub.iterdir()]
+                log.write(Text(f"  {name}/: {len(entries)} 项", style="dim"))
+        scopes_dir = workspace / "deep-research" / "scopes"
+        if scopes_dir.is_dir():
+            bundles = sorted(
+                (b for scope in scopes_dir.iterdir() if scope.is_dir() for b in scope.iterdir() if b.is_dir()),
+                key=lambda b: b.stat().st_mtime_ns,
+                reverse=True,
+            )
+            if bundles:
+                log.write(Text(f"保留的 run bundle: {len(bundles)} 个 · 最近 3 个：", style="dim"))
+                for bundle in bundles[:3]:
+                    terminal = "?"
+                    try:
+                        terminal = json.loads((bundle / "state.json").read_text(encoding="utf-8")).get(
+                            "terminal_status"
+                        ) or "active"
+                    except (OSError, ValueError):
+                        pass
+                    report_note = " · 有报告" if (bundle / "final" / "report.md").is_file() else ""
+                    log.write(Text(f"  {bundle.name}  [{terminal}]{report_note}", style="dim"))
+        logs_dir = root / "logs"
+        if logs_dir.is_dir():
+            tui_logs = sorted(logs_dir.glob("tui-*.log"), key=lambda p: p.stat().st_mtime_ns, reverse=True)
+            if tui_logs:
+                log.write(Text(f"TUI 日志: {tui_logs[0]}", style="dim"))
+        log.write(Text('用 `make demo-sessions DEMO_ARGS="inspect <bundle_id>"` 检查某个 bundle。', style="dim"))
+
+    def _build_chat_model(self) -> None:
+        if self._chat_model is not None:
+            return
+        try:
+            from _demo_core import resolve_real_demo_model_profile
+            from deerflow.models.patched_deepseek import PatchedChatDeepSeek
+
+            profile = resolve_real_demo_model_profile()
+            if profile is None:
+                return
+            config = profile.model_config
+            self._chat_model = PatchedChatDeepSeek(
+                api_key=config.api_key,
+                model=config.model,
+                base_url=getattr(config, "base_url", None),
+            )
+        except Exception:
+            self._chat_model = None
+
+    async def _chat_reply(self, value: str) -> None:
+        """One bounded recon-mode chat turn with the low-cost demo model.
+
+        The model is bound to read-only workspace tools, so natural-language
+        questions about the workspace ("what is in it", "where is my last run")
+        are answered from the real file system, not guessed.
+        """
+        log = self.query_one("#log", RichLog)
+        log.write(Text(f"你: {value}", style="bold"))
+        self._build_chat_model()
+        if self._chat_model is None:
+            log.write(Text("（没有可用的侦察模型——只说「开始 Deep Research」也能进入研究）", style="dim"))
+            return
+        from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+
+        self._chat_history.append(("user", value))
+        messages = [SystemMessage(content=_RECON_SYSTEM_PROMPT)]
+        for role, content in self._chat_history[-10:]:
+            messages.append(HumanMessage(content=content) if role == "user" else AIMessage(content=content))
+        try:
+            workspace = self._inspect_workspace_root()
+            tools = _recon_tools(workspace) if workspace is not None else []
+            model = self._chat_model.bind_tools(tools) if tools else self._chat_model
+            text = await self._run_tool_calling_turn(model, messages, tools)
+            self._chat_history.append(("assistant", text))
+            log.write(Text(f"AI: {text}", style="cyan"))
+        except Exception as exc:
+            log.write(Text(f"（侦察对话调用失败: {type(exc).__name__}）", style="red"))
+
+    async def _run_tool_calling_turn(
+        self,
+        model: Any,
+        messages: list[Any],
+        tools: list[Any],
+    ) -> str:
+        """Execute up to two tool-calling rounds, then return the final answer."""
+        from langchain_core.messages import ToolMessage
+
+        response = await model.ainvoke(messages)
+        for _round in range(2):
+            if not getattr(response, "tool_calls", None):
+                break
+            messages.append(response)
+            for call in response.tool_calls:
+                result = "（未知工具）"
+                for tool in tools:
+                    if tool.name == call["name"]:
+                        try:
+                            result = tool.invoke(call.get("args") or {})
+                        except Exception as exc:
+                            result = f"工具调用失败: {type(exc).__name__}: {exc}"
+                        break
+                messages.append(ToolMessage(content=str(result), tool_call_id=call["id"]))
+            response = await model.ainvoke(messages)
+        return response.content if isinstance(response.content, str) else str(response.content)
+
+    def _render_interaction_status(self, update: RunUpdate) -> None:
+        """Keep the operator's latest input and the system's understanding visible.
+
+        Written into the persistent #inspect panel so it survives Working
+        heartbeats; the operator always sees "you said X -> system heard Y".
+        """
+        if not self._last_typed:
+            return
+        if isinstance(update, AwaitingInput):
+            prompt = update.prompt
+            lines = [f"你: {self._last_typed}"]
+            if prompt.rejection_category:
+                lines.append("系统: 未识别你的输入——见下方格式指引与按钮。")
+            elif prompt.interaction is not None and prompt.interaction.feedback is not None:
+                lines.append(f"系统: {prompt.interaction.feedback.message}")
+            else:
+                lines.append("系统: 已收到，请按提示继续。")
+            self._render_inspect(tuple(lines))
+        elif isinstance(update, Fault) or isinstance(update, Terminal):
+            self._render_inspect(())
+
+    def _render_inspect(self, lines: Sequence[str]) -> None:
+        """Render inspect output into the persistent #inspect panel (never cleared by heartbeats)."""
+        if not lines:
+            self.query_one("#inspect", Static).update("")
+            return
+        self.query_one("#inspect", Static).update(Text("\n".join(lines)))
+
+    def _inspect_workspace_root(self) -> Path | None:
+        adapter = self._adapter
+        root = getattr(adapter, "bundle_root", None) if adapter is not None else None
+        return root / "workspace" if root is not None else None
+
+    def _resolve_inspect_path(self, raw: str) -> Path | None:
+        """Resolve a workspace-relative path with escape containment."""
+        workspace = self._inspect_workspace_root()
+        if workspace is None:
+            return None
+        candidate = (workspace / raw.strip("/")).resolve()
+        try:
+            candidate.relative_to(workspace.resolve())
+        except ValueError:
+            return None
+        return candidate
+
+    def _handle_slash_command(self, value: str) -> None:
+        """Global inspect commands: /ls, /cat, /inspect, /clear.
+
+        Available at any time (recon or mid-research); never routed as a chat or
+        research answer. All paths are workspace-relative and containment-checked.
+        """
+        parts = value.split(maxsplit=1)
+        command = parts[0].lower()
+        arg = parts[1].strip() if len(parts) > 1 else ""
+        workspace = self._inspect_workspace_root()
+        if command == "/clear":
+            self._render_inspect(())
+            return
+        if workspace is None:
+            self._render_inspect(("（无本地 workspace：非 embedded 模式）",))
+            return
+        if command in {"/ls", "/env", "/workspace"}:
+            target = self._resolve_inspect_path(arg) if arg else workspace
+            if target is None:
+                self._render_inspect((f"路径越界或不存在: {arg or '/'}",))
+                return
+            if not target.exists():
+                self._render_inspect((f"不存在: {target.relative_to(workspace)}",))
+                return
+            self._render_inspect(_list_directory(target, workspace))
+            return
+        if command == "/cat":
+            target = self._resolve_inspect_path(arg) if arg else None
+            if target is None or not target.is_file():
+                self._render_inspect(("用法: /cat <workspace 相对路径，指向文件>",))
+                return
+            self._render_inspect(_cat_file(target, workspace))
+            return
+        if command == "/inspect":
+            if not arg:
+                self._render_inspect(("用法: /inspect <bundle_id>",))
+                return
+            bundle_dir = find_bundle_dir(self._adapter.bundle_root if self._adapter is not None else None, arg)
+            if bundle_dir is None:
+                self._render_inspect((f"未找到 bundle: {arg}",))
+                return
+            self._render_inspect(_inspect_bundle(bundle_dir))
+            return
+        self._render_inspect(("支持: /ls [路径] · /cat <文件> · /inspect <bundle_id> · /clear",))
+
+    async def _handle_onboarding_input(self, value: str) -> None:
+        if is_research_trigger(value):
+            self._start_research()
+            return
+        if is_env_inspect(value):
+            self._write_env_summary()
+            return
+        await self._chat_reply(value)
+
     def on_double_click(self, event: events.DoubleClick) -> None:
         """Double-clicking the middle log copies the full conversation text."""
         if event.widget is not None and event.widget.id == "log":
@@ -862,10 +1423,15 @@ class DeepResearchDemoTUI(App[None]):
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "accept":
             self._select_current_proposal()
+        elif event.button.id == "start-research":
+            self._start_research()
         elif event.button.id == "copy-details":
             self._copy_details()
-        elif event.button.id is not None and event.button.id.startswith("option-"):
-            self._select_advertised_option(event.button.id.removeprefix("option-"))
+        elif event.button.id is not None and (
+            event.button.id.startswith("option-") or event.button.id.startswith("revision-")
+        ):
+            key = event.button.id.removeprefix("option-").removeprefix("revision-")
+            self._select_advertised_option(key)
         elif event.button.id == "cancel" and self.mode != "gateway" and isinstance(self.last_update, AwaitingInput):
             self._dispatch(CancelRun())
 

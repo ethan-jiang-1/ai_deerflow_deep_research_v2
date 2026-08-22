@@ -30,7 +30,7 @@
 | 003 | [`runbook-003-medium-real-auto.md`](runbook-003-medium-real-auto.md) | 花（中） | `.env` 三个变量（`DEEPSEEK_API_KEY`、`TAVILY_API_KEY`、`DEERFLOW_DEMO_MODEL`）+ 网络 | 更难：接真实模型和网页工具，全自动跑完，不等人（声明 minimal 意图 → 单 topic / 每 wave 1 work unit） | `What is one bounded fact about China's EV battery market in 2024?` |
 | 004 | [`runbook-004-hard-real-auto.md`](runbook-004-hard-real-auto.md) | 花（多） | 同 003 的 `.env` 三变量 + 网络 | 最难：真机全自动跑**默认意图**（不声明 minimal），固定比较题压多 topic 链路，专门用来找茬 | `Compare China and US EV battery market in 2024.` |
 | 010 | [`runbook-010-tui-auto.md`](runbook-010-tui-auto.md) + `RUN-010.command` | 花（中） | 同 003 的 `.env` 三变量 + `make install`（含 demo-tui extra）+ 网络（**真人零操作**） | **同一例子的 TUI 自动全跑**——真人只看不动手，hitl1/hitl2 全自动（scripted 默认产品路径），验证"TUI 一层真实图能自主到终态"。入口 `make demo-tui-real-auto`（BUG-061 落地） | 同 003：`What is one bounded fact about China's EV battery market in 2024?` |
-| 020 | [`runbook-020-tui-manual.md`](runbook-020-tui-manual.md) + `RUN-020.command` | 花（中） | 同 003 的 `.env` 三变量 + `make install`（含 demo-tui extra）+ 网络 + **真人坐镇** | 手动 TUI：**与 010 同一例子**，真人 HITL1 交互——TUI 里修订 profile proposal 并显式确认（semantic intake 真模型分类你的自由文本）；HITL2 是自主 continuation 不需要人。压 001-004 从未触达的交互认知面。language CHOICE 不在本 run（条件性 B2，前置 BUG-060） | 同 003：`What is one bounded fact about China's EV battery market in 2024?` |
+| 020 | [`runbook-020-tui-manual.md`](runbook-020-tui-manual.md) + `RUN-020.command` | 花（中） | 同 003 的 `.env` 三变量 + `make install`（含 demo-tui extra）+ 网络 + **真人坐镇** | 手动 TUI：**与 010 同一例子**，真人 HITL1 交互——**启动后先进侦察模式**（看环境/闲聊，不触发研究），点「Start Deep Research」或说触发语才启动；hitl1 里有快捷修订按钮/输入回显/修订确认，修订 profile proposal 并显式确认（semantic intake 真模型分类你的自由文本）；HITL2 是自主 continuation 不需要人。启动器不再提供 Stage A 选择（010 已覆盖通路）。language CHOICE 不在本 run（条件性 B2，前置 BUG-060） | 同 003：`What is one bounded fact about China's EV battery market in 2024?` |
 
 > 📐 手册命名规则固定为 `runbook-00X-难度-用途.md`，以后按这个补。
 
@@ -111,6 +111,39 @@ journal 事件: 56
 **以后新增 01x 跑法时照此办理**：任何自动全跑入口（TUI 或 CLI）都要有等价播报 +
 报告路径 + 可拷贝，runbook 里写明"怎么看它在动、什么才算卡死"。没有这些的自动
 跑法不算合格体验。
+
+## 02x（手动跑法）怎么做更合理：必须支持 inspect workspace
+
+> **铁律（2026-08-21 定）**：**02x 是"真人坐镇 TUI 手动跑"，那就必须给用户
+> 亲手 inspect workspace 的手段——否则 inspect 毫无意义。** 用户不是来当
+> 观众的，他要能随时看到"现在 workspace 里有什么、刚才跑出来的东西在哪"。
+> 任何 02x 跑法，**没有可用的 inspect 手段 = 不合格**。
+
+**020 已落地的 inspect 手段（后来的 02x 照此办理）**：
+
+1. **侦察循环**：启动先进侦察模式、每轮研究结束后自动回到侦察——研究前后
+   都有 inspection 机会（用户随时可以停下来看现场）；
+2. **`环境` / `env` / `workspace` / `工作区` 命令**：直接在 TUI 里输出
+   workspace 结构视图——workspace 绝对路径、`deep-research/`（N scopes ·
+   M bundles）、`soft-bundles/`、`archive/` 概况、最近 3 个 run bundle 的
+   终态与是否有报告、TUI 日志路径；
+3. **全局斜杠命令（研究中也能用，2026-08-21 起）**：`/ls [路径]` 列目录、
+   `/cat <文件>` 看文件内容（state.json 格式化 / events.jsonl 尾部 /
+   report.md 开头）、`/inspect <bundle_id>` 单 bundle 摘要、`/clear` 清空
+   查看面板——斜杠开头一律作为 inspect 命令处理，**不会**被当成研究答案或
+   聊天；输出到独立查看面板，不被心跳渲染清掉；
+4. **单 bundle 检查**：`make demo-sessions DEMO_ARGS="inspect <bundle_id>"`
+   （TUI 内提示给出该命令，用户复制即可跑）；
+5. **日志落盘**：每次渲染详情写 `logs/tui-<pid>.log`，出问题打开文件拷全量；
+6. **可拷贝**：中间对话区双击复制全文、Copy details 按钮、Option+拖拽选一段；
+7. **自然对话也能 inspect（2026-08-21 起）**：侦察聊天模型挂 3 个只读
+   workspace 工具（`list_workspace` / `read_workspace_file` / `inspect_bundle`），
+   直接问"workspace 里有什么 / 刚才的 run 在哪 / 某个文件内容"会真实查文件
+   系统回答——用户以自然语言就能 inspect，与 `/ls` `/cat` 命令等价。
+
+**以后新增 02x 跑法时照此办理**：任何手动跑法（TUI 或 CLI）都必须提供等价
+inspect 手段（看 workspace 结构 / 查 bundle / 拿日志），runbook 里写明
+"用户怎么 inspect"。**没有 inspect 手段的 02x 不算合格体验。**
 
 ## 每天固定怎么跑
 

@@ -13,11 +13,9 @@ prerequisites:
   - "demo-tui extra 已安装（make install）"
 purpose: "以真人在 TUI 里做 HITL1 交互（profile proposal 修订 + 显式确认，semantic intake 真模型分类自由文本）跑通一次真实 Deep Research；HITL2 是被观察的自主 continuation，无人工决策。压 001-004 从未触达的交互认知面。020 与 010 是同一例子：010 自动全跑（交互自动化补），020 手动跑（交互由真人补）。"
 how_to_run: |
-  # Stage A（零凭证，已知形状 UI smoke）
-  cd deep_research_harness && make demo-tui-fixture
-  # Stage B1（本地凭证，真交互真实跑——用户本人操作 TUI）
-  make demo-tui-embedded-smoke
-  # 或双击 RUN-020.command（选 1/2，提示卡齐全）
+  cd deep_research_harness && make demo-tui-embedded-smoke
+  # 或双击 RUN-020.command（直接进真实交互，提示卡齐全；曾有的 Stage A
+  # fixture smoke 选择已移除——010 已覆盖 TUI 通路验证）
 expected_result: "exact bundle（启动前记录目录集合、退出后唯一新增）+ 四步证据链（初始 proposal → 真人必然不同的修订 → 修订后 proposal → 显式确认）+ request/profile.json 与 State 匹配修订后 proposal 且 degraded_profile=false + terminal_status=completed + final/report.md 真实内容。HITL2 作为自主 phase 经过、无人工 prompt。"
 non_goals:
   - "不做 language CHOICE 覆盖（英文固定问题确定性 en，不触发 CHOICE；CHOICE 专项是条件性 B2，前置 BUG-060 修复）。"
@@ -31,7 +29,7 @@ non_goals:
 # 020 Runbook：TUI 真人交互跑（HITL1 专项）
 
 > **一键启动**：Finder 双击仓库根的 **`RUN-020.command`**（或终端里
-> `bash RUN-020.command`）——选 Stage A/B1、显示应答脚本提示卡、在眼前
+> `bash RUN-020.command`）——直接进真实交互、显示应答脚本提示卡、在眼前
 > 的终端窗口起 TUI，退出后按 exact-bundle 绑定规则展示证据位置。
 >
 > **020 是什么**：`_backlog/_local_demo` 前四格全是 CLI 全自动；020 换轴——
@@ -61,24 +59,15 @@ make install   # uv sync --locked --extra operations --extra demo-tui --extra de
 validate_real_demo_prerequisites`）。TUI 启动时自带 safe preflight，只报告
 闭合的 missing category，不显示凭证内容——缺什么它会告诉你。
 
-## 2. Stage A：fixture TUI 已知形状 smoke（零凭证，分钟级）
+## 2. Stage A（fixture UI smoke）：已移除，不再由 020 提供
 
-```bash
-make demo-tui-fixture
-```
+曾有的 `make demo-tui-fixture` 预演步骤已在启动器中移除——010 已验证 TUI
+通路（`test_tui_fixture_route_completes_through_shared_experience` 仍在
+集成测试里覆盖 fixture 形状），020 启动器直接进真实交互，不再多一次选择。
+如需单独跑 fixture smoke：`make demo-tui-fixture`（仅代码层，不参与 020
+验收）。
 
-fixture 图**已知**发出一个 `mode=TEXT` 的 hitl1 interrupt（集成测试
-`test_tui_fixture_route_completes_through_shared_experience` 确定性证明），
-所以这是已知形状的 UI smoke，不是考古：
-
-- 验证形状：banner（fixture-graph demo）→ pipeline → composer 可用 →
-  按 §3.1 轮 1 方式回答 → 到达 completed terminal → 退出（Ctrl-C 或 q）
-  无异常；
-- 可选另跑一次，中途用 Cancel 验证取消分支；
-- **不声称**：本阶段不证明 real semantic intake、language CHOICE 或真实
-  报告质量。
-
-## 3. Stage B1：embedded-smoke TUI 真交互真实跑（战役主体，你操作）
+## 3. 真实交互 TUI（embedded-smoke，战役主体，你操作）
 
 ### 3.0 启动前：记录 bundle 目录集合（exact-bundle 绑定，agent 侧）
 
@@ -89,21 +78,58 @@ ls -d $BROOT/*/b_* 2>/dev/null | sort > /tmp/bundles_before_020.txt
 make demo-tui-embedded-smoke
 ```
 
+### 3.0.5 侦察循环（2026-08-21 起：启动不直接跑，跑完回到侦察）
+
+TUI 以**侦察循环**运行：启动先进侦察模式，**不会自动启动 Deep Research**
+（两段式设计——先熟悉环境、再显式下令）；**每轮研究结束后自动回到侦察
+模式**，可再看环境/再聊/再触发下一轮（研究前后都有 inspection 机会）：
+
+- 开场白说明规则：看环境 / 闲聊 / 触发研究的三种用法；
+- **看环境 / workspace / 之前跑过什么**：输入 `环境` 或 `env`（展示 workspace 路径与结构、最近
+  几个 run 及终态、TUI 日志路径）；
+- **全局斜杠命令（研究中也能用）**：`/ls [路径]` 列目录、`/cat <文件>` 看
+  文件内容、`/inspect <bundle_id>` 单 bundle 摘要、`/clear` 清空查看面板——
+  斜杠开头一律作 inspect 命令，不会当研究答案或聊天；
+- **随便聊**：输入任何内容，真模型低成本回应（复用 demo 凭证的
+  `deepseek-v4-flash`），不会启动研究；**聊天模型挂了 3 个只读 workspace
+  工具**（`list_workspace` / `read_workspace_file` / `inspect_bundle`）——
+  问"workspace 里有什么""刚才的 run 在哪""某个文件内容"会真实查文件系统
+  回答，不猜（2026-08-21）；
+- **触发正式研究**：点 **「Start Deep Research」按钮**，或输入
+  「开始 Deep Research」（或 `start deep research`）——整句匹配，
+  闲聊/疑问句不会误触发；触发后跑固定问题；
+- **研究结束（Terminal）**：自动回到侦察模式，界面显示上一轮 bundle 与
+  `final/report.md` 路径，可立即 inspect / 再触发下一轮。
+
 ### 3.1 应答脚本（control environment：固定问题 + 条件式修订）
 
-**问题（composer 首次输入，原样粘贴）**：
+**启动研究（2026-08-21 起：不再手动粘贴问题）**：
 
 ```
-What is one bounded fact about China's EV battery market in 2024?
+开始 Deep Research        （或 start deep research；整句匹配，别带别的字）
 ```
+
+> 触发后 TUI 自动以固定问题启动研究，无需粘贴；composer 在侦察模式保持
+> 为空，不会预填示例问题误导提交。想换问题暂不支持（control environment，
+> 固定问题）。
 
 **hitl1 应答（条件式修订——必然不同于初始值，可复现且可证明
 human-caused change）**：
 
+> **020 hitl1 交互环节（2026-08-21 加强）**：
+> - **选项按钮**：hitl1 提示下方常驻 4 个快捷修订按钮（深度: 快速概览 /
+>   深度: 深入 / 受众: 普通读者 / 受众: 领域专家），点按钮即提交，不用打字；
+> - **输入回显 + 修订确认**：你输入的任何内容先回显「你: …」，若被语义识别
+>   为修订，下一轮提示会显示「已按你的输入修订：depth → quick_overview …
+>   请确认或继续修改。」——你永远知道自己的输入被理解成了什么；
+> - **拒绝时具体指引**：输入不被识别时，提示显示「你输入的是: …」+ 三种
+>   合法格式（`字段: 值` / `confirm` / 完整 JSON，见 Example）+ 提示可点
+>   快捷按钮——不会再出现"不知道错在哪"。
+
 | 轮次 | TUI 上你看到什么 | 你做什么 |
 | --- | --- | --- |
-| 1（profile proposal） | 初始 proposal（记下 `depth` 字段值） | 若 depth **不是** `quick_overview` → 输入 `depth: quick overview.` 回车；若**已是** `quick_overview` → 输入 `depth: deep dive.` 回车 |
-| 2（refinement，如出现） | 修订后的 proposal（记下 depth 值） | 目标达成 → 点 **Start proposal** 按钮显式确认；未达成 → 再一句短修订，直到 depth = 目标值后确认 |
+| 1（profile proposal） | 初始 proposal（记下 `depth` 字段值） | 若 depth **不是** `quick_overview` → 点「深度: 快速概览」按钮或输入 `depth: quick overview.`；若**已是** `quick_overview` → 点「深度: 深入」按钮或输入 `depth: deep dive.` |
+| 2（refinement，如出现） | 修订后的 proposal + 「已按你的输入修订…」确认行 | 目标达成 → 点 **Start proposal** 按钮显式确认；未达成 → 再一句短修订，直到 depth = 目标值后确认 |
 
 - **记录三值**（战役证据，抄进记录）：初始 proposal 的 depth / 你的修订
   语句 / 修订后 proposal 的 depth。三者构成 human-caused change 的前两步。
@@ -191,7 +217,7 @@ visit/resume 事件、HITL1 model-tool ordinal（辅助）、最终
 
 仅当 (a) ~~BUG-060（Demo TUI typed OPTION 缺失，已登记）修复并有确定性
 回归~~（✅ 已满足：change `fix-demo-tui-choice-option`，2026-08-21，RED-009
-+ verify 全绿），且 (b) B1 收官后仍决定覆盖 CHOICE，才执行。用独立的
++ verify 全绿），且 (b) §3 真实交互收官后仍决定覆盖 CHOICE，才执行。用独立的
 unspecified-language 问题（不含 ASCII 字母与汉字），验证 TUI 只显示
 `zh`/`en`、提交 typed OPTION、HITL1 admission 写入选定 output language。
 该 run 不与 003 profile 对照混同。此处只留占位。

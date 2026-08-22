@@ -305,3 +305,19 @@ def test_render_terminal_includes_report_path_when_provided(tmp_path: Path) -> N
 
     view_without = demo_tui.render_run_update(completed)
     assert "Report:" not in view_without.detail
+
+
+def test_render_hitl1_rejection_surfaces_last_typed_and_formats() -> None:
+    update = run_updates.awaiting_hitl1()
+    prompt = update.prompt
+    rejected = update.model_copy(
+        update={"prompt": prompt.model_copy(update={"rejection_category": "profile_input_unrecognized"})}
+    )
+
+    view = demo_tui.render_run_update(rejected, last_typed="some unclear text")
+    assert "你输入的是: some unclear text" in view.detail
+    assert "字段: 值" in view.detail
+    assert "快捷按钮" in view.detail
+
+    view_without = demo_tui.render_run_update(rejected)
+    assert "你输入的是" not in view_without.detail
