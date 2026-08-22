@@ -41,6 +41,7 @@
 | T17 | R6 否决：`make -j verify` 实测更慢 | ✅ 2026-08-22 | -n 3 → 59.5s、-n 2 → 67.9s vs 串行；过订阅 |
 | T18 | 用户指令：默认串行 | ✅ 2026-08-22 | `PYTEST_XDIST ?=`（空=串行）；xdist 改 opt-in；契约/文档同步 |
 | T19 | R2 撤回：CI 4-job 违反治理契约 | ✅ 2026-08-22 | `test_agent_pr_workflow` / `test_repository_delivery` 变红；恢复单 job + `make verify`，保留 R1 缓存 |
+| T20 | CI 首跑尝试（PR #1）+ 用户指示"CI 以后再说" | ✅ 2026-08-22 | 失败根因=**存量问题**：checkout 未拉 deerflow submodule → uv sync 找不到 editable 依赖 → install 挂（非本次改动引起）；已停手，PR #1 与分支保留作占位；修法（以后）：checkout 加 `submodules: recursive` |
 
 ### 历史决策记录（所有决定，含否决/撤回，原因即价值）
 
@@ -58,7 +59,7 @@
 
 | 项 | 状态 | 触发条件 / 说明 |
 | --- | --- | --- |
-| CI 确认 R1 缓存命中 | 📋 需真实 CI 跑 | 推一次分支，看 install 步骤是否命中缓存；命中则 CI 总时长 4-6min → ~1.5-2min |
+| CI 确认 R1 缓存命中（已停手，用户指示"CI 以后再说"） | ⏸️ 搁置 | 先修存量 CI 问题：checkout 加 `submodules: recursive`（T20）；修好后重开 PR #1 确认缓存命中 |
 | R4 demo_tui 用例数 | 📋 待办 | 02x 战役收尾后重新评估（§5.1"不合并"结论战役期间成立） |
 | R5 收集优化 | 📋 低优先 | workflow lane 全树收集 3040 个（~4s），收益 ~2-3s，不值得 |
 | （可选）xdist 默认并行重启 | 📋 待 review | 若有人认真 review 完并行安全性，可把默认翻回 `-n auto`（本次实测 52.4s） |
