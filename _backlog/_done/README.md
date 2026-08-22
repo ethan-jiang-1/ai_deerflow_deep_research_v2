@@ -27,7 +27,7 @@ _done/
 |---------|------|---------|
 | `_fixed_bugs/` | 60 | BUG-061 |
 | `_done_todos/` | 2 | DONE-003 |
-| `_closed_plans/` | 50 | CLS-052 |
+| `_closed_plans/` | 52 | CLS-053 |
 
 ### ⏸ SUSPENDED（明确暂停）
 

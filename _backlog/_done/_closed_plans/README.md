@@ -70,5 +70,7 @@ plan 完成后从 `_backlog/plans/` 通过 `git mv` 移入本目录：
 | CLS-047 | 2026-08-19 | [fix-003-blocking-bugs-three-changes.md](fix-003-blocking-bugs-three-changes.md) | 003 阻断 bug 三 change 战役完成：fix-request-envelope-coherence（047/049）、honest-degraded-delivery（050/051/053/054）、run-forensics（048.1-4/6）+ 提前的 preserve-failed-run-bundles（052）全部实施、测试门全绿、归档并同步主 specs；真实 003 复跑 RESULT: PASS（9 阶段 completed，真实 findings + 诚实 Uncertainties）；BUG-048 第 7 项（state.json 投影）留 follow-up |
 | CLS-048 | 2026-08-19 | [openspec-materials-feedback-from-bugfix-campaign.md](openspec-materials-feedback-from-bugfix-campaign.md) | 003 bugfix campaign feedback absorbed by openspec-rule-reachability — delta mechanics (full MODIFIED/scenario carry), archive gate, ID reachability (plan-time reservation), and direct exit-code measurement |
 | CLS-049 | 2026-08-19 | [openspec-rule-reachability.md](openspec-rule-reachability.md) | Design + execution implemented and archived via OpenSpec change `openspec-rule-reachability`; T0–T3 landed, T4 route-table single-sourcing deliberately deferred / not part of this change |
+| CLS-051 | 2026-08-20 | [CLS-051-hard-real-auto-runs.md](CLS-051-hard-real-auto-runs.md) | Mode 004 hard real-auto 默认意图跑通（HRA-001 战役，比较题找茬、不污染产品逻辑）设计定稿并落地；补录索引（此前文件已归档但未登记） |
+| CLS-052 | 2026-08-22 | [CLS-052-test-suite-cleanup-and-speed.md](CLS-052-test-suite-cleanup-and-speed.md) | 测试资产审计与回归提速（多轮）完成：去重 1 处、修 36 存量红测（eval digest + readiness 真回归）、串行默认基建 + pytest-xdist opt-in、CI uv 缓存配置；决策（demo_tui 合并/单次调用/make -j 否决、R2 撤回、旧概念保留）全部有实测证据入账；剩余 R4/R5/CI 确认为条件性待办 |
 
-**Next available plan ID: CLS-050**
+**Next available plan ID: CLS-053**

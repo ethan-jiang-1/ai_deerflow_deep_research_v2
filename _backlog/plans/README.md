@@ -19,12 +19,11 @@
 
 | Plan | 类型 | 下一步 |
 |------|------|--------|
-| [test-suite-cleanup-and-speed.md](test-suite-cleanup-and-speed.md) | 分析 | 测试资产审计：合并/去重清单、耗时-价值分级、tests_suspended 挂起程序与 xdist 并行杠杆；待 §7 决策点拍板 |
 | [openspec-product-boundary-portability.md](openspec-product-boundary-portability.md) | 设计 | 将 OpenSpec practice 分为 portable core/profiles、Deep Research local composition 与 product front door，并在本仓完成机械验证 |
 | [tui-interactive-campaign.md](tui-interactive-campaign.md) | 设计 | TUI 真人交互跑通真实 Deep Research（010 交互专项探路）；v2 已收敛，执行前吸收独立审阅 |
 | [tui-interactive-campaign-review.md](tui-interactive-campaign-review.md) | 审阅 | 校正 HITL2、CHOICE、证据归因、exact Bundle 与产品边界后再启动真实 API 战役 |
 
-**Next available plan ID: CLS-052**（移入 `_closed_plans/` 时分配）
+**Next available plan ID: CLS-053**（移入 `_closed_plans/` 时分配）
 
 ## 已归档（移至 `_done/_closed_plans/`）
 
