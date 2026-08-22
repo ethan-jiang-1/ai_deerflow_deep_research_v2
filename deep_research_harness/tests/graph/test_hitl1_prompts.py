@@ -265,3 +265,44 @@ def test_semantic_candidate_parser_accepts_closed_candidates_only() -> None:
         parse_semantic_candidate_output("not json")
     with pytest.raises(ValidationError):
         parse_semantic_candidate_output('{"intent":"accept_current_proposal","action_id":"accept_suggestion"}')
+
+
+def test_local_phrase_revision_maps_chinese_phrase_to_complete_revision() -> None:
+    from deerflow_deep_research.domain.human_interaction import ProposalValues
+    from deerflow_deep_research.graph.nodes.hitl1.node import _local_phrase_revision
+
+    current = ProposalValues(
+        depth="standard",
+        audience="practitioner",
+        format="detailed_report",
+        cost_tolerance="minimal",
+        time_budget="standard",
+        must_answer=("Which storage option is safer?",),
+        scope_boundaries="Grid-scale storage only.",
+        custom_notes="",
+        request_language="en",
+        output_language="en",
+    )
+
+    revised = _local_phrase_revision("快速概览领域专家", current)
+    assert revised is not None
+    assert revised.depth == "quick_overview"
+    assert revised.audience == "domain_expert"
+    # Unmentioned fields inherit from the current proposal.
+    assert revised.format == "detailed_report"
+    assert revised.must_answer == ("Which storage option is safer?",)
+    assert revised.output_language == "en"
+
+    assert _local_phrase_revision("deep dive", current) is not None
+    assert _local_phrase_revision("随便聊聊", current) is None
+
+
+def test_clarify_feedback_echoes_operator_input_in_chinese() -> None:
+    from deerflow_deep_research.domain.human_interaction import InteractionFeedbackKind
+    from deerflow_deep_research.graph.nodes.hitl1.node import _clarify_feedback
+
+    feedback = _clarify_feedback("快速概览领域专家")
+    assert feedback.kind is InteractionFeedbackKind.CLARIFICATION
+    assert "快速概览领域专家" in feedback.message
+    assert "按钮" in feedback.message
+    assert "确认" in feedback.message

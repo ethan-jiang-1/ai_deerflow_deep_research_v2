@@ -6,6 +6,7 @@ import pytest
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
 from deerflow_deep_research.domain.human_interaction import (
+    InteractionFeedbackKind,
     InteractionSubject,
     ProposalValues,
     build_interaction_projection,
@@ -331,3 +332,58 @@ def test_suspension_projection_uses_same_control_envelope_and_omits_internal_cur
     assert "all_real" in message.content
     assert message.artifact["human_input"]["request_id"] == "drh_test"
     assert "suspension_cursor" not in str(message.artifact)
+
+
+def test_hitl1_interaction_prompt_tells_valid_inputs_and_shows_json_example() -> None:
+    from deerflow_deep_research.runtime.run_experience import ResearchRunExperience
+
+    experience = ResearchRunExperience(transport=object(), mode="real")
+    request = HumanInputRequest(
+        request_id="drh_interaction",
+        mode=HumanInputMode.TEXT,
+        title="Research scope",
+        context="safe context",
+        action_ids=("accept_suggestion",),
+        interaction=_interaction(),
+    )
+    pending = PendingInputProjection(
+        request_id="drh_interaction",
+        pending_phase="hitl1",
+        generation=0,
+        mode="text",
+    )
+
+    prompt = experience._hitl1_prompt(request, pending)
+
+    assert prompt.answer_example
+    body = "\n".join(prompt.body_lines)
+    assert "confirm" in body
+    assert "JSON" in body
+    assert "depth" in prompt.answer_example
+
+
+def test_hitl1_revision_acknowledged_feedback_lists_changed_fields() -> None:
+    from deerflow_deep_research.domain.human_interaction import ProposalValues
+    from deerflow_deep_research.graph.nodes.hitl1.node import _revision_acknowledged_feedback
+
+    current = ProposalValues(
+        depth="standard",
+        audience="practitioner",
+        format="detailed_report",
+        cost_tolerance="minimal",
+        time_budget="standard",
+        must_answer=("Which option is safer?",),
+        request_language="en",
+        output_language="en",
+    )
+    revised = current.model_copy(
+        update={"depth": "quick_overview", "audience": "layperson", "cost_tolerance": "moderate"}
+    )
+
+    feedback = _revision_acknowledged_feedback(current, revised)
+
+    assert feedback.kind == InteractionFeedbackKind.REVISION_ACKNOWLEDGED
+    assert "depth → quick_overview" in feedback.message
+    assert "audience → layperson" in feedback.message
+    assert "cost_tolerance → moderate" in feedback.message
+    assert "format" not in feedback.message

@@ -20,6 +20,7 @@ from langgraph.types import interrupt
 
 from deerflow_deep_research.domain.context import NodeExecutionResult
 from deerflow_deep_research.domain.human_interaction import (
+    HumanIntent,
     InteractionFeedback,
     InteractionFeedbackKind,
     InteractionProjection,
@@ -485,6 +486,98 @@ def _semantic_failure_feedback(kind: InteractionFeedbackKind) -> InteractionFeed
     return InteractionFeedback(kind=kind, message=message)
 
 
+# Deterministic natural-language shortcuts for the common HITL1 revisions.
+# Matching is a plain substring scan over the operator reply; the first hit per
+# field wins. This keeps the common "快速概览 / 深入 / 领域专家" phrasing
+# zero-model and deterministic, while the semantic intake still owns everything
+# this table does not cover (per the objective-is-data-only contract).
+_LOCAL_REVISION_PHRASES: tuple[tuple[str, str, str], ...] = (
+    ("深度: 快速概览", "depth", "quick_overview"),
+    ("快速概览", "depth", "quick_overview"),
+    ("深度: 深入", "depth", "deep_dive"),
+    ("深入", "depth", "deep_dive"),
+    ("深度: 标准", "depth", "standard"),
+    ("深度: 全面", "depth", "exhaustive"),
+    ("quick overview", "depth", "quick_overview"),
+    ("deep dive", "depth", "deep_dive"),
+    ("受众: 普通读者", "audience", "layperson"),
+    ("普通读者", "audience", "layperson"),
+    ("受众: 领域专家", "audience", "domain_expert"),
+    ("领域专家", "audience", "domain_expert"),
+    ("受众: 从业者", "audience", "practitioner"),
+    ("从业者", "audience", "practitioner"),
+    ("受众: 高管", "audience", "executive"),
+    ("输出: 简报", "format", "executive_brief"),
+    ("详细报告", "format", "detailed_report"),
+    ("详细", "format", "detailed_report"),
+    ("成本: 最省", "cost_tolerance", "minimal"),
+    ("省一点", "cost_tolerance", "moderate"),
+    ("预算: 不限", "cost_tolerance", "extensive"),
+    ("时间: 快", "time_budget", "very_quick"),
+    ("时间: 标准", "time_budget", "standard"),
+    ("时间: 充足", "time_budget", "thorough"),
+)
+
+
+def _local_phrase_revision(reply: str, proposal: ProposalValues) -> ProposalValues | None:
+    """Map a bounded natural-language phrase to a complete revised proposal.
+
+    Returns None when no phrase matches (or the reply looks like a question),
+    letting the semantic intake own the reply. Never drops proposal fields:
+    unmatched fields inherit their current values (model_copy update).
+    """
+    if not isinstance(reply, str) or not reply.strip():
+        return None
+    lowered = reply.strip().lower()
+    # Questions go to the semantic intake (ASK/CLARIFY), not the phrase table,
+    # so "为什么建议详细报告？" is never mistaken for a format revision.
+    if any(marker in lowered for marker in ("为什么", "为啥", "如何", "怎么", "what", "why", "how", "？", "?")):
+        return None
+    # Short bounded phrases map deterministically (zero model cost); longer,
+    # compound expressions go to the semantic intake, which can combine
+    # multiple intents better than a keyword table.
+    if len(reply.strip()) > 12:
+        return None
+    updates: dict[str, str] = {}
+    for phrase, field, value in _LOCAL_REVISION_PHRASES:
+        if phrase.lower() in lowered and field not in updates:
+            updates[field] = value
+    if not updates:
+        return None
+    return proposal.model_copy(update=updates)
+
+
+def _clarify_feedback(reply: str) -> InteractionFeedback:
+    """Bounded, actionable Chinese feedback instead of model-generated English text."""
+    bounded = " ".join("".join(ch if ch.isprintable() else " " for ch in reply).split())[:120]
+    return InteractionFeedback(
+        kind=InteractionFeedbackKind.CLARIFICATION,
+        message=(
+            f"你输入的是「{bounded}」，我还没能把它理解成研究配置。"
+            "可以直接点下面的按钮，或输入「确认」「深度: 快速概览」「受众: 领域专家」这类短语。"
+        ),
+    )
+
+
+def _revision_acknowledged_feedback(current: ProposalValues, revised: ProposalValues) -> InteractionFeedback:
+    """Echo which fields the semantic intake understood the user's reply to change.
+
+    Gives the operator a "you said X, I understood Y" confirmation instead of a
+    silent revision that leaves them guessing whether their input registered.
+    """
+    changes: list[str] = []
+    for field in ("depth", "audience", "format", "cost_tolerance", "time_budget"):
+        before = getattr(current, field)
+        after = getattr(revised, field)
+        if after != before:
+            changes.append(f"{field} → {after}")
+    if changes:
+        message = "已按你的输入修订：" + "、".join(changes) + "。请确认或继续修改。"
+    else:
+        message = "已记录你的输入。请确认或继续修改。"
+    return InteractionFeedback(kind=InteractionFeedbackKind.REVISION_ACKNOWLEDGED, message=message)
+
+
 def _retry_eligible(problem: NodeProblem | None) -> bool:
     return (
         problem is not None
@@ -587,6 +680,15 @@ async def _classify_proposal_reply(
     repair_used = False
     transient_retries = 0
 
+    # Deterministic natural-language shortcut: bounded phrases map to a complete
+    # revision with zero model calls (no semantic intake, no cost, no clarify).
+    local_revision = _local_phrase_revision(reply, subject.proposal)
+    if local_revision is not None:
+        return (
+            SemanticCandidate(intent=HumanIntent.REVISE_PROPOSAL, revision=local_revision),
+            None,
+        )
+
     for invocation_ordinal in range(1, MAX_SEMANTIC_INTAKE_CALLS + 1):
         request = build_semantic_intake_prompt(
             original_question=original_question,
@@ -610,13 +712,19 @@ async def _classify_proposal_reply(
 
         assert result is not None
         try:
-            return parse_semantic_candidate_output(result.summary), None
+            candidate = parse_semantic_candidate_output(result.summary)
         except (TypeError, ValueError):
             if repair_used or invocation_ordinal >= MAX_SEMANTIC_INTAKE_CALLS:
                 return None, _semantic_failure_feedback(InteractionFeedbackKind.SEMANTIC_INVALID)
             repair_used = True
             repair_error = "semantic_candidate_invalid"
             invalid_draft = result.summary
+            continue
+        if candidate.intent is HumanIntent.CLARIFY:
+            # Replace model-generated English clarification with an actionable
+            # Chinese echo + guidance (020 UX; the operator must see their input).
+            return None, _clarify_feedback(reply)
+        return candidate, None
 
     return None, _semantic_failure_feedback(InteractionFeedbackKind.SEMANTIC_UNAVAILABLE)
 
@@ -1025,6 +1133,19 @@ def build_real(dependencies: NodeBuildDependencies):
                     assert feedback is not None
                     evidence = SemanticInterpretation(feedback=feedback)
             outcome = admit_research_confirmation(subject, evidence=evidence)
+            if (
+                isinstance(outcome, OutstandingResearchDecision)
+                and outcome.feedback is None
+                and isinstance(evidence, SemanticInterpretation)
+                and evidence.candidate is not None
+                and evidence.candidate.intent is HumanIntent.REVISE_PROPOSAL
+                and evidence.candidate.revision is not None
+            ):
+                # Echo the understood revision so the operator knows their input
+                # registered and what it was interpreted as (020 UX feedback).
+                outcome = outcome.model_copy(
+                    update={"feedback": _revision_acknowledged_feedback(subject.proposal, evidence.candidate.revision)}
+                )
             if isinstance(outcome, AcceptedResearchFacts):
                 return await _accepted_confirmation_update(request_store, bundle_state, outcome, response=response)
             return await _outstanding_confirmation_update(request_store, bundle_state, outcome, response=response)

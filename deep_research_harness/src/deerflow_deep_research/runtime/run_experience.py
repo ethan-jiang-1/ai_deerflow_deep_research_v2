@@ -783,7 +783,11 @@ class ResearchRunExperience:
                 proposed_scope=self._interaction_proposal_lines(interaction),
                 interaction=interaction,
                 visible_controls=interaction.controls,
-                body_lines=("可以直接确认、说明想修改的内容，或提出关于当前建议的问题。",),
+                body_lines=(
+                    "三种合法输入：直接确认（输入 confirm）、用 `字段: 值` 修订单个字段"
+                    "（如 `depth: deep dive`）、或提供完整 JSON。",
+                ),
+                answer_example=_HITL1_JSON_EXAMPLE,
             )
         try:
             payload = json.loads(request.context)

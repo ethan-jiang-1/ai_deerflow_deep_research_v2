@@ -931,7 +931,9 @@ async def test_semantic_revision_publishes_new_visible_proposal_before_acceptanc
     assert revised["proposed_profile"]["depth"] == "deep_dive"
     assert revised["proposed_profile"]["audience"] == "domain_expert"
     assert revised["proposal_version"] == 2
-    assert revised["interaction_feedback"] is None
+    # 020 UX: a semantic revision echoes what was understood (revision_acknowledged).
+    assert revised["interaction_feedback"]["kind"] == "revision_acknowledged"
+    assert "depth → deep_dive" in revised["interaction_feedback"]["message"]
     assert revised["profile_rejection_round"] == 0
     assert revised["consumed_message_ids"] == ("human-revise",)
     assert store.writes == []

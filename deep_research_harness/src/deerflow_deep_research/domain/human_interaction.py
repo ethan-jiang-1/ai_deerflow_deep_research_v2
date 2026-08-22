@@ -44,6 +44,7 @@ class InteractionFeedbackKind(StrEnum):
     OUTPUT_LANGUAGE_REQUIRED = "output_language_required"
     SEMANTIC_UNAVAILABLE = "semantic_unavailable"
     SEMANTIC_INVALID = "semantic_invalid"
+    REVISION_ACKNOWLEDGED = "revision_acknowledged"
 
 
 class InteractionResolutionKind(StrEnum):

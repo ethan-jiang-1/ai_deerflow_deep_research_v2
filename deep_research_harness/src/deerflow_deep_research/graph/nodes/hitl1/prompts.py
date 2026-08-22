@@ -194,7 +194,8 @@ def build_semantic_intake_prompt(
                 "required": ["intent", "revision"],
                 "revision": (
                     "full ProposalValues object: depth, audience, format, cost_tolerance, "
-                    "time_budget, must_answer, scope_boundaries, custom_notes"
+                    "time_budget, must_answer, scope_boundaries, custom_notes; "
+                    "unmentioned fields inherit the values from the current proposal"
                 ),
             },
             "ask_about_proposal": {"required": ["intent", "explanation"]},
