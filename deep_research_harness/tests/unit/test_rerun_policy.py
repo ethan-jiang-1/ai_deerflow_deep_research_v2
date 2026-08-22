@@ -1,12 +1,15 @@
 """Red tests for max_rerun_generations policy and generation validation.
 
 @impl REN-005
+
+The fixture rerun generation regression (generation 0/1/2 routes through the
+bounded fixture policy) is covered by tests/unit/test_rerun_e2e.py
+(TestFixtureRerunRegression) and intentionally not duplicated here.
 """
 
 from __future__ import annotations
 
 import pytest
-from deerflow_deep_research_fixtures.graph.nodes.rerun.adapter import build_fixture
 
 from deerflow_deep_research.domain.node_spec import NodeBuildDependencies
 from deerflow_deep_research.domain.state import ResearchGraphState
@@ -124,42 +127,3 @@ class TestGenerationValidation:
                 outer_thread_id="thread-1",
                 generation=-1,
             )
-
-
-class TestFixtureRerunStillUsesConstant:
-    def test_fixture_at_generation_0_produces_route_next(self) -> None:
-        """Fixture rerun at generation 0 uses its bounded rerun policy."""
-        import asyncio
-
-        state = {
-            "generation": 0,
-            "bundle_id": "b_" + "A" * 43,
-        }
-        run = build_fixture(
-            NodeBuildDependencies(
-                graph_context=object(),
-                agent_context=object(),
-                capabilities=object(),
-            )
-        )
-        result = asyncio.run(run(state))
-        assert result["generation"] == 1
-        assert result["route"] == "next"
-
-    def test_fixture_at_generation_2_exhausted(self) -> None:
-        """Fixture rerun at generation 2 routes exhausted."""
-        import asyncio
-
-        state = {
-            "generation": 2,
-            "bundle_id": "b_" + "A" * 43,
-        }
-        run = build_fixture(
-            NodeBuildDependencies(
-                graph_context=object(),
-                agent_context=object(),
-                capabilities=object(),
-            )
-        )
-        result = asyncio.run(run(state))
-        assert result["route"] == "exhausted"

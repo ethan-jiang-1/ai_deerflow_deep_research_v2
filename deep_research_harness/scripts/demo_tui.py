@@ -321,8 +321,7 @@ def live_progress_lines(bundle_root: Path | None) -> tuple[str, ...]:
     pipeline = tuple(
         phase
         for phase in PHASE_META
-        if not phase.endswith(("_auto_profile", "_auto_proceed"))
-        and phase not in {"bootstrap", "rerun"}
+        if not phase.endswith(("_auto_profile", "_auto_proceed")) and phase not in {"bootstrap", "rerun"}
     )
     lines: list[str] = []
     if done or last_node_phase:
@@ -338,9 +337,7 @@ def live_progress_lines(bundle_root: Path | None) -> tuple[str, ...]:
         # the run is still alive and how far it still has to go, instead of
         # staring at a static "in progress" line and assuming it died.
         remaining = [
-            phase
-            for phase in pipeline
-            if phase not in done and (phase != last_node_phase if in_flight else True)
+            phase for phase in pipeline if phase not in done and (phase != last_node_phase if in_flight else True)
         ]
         if remaining:
             lines.append(f"接下来: {' → '.join(remaining)}")
@@ -416,8 +413,7 @@ def is_env_inspect(text: str) -> bool:
     }:
         return True
     return any(
-        token in normalized
-        for token in ("环境", "bundle", "日志", "where", "在哪", "run 在哪", "workspace", "工作区")
+        token in normalized for token in ("环境", "bundle", "日志", "where", "在哪", "run 在哪", "workspace", "工作区")
     )
 
 
@@ -654,7 +650,7 @@ def _inspect_bundle(bundle_dir: Path) -> tuple[str, ...]:
             lines.append(f"  work: {', '.join(units[:6])}")
     report = bundle_dir / "final" / "report.md"
     lines.append(f"  报告: {report if report.is_file() else '(未产出)'}")
-    lines.append(f"  详情: `make demo-sessions DEMO_ARGS=\"inspect {bundle_dir.name}\"`")
+    lines.append(f'  详情: `make demo-sessions DEMO_ARGS="inspect {bundle_dir.name}"`')
     return tuple(lines)
 
 
@@ -998,9 +994,7 @@ class DeepResearchDemoTUI(App[None]):
                 # 010 auto TUI: dispatch the fixed scripted question with the
                 # default product path (no profile_intent). Graph-owned policy
                 # answers HITL1/HITL2; the human never types.
-                self._dispatch(
-                    StartRun(question=self.AUTO_QUESTION, scripted=True, profile_intent=None)
-                )
+                self._dispatch(StartRun(question=self.AUTO_QUESTION, scripted=True, profile_intent=None))
             elif self.mode == "embedded_smoke":
                 # 020 manual TUI: start in recon mode. The operator may inspect
                 # the environment and chat freely; only an explicit
@@ -1417,9 +1411,10 @@ class DeepResearchDemoTUI(App[None]):
                 for bundle in bundles[:3]:
                     terminal = "?"
                     try:
-                        terminal = json.loads((bundle / "state.json").read_text(encoding="utf-8")).get(
-                            "terminal_status"
-                        ) or "active"
+                        terminal = (
+                            json.loads((bundle / "state.json").read_text(encoding="utf-8")).get("terminal_status")
+                            or "active"
+                        )
                     except (OSError, ValueError):
                         pass
                     report_note = " · 有报告" if (bundle / "final" / "report.md").is_file() else ""
@@ -1550,7 +1545,7 @@ class DeepResearchDemoTUI(App[None]):
         except OSError:
             return
         log = self.query_one("#log", RichLog)
-        for line in raw[self._feed_watermark:]:
+        for line in raw[self._feed_watermark :]:
             try:
                 event = json.loads(line)
             except ValueError:

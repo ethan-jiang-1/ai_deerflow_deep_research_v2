@@ -13,6 +13,10 @@ on:
 permissions:
   contents: read
 
+# 规范门禁保持单 job + `make verify`（治理契约 test_agent_pr_workflow /
+# test_repository_delivery 钉死此结构）。提速只走 uv 缓存（R1）：
+# install 冷缓存 2-4 分钟 → 命中后 ~30s；UV_OFFLINE=1 依赖 install 预热的
+# 本地缓存。prune-cache: false 保留完整缓存避免回退冷安装。
 jobs:
   deterministic:
     runs-on: ubuntu-latest
@@ -22,6 +26,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "deep_research_harness/uv.lock"
+          prune-cache: false
       - run: make install
       - run: UV_OFFLINE=1 make verify
       - run: UV_OFFLINE=1 make test-duration-policy

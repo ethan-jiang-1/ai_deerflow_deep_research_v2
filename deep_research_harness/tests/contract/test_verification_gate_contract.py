@@ -31,22 +31,24 @@ def test_makefile_exposes_exact_non_mutating_verify_composition() -> None:
     assert ("\t\ttests/assets tests/contract tests/domain tests/engine tests/unit tests/graph tests/eval \\\n") in text
     assert "--durations=20 --junitxml=.reports/test-fast.xml" in text
     assert "PYTEST := python -m pytest" in text
+    # Gate lanes default to serial (parallel has not been carefully reviewed);
+    # PYTEST_XDIST is the opt-in parallel knob, carried by every gate lane, and
+    # must be declared with a `?=` (empty default = serial).
+    assert "PYTEST_XDIST ?=" in text
+    for lane in ("test:", "test-fast:", "test-integration:", "test-workflow:"):
+        body = text.split(lane, 1)[1].split("\n\n", 1)[0]
+        assert "uv run $(PYTEST) $(PYTEST_XDIST)" in body
     for target in ("test-intake", "test-retained-observation", "test-work-unit", "test-strict-checkpoint"):
         assert re.search(rf"^{target}:\n\t@started=.* elapsed:", text, re.MULTILINE)
-    assert (
-        "test-duration-policy:\n"
-        "\tuv run --extra operations python scripts/check_test_durations.py .reports/test-fast.xml"
-    ) in text
-    assert (
-        'uv run --extra operations --extra demo-tui $(PYTEST) -m "not (requires_llm or release_e2e or periodic)"'
-    ) in text
+    assert ("test-duration-policy:\n\tuv run python scripts/check_test_durations.py .reports/test-fast.xml") in text
+    assert ('uv run $(PYTEST) $(PYTEST_XDIST) -m "not (requires_llm or release_e2e or periodic)"') in text
     assert (
         "test-entry-environment-regression:\n"
         "\tmkdir -p .reports\n"
-        "\tUV_OFFLINE=1 uv run --no-sync --extra operations --extra demo-tui $(PYTEST) \\\n"
+        "\tUV_OFFLINE=1 uv run --no-sync $(PYTEST) \\\n"
         "\t\ttests/scenarios_periodic \\\n"
         '\t\t-m "periodic and not (requires_llm or release_e2e)" \\\n'
         "\t\t--durations=20 --junitxml=.reports/test-entry-environment.xml\n"
-        "\tuv run --no-sync --extra operations python scripts/check_test_durations.py "
+        "\tuv run --no-sync python scripts/check_test_durations.py "
         ".reports/test-entry-environment.xml --lane periodic"
     ) in text

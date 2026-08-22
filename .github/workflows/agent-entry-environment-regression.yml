@@ -39,6 +39,12 @@ jobs:
         working-directory: deep_research_harness
     steps:
       - uses: actions/checkout@v4
+      # uv 缓存显式开启（与 agent-tests.yml 一致）：install 冷缓存 → 命中后 ~30s，
+      # 且 UV_OFFLINE=1 依赖 install 预热后的本地缓存。
       - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "deep_research_harness/uv.lock"
+          prune-cache: false
       - run: make install
       - run: UV_OFFLINE=1 make test-entry-environment-regression

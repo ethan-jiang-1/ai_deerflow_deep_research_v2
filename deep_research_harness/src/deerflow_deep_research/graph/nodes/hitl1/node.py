@@ -102,9 +102,7 @@ _SEMANTIC_UNAVAILABLE_MESSAGE = (
     "我暂时没能理解你的输入（理解服务调用失败）。可以再试一次，或点下方按钮 / "
     "用 `字段: 值` 格式（如 `depth: quick overview`）直接给出修订。"
 )
-_SEMANTIC_INVALID_MESSAGE = (
-    "我没能清晰理解你的输入。可以确认、用 `字段: 值` 修订单个字段，或输入完整 JSON。"
-)
+_SEMANTIC_INVALID_MESSAGE = "我没能清晰理解你的输入。可以确认、用 `字段: 值` 修订单个字段，或输入完整 JSON。"
 
 
 def _profile_progress_payload(profile: PartialResearchProfile) -> dict[str, Any]:
@@ -588,8 +586,7 @@ def _revision_acknowledged_feedback(current: ProposalValues, revised: ProposalVa
             for field in ("depth", "audience", "format", "cost_tolerance", "time_budget")
         )
         message = (
-            f"你的输入与当前配置一致（{current}），无需修改——"
-            "点「Start proposal」按钮或输入 confirm 即可开始研究。"
+            f"你的输入与当前配置一致（{current}），无需修改——点「Start proposal」按钮或输入 confirm 即可开始研究。"
         )
     return InteractionFeedback(kind=InteractionFeedbackKind.REVISION_ACKNOWLEDGED, message=message)
 

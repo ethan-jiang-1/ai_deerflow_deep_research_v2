@@ -463,21 +463,31 @@ class RuntimeNodeAgentBridge:
                 code=RunFailureCode.TOOL_EXECUTION_FAILED,
             )
         except NodeAgentStop as exc:
+            degraded_message: object | None = None
             if (
                 exc.finish_reason is NodeFinishReason.BUDGET_EXHAUSTED
                 and getattr(exc, "budget_stop_reason", None) is BudgetStopReason.PER_CALL_OUTPUT_CAP
-                and getattr(exc, "response", None) is not None
             ):
+                # Mirror the middleware's response-message extraction: the stop
+                # rides along the raw model response whose .result holds the
+                # already-generated messages.
+                degraded_result = getattr(exc.response, "result", None)
+                if isinstance(degraded_result, (list, tuple)) and degraded_result:
+                    degraded_message = degraded_result[-1]
+            degraded_content = getattr(degraded_message, "content", None)
+            if isinstance(degraded_content, str) and degraded_content:
                 # A single model call slightly over its output cap is not a
                 # runaway: the output is already generated and paid for, so
                 # accept it degraded and continue the run instead of killing it.
                 # Hard budget stops remain for the real runaway controls
-                # (model-call limit, wall time, cumulative total budget).
+                # (model-call limit, wall time, cumulative total budget). The
+                # degraded projection keeps the real output instead of
+                # discarding it.
                 recording.budget_stop_reason = BudgetStopReason.PER_CALL_OUTPUT_CAP
                 self._emit(context, operation="run_agent", status="per_call_output_cap_degraded")
                 try:
                     node_result = self._project_result(
-                        exc.response,
+                        {"messages": (degraded_message,)},
                         untrusted_tool_results=tuple(tool_policy_middleware.tool_results),
                     )
                 except Exception:

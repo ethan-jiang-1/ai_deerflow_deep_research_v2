@@ -11,6 +11,13 @@ lowest responsible test seam.
 Run commands from `deep_research_harness/`. During an ordinary edit, run the smallest relevant target
 first, then use `UV_OFFLINE=1 make verify` as the complete deterministic gate.
 
+The pytest lanes (`test`, `test-fast`, `test-integration`, `test-workflow`) run
+serially by default. pytest-xdist is an opt-in speed knob that has not been
+carefully reviewed for parallel safety yet: `make test-fast PYTEST_XDIST="-n 4"`
+(or `-n auto`). The test-required runtime extras (textual, python-dotenv,
+ruamel.yaml) live in the `dev` dependency group, so pytest targets run plain
+`uv run pytest` without `--extra` flags.
+
 | Goal | Command |
 | --- | --- |
 | Format and lint | `make format`, `make lint` |
@@ -157,6 +164,13 @@ review criteria, and three fresh repetitions. A selected live run requires the d
 credential preflight. Missing credentials create no production Bundle, Evaluation Bundle,
 or Review Record and are recorded as limited evidence, never as a deterministic pass,
 implementation defect, or release result.
+
+The runtime-control digests in `evals/control/cases/*.json` pin each case to the exact
+source files it declares (prompts and domain modules). When a pinned source file
+changes, run `make control-digests-check` to see the drift and re-pin deliberately with
+`uv run python scripts/regenerate_control_digests.py` once the change is reviewed; the
+deterministic gate (`test-fast`) enforces the pin, so a stale digest turns the eval
+contracts red until re-pinned.
 
 ## Deterministic And Live Lanes
 

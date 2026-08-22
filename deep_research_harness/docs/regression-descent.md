@@ -43,6 +43,7 @@ misleading.
 | LIVE-20260718-03 | wave1-tool-only-budget-exhaustion | live-real-dependencies | provider-only-live | n/a | The bounded live model emitted only tool calls with empty content across all three allowed turns. Scripted bridge and fail-closed budget tests prove mechanics, but cannot honestly reproduce this provider decision distribution. |
 | LIVE-20260718-05 | targeted-final-answer-timeout | live-real-dependencies | provider-only-live | n/a | After the request quota correctly denied a three-call parallel batch, a one-search targeted request reached the provider but did not return a final answer within the declared 180-second case deadline. Deterministic quota/repair coverage passes; this provider latency/convergence distribution is not replayed as a fake. |
 | LIVE-20260720-01 | bootstrap-hitl1-phase-lag | lifecycle-mixed-graph | deterministic-regression | tests/integration/test_hitl1_lifecycle.py::test_bundle_local_pending_hitl_survives_a_fresh_lifecycle_instance | n/a |
+| RELEASE-20260822-01 | tiered-budget-degraded-projection | runtime-bridge | deterministic-regression | tests/unit/test_node_agent_bridge.py::test_per_call_output_cap_exceeded_degrades_instead_of_killing_run | n/a |
 
 `LIVE-20260720-01` was observed at the standalone all-real entry: bootstrap was
 the last committed phase when real HITL-1 interrupted, while the pending interrupt

@@ -140,6 +140,10 @@ def test_scripted_real_readiness_cap_trip_degrades_to_completed_delivery(
     """@impl REA-008 REJ-010
 
     The BUG-057 bridge cap failure still delivers.
+
+    The tiered-budget bridge (d772aba) accepts the already-generated critic
+    output degraded instead of killing the run, so the readiness critic's
+    output is used and delivery completes through the real composer.
     """
 
     import json
@@ -162,16 +166,17 @@ def test_scripted_real_readiness_cap_trip_degrades_to_completed_delivery(
     events = [
         json.loads(line) for line in Path(result.journal_path).read_text(encoding="utf-8").splitlines() if line.strip()
     ]
-    assert any(
-        event.get("phase") == "readiness"
-        and event.get("failure_category") == "budget.exhausted"
-        and event.get("budget_stop_reason") == "per_call_output_cap"
-        for event in events
+    # The cap trip degrades: the critic output rides through, the run passes
+    # readiness with a real (not conservative-fallback) candidate, and delivery
+    # completes. The pre-tiered-budget kill path (budget.exhausted journal
+    # event, readiness_critic_fallback.execution_failed) must not reappear.
+    assert not any(
+        event.get("phase") == "readiness" and event.get("failure_category") == "budget.exhausted" for event in events
     )
-    assert any(event.get("failure_category") == "readiness_critic_fallback.execution_failed" for event in events)
+    assert not any(str(event.get("failure_category", "")).startswith("readiness_critic_fallback") for event in events)
     assert any(
         event.get("readiness_route") == "pass"
         and event.get("readiness_blocked_count") == 0
-        and event.get("readiness_pass_guard") == "fallback_projection"
+        and event.get("readiness_pass_guard") is None
         for event in events
     )

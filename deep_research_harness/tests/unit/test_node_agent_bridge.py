@@ -1156,6 +1156,10 @@ async def test_per_call_output_cap_exceeded_degrades_instead_of_killing_run() ->
     )
     result = await bridge.run_agent(context=_context(), request=_request())
     assert result.finish_reason == NodeFinishReason.SUCCESS
+    # The degraded projection keeps the already-generated output: an empty
+    # summary would silently discard the paid-for response (regression guard
+    # for the tiered-budget degraded path).
+    assert result.summary == "big"
 
 
 @pytest.mark.workflow

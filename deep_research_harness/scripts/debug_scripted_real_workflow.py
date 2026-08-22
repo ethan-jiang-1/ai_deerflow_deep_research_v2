@@ -557,11 +557,13 @@ async def run_scripted_real_workflow(
         completed = await _drive(world, expected_code=expected_code)
         result = await _observe(world, completed, allow_targeted_evidence=scenario == "repair-targeted")
         result.wall_seconds = time.monotonic() - started_at
+        # The readiness cap trip degrades instead of killing (tiered budget):
+        # the bridge keeps the already-generated critic output, so the cap-trip
+        # scenario consumes the same model calls as baseline (the readiness
+        # critic output is admitted and the real composer runs).
         expected_model_calls = (
             baseline.EXPECTED_REPAIR_TARGETED_MODEL_CALLS
             if scenario == "repair-targeted"
-            else 10
-            if scenario == "readiness-cap-trip"
             else baseline.EXPECTED_MODEL_CALLS
         )
         expected_search_calls = (

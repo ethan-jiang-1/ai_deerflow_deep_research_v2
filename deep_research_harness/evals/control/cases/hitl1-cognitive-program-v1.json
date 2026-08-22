@@ -34,7 +34,7 @@
         {
           "name": "semantic_candidate_schema_digest",
           "source_path": "src/deerflow_deep_research/domain/human_interaction.py",
-          "digest": "2ab99d4865d92139be38f1ce835a218654424857d4e8f7bd97ad0be7f4339896"
+          "digest": "8d34a4ec8b81b7718c4b4d6d806a26d3c52d070384e5b9355baa3845cb44ec3d"
         }
       ],
       "required_resource_fields": [

@@ -12,6 +12,9 @@ UV_NO_CACHE ?= 1
 PROFILE ?= demo
 LOCAL_ENV_ARG := $(if $(wildcard .env),--env-file .env,)
 PYTEST := python -m pytest
+# 默认串行（测试未经精心并行 review，串行最稳）。并行是 opt-in：
+# 需要加速时显式 `make verify PYTEST_XDIST="-n 4"`（或 -n auto）。
+PYTEST_XDIST ?=
 ENTRY_RUN = PYTHONDONTWRITEBYTECODE=1 env -u VIRTUAL_ENV UV_NO_CACHE=$(UV_NO_CACHE) uv run --locked --no-sync
 ENTRY_REQUIRED_DISTRIBUTIONS = python-dotenv ruamel.yaml textual tavily-python
 ENTRY_SETUP_MESSAGE = Command environment is not prepared. Run 'make install' from deep_research_harness/.
@@ -125,48 +128,54 @@ lint:
 	uv run ruff format --check .
 
 test:
-	uv run --extra operations --extra demo-tui $(PYTEST) -m "not (requires_llm or release_e2e or periodic)"
+	uv run $(PYTEST) $(PYTEST_XDIST) -m "not (requires_llm or release_e2e or periodic)"
 
 test-fast:
 	mkdir -p .reports
-	uv run --extra operations $(PYTEST) \
+	uv run $(PYTEST) $(PYTEST_XDIST) \
 		tests/assets tests/contract tests/domain tests/engine tests/unit tests/graph tests/eval \
 		-m "not (requires_llm or release_e2e or periodic or workflow)" \
 		--durations=20 --junitxml=.reports/test-fast.xml
 
 test-intake:
-	@started=$$(date +%s); echo "intake: HITL profile parsing and lifecycle"; uv run --extra operations $(PYTEST) tests/domain/test_profile.py tests/graph/test_hitl1_node.py tests/integration/test_hitl1_lifecycle.py; status=$$?; echo "intake elapsed: $$(( $$(date +%s) - started ))s"; exit $$status
+	@started=$$(date +%s); echo "intake: HITL profile parsing and lifecycle"; uv run $(PYTEST) tests/domain/test_profile.py tests/graph/test_hitl1_node.py tests/integration/test_hitl1_lifecycle.py; status=$$?; echo "intake elapsed: $$(( $$(date +%s) - started ))s"; exit $$status
 
 test-retained-observation:
-	@started=$$(date +%s); echo "retained-observation: run summary and event journal"; uv run --extra operations $(PYTEST) tests/unit/test_run_session_store.py tests/contract/test_run_session_contract.py; status=$$?; echo "retained-observation elapsed: $$(( $$(date +%s) - started ))s"; exit $$status
+	@started=$$(date +%s); echo "retained-observation: run summary and event journal"; uv run $(PYTEST) tests/unit/test_run_session_store.py tests/contract/test_run_session_contract.py; status=$$?; echo "retained-observation elapsed: $$(( $$(date +%s) - started ))s"; exit $$status
 
 test-work-unit:
-	@started=$$(date +%s); echo "work-unit: ledger and controller boundaries"; uv run --extra operations $(PYTEST) tests/domain/test_submission_ledger.py tests/graph/test_work_unit_component.py; status=$$?; echo "work-unit elapsed: $$(( $$(date +%s) - started ))s"; exit $$status
+	@started=$$(date +%s); echo "work-unit: ledger and controller boundaries"; uv run $(PYTEST) tests/domain/test_submission_ledger.py tests/graph/test_work_unit_component.py; status=$$?; echo "work-unit elapsed: $$(( $$(date +%s) - started ))s"; exit $$status
 
 test-strict-checkpoint:
-	@started=$$(date +%s); echo "strict-checkpoint: serde and current-only checkpoint admission"; LANGGRAPH_STRICT_MSGPACK=true uv run --extra operations $(PYTEST) tests/unit/test_checkpoint_msgpack.py tests/unit/test_retained_checkpoint_cutover.py tests/unit/test_state_contracts.py tests/unit/test_bundle_graph_journal.py tests/engine/test_gate_kernel.py; status=$$?; echo "strict-checkpoint elapsed: $$(( $$(date +%s) - started ))s"; exit $$status
+	@started=$$(date +%s); echo "strict-checkpoint: serde and current-only checkpoint admission"; LANGGRAPH_STRICT_MSGPACK=true uv run $(PYTEST) tests/unit/test_checkpoint_msgpack.py tests/unit/test_retained_checkpoint_cutover.py tests/unit/test_state_contracts.py tests/unit/test_bundle_graph_journal.py tests/engine/test_gate_kernel.py; status=$$?; echo "strict-checkpoint elapsed: $$(( $$(date +%s) - started ))s"; exit $$status
 
 test-duration-policy:
-	uv run --extra operations python scripts/check_test_durations.py .reports/test-fast.xml
+	uv run python scripts/check_test_durations.py .reports/test-fast.xml
+
+# Verify or re-pin the source-controlled eval control digests. Run --check
+# before/after any change to a pinned source file (prompts, domain modules);
+# re-pin deliberately with the same command after the change is reviewed.
+control-digests-check:
+	uv run python scripts/regenerate_control_digests.py --check
 
 benchmark-fast:
-	uv run --extra operations python scripts/benchmark_fast.py
+	uv run python scripts/benchmark_fast.py
 
 # Opt-in local review projection. The deterministic verification gate does not invoke it.
 prompt-dump:
-	env -u VIRTUAL_ENV uv run --extra operations python scripts/prompt_dump.py
+	env -u VIRTUAL_ENV uv run python scripts/prompt_dump.py
 
 # Read-only validation of a reviewer-generated local projection.
 prompt-dump-check:
-	env -u VIRTUAL_ENV uv run --extra operations python scripts/prompt_dump.py --check
+	env -u VIRTUAL_ENV uv run python scripts/prompt_dump.py --check
 
 test-integration:
-	uv run --extra operations --extra demo-tui $(PYTEST) \
+	uv run $(PYTEST) $(PYTEST_XDIST) \
 		tests/integration tests/blocking_io \
 		-m "not (requires_llm or release_e2e or periodic or workflow)"
 
 test-workflow:
-	uv run --extra operations $(PYTEST) \
+	uv run $(PYTEST) $(PYTEST_XDIST) \
 		tests \
 		-m "workflow and not (requires_llm or release_e2e or periodic)"
 
@@ -174,38 +183,38 @@ test-workflow:
 # rapid verify aggregate because each scenario creates and installs a full copy.
 test-entry-environment-regression:
 	mkdir -p .reports
-	UV_OFFLINE=1 uv run --no-sync --extra operations --extra demo-tui $(PYTEST) \
+	UV_OFFLINE=1 uv run --no-sync $(PYTEST) \
 		tests/scenarios_periodic \
 		-m "periodic and not (requires_llm or release_e2e)" \
 		--durations=20 --junitxml=.reports/test-entry-environment.xml
-	uv run --no-sync --extra operations python scripts/check_test_durations.py .reports/test-entry-environment.xml --lane periodic
+	uv run --no-sync python scripts/check_test_durations.py .reports/test-entry-environment.xml --lane periodic
 
 test-live:
 	rm -rf .reports/live
 	mkdir -p .reports/live
-	uv run $(LOCAL_ENV_ARG) --extra operations python scripts/live_preflight.py --require-web
-	LIVE_REPORT_DIR=.reports/live uv run $(LOCAL_ENV_ARG) --extra operations $(PYTEST) -m "requires_llm and not release_e2e"
+	uv run $(LOCAL_ENV_ARG) python scripts/live_preflight.py --require-web
+	LIVE_REPORT_DIR=.reports/live uv run $(LOCAL_ENV_ARG) $(PYTEST) -m "requires_llm and not release_e2e"
 
 test-assets:
-	uv run --extra operations python scripts/check_test_assets.py
+	uv run python scripts/check_test_assets.py
 
 test-unit:
-	uv run --extra operations $(PYTEST) tests/unit
+	uv run $(PYTEST) tests/unit
 
 test-contract:
-	uv run --extra operations $(PYTEST) tests/contract
+	uv run $(PYTEST) tests/contract
 
 test-viability:
-	uv run --extra operations $(PYTEST) \
+	uv run $(PYTEST) \
 		tests/integration/test_reflected_runtime_viability.py \
 		tests/integration/test_cancellation_viability.py
 
 # File-backed SQLite provider-reopen + real subprocess-restart durability.
 # Requires no database server and no Docker.
 test-durability:
-	uv run --extra operations $(PYTEST) tests/integration/test_provider_durability.py
+	uv run $(PYTEST) tests/integration/test_provider_durability.py
 
 # Deterministic event-loop guard for lifecycle dispatch, nested graph Send
 # fan-in, provider cleanup, and outer Command projection.
 test-blocking-io:
-	uv run --extra operations $(PYTEST) tests/blocking_io
+	uv run $(PYTEST) tests/blocking_io
