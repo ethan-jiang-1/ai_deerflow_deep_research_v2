@@ -138,8 +138,10 @@ def test_standalone_adapters_render_only_observed_returned_only_wait_facts() -> 
 
     for rendered in (cli, tui):
         assert "bootstrap" in rendered
-        assert "2.5" in rendered
         assert "traceback" not in rendered.lower()
+    # The TUI drops elapsed seconds (semantics over counters); the CLI keeps them.
+    assert "2.5" not in tui
+    assert "2.5" in cli
 
 
 def test_terminal_receipt_is_inspectable_but_honest_about_same_process_durability() -> None:
@@ -231,9 +233,11 @@ def test_live_progress_lines_reports_active_bundle_journal(tmp_path: Path) -> No
     assert lines
     text = "\n".join(lines)
     assert "进度: bootstrap → wave0 → wave1（进行中）" in text
-    assert "模型调用: 1 次完成 · 10.4k tokens" in text
-    assert "journal 事件: 6" in text
+    assert "接下来" in text
     assert "最近:" in text
+    # counters are omitted (semantics over counters)
+    assert "模型调用:" not in text
+    assert "journal 事件:" not in text
 
 
 def test_live_progress_lines_picks_most_recent_active_bundle(tmp_path: Path) -> None:

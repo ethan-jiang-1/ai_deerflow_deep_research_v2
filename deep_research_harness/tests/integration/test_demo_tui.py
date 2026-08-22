@@ -1006,3 +1006,259 @@ def test_recon_inspect_bundle_tool_summarizes_bundle(tmp_path: Path) -> None:
 
     missing = tools["inspect_bundle"].invoke({"bundle_id": "b_nope"})
     assert "未找到" in missing
+
+
+class _FakeStreamModel:
+    """Minimal async-stream model for _stream_turn tests."""
+
+    def __init__(self, *rounds: list[Any]) -> None:
+        self._rounds = list(rounds)
+        self._cursor = 0
+
+    async def astream(self, messages: list[Any]) -> Any:
+        del messages
+        chunks = self._rounds[min(self._cursor, len(self._rounds) - 1)]
+        self._cursor += 1
+        for chunk in chunks:
+            yield chunk
+
+
+@pytest.mark.asyncio
+async def test_stream_turn_renders_chunks_and_returns_full_text(monkeypatch: pytest.MonkeyPatch) -> None:
+    from langchain_core.messages import AIMessageChunk
+
+    _install_scripted(monkeypatch, report=_ready_report("real"), updates=[])
+    app = demo_tui.DeepResearchDemoTUI(mode="embedded_smoke")
+    model = _FakeStreamModel([AIMessageChunk(content="hello "), AIMessageChunk(content="world")])
+
+    async with app.run_test() as pilot:
+        await _wait_for(app, pilot, demo_tui.Ready)
+        text = await app._stream_turn(model, [], [], echo="你: hi")
+        await pilot.pause()
+        assert text == "hello world"
+        panel = str(app.query_one("#inspect").content.plain)
+        assert "你: hi" in panel
+        assert "AI: hello world" in panel
+
+
+@pytest.mark.asyncio
+async def test_stream_turn_executes_tool_call_inline(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    from langchain_core.messages import AIMessageChunk
+
+    (tmp_path / "deep-research").mkdir()
+    _install_scripted(monkeypatch, report=_ready_report("real"), updates=[])
+    app = demo_tui.DeepResearchDemoTUI(mode="embedded_smoke")
+    tools = demo_tui._recon_tools(tmp_path)
+    _ = None
+
+    tool_chunk = AIMessageChunk(
+        content="",
+        tool_calls=[
+            {
+                "name": "list_workspace",
+                "args": {},
+                "id": "call-1",
+                "type": "tool_call",
+            }
+        ],
+    )
+    model = _FakeStreamModel(
+        [tool_chunk],
+        [AIMessageChunk(content="workspace 里有 deep-research。")],
+    )
+
+    async with app.run_test() as pilot:
+        await _wait_for(app, pilot, demo_tui.Ready)
+        text = await app._stream_turn(model, [], tools, echo="你: 看看")
+        await pilot.pause()
+        assert "deep-research" in text
+        panel = str(app.query_one("#inspect").content.plain)
+        assert "AI:" in panel
+
+
+@pytest.mark.asyncio
+async def test_tui_processing_timer_ticks_seconds_in_panel(monkeypatch: pytest.MonkeyPatch) -> None:
+    _install_scripted(
+        monkeypatch,
+        report=_ready_report("real"),
+        updates=[run_updates.awaiting_hitl1(), run_updates.awaiting_hitl1()],
+    )
+    app = demo_tui.DeepResearchDemoTUI(mode="embedded_smoke")
+    async with app.run_test() as pilot:
+        await _wait_for(app, pilot, demo_tui.Ready)
+        await pilot.press(*"start deep research")
+        await pilot.press("enter")
+        await _wait_for_hitl1_prompt(app, pilot, mode="text")
+        await pilot.press(*"quick overview")
+        await pilot.press("enter")
+        await pilot.pause()
+        # no update returned yet -> the timer line should show elapsed seconds
+        app._tick_pending()
+        panel = str(app.query_one("#inspect").content.plain)
+        assert "正在处理" in panel
+        assert "s）" in panel
+        # once the next AwaitingInput lands, the timer stops and the panel shows feedback
+        await _wait_for(app, pilot, demo_tui.AwaitingInput)
+        app._stop_pending_timer()
+        assert app._pending_timer is None
+
+
+def test_last_model_call_state_detects_inflight_call(tmp_path: Path) -> None:
+    bundle = tmp_path / "workspace" / "deep-research" / "scopes" / "s_demo" / "b_demo"
+    diag = bundle / "diagnostics"
+    diag.mkdir(parents=True)
+    (diag / "run-summary.json").write_text(
+        '{"status": "active", "updated_at": "2026-08-22T01:00:00Z"}', encoding="utf-8"
+    )
+    (diag / "events.jsonl").write_text(
+        '{"category": "node", "phase": "wave0", "outcome": "started", "timestamp": "2026-08-22T01:00:00Z"}\n'
+        '{"category": "model_tool", "phase": "wave0", "outcome": "started", "timestamp": "2026-08-22T01:00:01Z"}\n',
+        encoding="utf-8",
+    )
+
+    outcome, stamp = demo_tui._last_model_call_state(tmp_path)
+    assert outcome == "started"
+    assert stamp > 0
+
+    (diag / "events.jsonl").write_text(
+        '{"category": "model_tool", "phase": "wave0", "outcome": "completed", "timestamp": "2026-08-22T01:00:02Z"}\n',
+        encoding="utf-8",
+    )
+    outcome, _ = demo_tui._last_model_call_state(tmp_path)
+    assert outcome == "completed"
+
+
+@pytest.mark.asyncio
+async def test_tui_blocked_terminal_tells_user_failure_not_completed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from deerflow_deep_research.domain.run_experience import FailureCertainty, RunFailure, RunFailureCode
+
+    failed = run_updates.completed().model_copy(
+        update={
+            "outcome": "blocked",
+            "failure": RunFailure(
+                code=RunFailureCode.RESEARCH_BLOCKED,
+                certainty=FailureCertainty.DIRECT,
+                message="当前研究步骤超出已设置的资源预算。",
+                next_action="调整研究范围或预算设置后，启动新的研究运行。",
+                retryable=False,
+                diagnostic_location="unavailable",
+                journal_record_created=False,
+            ),
+        }
+    )
+    _install_scripted(monkeypatch, report=_ready_report("real"), updates=[failed])
+    app = demo_tui.DeepResearchDemoTUI(mode="embedded_smoke")
+    async with app.run_test() as pilot:
+        await _wait_for(app, pilot, demo_tui.Ready)
+        await pilot.press(*"start deep research")
+        await pilot.press("enter")
+        await _wait_for(app, pilot, demo_tui.Terminal)
+        await pilot.pause()
+
+        assert "失败" in app.last_view.detail
+        assert "已完成" not in app.last_view.detail
+        assert "资源预算" in app.last_view.detail
+        assert "重新触发" in app.last_view.detail
+        assert app._onboarding is True
+
+
+def test_live_progress_picks_suspended_inflight_run(tmp_path: Path) -> None:
+    # The in-flight run is "suspended" (graph executing), not "active"; progress
+    # must still pick it (it is the newest updated bundle) instead of an older
+    # active bundle — otherwise the TUI shows a stale/other run's progress.
+    old_active = tmp_path / "workspace" / "deep-research" / "scopes" / "s_old" / "b_old"
+    old_active.mkdir(parents=True)
+    (old_active / "diagnostics").mkdir()
+    (old_active / "diagnostics" / "run-summary.json").write_text(
+        '{"status": "active", "updated_at": "2026-08-22T01:00:00Z"}', encoding="utf-8"
+    )
+    (old_active / "diagnostics" / "events.jsonl").write_text(
+        '{"category": "node", "phase": "hitl1", "outcome": "started", "timestamp": "2026-08-22T01:00:00Z"}\n',
+        encoding="utf-8",
+    )
+    inflight = tmp_path / "workspace" / "deep-research" / "scopes" / "s_new" / "b_new"
+    inflight.mkdir(parents=True)
+    (inflight / "diagnostics").mkdir()
+    (inflight / "diagnostics" / "run-summary.json").write_text(
+        '{"status": "suspended", "updated_at": "2026-08-22T02:00:00Z"}', encoding="utf-8"
+    )
+    (inflight / "diagnostics" / "events.jsonl").write_text(
+        '{"category": "node", "phase": "hitl1", "outcome": "completed", "timestamp": "2026-08-22T02:00:00Z"}\n'
+        '{"category": "node", "phase": "topic_planning", "outcome": "completed", "timestamp": "2026-08-22T02:00:00Z"}\n'
+        '{"category": "node", "phase": "wave0", "outcome": "completed", "timestamp": "2026-08-22T02:00:01Z"}\n'
+        '{"category": "node", "phase": "wave1", "outcome": "started", "timestamp": "2026-08-22T02:00:02Z"}\n',
+        encoding="utf-8",
+    )
+
+    lines = demo_tui.live_progress_lines(tmp_path)
+    text = "\n".join(lines)
+    assert "wave1（进行中）" in text
+    assert "接下来" in text
+    assert "hitl1（进行中）" not in text  # the stale active bundle was NOT picked
+
+
+def test_event_feed_lines_render_recent_activity(tmp_path: Path) -> None:
+    bundle = tmp_path / "workspace" / "deep-research" / "scopes" / "s_demo" / "b_demo"
+    diag = bundle / "diagnostics"
+    diag.mkdir(parents=True)
+    (diag / "run-summary.json").write_text(
+        '{"status": "suspended", "updated_at": "2026-08-22T03:00:00Z"}', encoding="utf-8"
+    )
+    (diag / "events.jsonl").write_text(
+        "\n".join(
+            [
+                '{"category": "node", "phase": "wave0", "outcome": "completed", "timestamp": "2026-08-22T02:59:00Z"}',
+                '{"category": "model_tool", "phase": "wave1", "outcome": "completed", "usage_tokens": {"total_tokens": 5214}, "timestamp": "2026-08-22T03:00:00Z"}',  # noqa: E501
+                '{"category": "submit", "phase": "wave1", "result_byte_count": 4096, "passed_checks": ["a", "b", "c"], "timestamp": "2026-08-22T03:00:01Z"}',  # noqa: E501
+                '{"category": "node", "phase": "wave1", "outcome": "completed", "timestamp": "2026-08-22T03:00:02Z"}',
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    feed = demo_tui._event_feed_lines(tmp_path, limit=4)
+    text = "\n".join(feed)
+    assert "模型调用完成 · 5.2k tokens" in text
+    assert "提交结果 · 4.1KB · 3 项检查通过" in text
+    assert "✓ wave0 完成" in text
+    assert "✓ wave1 完成" in text
+
+
+@pytest.mark.asyncio
+async def test_tui_rolling_feed_appends_new_events_incrementally(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+
+    _install_scripted(monkeypatch, report=_ready_report("real"), updates=[])
+    monkeypatch.setattr(_Adapter, "bundle_root", tmp_path, raising=False)
+    bundle = tmp_path / "workspace" / "deep-research" / "scopes" / "s_demo" / "b_demo"
+    diag = bundle / "diagnostics"
+    diag.mkdir(parents=True)
+    (diag / "run-summary.json").write_text(
+        '{"status": "suspended", "updated_at": "2026-08-22T04:00:00Z"}', encoding="utf-8"
+    )
+    events = diag / "events.jsonl"
+    events.write_text(
+        '{"category": "node", "phase": "wave0", "outcome": "completed", "timestamp": "2026-08-22T04:00:00Z"}\n',
+        encoding="utf-8",
+    )
+
+    app = demo_tui.DeepResearchDemoTUI(mode="embedded_smoke")
+    async with app.run_test() as pilot:
+        await _wait_for(app, pilot, demo_tui.Ready)
+        app._render_live_activity()
+        await pilot.pause()
+        # second batch: a new event arrives -> appended, not duplicated
+        events.write_text(
+            '{"category": "node", "phase": "wave0", "outcome": "completed", "timestamp": "2026-08-22T04:00:00Z"}\n'
+            '{"category": "node", "phase": "wave1", "outcome": "completed", "timestamp": "2026-08-22T04:00:01Z"}\n',
+            encoding="utf-8",
+        )
+        app._render_live_activity()
+        await pilot.pause()
+        text = app._rich_log_text()
+        assert text.count("wave0 完成") == 1
+        assert "wave1 完成" in text

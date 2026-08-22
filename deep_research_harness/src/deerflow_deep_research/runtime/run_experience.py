@@ -765,8 +765,8 @@ class ResearchRunExperience:
             phase="hitl1",
             request_id=pending.request_id,
             mode="text",
-            heading="确认研究范围",
-            goal="请补充研究范围和输出偏好。",
+            heading="确认研究配置",
+            goal="请提供研究配置：目标读者、研究深度、输出形式、预算与时间。",
             body_lines=("请说明目标读者、研究深度和希望得到的输出形式。",),
             answer_example=_HITL1_JSON_EXAMPLE,
         )
@@ -778,7 +778,7 @@ class ResearchRunExperience:
                 phase="hitl1",
                 request_id=pending.request_id,
                 mode="text",
-                heading="确认研究范围",
+                heading="确认研究配置",
                 goal=interaction.subject.goal,
                 proposed_scope=self._interaction_proposal_lines(interaction),
                 interaction=interaction,
@@ -809,7 +809,7 @@ class ResearchRunExperience:
                 phase="hitl1",
                 request_id=pending.request_id,
                 mode="text",
-                heading="确认研究范围",
+                heading="确认研究配置",
                 goal=goal,
                 proposed_scope=scope,
                 missing_fields=missing,
@@ -818,7 +818,7 @@ class ResearchRunExperience:
                 rejection_category=rejection_category,
                 accepted_rounds_remaining=self._bounded_count(payload.get("accepted_rounds_remaining")),
                 rejection_retries_remaining=self._bounded_count(payload.get("rejection_retries_remaining")),
-                body_lines=("请确认或修正建议范围，并补充缺失的研究偏好。",),
+                body_lines=("请确认或修正研究配置（深度/受众/格式/预算/时间），并补充缺失的偏好。",),
                 answer_example=_HITL1_JSON_EXAMPLE,
             )
         except (TypeError, ValueError, json.JSONDecodeError):

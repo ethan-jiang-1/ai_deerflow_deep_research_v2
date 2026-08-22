@@ -306,3 +306,58 @@ def test_clarify_feedback_echoes_operator_input_in_chinese() -> None:
     assert "快速概览领域专家" in feedback.message
     assert "按钮" in feedback.message
     assert "确认" in feedback.message
+
+
+def test_local_phrase_revision_matches_colloquial_chinese() -> None:
+    from deerflow_deep_research.domain.human_interaction import ProposalValues
+    from deerflow_deep_research.graph.nodes.hitl1.node import _local_phrase_revision
+
+    current = ProposalValues(
+        depth="standard",
+        audience="practitioner",
+        format="detailed_report",
+        cost_tolerance="minimal",
+        time_budget="standard",
+        must_answer=("Which option is safer?",),
+        request_language="en",
+        output_language="en",
+    )
+
+    revised = _local_phrase_revision("深度是快速，受众是普通", current)
+    assert revised is not None
+    assert revised.depth == "quick_overview"
+    assert revised.audience == "layperson"
+    assert revised.format == "detailed_report"  # unmentioned fields inherit
+
+
+def test_semantic_failure_feedback_is_chinese() -> None:
+    from deerflow_deep_research.domain.human_interaction import InteractionFeedbackKind
+    from deerflow_deep_research.graph.nodes.hitl1.node import _semantic_failure_feedback
+
+    unavailable = _semantic_failure_feedback(InteractionFeedbackKind.SEMANTIC_UNAVAILABLE)
+    assert "理解" in unavailable.message
+
+    invalid = _semantic_failure_feedback(InteractionFeedbackKind.SEMANTIC_INVALID)
+    assert "理解" in invalid.message
+
+
+def test_no_change_revision_feedback_tells_operator_to_confirm() -> None:
+    from deerflow_deep_research.domain.human_interaction import ProposalValues
+    from deerflow_deep_research.graph.nodes.hitl1.node import _revision_acknowledged_feedback
+
+    current = ProposalValues(
+        depth="quick_overview",
+        audience="layperson",
+        format="faq",
+        cost_tolerance="minimal",
+        time_budget="very_quick",
+        must_answer=("q",),
+        request_language="en",
+        output_language="en",
+    )
+    feedback = _revision_acknowledged_feedback(current, current)
+    assert "当前配置一致" in feedback.message
+    assert "depth=quick_overview" in feedback.message
+    assert "confirm" in feedback.message
+    assert "Start proposal" in feedback.message
+    assert "已记录你的输入" not in feedback.message

@@ -99,10 +99,11 @@ RETRY_BACKOFF_MILLISECONDS = 1_000
 RETRY_BACKOFF_SECONDS = RETRY_BACKOFF_MILLISECONDS / 1_000
 
 _SEMANTIC_UNAVAILABLE_MESSAGE = (
-    "I could not interpret that reply right now. You can try again or start with the current proposal."
+    "我暂时没能理解你的输入（理解服务调用失败）。可以再试一次，或点下方按钮 / "
+    "用 `字段: 值` 格式（如 `depth: quick overview`）直接给出修订。"
 )
 _SEMANTIC_INVALID_MESSAGE = (
-    "I could not interpret that reply clearly. Please confirm, revise the proposal, or ask a focused question."
+    "我没能清晰理解你的输入。可以确认、用 `字段: 值` 修订单个字段，或输入完整 JSON。"
 )
 
 
@@ -493,7 +494,10 @@ def _semantic_failure_feedback(kind: InteractionFeedbackKind) -> InteractionFeed
 # this table does not cover (per the objective-is-data-only contract).
 _LOCAL_REVISION_PHRASES: tuple[tuple[str, str, str], ...] = (
     ("深度: 快速概览", "depth", "quick_overview"),
+    ("深度是快速", "depth", "quick_overview"),
+    ("深度快速", "depth", "quick_overview"),
     ("快速概览", "depth", "quick_overview"),
+    ("快速", "depth", "quick_overview"),
     ("深度: 深入", "depth", "deep_dive"),
     ("深入", "depth", "deep_dive"),
     ("深度: 标准", "depth", "standard"),
@@ -501,7 +505,9 @@ _LOCAL_REVISION_PHRASES: tuple[tuple[str, str, str], ...] = (
     ("quick overview", "depth", "quick_overview"),
     ("deep dive", "depth", "deep_dive"),
     ("受众: 普通读者", "audience", "layperson"),
+    ("受众是普通", "audience", "layperson"),
     ("普通读者", "audience", "layperson"),
+    ("普通", "audience", "layperson"),
     ("受众: 领域专家", "audience", "domain_expert"),
     ("领域专家", "audience", "domain_expert"),
     ("受众: 从业者", "audience", "practitioner"),
@@ -574,7 +580,17 @@ def _revision_acknowledged_feedback(current: ProposalValues, revised: ProposalVa
     if changes:
         message = "已按你的输入修订：" + "、".join(changes) + "。请确认或继续修改。"
     else:
-        message = "已记录你的输入。请确认或继续修改。"
+        # The operator asked for exactly what the proposal already holds: say so
+        # plainly and tell them the next step, instead of the opaque
+        # "已记录你的输入" that left them guessing ("你还活着吗").
+        current = "、".join(
+            f"{field}={getattr(revised, field)}"
+            for field in ("depth", "audience", "format", "cost_tolerance", "time_budget")
+        )
+        message = (
+            f"你的输入与当前配置一致（{current}），无需修改——"
+            "点「Start proposal」按钮或输入 confirm 即可开始研究。"
+        )
     return InteractionFeedback(kind=InteractionFeedbackKind.REVISION_ACKNOWLEDGED, message=message)
 
 

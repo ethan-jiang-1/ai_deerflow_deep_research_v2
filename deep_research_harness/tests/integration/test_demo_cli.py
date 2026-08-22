@@ -39,7 +39,7 @@ def test_scripted_demo_traverses_scope_input_and_autonomous_terminal_fixture() -
     # The fixture graph proves the deterministic execution path through final delivery.
     assert "正在等待生命周期返回结果" in output
     assert "Run Bundle: b_" in output
-    assert "确认研究范围" in output
+    assert "确认研究配置" in output
     assert "输入选项 ID:" not in output
     assert "主题规划" in output
     assert "自主决策" in output
@@ -68,5 +68,5 @@ def test_interactive_demo_completes_after_scope_without_a_hitl2_choice() -> None
     assert result.returncode == 0, result.stderr
     assert "输入选项 ID:" not in output
     assert rendered_choice not in output
-    assert output.count("确认研究范围") == 1
+    assert output.count("确认研究配置") == 1
     assert "terminal: completed" in output

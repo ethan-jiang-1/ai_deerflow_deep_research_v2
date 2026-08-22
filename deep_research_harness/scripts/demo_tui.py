@@ -15,6 +15,7 @@ import argparse
 import asyncio
 import json
 import os
+import time
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
@@ -237,6 +238,31 @@ def _format_timestamp(value: object) -> str:
         return value[-8:]
 
 
+def _latest_active_bundle(bundle_root: Path | None) -> Path | None:
+    """Locate the newest in-flight (active or suspended) bundle, if any."""
+    if bundle_root is None:
+        return None
+    scopes_dir = bundle_root / "workspace" / "deep-research" / "scopes"
+    if not scopes_dir.is_dir():
+        return None
+    candidates: list[tuple[str, Path]] = []
+    for scope in scopes_dir.iterdir():
+        if not scope.is_dir():
+            continue
+        for bundle in scope.iterdir():
+            summary = bundle / "diagnostics" / "run-summary.json"
+            try:
+                data = json.loads(summary.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                continue
+            if data.get("status") not in ("active", "suspended"):
+                continue
+            candidates.append((str(data.get("updated_at", "")), bundle))
+    if not candidates:
+        return None
+    return max(candidates)[1]
+
+
 def live_progress_lines(bundle_root: Path | None) -> tuple[str, ...]:
     """Read the most-recently updated *active* bundle's journal and return
     human-readable live-progress lines for the Working heartbeat.
@@ -248,25 +274,9 @@ def live_progress_lines(bundle_root: Path | None) -> tuple[str, ...]:
     """
     if bundle_root is None:
         return ()
-    scopes_dir = bundle_root / "workspace" / "deep-research" / "scopes"
-    if not scopes_dir.is_dir():
+    bundle = _latest_active_bundle(bundle_root)
+    if bundle is None:
         return ()
-    candidates: list[tuple[str, Path]] = []
-    for scope in scopes_dir.iterdir():
-        if not scope.is_dir():
-            continue
-        for bundle in scope.iterdir():
-            summary = bundle / "diagnostics" / "run-summary.json"
-            try:
-                data = json.loads(summary.read_text(encoding="utf-8"))
-            except (OSError, ValueError):
-                continue
-            if data.get("status") != "active":
-                continue
-            candidates.append((str(data.get("updated_at", "")), bundle))
-    if not candidates:
-        return ()
-    _, bundle = max(candidates)
     events_path = bundle / "diagnostics" / "events.jsonl"
     try:
         raw = events_path.read_text(encoding="utf-8")
@@ -307,22 +317,41 @@ def live_progress_lines(bundle_root: Path | None) -> tuple[str, ...]:
                 if isinstance(total, (int, float)):
                     total_tokens += int(total)
 
+    # User-visible pipeline (internal auto/script phases and reruns are hidden).
+    pipeline = tuple(
+        phase
+        for phase in PHASE_META
+        if not phase.endswith(("_auto_profile", "_auto_proceed"))
+        and phase not in {"bootstrap", "rerun"}
+    )
     lines: list[str] = []
     if done or last_node_phase:
-        chain = " → ".join(done)
-        if last_node_outcome == "started" and last_node_phase is not None:
+        deduped = list(dict.fromkeys(done))  # dedupe repeated phases
+        in_flight = last_node_outcome == "started" and last_node_phase is not None
+        if in_flight and (not deduped or last_node_phase != deduped[-1]):
+            chain = " → ".join(deduped)
             chain = f"{chain} → {last_node_phase}（进行中）" if chain else f"{last_node_phase}（进行中）"
+        else:
+            chain = " → ".join(deduped)
         lines.append(f"进度: {chain}")
+        # "What comes next": show the remaining pipeline so the operator knows
+        # the run is still alive and how far it still has to go, instead of
+        # staring at a static "in progress" line and assuming it died.
+        remaining = [
+            phase
+            for phase in pipeline
+            if phase not in done and (phase != last_node_phase if in_flight else True)
+        ]
+        if remaining:
+            lines.append(f"接下来: {' → '.join(remaining)}")
     if last_event is not None:
         stamp = _format_timestamp(last_event.get("timestamp"))
         phase = str(last_event.get("phase") or "")
         category = str(last_event.get("category") or "")
         outcome = str(last_event.get("outcome") or "")
         lines.append(f"最近: {stamp} · {phase} {category} {outcome}".rstrip())
-    if model_calls or total_tokens:
-        lines.append(f"模型调用: {model_calls} 次完成 · {total_tokens / 1000:.1f}k tokens")
-    if event_count:
-        lines.append(f"journal 事件: {event_count}")
+    # Counters and elapsed seconds are deliberately omitted: what matters is
+    # "what is it doing", not how many tokens/events/seconds have passed.
     return tuple(lines)
 
 
@@ -444,6 +473,109 @@ def _recon_tools(workspace: Path) -> list[Any]:
         return "\n".join(_inspect_bundle(bundle_dir))
 
     return [list_workspace, read_workspace_file, inspect_bundle]
+
+
+def _event_to_feed_line(event: dict[str, object]) -> str | None:
+    """One journal event -> one rolling feed line (or None to skip)."""
+    category = event.get("category")
+    outcome = event.get("outcome", "")
+    phase = str(event.get("phase") or "")
+    stamp = _format_timestamp(event.get("timestamp"))
+    if category == "model_tool" and outcome == "completed":
+        usage = event.get("usage_tokens") or {}
+        total = usage.get("total_tokens")
+        token_note = f" · {total / 1000:.1f}k tokens" if isinstance(total, (int, float)) else ""
+        return f"{stamp} {phase} 模型调用完成{token_note}"
+    if category == "model_tool" and outcome == "started":
+        ordinal = event.get("call_ordinal")
+        return f"{stamp} {phase} 模型调用 #{ordinal} 开始" if ordinal else f"{stamp} {phase} 模型调用开始"
+    if category == "submit":
+        size = event.get("result_byte_count")
+        checks = event.get("passed_checks")
+        size_note = f" · {size / 1000:.1f}KB" if isinstance(size, (int, float)) else ""
+        check_note = f" · {len(checks)} 项检查通过" if isinstance(checks, (list, tuple)) else ""
+        return f"{stamp} {phase} 提交结果{size_note}{check_note}"
+    if category == "validation":
+        return f"{stamp} {phase} 验证通过"
+    if category == "node" and outcome == "completed":
+        return f"{stamp} ✓ {phase} 完成"
+    if category == "node" and outcome == "failed":
+        return f"{stamp} ⚠ {phase} 失败（重试中）"
+    if category == "terminal" and outcome == "completed":
+        return f"{stamp} 🏁 {phase} 结束"
+    return None
+
+
+def _event_feed_lines(bundle_root: Path | None, *, limit: int = 6) -> tuple[str, ...]:
+    """Human-readable recent event feed from the in-flight bundle journal."""
+    bundle = _latest_active_bundle(bundle_root)
+    if bundle is None:
+        return ()
+    events_file = bundle / "diagnostics" / "events.jsonl"
+    try:
+        raw = events_file.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return ()
+    lines: list[str] = []
+    for line in reversed(raw):
+        try:
+            event = json.loads(line)
+        except ValueError:
+            continue
+        feed_line = _event_to_feed_line(event)
+        if feed_line is not None:
+            lines.append(feed_line)
+        if len(lines) >= limit:
+            break
+    return tuple(reversed(lines))
+
+
+def _last_model_call_state(bundle_root: Path) -> tuple[str | None, float]:
+    """(started|completed|None, epoch seconds of that event) from the journal tail."""
+    if bundle_root is None:
+        return None, 0.0
+    events_path = bundle_root / "workspace" / "deep-research" / "scopes"
+    # find the most recently updated active bundle journal, like live_progress_lines
+    latest: tuple[str, Path] | None = None
+    if events_path.is_dir():
+        for scope in events_path.iterdir():
+            if not scope.is_dir():
+                continue
+            for bundle in scope.iterdir():
+                summary = bundle / "diagnostics" / "run-summary.json"
+                try:
+                    data = json.loads(summary.read_text(encoding="utf-8"))
+                except (OSError, ValueError):
+                    continue
+                if data.get("status") not in ("active", "suspended"):
+                    continue
+                stamp = str(data.get("updated_at", ""))
+                if latest is None or stamp > latest[0]:
+                    latest = (stamp, bundle)
+    if latest is None:
+        return None, 0.0
+    events_file = latest[1] / "diagnostics" / "events.jsonl"
+    try:
+        raw = events_file.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return None, 0.0
+    outcome: str | None = None
+    stamp = 0.0
+    for line in reversed(raw[-40:]):
+        try:
+            event = json.loads(line)
+        except ValueError:
+            continue
+        if event.get("category") == "model_tool":
+            outcome = event.get("outcome")
+            ts = event.get("timestamp")
+            if isinstance(ts, str):
+                try:
+                    stamp = datetime.fromisoformat(ts.replace("Z", "+00:00")).timestamp()
+                except ValueError:
+                    stamp = 0.0
+            break
+    return outcome, stamp
 
 
 def _list_directory(path: Path, workspace: Path) -> tuple[str, ...]:
@@ -571,14 +703,17 @@ def render_run_update(
             terminal=not update.report.ready,
         )
     if isinstance(update, Working):
-        details = [*progress, update.message]
+        # The journal-backed progress lines carry the real activity. The
+        # bridge's static "waiting for lifecycle result" message and the stale
+        # "last confirmed phase" (frozen during dispatch) are misleading, so
+        # they are not rendered.
+        details = [*progress]
         if update.snapshot.bundle_id:
             details.append(f"Run Bundle: {update.snapshot.bundle_id}")
         if update.snapshot.lifecycle_phase:
-            details.append(f"Last confirmed phase: {update.snapshot.lifecycle_phase}")
-        details.append(f"Local returned-only wait: {update.snapshot.elapsed_seconds:.1f}s")
+            details.append(f"上次确认阶段: {update.snapshot.lifecycle_phase}")
         return TuiRenderedUpdate(
-            heading="Waiting for lifecycle result",
+            heading="研究进行中",
             detail="\n".join(details),
             placeholder="",
             completed_trace=update.snapshot.completed_trace,
@@ -773,6 +908,9 @@ class DeepResearchDemoTUI(App[None]):
         self._chat_history: list[tuple[str, str]] = []
         self._last_terminal_bundle: str | None = None
         self._last_typed = ""
+        self._pending_timer: Any | None = None
+        self._pending_started = 0.0
+        self._feed_watermark = 0
 
     def compose(self) -> ComposeResult:
         yield Static(id="banner")
@@ -937,12 +1075,15 @@ class DeepResearchDemoTUI(App[None]):
         self._last_detail = view.detail
         self._append_tui_log(view.detail)
         self._render_interaction_status(update)
+        if isinstance(update, Working) and self.mode == "embedded_smoke" and not self.auto:
+            self._render_live_activity()
         if isinstance(update, Terminal) and self.mode == "embedded_smoke" and not self.auto:
-            # Research finished: return to recon mode for another inspect / chat
-            # / next run. The report path is carried into the recon screen.
+            # Research ended (completed/blocked/cancelled/stopped): return to
+            # recon mode and say clearly what happened — never dress a blocked
+            # run up as "completed".
             self._onboarding = True
             self._last_terminal_bundle = update.snapshot.bundle_id
-            self._render_recon(research_just_completed=True)
+            self._render_recon(terminal=update)
 
     def _render_view(self, view: TuiRenderedUpdate) -> None:
         self.last_view = view
@@ -950,9 +1091,13 @@ class DeepResearchDemoTUI(App[None]):
         cancel = self.query_one("#cancel", Button)
         accept = self.query_one("#accept", Button)
         self.query_one("#prompt", Static).update(Text(view.heading, style="bold yellow"))
-        self.query_one("#log", RichLog).clear()
-        if view.detail:
-            self.query_one("#log", RichLog).write(Text(view.detail))
+        if isinstance(self.last_update, Working):
+            # #log is the rolling event feed during research: never clear it.
+            pass
+        else:
+            self.query_one("#log", RichLog).clear()
+            if view.detail:
+                self.query_one("#log", RichLog).write(Text(view.detail))
         pipeline = self.query_one("#pipeline", Static)
         pipeline.display = bool(view.completed_trace or view.pending_phase)
         if pipeline.display:
@@ -1082,7 +1227,33 @@ class DeepResearchDemoTUI(App[None]):
         renders, so the operator always sees their latest input and its status.
         """
         self._last_typed = value
+        if self._onboarding:
+            self._render_inspect((f"你: {value}",))
+            return
+        self._start_pending_timer()
         self._render_inspect((f"你: {value}", "（已收到，正在处理…）"))
+
+    def _start_pending_timer(self) -> None:
+        """Tick the "processing… Ns" line so a slow intake is visibly alive."""
+        self._pending_started = time.monotonic()
+        if self._pending_timer is not None:
+            self._pending_timer.stop()
+        self._pending_timer = self.set_interval(1.0, self._tick_pending)
+
+    def _stop_pending_timer(self) -> None:
+        if self._pending_timer is not None:
+            self._pending_timer.stop()
+            self._pending_timer = None
+
+    def _tick_pending(self) -> None:
+        if self._onboarding or not self._last_typed:
+            return
+        self._render_inspect(
+            (
+                f"你: {self._last_typed}",
+                f"（已收到，正在处理… {int(time.monotonic() - self._pending_started)}s）",
+            )
+        )
 
     async def on_input_submitted(self, event: Input.Submitted) -> None:
         raw_value = event.value
@@ -1138,17 +1309,36 @@ class DeepResearchDemoTUI(App[None]):
         if self._tui_log_path is not None:
             log.write(Text(f"TUI 日志文件: {self._tui_log_path}", style="dim"))
 
-    def _render_recon(self, *, research_just_completed: bool = False) -> None:
-        """Render the 020 recon-mode screen (before and after each research run)."""
+    def _render_recon(self, *, terminal: Terminal | None = None) -> None:
+        """Render the 020 recon-mode screen (before and after each research run).
+
+        When a terminal result is provided, its outcome is stated honestly:
+        completed shows the report, blocked shows the failure reason and next
+        step — a blocked run is never dressed up as "completed".
+        """
         adapter = self._adapter
         root = getattr(adapter, "bundle_root", None) if adapter is not None else None
         lines: list[str] = []
-        if research_just_completed:
-            lines.append("上一轮研究已完成，你现在回到侦察模式。")
-            if self._last_terminal_bundle and root is not None:
-                report = report_path(root, self._last_terminal_bundle)
-                if report is not None:
-                    lines.append(f"· 报告: {report}")
+        if terminal is not None:
+            if terminal.outcome == "completed":
+                lines.append("上一轮研究已完成，你现在回到侦察模式。")
+                if self._last_terminal_bundle and root is not None:
+                    report = report_path(root, self._last_terminal_bundle)
+                    if report is not None:
+                        lines.append(f"· 报告: {report}")
+            elif terminal.outcome == "blocked":
+                lines.append("⚠ 上一轮研究失败（blocked），你现在回到侦察模式。")
+                reason = (
+                    terminal.failure.message
+                    if terminal.failure is not None and terminal.failure.message
+                    else "未知原因（见诊断记录）"
+                )
+                lines.append(f"  原因: {reason}")
+                lines.append("  下一步: 调整研究范围/预算后重新触发；或 /inspect 查看失败现场。")
+            elif terminal.outcome == "cancelled":
+                lines.append("上一轮研究已取消，你现在回到侦察模式。")
+            else:
+                lines.append("上一轮研究已停止，你现在回到侦察模式。")
             lines.append("")
         lines.extend(
             [
@@ -1283,38 +1473,103 @@ class DeepResearchDemoTUI(App[None]):
             workspace = self._inspect_workspace_root()
             tools = _recon_tools(workspace) if workspace is not None else []
             model = self._chat_model.bind_tools(tools) if tools else self._chat_model
-            text = await self._run_tool_calling_turn(model, messages, tools)
+            text = await self._stream_turn(model, messages, tools, echo=f"你: {value}")
             self._chat_history.append(("assistant", text))
             log.write(Text(f"AI: {text}", style="cyan"))
         except Exception as exc:
             log.write(Text(f"（侦察对话调用失败: {type(exc).__name__}）", style="red"))
 
-    async def _run_tool_calling_turn(
+    async def _stream_turn(
         self,
         model: Any,
         messages: list[Any],
         tools: list[Any],
+        *,
+        echo: str,
     ) -> str:
-        """Execute up to two tool-calling rounds, then return the final answer."""
-        from langchain_core.messages import ToolMessage
+        """Stream one chat turn; tool calls are executed inline as they arrive.
 
-        response = await model.ainvoke(messages)
-        for _round in range(2):
-            if not getattr(response, "tool_calls", None):
-                break
-            messages.append(response)
-            for call in response.tool_calls:
+        Every content chunk is rendered into the persistent #inspect panel
+        immediately (no waiting for the full answer), while tool-call chunks
+        are accumulated, executed, fed back as ToolMessages, and the stream
+        continues.
+        """
+        from langchain_core.messages import AIMessage, ToolMessage
+
+        tools_map = {tool.name: tool for tool in tools}
+        text_parts: list[str] = []
+        tool_calls: dict[int, dict[str, Any]] = {}
+        for _round in range(3):
+            async for chunk in model.astream(messages):
+                content = getattr(chunk, "content", chunk)
+                if isinstance(content, str) and content:
+                    text_parts.append(content)
+                    self._render_inspect((echo, f"AI: {''.join(text_parts)}"))
+                for call in getattr(chunk, "tool_calls", None) or ():
+                    index = call.get("index", 0)
+                    tool_calls[index] = call
+            if not tool_calls:
+                return "".join(text_parts)
+            messages.append(
+                AIMessage(
+                    content="".join(text_parts),
+                    tool_calls=[
+                        {k: v for k, v in call.items() if k not in {"index", "type", "extras"}}
+                        for call in tool_calls.values()
+                    ],
+                )
+            )
+            for call in tool_calls.values():
                 result = "（未知工具）"
-                for tool in tools:
-                    if tool.name == call["name"]:
-                        try:
-                            result = tool.invoke(call.get("args") or {})
-                        except Exception as exc:
-                            result = f"工具调用失败: {type(exc).__name__}: {exc}"
-                        break
-                messages.append(ToolMessage(content=str(result), tool_call_id=call["id"]))
-            response = await model.ainvoke(messages)
-        return response.content if isinstance(response.content, str) else str(response.content)
+                tool = tools_map.get(call.get("name", ""))
+                if tool is not None:
+                    try:
+                        result = tool.invoke(call.get("args") or {})
+                    except Exception as exc:
+                        result = f"工具调用失败: {type(exc).__name__}: {exc}"
+                messages.append(ToolMessage(content=str(result), tool_call_id=call.get("id", "")))
+            text_parts = []
+            tool_calls = {}
+        return "".join(text_parts)
+
+    def _render_live_activity(self) -> None:
+        """Roll research activity like a coding-agent terminal.
+
+        Every new journal event is appended to #log (a true scrolling feed,
+        never cleared during research); #inspect shows the semantic status:
+        progress chain, what comes next, and what is happening right now.
+        """
+        adapter = self._adapter
+        root = getattr(adapter, "bundle_root", None) if adapter is not None else None
+        bundle = _latest_active_bundle(root)
+        if bundle is None:
+            return
+        events_file = bundle / "diagnostics" / "events.jsonl"
+        try:
+            raw = events_file.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            return
+        log = self.query_one("#log", RichLog)
+        for line in raw[self._feed_watermark:]:
+            try:
+                event = json.loads(line)
+            except ValueError:
+                continue
+            feed_line = _event_to_feed_line(event)
+            if feed_line is not None:
+                log.write(Text(feed_line, style="dim"))
+        self._feed_watermark = len(raw)
+
+        progress = list(live_progress_lines(root))
+        if not progress:
+            return
+        outcome, _stamp = _last_model_call_state(root)
+        lines = list(progress)
+        if outcome == "started":
+            lines.append("⚙ 正在: 模型调用中")
+        elif outcome == "completed":
+            lines.append("⚙ 正在: 处理模型结果")
+        self._render_inspect(tuple(lines))
 
     def _render_interaction_status(self, update: RunUpdate) -> None:
         """Keep the operator's latest input and the system's understanding visible.
@@ -1324,6 +1579,7 @@ class DeepResearchDemoTUI(App[None]):
         """
         if not self._last_typed:
             return
+        self._stop_pending_timer()
         if isinstance(update, AwaitingInput):
             prompt = update.prompt
             lines = [f"你: {self._last_typed}"]
