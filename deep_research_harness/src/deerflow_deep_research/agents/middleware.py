@@ -54,10 +54,14 @@ class AgentBudgetError(NodeAgentStop):
         detail: str,
         budget_stop_reason: BudgetStopReason | None = None,
         operands: dict[str, int] | None = None,
+        response: Any | None = None,
     ) -> None:
         super().__init__(finish_reason, detail)
         self.budget_stop_reason = budget_stop_reason
         self.operands: dict[str, int] = dict(operands) if operands else {}
+        # For per-call output-cap overruns the already-generated response rides
+        # along so the bridge can accept it degraded instead of killing the run.
+        self.response = response
 
 
 class AgentPolicyError(NodeAgentStop):
@@ -152,6 +156,7 @@ class BudgetMiddleware(AgentMiddleware):
                     "observed_output_tokens": int(usage["output_tokens"]),
                     "per_call_output_token_cap": budget.per_call_output_token_cap,
                 },
+                response=response,
             )
 
         self.tokens_used += int(usage["total_tokens"])

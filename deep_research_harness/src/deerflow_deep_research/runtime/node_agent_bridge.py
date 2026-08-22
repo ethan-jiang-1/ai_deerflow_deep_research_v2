@@ -463,6 +463,31 @@ class RuntimeNodeAgentBridge:
                 code=RunFailureCode.TOOL_EXECUTION_FAILED,
             )
         except NodeAgentStop as exc:
+            if (
+                exc.finish_reason is NodeFinishReason.BUDGET_EXHAUSTED
+                and getattr(exc, "budget_stop_reason", None) is BudgetStopReason.PER_CALL_OUTPUT_CAP
+                and getattr(exc, "response", None) is not None
+            ):
+                # A single model call slightly over its output cap is not a
+                # runaway: the output is already generated and paid for, so
+                # accept it degraded and continue the run instead of killing it.
+                # Hard budget stops remain for the real runaway controls
+                # (model-call limit, wall time, cumulative total budget).
+                recording.budget_stop_reason = BudgetStopReason.PER_CALL_OUTPUT_CAP
+                self._emit(context, operation="run_agent", status="per_call_output_cap_degraded")
+                try:
+                    node_result = self._project_result(
+                        exc.response,
+                        untrusted_tool_results=tuple(tool_policy_middleware.tool_results),
+                    )
+                except Exception:
+                    return self._safe_failure(
+                        context,
+                        NodeFinishReason.FAILED,
+                        error_code="structured_output_invalid",
+                        code=RunFailureCode.OUTPUT_STRUCTURED_INVALID,
+                    )
+                return node_result
             if exc.finish_reason is NodeFinishReason.BUDGET_EXHAUSTED:
                 candidate = exc.budget_stop_reason if isinstance(exc, AgentBudgetError) else None
                 recording.budget_stop_reason = (

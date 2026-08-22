@@ -1147,13 +1147,15 @@ async def test_token_admission_upper_bound_refuses_oversized_request() -> None:
     assert result.finish_reason == NodeFinishReason.BUDGET_EXHAUSTED
 
 
-async def test_per_call_output_cap_exceeded_is_budget_exhausted() -> None:
+async def test_per_call_output_cap_exceeded_degrades_instead_of_killing_run() -> None:
+    # A single call slightly over its output cap accepts the already-generated
+    # output (degraded) and continues, instead of blocking the whole run.
     bridge = _bridge(
         lambda: ScriptedChatModel(responses=[ai_message("big", input_tokens=10, output_tokens=9_000)]),
         policy=_policy(_budget(per_call_output_token_cap=500, total_token_budget=5_000)),
     )
     result = await bridge.run_agent(context=_context(), request=_request())
-    assert result.finish_reason == NodeFinishReason.BUDGET_EXHAUSTED
+    assert result.finish_reason == NodeFinishReason.SUCCESS
 
 
 @pytest.mark.workflow
