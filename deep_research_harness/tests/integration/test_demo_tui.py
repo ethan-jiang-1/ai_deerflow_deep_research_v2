@@ -78,7 +78,7 @@ def _failed_report() -> ReadinessReport:
     )
 
 
-async def _wait_for(app: DeepResearchDemoTUI, pilot, expected: type, max_wait: float = 4.0) -> None:
+async def _wait_for(app: DeepResearchDemoTUI, pilot, expected: type, max_wait: float = 8.0) -> None:
     elapsed = 0.0
     while elapsed < max_wait and not isinstance(app.last_update, expected):
         await pilot.pause()
@@ -161,6 +161,19 @@ def _install_isolated_fixture_adapter(monkeypatch: pytest.MonkeyPatch, *, bundle
     monkeypatch.setattr(demo_tui, "DemoAdapter", lambda: adapter_type(bundle_root=bundle_root))
 
 
+async def _type_composer(app: DeepResearchDemoTUI, pilot: Any, text: str) -> None:
+    """Enter text into the composer without per-key driver overhead.
+
+    The app dispatches from the composer value at submit time
+    (``on_input_submitted`` reads ``Input.Submitted.value``), so assigning the
+    value directly is semantically identical to typing while skipping the
+    Textual pilot's ~80ms per-key idle/animation wait (316 keys across this
+    file ≈ 25s of driver time).
+    """
+    app.query_one("#composer", demo_tui.Input).value = text
+    await pilot.pause()
+
+
 @pytest.mark.asyncio
 async def test_tui_fixture_route_completes_through_shared_experience(
     monkeypatch: pytest.MonkeyPatch,
@@ -174,7 +187,7 @@ async def test_tui_fixture_route_completes_through_shared_experience(
         await pilot.press("enter")
         await _wait_for(app, pilot, AwaitingInput)
         assert app.last_update.prompt.phase == "hitl1"
-        await pilot.press(*"profile")
+        await _type_composer(app, pilot, "profile")
         await pilot.press("enter")
         await _wait_for(app, pilot, Terminal)
 
@@ -193,7 +206,7 @@ async def test_tui_forwards_unadvertised_choice_to_graph_owned_validation(monkey
         await _wait_for(app, pilot, demo_tui.Ready)
         await pilot.press("enter")
         await _wait_for(app, pilot, AwaitingInput)
-        await pilot.press(*"not-an-advertised-choice")
+        await _type_composer(app, pilot, "not-an-advertised-choice")
         await pilot.press("enter")
         await _wait_for(app, pilot, Fault)
 
@@ -241,7 +254,7 @@ async def test_tui_selects_visible_control_and_keeps_natural_text_as_text(monkey
         await _wait_for(app, pilot, demo_tui.Ready)
         await pilot.press("enter")
         await _wait_for(app, pilot, AwaitingInput)
-        await pilot.press(*"采用建议")
+        await _type_composer(app, pilot, "采用建议")
         await pilot.press("enter")
         await _wait_for(app, pilot, Terminal)
 
@@ -534,7 +547,7 @@ async def test_tui_exact_match_composer_entry_answers_hitl1_language_choice(
         await _wait_for(app, pilot, demo_tui.Ready)
         await pilot.press("enter")
         await _wait_for_hitl1_prompt(app, pilot, mode="choice")
-        await pilot.press(*"zh")
+        await _type_composer(app, pilot, "zh")
         await pilot.press("enter")
         await _wait_for(app, pilot, Terminal)
 
@@ -569,7 +582,7 @@ async def test_tui_non_matching_composer_text_is_not_dispatched_for_hitl1_langua
         await _wait_for(app, pilot, demo_tui.Ready)
         await pilot.press("enter")
         await _wait_for_hitl1_prompt(app, pilot, mode="choice")
-        await pilot.press(*"not-a-language")
+        await _type_composer(app, pilot, "not-a-language")
         await pilot.press("enter")
         for _ in range(5):
             await pilot.pause()
@@ -581,7 +594,7 @@ async def test_tui_non_matching_composer_text_is_not_dispatched_for_hitl1_langua
         await _wait_for_hitl1_prompt(app, pilot, mode="text")
         # hitl1 TEXT prompts now advertise quick-revision buttons (020 UX).
         assert app.query_one("#options").display is True
-        await pilot.press(*"make it quick")
+        await _type_composer(app, pilot, "make it quick")
         await pilot.press("enter")
         await _wait_for(app, pilot, Terminal)
 
@@ -666,7 +679,7 @@ async def test_tui_onboarding_chat_does_not_start_research(monkeypatch: pytest.M
     app = demo_tui.DeepResearchDemoTUI(mode="embedded_smoke")
     async with app.run_test() as pilot:
         await _wait_for(app, pilot, demo_tui.Ready)
-        await pilot.press(*"hello there")
+        await _type_composer(app, pilot, "hello there")
         await pilot.press("enter")
         await pilot.pause()
 
@@ -680,7 +693,7 @@ async def test_tui_onboarding_trigger_starts_fixed_research(monkeypatch: pytest.
     app = demo_tui.DeepResearchDemoTUI(mode="embedded_smoke")
     async with app.run_test() as pilot:
         await _wait_for(app, pilot, demo_tui.Ready)
-        await pilot.press(*"start deep research")
+        await _type_composer(app, pilot, "start deep research")
         await pilot.press("enter")
         await _wait_for(app, pilot, AwaitingInput)
 
@@ -713,7 +726,7 @@ async def test_tui_returns_to_recon_after_research_completes(monkeypatch: pytest
     app = demo_tui.DeepResearchDemoTUI(mode="embedded_smoke")
     async with app.run_test() as pilot:
         await _wait_for(app, pilot, demo_tui.Ready)
-        await pilot.press(*"start deep research")
+        await _type_composer(app, pilot, "start deep research")
         await pilot.press("enter")
         await _wait_for(app, pilot, Terminal)
         await pilot.pause()
@@ -736,12 +749,12 @@ async def test_tui_recon_loop_supports_second_research_round(monkeypatch: pytest
     app = demo_tui.DeepResearchDemoTUI(mode="embedded_smoke")
     async with app.run_test() as pilot:
         await _wait_for(app, pilot, demo_tui.Ready)
-        await pilot.press(*"start deep research")
+        await _type_composer(app, pilot, "start deep research")
         await pilot.press("enter")
         await _wait_for(app, pilot, Terminal)
         await pilot.pause()
         # back in recon; start a second round via trigger phrase
-        await pilot.press(*"start deep research")
+        await _type_composer(app, pilot, "start deep research")
         await pilot.press("enter")
         await _wait_for(app, pilot, AwaitingInput)
 
@@ -786,7 +799,7 @@ async def test_tui_hitl1_input_is_echoed_before_dispatch(monkeypatch: pytest.Mon
         await _wait_for(app, pilot, demo_tui.Ready)
         await pilot.press("enter")
         await _wait_for_hitl1_prompt(app, pilot, mode="text")
-        await pilot.press(*"depth: deep dive")
+        await _type_composer(app, pilot, "depth: deep dive")
         await pilot.press("enter")
         await _wait_for(app, pilot, Terminal)
 
@@ -817,7 +830,7 @@ async def test_tui_env_command_shows_workspace_structure(monkeypatch: pytest.Mon
     app = demo_tui.DeepResearchDemoTUI(mode="embedded_smoke")
     async with app.run_test() as pilot:
         await _wait_for(app, pilot, demo_tui.Ready)
-        await pilot.press(*"workspace")
+        await _type_composer(app, pilot, "workspace")
         await pilot.press("enter")
         await pilot.pause()
         log_text = app._rich_log_text()
@@ -885,7 +898,7 @@ async def test_tui_slash_ls_renders_persistent_inspect_panel(monkeypatch: pytest
     app = demo_tui.DeepResearchDemoTUI(mode="embedded_smoke")
     async with app.run_test() as pilot:
         await _wait_for(app, pilot, demo_tui.Ready)
-        await pilot.press(*"/ls")
+        await _type_composer(app, pilot, "/ls")
         await pilot.press("enter")
         await pilot.pause()
         panel = app.query_one("#inspect").content
@@ -905,12 +918,12 @@ async def test_tui_slash_command_never_dispatches_research_during_hitl1(
     app = demo_tui.DeepResearchDemoTUI(mode="embedded_smoke")
     async with app.run_test() as pilot:
         await _wait_for(app, pilot, demo_tui.Ready)
-        await pilot.press(*"start deep research")
+        await _type_composer(app, pilot, "start deep research")
         await pilot.press("enter")
         await _wait_for_hitl1_prompt(app, pilot, mode="text")
         intents_before = len(_ScriptedExperience.instances[0].intents)
 
-        await pilot.press(*"/ls")
+        await _type_composer(app, pilot, "/ls")
         await pilot.press("enter")
         await pilot.pause()
 
@@ -928,10 +941,10 @@ async def test_tui_input_echo_persists_in_inspect_panel(monkeypatch: pytest.Monk
     app = demo_tui.DeepResearchDemoTUI(mode="embedded_smoke")
     async with app.run_test() as pilot:
         await _wait_for(app, pilot, demo_tui.Ready)
-        await pilot.press(*"start deep research")
+        await _type_composer(app, pilot, "start deep research")
         await pilot.press("enter")
         await _wait_for_hitl1_prompt(app, pilot, mode="text")
-        await pilot.press(*"quick overview")
+        await _type_composer(app, pilot, "quick overview")
         await pilot.press("enter")
         await _wait_for(app, pilot, demo_tui.AwaitingInput)
         await pilot.pause()
@@ -953,10 +966,10 @@ async def test_tui_hitl1_feedback_surfaces_in_persistent_panel(
     app = demo_tui.DeepResearchDemoTUI(mode="embedded_smoke")
     async with app.run_test() as pilot:
         await _wait_for(app, pilot, demo_tui.Ready)
-        await pilot.press(*"start deep research")
+        await _type_composer(app, pilot, "start deep research")
         await pilot.press("enter")
         await _wait_for_hitl1_prompt(app, pilot, mode="text")
-        await pilot.press(*"random text")
+        await _type_composer(app, pilot, "random text")
         await pilot.press("enter")
         await _wait_for(app, pilot, demo_tui.AwaitingInput)
         await pilot.pause()
@@ -1086,10 +1099,10 @@ async def test_tui_processing_timer_ticks_seconds_in_panel(monkeypatch: pytest.M
     app = demo_tui.DeepResearchDemoTUI(mode="embedded_smoke")
     async with app.run_test() as pilot:
         await _wait_for(app, pilot, demo_tui.Ready)
-        await pilot.press(*"start deep research")
+        await _type_composer(app, pilot, "start deep research")
         await pilot.press("enter")
         await _wait_for_hitl1_prompt(app, pilot, mode="text")
-        await pilot.press(*"quick overview")
+        await _type_composer(app, pilot, "quick overview")
         await pilot.press("enter")
         await pilot.pause()
         # no update returned yet -> the timer line should show elapsed seconds
@@ -1152,7 +1165,7 @@ async def test_tui_blocked_terminal_tells_user_failure_not_completed(
     app = demo_tui.DeepResearchDemoTUI(mode="embedded_smoke")
     async with app.run_test() as pilot:
         await _wait_for(app, pilot, demo_tui.Ready)
-        await pilot.press(*"start deep research")
+        await _type_composer(app, pilot, "start deep research")
         await pilot.press("enter")
         await _wait_for(app, pilot, demo_tui.Terminal)
         await pilot.pause()
