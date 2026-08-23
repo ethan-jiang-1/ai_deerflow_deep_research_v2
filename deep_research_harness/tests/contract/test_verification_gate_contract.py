@@ -32,7 +32,7 @@ def test_makefile_exposes_exact_non_mutating_verify_composition() -> None:
     assert "--durations=20 --junitxml=.reports/test-fast.xml" in text
     assert "PYTEST := python -m pytest" in text
     # Gate lanes default to parallel (-n 4; L2 parallel-safety review complete,
-    # see _backlog/plans/test-regression-speedup.md). PYTEST_XDIST is carried by
+    # see _backlog/_done/_closed_plans/CLS-053-test-regression-speedup.md). PYTEST_XDIST is carried by
     # every gate lane via `?=` and may be emptied for serial (`PYTEST_XDIST=`).
     assert "PYTEST_XDIST ?= -n 4" in text
     for lane in ("test:", "test-fast:", "test-integration:", "test-workflow:"):

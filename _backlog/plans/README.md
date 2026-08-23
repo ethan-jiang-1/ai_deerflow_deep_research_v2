@@ -22,9 +22,8 @@
 | [openspec-product-boundary-portability.md](openspec-product-boundary-portability.md) | 设计 | 将 OpenSpec practice 分为 portable core/profiles、Deep Research local composition 与 product front door，并在本仓完成机械验证 |
 | [tui-interactive-campaign.md](tui-interactive-campaign.md) | 设计 | TUI 真人交互跑通真实 Deep Research（010 交互专项探路）；v2 已收敛，执行前吸收独立审阅 |
 | [tui-interactive-campaign-review.md](tui-interactive-campaign-review.md) | 审阅 | 校正 HITL2、CHOICE、证据归因、exact Bundle 与产品边界后再启动真实 API 战役 |
-| [test-regression-speedup.md](test-regression-speedup.md) | 复盘/运营 | 回归提速第三轮：L1 已落地（TUI 直赋，integration 57→37s）；L2 并行 review 完成，翻默认待拍板（护栏 1 为硬前提） |
 
-**Next available plan ID: CLS-053**（移入 `_closed_plans/` 时分配）
+**Next available plan ID: CLS-054**（移入 `_closed_plans/` 时分配）
 
 ## 已归档（移至 `_done/_closed_plans/`）
 
@@ -58,6 +57,7 @@
 | runtime-operator-logs-and-live-trace.md | CLS-041 | 2026-08-16 |
 | soft-bundle-session-cli.md | CLS-045 | 2026-08-18 |
 | low-scale-real-auto-runs.md | CLS-046 | 2026-08-18 |
+| test-regression-speedup.md | CLS-053 | 2026-08-22 |
 
 ---
 

@@ -1,11 +1,14 @@
 # 回归提速 · 第三轮（test-regression-speedup）
 
-> 生成: 2026-08-22 | 状态: **进行中（L1 ✅ / L2 翻默认 ✅ 落地 / L-A 跨进程缓存 ✅ 落地 / L-C 实测否决）**
+> 生成: 2026-08-22 | 状态: **✅ 已归档（CLS-053，2026-08-22）——全部拍板项落地：L1 / L2 翻默认 / L-A / L-B / L8 完成，L-C 实测否决**
 > 用途: 回归（`UV_OFFLINE=1 make verify`）提速的**持续运营文档**。第一、二轮见
 > [`../_done/_closed_plans/CLS-052-test-suite-cleanup-and-speed.md`](../_done/_closed_plans/CLS-052-test-suite-cleanup-and-speed.md)
 > （去重 / 修红 / xdist opt-in / CI uv 缓存 / 时长政策 / 串行默认拍板）。本文件承接第三轮：
 > **换思路——不是删用例，而是砍单用例的驱动开销 + 复查并行决策**。
 > 数据来源: 本机 `.venv` 实测（warm venv）+ `.reports/*.xml`。
+>
+> 遗留条件性待办（非本计划阻塞项）：L3 CI submodules（用户暂搁置"CI 以后再说"）、
+> R3-12 治理层 claim 合并（远期立项）。
 
 ---
 

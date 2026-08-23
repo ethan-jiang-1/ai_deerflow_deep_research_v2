@@ -72,5 +72,6 @@ plan 完成后从 `_backlog/plans/` 通过 `git mv` 移入本目录：
 | CLS-049 | 2026-08-19 | [openspec-rule-reachability.md](openspec-rule-reachability.md) | Design + execution implemented and archived via OpenSpec change `openspec-rule-reachability`; T0–T3 landed, T4 route-table single-sourcing deliberately deferred / not part of this change |
 | CLS-051 | 2026-08-20 | [CLS-051-hard-real-auto-runs.md](CLS-051-hard-real-auto-runs.md) | Mode 004 hard real-auto 默认意图跑通（HRA-001 战役，比较题找茬、不污染产品逻辑）设计定稿并落地；补录索引（此前文件已归档但未登记） |
 | CLS-052 | 2026-08-22 | [CLS-052-test-suite-cleanup-and-speed.md](CLS-052-test-suite-cleanup-and-speed.md) | 测试资产审计与回归提速（多轮）完成：去重 1 处、修 36 存量红测（eval digest + readiness 真回归）、串行默认基建 + pytest-xdist opt-in、CI uv 缓存配置；决策（demo_tui 合并/单次调用/make -j 否决、R2 撤回、旧概念保留）全部有实测证据入账；剩余 R4/R5/CI 确认为条件性待办 |
+| CLS-053 | 2026-08-22 | [CLS-053-test-regression-speedup.md](CLS-053-test-regression-speedup.md) | 回归提速第三轮完成：L1 TUI 直赋（integration 57→37s）+ L2 翻默认并行 `-n 4`（verify pytest ~90s→~56s，护栏：并行时长阈值 8s / `_wait_for` 8s / CI 显式 -n 4）+ L-A 跨进程 catalog 磁盘缓存（收集 4.4s→1.4s）+ L-B 套件级用例预算门禁（超限即红）+ L8 `make test-changed` 本地增量（单文件 ~1s）；L-C 数据矩阵合并实测否决（大头被 425 claims 逐 row 绑定）；遗留 L3 CI submodules / R3-12 治理层 claim 合并为条件性待办 |
 
-**Next available plan ID: CLS-053**
+**Next available plan ID: CLS-054**

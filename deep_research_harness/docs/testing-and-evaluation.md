@@ -13,7 +13,7 @@ first, then use `UV_OFFLINE=1 make verify` as the complete deterministic gate.
 
 The pytest lanes (`test`, `test-fast`, `test-integration`, `test-workflow`) run
 in parallel by default (`-n 4`; parallel safety reviewed in
-`_backlog/plans/test-regression-speedup.md` §L2). Serial is opt-out:
+`_backlog/_done/_closed_plans/CLS-053-test-regression-speedup.md` §L2). Serial is opt-out:
 `make test-fast PYTEST_XDIST=` (empty). The test-required runtime extras
 (textual, python-dotenv, ruamel.yaml) live in the `dev` dependency group, so
 pytest targets run plain `uv run pytest` without `--extra` flags.
