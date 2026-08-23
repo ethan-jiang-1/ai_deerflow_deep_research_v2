@@ -30,6 +30,7 @@ pytest targets run plain `uv run pytest` without `--extra` flags.
 | Strict msgpack checkpoint compatibility | `make test-strict-checkpoint` |
 | Validate the `test-fast` JUnit duration report | `make test-duration-policy` |
 | Reference fast-lane collection/setup/call benchmark | `make benchmark-fast` |
+| Run only tests touched by the working-tree diff (local iteration) | `make test-changed` |
 | Generate the ignored local node-prompt review catalog | `make prompt-dump` |
 | Validate an existing local node-prompt review catalog without writing | `make prompt-dump-check` |
 | Deterministic integration/blocking-I/O correctness | `make test-integration` |
@@ -191,6 +192,12 @@ expiry) turns the gate red, so test-count growth is an explicit reviewed decisio
 rather than silent accumulation. Budget baselines are the 2026-08-22 measured counts
 plus headroom; raise a budget deliberately (or add a waiver) when a bounded,
 evidence-backed addition needs the room, and re-run `make test-assets`.
+
+For local iteration, `make test-changed` runs only the test files touched by the
+working-tree diff (plus `--last-failed` for the previously failing set, or a custom
+`--base` ref via `make test-changed ARGS="--last-failed --base HEAD~1"`). It is a
+local convenience outside the deterministic gate: the gate always runs the full lane
+selection, so narrowing local runs never weakens CI evidence.
 Project-level planning and closeout governance for OpenSpec changes runs as an
 independent repository-root column and is never part of this Makefile gate; this
 application does not read, import, execute, or link that column.

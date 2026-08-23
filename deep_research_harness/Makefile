@@ -1,4 +1,4 @@
-.PHONY: install entry-preflight verify lock-check format lint test test-fast test-integration test-workflow test-entry-environment-regression test-live test-unit test-contract test-viability test-durability test-blocking-io test-assets test-intake test-retained-observation test-work-unit test-strict-checkpoint test-duration-policy benchmark-fast prompt-dump prompt-dump-check profile-setup profile-preflight profiles profile-init profile-check profile-dev demo demo-scripted demo-fixture-graph demo-real demo-real-embedded-smoke demo-real-scripted demo-tui demo-tui-embedded-smoke demo-tui-fixture demo-tui-real-auto demo-sessions session-workbench debug-scripted-real-workflow soft-bundle
+.PHONY: install entry-preflight verify lock-check format lint test test-fast test-integration test-workflow test-entry-environment-regression test-live test-unit test-contract test-viability test-durability test-blocking-io test-assets test-intake test-retained-observation test-work-unit test-strict-checkpoint test-duration-policy test-changed benchmark-fast prompt-dump prompt-dump-check profile-setup profile-preflight profiles profile-init profile-check profile-dev demo demo-scripted demo-fixture-graph demo-real demo-real-embedded-smoke demo-real-scripted demo-tui demo-tui-embedded-smoke demo-tui-fixture demo-tui-real-auto demo-sessions session-workbench debug-scripted-real-workflow soft-bundle
 
 DEMO_ARGS ?=
 # Operator demo/session/soft-bundle/profile entry commands default to no uv cache:
@@ -153,6 +153,13 @@ test-strict-checkpoint:
 
 test-duration-policy:
 	uv run python scripts/check_test_durations.py .reports/test-fast.xml $(if $(PYTEST_XDIST),--parallel)
+
+# Local iteration speed-up (L8): run only tests touched by the working-tree diff,
+# optionally plus the previously failed set. NOT part of verify/CI — the gate
+# stays the full lane selection. Usage: `make test-changed` or
+# `make test-changed ARGS="--last-failed --base HEAD~1"`.
+test-changed:
+	uv run python scripts/test_changed.py $(ARGS)
 
 # Verify or re-pin the source-controlled eval control digests. Run --check
 # before/after any change to a pinned source file (prompts, domain modules);

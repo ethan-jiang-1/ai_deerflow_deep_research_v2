@@ -14,7 +14,7 @@
 > 维护规则: 完成一项 → 在对应表填 ✅ + 日期 + 验证证据；新决策 → 追加"历史决策记录"；
 > 新待办 → 追加文末"待办"；被撤回/否决的项保留记录（原因即价值）。
 
-### 第三轮 · 已完成（R3-1 ~ R3-9）
+### 第三轮 · 已完成（R3-1 ~ R3-10）
 
 | # | 事项 | 完成 | 验证证据（实测） |
 | --- | --- | --- | --- |
@@ -27,6 +27,7 @@
 | R3-7 | **L-A 落地：跨进程 catalog 磁盘缓存**（用户拍板"转做 L-A"） | ✅ 2026-08-22 | 整树 `--collect-only` 子进程 **4.4s → 1.4s**（warm 命中）；`verify` 4 进程收集税 ~15s → ~5s；指纹失效自验证通过；63 个收集契约测试全绿；`make test-assets` 绿 |
 | R3-8 | **L-C 实测否决**：数据矩阵"1 case per table"合并 | ✅ 2026-08-22 | 9 候选文件 538 用例仅占 fast lane 4.42s；大头被 425 claims 证据契约逐 row 绑定（合并即红）；安全合并面仅 43 行、极限省 ~0.2s，代价丢失败定位粒度。**用户拍板砍掉** |
 | R3-9 | **L-B 落地：套件级用例预算门禁**（用户"继续"指令推进） | ✅ 2026-08-22 | `check_test_assets.py` 新增 `CASE_BUDGETS`（fast≤2900/integration≤400/workflow≤60/live≤80/periodic≤10）+ `DETERMINISTIC_TOTAL_BUDGET=3300` + `CaseBudgetWaiver` 机制；超限即红 `make test-assets`；新增 2 个契约测试（超限拒收 / 活 waiver 放行 / 过期 waiver 拒收 / 当前 collection 通过）22 passed；lint/format 绿 |
+| R3-10 | **L8 落地：本地增量模式** `make test-changed`（用户"继续"指令推进） | ✅ 2026-08-22 | 新增 `scripts/test_changed.py`（git diff --relative → 变更测试文件 + `--lf`/`--base`，默认 `-n 4`）；改 1 个测试文件实测 **0.88s**（vs 全量 fast 18s）；Makefile target + 文档命令表；不在 verify/CI 内（不削弱 gate） |
 
 ### 第三轮 · 待办
 
