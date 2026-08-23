@@ -553,7 +553,6 @@ def test_case_budget_gate_passes_on_current_collection() -> None:
     """The live gate must pass today; this pins the budget baseline floor."""
     from datetime import UTC, datetime
 
-    check_test_assets.reset_collection_cache()
     focused = {
         selection: check_test_assets.collect_pytest_selectors(
             paths=paths,
