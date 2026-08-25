@@ -1,6 +1,6 @@
 schema_version = 1
 contract = "project-structure"
-requirement_ids = ["PRS-001", "PRS-002", "PRS-003", "PRS-004", "PRS-005", "PRS-006", "PRS-007", "PRS-009", "PRS-010", "PRS-011", "PRS-012", "PRS-013", "PRS-014", "PRS-015", "PRS-016", "PRS-017", "PRS-018", "PRS-019"]
+requirement_ids = ["PRS-001", "PRS-002", "PRS-003", "PRS-004", "PRS-005", "PRS-006", "PRS-007", "PRS-009", "PRS-010", "PRS-011", "PRS-012", "PRS-013", "PRS-014", "PRS-015", "PRS-016", "PRS-017", "PRS-018", "PRS-019", "PRS-020"]
 
 [upstream_gitlink]
 path = "deerflow"
@@ -1008,6 +1008,11 @@ owner = "PRS-009"
 path = "openspec/governance/check_project_req_coverage.py"
 kind = "file"
 owner = "PRS-009"
+
+[[required_paths]]
+path = "openspec/governance/check_doc_hygiene.py"
+kind = "file"
+owner = "PRS-020"
 
 [[required_paths]]
 path = "openspec/tests"

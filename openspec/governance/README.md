@@ -17,6 +17,7 @@
 | `check_change_guidance.py` | Change Guidance / policy 路由 / Focus Card 是否通过？ | 脚本 docstring |
 | `check_project_req_coverage.py` | 应用 requirement 是否有测试证据、OpenSpec 治理 requirement 是否有执行脚本证据？ | 测试或治理脚本 docstring |
 | `check_harness_dependency_direction.py` | Harness 是否反向依赖 OpenSpec？ | 脚本 docstring |
+| `check_doc_hygiene.py` | 文档层（ADR 索引↔目录 / 入口链相对链接 / 编码换行）是否漂移？ | 脚本 docstring（standalone，非 gate 组件、非 `make verify` 目标） |
 | `test-evidence-policy.md` | 测试证据的 authority、lifecycle、synchronized-change？ | [test-evidence-policy.md](test-evidence-policy.md)；批准语义由 `evaluation-hardening` main spec 拥有 |
 | `change-guidance/README.md` | 先按什么原则、再选哪个 policy？ | [change-guidance/README.md](../change-guidance/README.md) |
 
@@ -39,6 +40,9 @@ python3 openspec/governance/check_harness_dependency_direction.py
 
 共六个 component checker。每个 checker 拥有自己规则的全部语义；它们只读、不写
 registry，也不修改任何文件。
+
+文档层卫生另有独立 checker（不属于六 component 聚合、不进 `make verify`）：
+`python3 openspec/governance/check_doc_hygiene.py`（含 `--self-test` 负例控制）。
 
 ## Canonical aggregate gate
 

@@ -636,6 +636,7 @@ DPL-012: demo-pipeline — An explicit all-real calibration procedure records fr
 DPL-013: demo-pipeline — Each all-real standalone demo process admits a fresh trusted local scope without discovering or controlling prior demo Bundles
 
 PRS-019: project-structure — The scripted-real debug launcher, fixture scenario/composition modules, and contract tests live at registered canonical harness paths without production-package discovery of the scenario scripts
+PRS-020: project-structure — The dev-harness doc-layer hygiene checker occupies a canonical governance path and mechanically rejects ADR-index drift, broken entry-chain relative links, and encoding/newline drift without being aggregated into the root gate or the Harness verify gate
 SCR-001: scripted-real-workflow-debug — An operator-only composition root combines all-real adapters and gates with scripted model/tool capabilities through the recipe seam, labeled scripted_real_workflow, without demo-real flags, env, or credentials
 SCR-002: scripted-real-workflow-debug — The fixed narrow baseline drives one bounded action per wave: one topic plan, one Wave0 intake, one Wave1 extraction with at least two new sources plus two critic reviews, one backed Wave2 finding with no searchable gaps, a passing readiness critic, and one composer layout
 SCR-003: scripted-real-workflow-debug — Script exhaustion is strict: missing responses, surplus model/tool calls, skipped wave actions, or entering targeted/rerun fail the command

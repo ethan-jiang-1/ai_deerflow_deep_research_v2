@@ -127,6 +127,7 @@ operations](docs/local-operations.md) own the operational detail.
 | Run the prepared all-real research launcher | `bash run/real-research.sh` |
 | Run the deterministic project gate | `UV_OFFLINE=1 make verify` |
 | Inspect one retained observation, read-only | `make demo-sessions DEMO_ARGS="inspect <bundle-id>"` |
+| Check profile validity and runtime readiness, read-only | `make profile-check PROFILE=<name>` / `python scripts/doctor.py` (opt-in dev tooling, not a security boundary; profile semantics in [local-operations.md](docs/local-operations.md)) |
 
 ## Bounded Real-Demo Calibration
 

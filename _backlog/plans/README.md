@@ -19,9 +19,10 @@
 
 | Plan | 类型 | 下一步 |
 |------|------|--------|
-| [openspec-product-boundary-portability.md](openspec-product-boundary-portability.md) | 设计 | 将 OpenSpec practice 分为 portable core/profiles、Deep Research local composition 与 product front door，并在本仓完成机械验证 |
+| [tui-interactive-campaign-progress.md](tui-interactive-campaign-progress.md) | 进度 | 020 TUI 交互战役（原 010 手动 TUI）的落地进度账本；Phase 0 已完成，进行中 |
 | [tui-interactive-campaign.md](tui-interactive-campaign.md) | 设计 | TUI 真人交互跑通真实 Deep Research（010 交互专项探路）；v2 已收敛，执行前吸收独立审阅 |
 | [tui-interactive-campaign-review.md](tui-interactive-campaign-review.md) | 审阅 | 校正 HITL2、CHOICE、证据归因、exact Bundle 与产品边界后再启动真实 API 战役 |
+| [agent-legibility-feedback-hardening.md](agent-legibility-feedback-hardening.md) | 设计 | 借用 DSH Harness 思路，用「三问 + 六缺口」体检本仓；只开 1 个 OpenSpec change（文档层门禁 `dev-harness-legibility-gate`，含 ADR 发现层 + prose↔reality 坐实 + 负例控制），另 2 个 `_backlog` todo |
 
 **Next available plan ID: CLS-054**（移入 `_closed_plans/` 时分配）
 
@@ -58,6 +59,7 @@
 | soft-bundle-session-cli.md | CLS-045 | 2026-08-18 |
 | low-scale-real-auto-runs.md | CLS-046 | 2026-08-18 |
 | test-regression-speedup.md | CLS-053 | 2026-08-22 |
+| openspec-product-boundary-portability.md | CLS-054 | 2026-08-17 |
 
 ---
 
