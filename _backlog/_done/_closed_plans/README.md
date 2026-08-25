@@ -76,5 +76,6 @@ plan 完成后从 `_backlog/plans/` 通过 `git mv` 移入本目录：
 
 | CLS-054 | 2026-08-17 | [openspec-product-boundary-portability.md](openspec-product-boundary-portability.md) | 补录索引（此前文件已归档但未登记，git mv 于 62cc484）：OpenSpec 产品边界与可移植性最终方案，由 `make-openspec-practice-portable` 实施并验证（portable core/profiles + Deep Research local composition + product front door） |
 | CLS-055 | 2026-08-25 | [project-structure-manifest-split.md](project-structure-manifest-split.md) | 拆分 `project-structure.toml`（契约 ~67 行）+ 清单按 owner 折叠（`required-paths.toml`，346 行，257 条路径），总量 -73%；由 `split-project-structure-manifest` change 实现并归档，checker 对 (path, kind, owner) 集合逐字等价 |
+| CLS-056 | 2026-08-25 | [agent-legibility-feedback-hardening.md](agent-legibility-feedback-hardening.md) | 借用 DSH「三问 + 六缺口」体检本仓，只关真实缺口：`dev-harness-legibility-gate`（PRS-020，commit 70f6528）落地文档层门禁 `check_doc_hygiene.py` + 负例控制 + ADR 发现层；G4 查证为 `54886b8` 误删的回归，撤销 relabel，改由 `restore-agents-structure-locator`（PRS-021，commit 754f32a）完整恢复生成 locator；G2 指针与 plans README 索引 todo 走账本 |
 
-**Next available plan ID: CLS-056**
+**Next available plan ID: CLS-057**
