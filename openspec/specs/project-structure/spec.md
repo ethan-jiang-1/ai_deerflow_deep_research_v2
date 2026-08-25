@@ -1,6 +1,6 @@
 # project-structure Specification
 
-> req: PRS-001, PRS-002, PRS-003, PRS-004, PRS-005, PRS-006, PRS-007, PRS-009, PRS-010, PRS-011, PRS-012, PRS-013, PRS-014, PRS-015, PRS-016, PRS-017, PRS-018, PRS-019, PRS-020
+> req: PRS-001, PRS-002, PRS-003, PRS-004, PRS-005, PRS-006, PRS-007, PRS-009, PRS-010, PRS-011, PRS-012, PRS-013, PRS-014, PRS-015, PRS-016, PRS-017, PRS-018, PRS-019, PRS-020, PRS-021
 > structure: openspec/governance/project-structure.toml
 
 ## Purpose
@@ -686,3 +686,35 @@ gate, which remains application-independent. (`PRS-020`)
 - **WHEN** the OpenSpec root governance gate and the Harness `make verify` gate run
 - **THEN** neither gate invokes `check_doc_hygiene.py`, and their six-component and
   application-independent composition is unchanged
+
+### Requirement: Architecture checker enforces the generated structure-locator block
+
+The architecture checker SHALL mechanically enforce the generated structure-locator
+block in `deep_research_harness/AGENTS.md`. It SHALL require the block's
+`begin_marker` and `end_marker`, declared in the `[guide]` registry table, to appear
+exactly once each; SHALL require the block content to match the deterministic render
+of the current structure registry; and SHALL exit non-zero with the violated rule
+named when the block is missing, duplicated, or drifted. The checker SHALL expose a
+`--render-guide` mode that prints the deterministic block for regeneration.
+(`PRS-021`)
+
+#### Scenario: Locator block matches the registry
+
+- **WHEN** `deep_research_harness/AGENTS.md` contains exactly one generated
+  structure-locator block matching the current registry render
+- **THEN** architecture governance passes and the block names the current canonical
+  roots, ownership layers, node grammar, and validation command
+
+#### Scenario: Missing or duplicated markers are rejected
+
+- **WHEN** the locator markers are absent or appear more than once in
+  `deep_research_harness/AGENTS.md`
+- **THEN** the architecture checker exits non-zero naming the missing or duplicated
+  marker rule
+
+#### Scenario: Registry drift is rejected
+
+- **WHEN** the block content differs from the deterministic render of the current
+  structure registry (for example a stale root or layer)
+- **THEN** the architecture checker exits non-zero with `guide.drift`, and
+  `--render-guide` prints the correct block for regeneration

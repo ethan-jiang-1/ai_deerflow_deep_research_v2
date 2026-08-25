@@ -95,3 +95,23 @@ cognition is not causal. Do not invent a capability, prompt, or repair loop.
 
 Run the narrowest relevant test first. The complete application gate is
 `UV_OFFLINE=1 make verify`; inspect `Makefile` for focused targets.
+
+## Structural Authority
+
+The active `project-structure` spec owns structural requirements. Exact enumerable
+structure lives in the structure registry; do not edit the generated block below by
+hand. Update the owning change and registry, then render it with the listed
+architecture checker.
+
+<!-- BEGIN GENERATED: PROJECT-STRUCTURE -->
+## Canonical Structure Locator
+
+Exact inventory: the structure registry declared by the owning `project-structure` spec.
+
+- Source root: `deep_research_harness/src/deerflow_deep_research/`
+- Fixture source root: `deep_research_harness/src_fake/deerflow_deep_research_fixtures/`
+- Test root: `deep_research_harness/tests/`
+- Ownership layers: `runtime`, `domain`, `engine`, `agents`, `graph`
+- Node grammar: `deep_research_harness/src/deerflow_deep_research/graph/nodes/` packages export `NODE_SPEC`; see the registry for files
+- Validate: repository architecture governance (`check_project_architecture.py`)
+<!-- END GENERATED: PROJECT-STRUCTURE -->

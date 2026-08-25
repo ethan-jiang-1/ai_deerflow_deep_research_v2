@@ -6,6 +6,11 @@ requirement_ids = ["PRS-001", "PRS-002", "PRS-003", "PRS-004", "PRS-005", "PRS-0
 path = "deerflow"
 commit = "66b9e7f21212490cf92fafac137542b9deb06615"
 
+[guide]
+path = "deep_research_harness/AGENTS.md"
+begin_marker = "<!-- BEGIN GENERATED: PROJECT-STRUCTURE -->"
+end_marker = "<!-- END GENERATED: PROJECT-STRUCTURE -->"
+
 [package]
 source_root = "deep_research_harness/src/deerflow_deep_research"
 fixture_root = "deep_research_harness/src_fake/deerflow_deep_research_fixtures"

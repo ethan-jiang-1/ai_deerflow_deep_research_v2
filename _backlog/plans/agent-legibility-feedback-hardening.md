@@ -55,7 +55,9 @@ ADR、运行时查询都已存在。所以这不是从零搭 DSH，而是**用 D
 | **G1** | `docs/adr/` 无 README/index、无生命周期状态、负知识散落 | **进 change**（index 是门禁要校验的数据） |
 | **G2** | 运行时查询已有，缺一条 canonical 指针（等价 `--dump-config` 的一句话承诺） | **todo**（一行，无需 change） |
 | **G3** | 文档层无 `exit non-zero` 门禁 + 负例控制 | **change 的核心**（唯一 change 级缺口） |
-| **G4** | `architecture-policy.md` 声称有「generated locator block + registry markers」，但 toml/checker/AGENTS.md 三处都不存在 | **进 change**（门禁要写「one home」就得先把它钉死） |
+| **G4** | 主 spec（PRS-004）要求、`architecture-policy.md` 也描述的 generated locator block，在 AGENTS.md/toml/checker 三处都不存在——后查证是 `54886b8` 重构误删的**回归**（旧设计还违反 PRS-009「Harness 不得 link OpenSpec 内容」） | **独立 change 恢复**（`restore-agents-structure-locator`，path-free 措辞同时满足 PRS-004 + PRS-009） |
+
+> **执行结果更新（2026-08-25）**：`dev-harness-legibility-gate`（G1/G3 + G4 初步 relabel）已 propose→polish→apply→archive→commit（70f6528）；随后发现 G4 是回归而非「未来计划」——relabel 方向错误，已撤销，改由独立 change `restore-agents-structure-locator` 完整恢复（AGENTS.md block + `render_guide_block`/`_validate_guide`/`--render-guide` + registry `[guide]` 表 + PRS-021），block 按 PRS-009 重写为 path-free。
 
 ---
 
@@ -102,6 +104,8 @@ ADR、运行时查询都已存在。所以这不是从零搭 DSH，而是**用 D
 ### 内部渐进任务（check items 全绿才进下一任务）
 
 #### T1 · 坐实 G4：prose 不再声称不存在的机器事实
+
+> ⚠️ 本任务在 `dev-harness-legibility-gate` 里按默认 (b) 执行（relabel），但 apply 后查证 G4 是 `54886b8` 造成的**回归**（block 曾在 `2bbaa82` 存在），且旧设计违反 PRS-009。relabel 已撤销，实际落地改为独立 change `restore-agents-structure-locator` 完整恢复（见上方「执行结果更新」）。此处保留原始计划供追溯。
 
 - 二选一：(a) 实现 generated locator block（registry 加 markers + `check_project_architecture.py` 校验 + AGENTS.md 生成 block）；或 (b) 把 `architecture-policy.md` 相关段标注 future plan。**默认选 (b)**（一行，零风险）。
 - **Check items：**

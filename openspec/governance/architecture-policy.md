@@ -11,7 +11,7 @@ must retain short bootstrap pointers to this policy and its checker.
 | Active `project-structure` main spec | Normative semantic requirements after the first archive |
 | One active owning delta | Pending normative requirements before the first archive |
 | `project-structure.toml` | Exact machine-readable structural enumeration |
-| Generated block in `deep_research_harness/AGENTS.md` | FUTURE PLAN (not yet implemented): a deterministic compact locator for the registry, roots, grammar, and checker |
+| Generated block in `deep_research_harness/AGENTS.md` | Deterministic compact locator for the registry, roots, grammar, and checker |
 | Human-authored `deep_research_harness/AGENTS.md` text | Navigation, rationale, commands, and explicitly labelled future plans |
 | Archived change artifacts | Historical context only |
 | Contract tests and `check_project_architecture.py` | Mechanical enforcement |
@@ -54,7 +54,7 @@ declared upstream gitlink lock must:
 
 1. update the owning delta when semantic requirements change;
 2. update `project-structure.toml` with the exact current enumeration;
-3. regenerate the bounded locator in `deep_research_harness/AGENTS.md` (future plan — the generated locator block is not yet implemented);
+3. regenerate the bounded locator in `deep_research_harness/AGENTS.md`;
 4. update deterministic contract fixtures and the smallest sufficient requirement
    evidence mapping; and
 5. pass `check_project_architecture.py` before archive.
@@ -72,9 +72,9 @@ intentional upstream bump requires one reviewed change to update the staged root
 and declared lock together; the checker verifies that consistency but cannot approve
 the bump, recover a mismatch, or determine compatibility.
 
-FUTURE PLAN (not yet implemented): a generated block in
-`deep_research_harness/AGENTS.md`, bounded by markers declared in the registry, would
-name the registry, source root, test root, ownership layers, node grammar, and
-validation command without repeating the required-path inventory. Until it exists, the
-human-authored `deep_research_harness/AGENTS.md` text and the TOML registry are the
-only authorities; the TOML registry remains the exact enumerable authority.
+The generated block is bounded by the markers declared in the registry. It names the
+registry, source root, test root, ownership layers, node grammar, and validation
+command; it deliberately does not repeat the required-path inventory. Text outside
+those markers is human-authored and may explain the structure, but it cannot override
+the generated locator or the registry. The TOML registry remains the exact enumerable
+authority.

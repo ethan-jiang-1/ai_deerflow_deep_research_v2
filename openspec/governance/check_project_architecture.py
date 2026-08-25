@@ -8,6 +8,7 @@
 @impl PRS-011
 @impl PRS-017
 @impl PRS-019
+@impl PRS-021
 @impl FSI-003
 """
 
@@ -91,6 +92,9 @@ class UpstreamGitlink:
 @dataclass(frozen=True)
 class StructureManifest:
     requirement_ids: tuple[str, ...]
+    guide_path: PurePosixPath
+    begin_marker: str
+    end_marker: str
     upstream_gitlink: UpstreamGitlink
     source_root: PurePosixPath
     fixture_root: PurePosixPath | None
@@ -367,8 +371,21 @@ def load_manifest(root: Path) -> StructureManifest:
         raise ContractViolation("manifest.schema", "node package file categories must not overlap")
     node_public_export = _expect_string(node_packages.get("public_export"), "node_packages.public_export")
 
+    guide = _expect_mapping(data.get("guide"), "guide")
+    guide_path = _relative_path(guide.get("path"), "guide.path")
+    begin_marker = _expect_string(guide.get("begin_marker"), "guide.begin_marker")
+    end_marker = _expect_string(guide.get("end_marker"), "guide.end_marker")
+    if begin_marker == end_marker:
+        raise ContractViolation("manifest.schema", "guide.begin_marker and guide.end_marker must differ")
+    expected_guide_path = CANONICAL_HARNESS_ROOT / "AGENTS.md"
+    if guide_path != expected_guide_path:
+        raise ContractViolation("manifest.schema", f"guide.path must be {expected_guide_path.as_posix()}")
+
     return StructureManifest(
         requirement_ids=requirement_ids,
+        guide_path=guide_path,
+        begin_marker=begin_marker,
+        end_marker=end_marker,
         upstream_gitlink=upstream_gitlink,
         source_root=source_root,
         fixture_root=fixture_root,
@@ -395,6 +412,52 @@ def load_manifest(root: Path) -> StructureManifest:
 
 def _directory_display(path: PurePosixPath) -> str:
     return f"{path.as_posix()}/"
+
+
+def render_guide_block(manifest: StructureManifest) -> str:
+    lines = [
+        manifest.begin_marker,
+        "## Canonical Structure Locator",
+        "",
+        "Exact inventory: the structure registry declared by the owning "
+        "`project-structure` spec.",
+        "",
+        f"- Source root: `{_directory_display(manifest.source_root)}`",
+        *(
+            [f"- Fixture source root: `{_directory_display(manifest.fixture_root)}`"]
+            if manifest.fixture_root is not None
+            else []
+        ),
+        f"- Test root: `{_directory_display(manifest.test_root)}`",
+        "- Ownership layers: " + ", ".join(f"`{layer}`" for layer in manifest.ownership_layers),
+        f"- Node grammar: `{_directory_display(manifest.node_root)}` packages export "
+        f"`{manifest.node_public_export}`; see the registry for files",
+        "- Validate: repository architecture governance (`check_project_architecture.py`)",
+        manifest.end_marker,
+    ]
+    return "\n".join(lines)
+
+
+def _validate_guide(root: Path, manifest: StructureManifest) -> None:
+    path = root / manifest.guide_path
+    if not path.is_file():
+        raise ContractViolation("guide.marker_missing", f"module guide is missing: {manifest.guide_path}")
+    text = path.read_text(encoding="utf-8")
+    begin_count = text.count(manifest.begin_marker)
+    end_count = text.count(manifest.end_marker)
+    if begin_count == 0 or end_count == 0:
+        raise ContractViolation("guide.marker_missing", "module guide lacks the generated structure markers")
+    if begin_count != 1 or end_count != 1:
+        raise ContractViolation(
+            "guide.marker_duplicate",
+            "module guide must contain exactly one generated structure block",
+        )
+    start = text.index(manifest.begin_marker)
+    end = text.index(manifest.end_marker, start) + len(manifest.end_marker)
+    actual = text[start:end]
+    expected = render_guide_block(manifest).rstrip("\n")
+    if actual != expected:
+        raise ContractViolation("guide.drift", "generated module-guide block does not match the structure registry")
 
 
 def _validate_spec_authority(root: Path, manifest: StructureManifest) -> None:
@@ -983,6 +1046,7 @@ def validate_imports(root: Path, manifest: StructureManifest) -> None:
 
 def validate_project(root: Path, manifest: StructureManifest) -> None:
     _validate_spec_authority(root, manifest)
+    _validate_guide(root, manifest)
     _validate_required_paths(root, manifest)
     _validate_ignored_paths(root, manifest)
     _validate_single_source_root(root, manifest)
@@ -1010,9 +1074,18 @@ def main() -> int:
         action="store_true",
         help="validate only manifest and Python import contracts",
     )
+    parser.add_argument(
+        "--render-guide",
+        action="store_true",
+        help="print the deterministic AGENTS.md structure-locator block",
+    )
     args = parser.parse_args()
     root = Path(args.project_root).resolve()
     try:
+        if args.render_guide:
+            manifest = load_manifest(root)
+            print(render_guide_block(manifest), end="")
+            return 0
         check_project(root, imports_only=args.imports_only)
     except ContractViolation as violation:
         print(f"ERROR [{violation.code}] {violation.detail}", file=sys.stderr)
