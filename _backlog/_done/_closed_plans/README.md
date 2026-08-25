@@ -75,5 +75,6 @@ plan 完成后从 `_backlog/plans/` 通过 `git mv` 移入本目录：
 | CLS-053 | 2026-08-22 | [CLS-053-test-regression-speedup.md](CLS-053-test-regression-speedup.md) | 回归提速第三轮完成：L1 TUI 直赋（integration 57→37s）+ L2 翻默认并行 `-n 4`（verify pytest ~90s→~56s，护栏：并行时长阈值 8s / `_wait_for` 8s / CI 显式 -n 4）+ L-A 跨进程 catalog 磁盘缓存（收集 4.4s→1.4s）+ L-B 套件级用例预算门禁（超限即红）+ L8 `make test-changed` 本地增量（单文件 ~1s）；L-C 数据矩阵合并实测否决（大头被 425 claims 逐 row 绑定）；遗留 L3 CI submodules / R3-12 治理层 claim 合并为条件性待办 |
 
 | CLS-054 | 2026-08-17 | [openspec-product-boundary-portability.md](openspec-product-boundary-portability.md) | 补录索引（此前文件已归档但未登记，git mv 于 62cc484）：OpenSpec 产品边界与可移植性最终方案，由 `make-openspec-practice-portable` 实施并验证（portable core/profiles + Deep Research local composition + product front door） |
+| CLS-055 | 2026-08-25 | [project-structure-manifest-split.md](project-structure-manifest-split.md) | 拆分 `project-structure.toml`（契约 ~67 行）+ 清单按 owner 折叠（`required-paths.toml`，346 行，257 条路径），总量 -73%；由 `split-project-structure-manifest` change 实现并归档，checker 对 (path, kind, owner) 集合逐字等价 |
 
-**Next available plan ID: CLS-055**
+**Next available plan ID: CLS-056**

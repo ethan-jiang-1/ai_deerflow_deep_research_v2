@@ -1,6 +1,6 @@
 # Plans — plan/分析文档索引
 
-> 最后更新: 2026-08-22 | `_backlog/plans/` — 活跃 plan 在此，完成的普通 plan 移入 [`../_done/_closed_plans/`](../_done/_closed_plans/)。
+> 最后更新: 2026-08-25 | `_backlog/plans/` — 活跃 plan 在此，完成的普通 plan 移入 [`../_done/_closed_plans/`](../_done/_closed_plans/)。
 >
 > **plan 没有编号，文件名即标识。完成后文件名不变，位置即状态。**
 
@@ -24,7 +24,7 @@
 | [tui-interactive-campaign-review.md](tui-interactive-campaign-review.md) | 审阅 | 校正 HITL2、CHOICE、证据归因、exact Bundle 与产品边界后再启动真实 API 战役 |
 | [agent-legibility-feedback-hardening.md](agent-legibility-feedback-hardening.md) | 设计 | 借用 DSH Harness 思路，用「三问 + 六缺口」体检本仓；只开 1 个 OpenSpec change（文档层门禁 `dev-harness-legibility-gate`，含 ADR 发现层 + prose↔reality 坐实 + 负例控制），另 2 个 `_backlog` todo |
 
-**Next available plan ID: CLS-054**（移入 `_closed_plans/` 时分配）
+**Next available plan ID: CLS-056**（移入 `_closed_plans/` 时分配）
 
 ## 已归档（移至 `_done/_closed_plans/`）
 
