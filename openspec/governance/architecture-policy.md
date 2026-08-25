@@ -10,7 +10,7 @@ must retain short bootstrap pointers to this policy and its checker.
 |---|---|
 | Active `project-structure` main spec | Normative semantic requirements after the first archive |
 | One active owning delta | Pending normative requirements before the first archive |
-| `project-structure.toml` | Exact machine-readable structural enumeration |
+| Project-structure manifest (`project-structure.toml` contract + `required-paths.toml` inventory) | Exact machine-readable structural enumeration |
 | Generated block in `deep_research_harness/AGENTS.md` | Deterministic compact locator for the registry, roots, grammar, and checker |
 | Human-authored `deep_research_harness/AGENTS.md` text | Navigation, rationale, commands, and explicitly labelled future plans |
 | Archived change artifacts | Historical context only |
@@ -53,7 +53,7 @@ A change that adds, removes, renames, reassigns a structural path, or changes th
 declared upstream gitlink lock must:
 
 1. update the owning delta when semantic requirements change;
-2. update `project-structure.toml` with the exact current enumeration;
+2. update the project-structure manifest (`project-structure.toml` contract and `required-paths.toml` inventory) with the exact current enumeration;
 3. regenerate the bounded locator in `deep_research_harness/AGENTS.md`;
 4. update deterministic contract fixtures and the smallest sufficient requirement
    evidence mapping; and
@@ -76,5 +76,5 @@ The generated block is bounded by the markers declared in the registry. It names
 registry, source root, test root, ownership layers, node grammar, and validation
 command; it deliberately does not repeat the required-path inventory. Text outside
 those markers is human-authored and may explain the structure, but it cannot override
-the generated locator or the registry. The TOML registry remains the exact enumerable
-authority.
+the generated locator or the registry. The TOML manifest (`project-structure.toml`
+contract and `required-paths.toml` inventory) remains the exact enumerable authority.

@@ -10,7 +10,7 @@
 |------|----------|--------------|
 | `req-registry.yaml` | 这条 requirement 的 ID 是否存在、如何分配缩写 / 三态 / 标题？ | [req-registry.yaml](req-registry.yaml) 自身 |
 | `architecture-policy.md` | 什么算 active spec、结构权威如何分工？ | [architecture-policy.md](architecture-policy.md) |
-| `project-structure.toml` | 精确目录 / import / 节点包清单？ | [project-structure.toml](project-structure.toml) |
+| Project-structure manifest（`project-structure.toml` 契约 + `required-paths.toml` 清单） | 精确目录 / import / 节点包清单？ | [project-structure.toml](project-structure.toml) · [required-paths.toml](required-paths.toml) |
 | `check_project_reqs.py` | 需求 registry 一致性是否通过？ | 脚本 docstring |
 | `check_project_specs.py` | main spec 结构是否有效？ | 脚本 docstring |
 | `check_project_architecture.py` | 结构治理是否通过？ | 脚本 docstring |

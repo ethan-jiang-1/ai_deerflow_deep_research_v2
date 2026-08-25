@@ -1,0 +1,1535 @@
+=== git status --porcelain=v1 --untracked-files=all ===
+ M _backlog/plans/README.md
+ M openspec/README.md
+ M openspec/change-guidance/README.md
+ M openspec/change-guidance/local/deep-research.md
+ M openspec/config.yaml
+ M openspec/governance/README.md
+ M openspec/governance/architecture-policy.md
+ M openspec/governance/check_project_architecture.py
+ M openspec/governance/project-structure.toml
+?? _backlog/plans/project-structure-manifest-split.md
+?? openspec/changes/split-project-structure-manifest/.openspec.yaml
+?? openspec/changes/split-project-structure-manifest/design.md
+?? openspec/changes/split-project-structure-manifest/evidence/scope-diff.txt
+?? openspec/changes/split-project-structure-manifest/proposal.md
+?? openspec/changes/split-project-structure-manifest/specs/project-structure/spec.md
+?? openspec/changes/split-project-structure-manifest/tasks.md
+?? openspec/governance/required-paths.toml
+?? openspec/tests/governance/test_split_manifest.py
+
+=== git ls-files --stage deerflow ===
+160000 66b9e7f21212490cf92fafac137542b9deb06615 0	deerflow
+
+=== git submodule status -- deerflow ===
+ 66b9e7f21212490cf92fafac137542b9deb06615 deerflow (heads/main-282-g66b9e7f2)
+
+=== git -C deerflow status --porcelain=v1 --untracked-files=all ===
+
+=== git diff --submodule=short ===
+diff --git a/_backlog/plans/README.md b/_backlog/plans/README.md
+index 656932d..e58ac11 100644
+--- a/_backlog/plans/README.md
++++ b/_backlog/plans/README.md
+@@ -23,6 +23,7 @@
+ | [tui-interactive-campaign.md](tui-interactive-campaign.md) | 设计 | TUI 真人交互跑通真实 Deep Research（010 交互专项探路）；v2 已收敛，执行前吸收独立审阅 |
+ | [tui-interactive-campaign-review.md](tui-interactive-campaign-review.md) | 审阅 | 校正 HITL2、CHOICE、证据归因、exact Bundle 与产品边界后再启动真实 API 战役 |
+ | [agent-legibility-feedback-hardening.md](agent-legibility-feedback-hardening.md) | 设计 | 借用 DSH Harness 思路，用「三问 + 六缺口」体检本仓；只开 1 个 OpenSpec change（文档层门禁 `dev-harness-legibility-gate`，含 ADR 发现层 + prose↔reality 坐实 + 负例控制），另 2 个 `_backlog` todo |
++| [project-structure-manifest-split.md](project-structure-manifest-split.md) | 设计 | 拆分 `project-structure.toml`（契约 ~58 行）+ 清单按 owner 折叠，总量 -73%；实施走 `openspec/changes/` |
+ 
+ **Next available plan ID: CLS-054**（移入 `_closed_plans/` 时分配）
+ 
+diff --git a/openspec/README.md b/openspec/README.md
+index 4c85ba4..7d46269 100644
+--- a/openspec/README.md
++++ b/openspec/README.md
+@@ -13,5 +13,6 @@
+ - [Governance](governance/README.md) owns project registries, deterministic
+   checkers, and the bounded closeout-evidence command.
+ 
+-This map is navigation only. Exact project topology remains owned by
+-`governance/project-structure.toml`.
++This map is navigation only. Exact project topology remains owned by the
++project-structure manifest: `governance/project-structure.toml` (contract) and
++`governance/required-paths.toml` (inventory).
+diff --git a/openspec/change-guidance/README.md b/openspec/change-guidance/README.md
+index 10816cb..2a0cda4 100644
+--- a/openspec/change-guidance/README.md
++++ b/openspec/change-guidance/README.md
+@@ -30,4 +30,5 @@ and [local/deep-research.md](local/deep-research.md).
+ All three profiles are enabled for this project. A change selects every triggered
+ canonical policy; disabled profiles would contribute no selectable policy or review.
+ Local Program grammar, paths, budgets, module map, and operations remain under
+-`local/`. Exact paths remain solely in `governance/project-structure.toml`.
++`local/`. Exact paths remain solely in the project-structure manifest
++(`governance/project-structure.toml` contract + `governance/required-paths.toml` inventory).
+diff --git a/openspec/change-guidance/local/deep-research.md b/openspec/change-guidance/local/deep-research.md
+index 756bfd5..18a36e0 100644
+--- a/openspec/change-guidance/local/deep-research.md
++++ b/openspec/change-guidance/local/deep-research.md
+@@ -36,7 +36,8 @@ caller-declared Git closeout evidence remain advisory.
+ 
+ Coding guidance selects the smallest spec/source/test seam; human README routes product
+ use; `openspec/config.yaml` routes authoring; `product/README.md` routes product
+-questions; `project-structure.toml` alone enumerates exact structure. Keep detailed
++questions; the project-structure manifest (`project-structure.toml` contract +
++`required-paths.toml` inventory) alone enumerates exact structure. Keep detailed
+ reader roles and line budgets here, while current facts and behavior remain in owners.
+ 
+ ## Reader Roles
+diff --git a/openspec/config.yaml b/openspec/config.yaml
+index 82e2453..1268e16 100644
+--- a/openspec/config.yaml
++++ b/openspec/config.yaml
+@@ -15,7 +15,7 @@ context: |
+      pending behavior.
+   2. Code, typed contracts, tests, and the authority that owns a runtime fact define
+      current behavior and conformance evidence.
+-  3. `openspec/governance/project-structure.toml` is the exact structural inventory;
++  3. `openspec/governance/project-structure.toml` (contract) and `openspec/governance/required-paths.toml` (inventory) form the exact structural manifest;
+      `architecture-policy.md` defines its update protocol.
+   4. [Change Guidance](change-guidance/README.md) guides local design and
+      admission only. It never creates runtime behavior, authority, or permission.
+diff --git a/openspec/governance/README.md b/openspec/governance/README.md
+index ec80af7..6c972b0 100644
+--- a/openspec/governance/README.md
++++ b/openspec/governance/README.md
+@@ -10,7 +10,7 @@
+ |------|----------|--------------|
+ | `req-registry.yaml` | 这条 requirement 的 ID 是否存在、如何分配缩写 / 三态 / 标题？ | [req-registry.yaml](req-registry.yaml) 自身 |
+ | `architecture-policy.md` | 什么算 active spec、结构权威如何分工？ | [architecture-policy.md](architecture-policy.md) |
+-| `project-structure.toml` | 精确目录 / import / 节点包清单？ | [project-structure.toml](project-structure.toml) |
++| Project-structure manifest（`project-structure.toml` 契约 + `required-paths.toml` 清单） | 精确目录 / import / 节点包清单？ | [project-structure.toml](project-structure.toml) · [required-paths.toml](required-paths.toml) |
+ | `check_project_reqs.py` | 需求 registry 一致性是否通过？ | 脚本 docstring |
+ | `check_project_specs.py` | main spec 结构是否有效？ | 脚本 docstring |
+ | `check_project_architecture.py` | 结构治理是否通过？ | 脚本 docstring |
+diff --git a/openspec/governance/architecture-policy.md b/openspec/governance/architecture-policy.md
+index 01d39e4..51bf4d8 100644
+--- a/openspec/governance/architecture-policy.md
++++ b/openspec/governance/architecture-policy.md
+@@ -10,7 +10,7 @@ must retain short bootstrap pointers to this policy and its checker.
+ |---|---|
+ | Active `project-structure` main spec | Normative semantic requirements after the first archive |
+ | One active owning delta | Pending normative requirements before the first archive |
+-| `project-structure.toml` | Exact machine-readable structural enumeration |
++| Project-structure manifest (`project-structure.toml` contract + `required-paths.toml` inventory) | Exact machine-readable structural enumeration |
+ | Generated block in `deep_research_harness/AGENTS.md` | Deterministic compact locator for the registry, roots, grammar, and checker |
+ | Human-authored `deep_research_harness/AGENTS.md` text | Navigation, rationale, commands, and explicitly labelled future plans |
+ | Archived change artifacts | Historical context only |
+@@ -53,7 +53,7 @@ A change that adds, removes, renames, reassigns a structural path, or changes th
+ declared upstream gitlink lock must:
+ 
+ 1. update the owning delta when semantic requirements change;
+-2. update `project-structure.toml` with the exact current enumeration;
++2. update the project-structure manifest (`project-structure.toml` contract and `required-paths.toml` inventory) with the exact current enumeration;
+ 3. regenerate the bounded locator in `deep_research_harness/AGENTS.md`;
+ 4. update deterministic contract fixtures and the smallest sufficient requirement
+    evidence mapping; and
+@@ -76,5 +76,5 @@ The generated block is bounded by the markers declared in the registry. It names
+ registry, source root, test root, ownership layers, node grammar, and validation
+ command; it deliberately does not repeat the required-path inventory. Text outside
+ those markers is human-authored and may explain the structure, but it cannot override
+-the generated locator or the registry. The TOML registry remains the exact enumerable
+-authority.
++the generated locator or the registry. The TOML manifest (`project-structure.toml`
++contract and `required-paths.toml` inventory) remains the exact enumerable authority.
+diff --git a/openspec/governance/check_project_architecture.py b/openspec/governance/check_project_architecture.py
+index 3a3d479..2024714 100644
+--- a/openspec/governance/check_project_architecture.py
++++ b/openspec/governance/check_project_architecture.py
+@@ -27,6 +27,7 @@ from pathlib import Path, PurePosixPath
+ from typing import Any
+ 
+ MANIFEST_RELATIVE = PurePosixPath("openspec/governance/project-structure.toml")
++INVENTORY_RELATIVE = PurePosixPath("openspec/governance/required-paths.toml")
+ REGISTRY_RELATIVE = PurePosixPath("openspec/governance/req-registry.yaml")
+ MAIN_SPEC_RELATIVE = PurePosixPath("openspec/specs/project-structure/spec.md")
+ UPSTREAM_GITLINK_PATH = PurePosixPath("deerflow")
+@@ -311,31 +312,73 @@ def load_manifest(root: Path) -> StructureManifest:
+             "ignored_paths.entries must contain normalized repository-local directory entries",
+         )
+ 
+-    raw_required_paths = data.get("required_paths")
+-    if not isinstance(raw_required_paths, list) or not raw_required_paths:
+-        raise ContractViolation("manifest.schema", "required_paths must be a non-empty array of tables")
++    inventory_raw = data.get("inventory")
++    if not isinstance(inventory_raw, dict):
++        raise ContractViolation("inventory.schema", "inventory must be a TOML table")
++    inventory_path = _relative_path(inventory_raw.get("path"), "inventory.path")
++    if inventory_path != INVENTORY_RELATIVE:
++        raise ContractViolation(
++            "inventory.path",
++            f"inventory.path must be {INVENTORY_RELATIVE.as_posix()}",
++        )
++    inventory_file = root / INVENTORY_RELATIVE
++    if not inventory_file.is_file():
++        raise ContractViolation("inventory.missing", f"required-path inventory is missing: {INVENTORY_RELATIVE}")
++    try:
++        inventory_data = tomllib.loads(inventory_file.read_text(encoding="utf-8"))
++    except (OSError, UnicodeError, tomllib.TOMLDecodeError) as exc:
++        raise ContractViolation("inventory.parse", f"cannot parse {INVENTORY_RELATIVE}: {exc}") from exc
++    if inventory_data.get("schema_version") != 1:
++        raise ContractViolation("inventory.schema", "inventory schema_version must be integer 1")
++    if inventory_data.get("contract") != "project-structure-inventory":
++        raise ContractViolation(
++            "inventory.schema",
++            "inventory contract must be 'project-structure-inventory'",
++        )
++    raw_path_sections = inventory_data.get("paths")
++    if not isinstance(raw_path_sections, dict) or not raw_path_sections:
++        raise ContractViolation(
++            "inventory.schema",
++            "inventory must declare a non-empty [paths.<ID>] section table",
++        )
+     required_paths: list[RequiredPath] = []
+     seen_paths: set[PurePosixPath] = set()
+-    for index, raw_entry in enumerate(raw_required_paths):
+-        entry = _expect_mapping(raw_entry, f"required_paths[{index}]")
+-        item_path = _relative_path(entry.get("path"), f"required_paths[{index}].path")
+-        if item_path in seen_paths:
+-            raise ContractViolation("path.duplicate", f"required path appears more than once: {item_path}")
+-        seen_paths.add(item_path)
+-        kind = _expect_string(entry.get("kind"), f"required_paths[{index}].kind")
+-        if kind not in {"file", "directory"}:
+-            raise ContractViolation("manifest.schema", f"unsupported required path kind: {kind}")
+-        owner = _expect_string(entry.get("owner"), f"required_paths[{index}].owner")
+-        if owner not in registered or owner not in requirement_ids:
+-            raise ContractViolation("owner.unknown", f"required path {item_path} has unknown owner {owner}")
+-        if any(item_path == root_path or root_path in item_path.parents for root_path in forbidden_source_roots):
+-            raise ContractViolation("path.forbidden_owner", f"required path is under an upstream root: {item_path}")
+-        required_paths.append(RequiredPath(item_path, kind, owner))
++    for section_owner in sorted(raw_path_sections):
++        if not ID_RE.fullmatch(section_owner):
++            raise ContractViolation("inventory.owner", f"inventory section has an invalid owner ID: {section_owner}")
++        section = _expect_mapping(raw_path_sections[section_owner], f"paths.{section_owner}")
++        for kind, key in (("file", "files"), ("directory", "directories")):
++            raw_values = section.get(key)
++            if raw_values is None:
++                continue
++            for item_path_raw in _expect_string_list(raw_values, f"paths.{section_owner}.{key}"):
++                item_path = _relative_path(item_path_raw, f"paths.{section_owner}.{key}")
++                if item_path in seen_paths:
++                    raise ContractViolation("path.duplicate", f"required path appears more than once: {item_path}")
++                seen_paths.add(item_path)
++                if section_owner not in registered or section_owner not in requirement_ids:
++                    raise ContractViolation(
++                        "owner.unknown",
++                        f"required path {item_path} has unknown owner {section_owner}",
++                    )
++                if any(item_path == root_path or root_path in item_path.parents for root_path in forbidden_source_roots):
++                    raise ContractViolation(
++                        "path.forbidden_owner",
++                        f"required path is under an upstream root: {item_path}",
++                    )
++                required_paths.append(RequiredPath(item_path, kind, section_owner))
++    if not required_paths:
++        raise ContractViolation("manifest.schema", "required_paths must be a non-empty set of inventory entries")
+     if not any(item.path == ignored_path and item.kind == "file" for item in required_paths):
+         raise ContractViolation(
+             "manifest.schema",
+             "ignored_paths.path must be registered as a required file",
+         )
++    if not any(item.path == INVENTORY_RELATIVE and item.kind == "file" for item in required_paths):
++        raise ContractViolation(
++            "inventory.unregistered",
++            "the required-path inventory must be registered as a required file",
++        )
+ 
+     raw_imports = _expect_mapping(data.get("imports"), "imports")
+     imports = {name: _expect_string_list(values, f"imports.{name}") for name, values in raw_imports.items()}
+diff --git a/openspec/governance/project-structure.toml b/openspec/governance/project-structure.toml
+index 61b1a1c..0c980e3 100644
+--- a/openspec/governance/project-structure.toml
++++ b/openspec/governance/project-structure.toml
+@@ -44,1010 +44,8 @@ recipe_factories = ["from_adapters"]
+ path = "deep_research_harness/.gitignore"
+ entries = [".deep-research-demo-runs/", ".reports/", ".pytest_cache/", ".ruff_cache/", ".node-prompt-review/", "evals/runs/", ".venv/", ".agents/", ".claude/", ".repro-tmp/"]
+ 
+-[[required_paths]]
+-path = "deep_research_harness/AGENTS.md"
+-kind = "file"
+-owner = "PRS-004"
+-
+-[[required_paths]]
+-path = ".gitignore"
+-kind = "file"
+-owner = "PRS-017"
+-
+-[[required_paths]]
+-path = ".github/workflows/agent-tests.yml"
+-kind = "file"
+-owner = "PRS-017"
+-
+-[[required_paths]]
+-path = ".github/workflows/agent-live-evaluation.yml"
+-kind = "file"
+-owner = "PRS-017"
+-
+-[[required_paths]]
+-path = ".agents/skills/.openspec-target"
+-kind = "file"
+-owner = "PRS-017"
+-
+-[[required_paths]]
+-path = ".agents/skills/openspec-apply-change/SKILL.md"
+-kind = "file"
+-owner = "PRS-017"
+-
+-[[required_paths]]
+-path = ".agents/skills/openspec-archive-change/SKILL.md"
+-kind = "file"
+-owner = "PRS-017"
+-
+-[[required_paths]]
+-path = ".agents/skills/openspec-explore/SKILL.md"
+-kind = "file"
+-owner = "PRS-017"
+-
+-[[required_paths]]
+-path = ".agents/skills/openspec-propose/SKILL.md"
+-kind = "file"
+-owner = "PRS-017"
+-
+-[[required_paths]]
+-path = ".agents/skills/openspec-sync-specs/SKILL.md"
+-kind = "file"
+-owner = "PRS-017"
+-
+-[[required_paths]]
+-path = ".agents/skills/openspec-update-change/SKILL.md"
+-kind = "file"
+-owner = "PRS-017"
+-
+-[[required_paths]]
+-path = ".agents/skills/polish-openspec-change/SKILL.md"
+-kind = "file"
+-owner = "PRS-017"
+-
+-[[required_paths]]
+-path = ".agents/skills/polish-openspec-change/agents/openai.yaml"
+-kind = "file"
+-owner = "PRS-017"
+-
+-[[required_paths]]
+-path = "deep_research_harness/CLAUDE.md"
+-kind = "file"
+-owner = "PRS-009"
+-
+-[[required_paths]]
+-path = "deep_research_harness/README.md"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/Makefile"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/pyproject.toml"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/uv.lock"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research"
+-kind = "directory"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src_fake/deerflow_deep_research_fixtures"
+-kind = "directory"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src_fake/deerflow_deep_research_fixtures/__init__.py"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src_fake/deerflow_deep_research_fixtures/catalog.py"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src_fake/deerflow_deep_research_fixtures/scripted_real"
+-kind = "directory"
+-owner = "PRS-019"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src_fake/deerflow_deep_research_fixtures/scripted_real/__init__.py"
+-kind = "file"
+-owner = "PRS-019"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src_fake/deerflow_deep_research_fixtures/scripted_real/baseline.py"
+-kind = "file"
+-owner = "PRS-019"
+-
+-[[required_paths]]
+-path = "deep_research_harness/scripts/debug_scripted_real_workflow.py"
+-kind = "file"
+-owner = "PRS-019"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/integration/test_scripted_real_workflow_debug.py"
+-kind = "file"
+-owner = "PRS-019"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/contract/test_scripted_real_debug_command.py"
+-kind = "file"
+-owner = "PRS-019"
+-
+-[[required_paths]]
+-path = "deep_research_harness/scripts/soft_bundle.py"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/contract/test_soft_bundle_cli.py"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/__init__.py"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/__about__.py"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/runtime"
+-kind = "directory"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/runtime/__init__.py"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/runtime/checkpoint.py"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/runtime/startup_snapshot.py"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/runtime/control.py"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/runtime/human_input.py"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/runtime/research.py"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/runtime/run_experience.py"
+-kind = "file"
+-owner = "PRS-005"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/runtime/gateway_observer.py"
+-kind = "file"
+-owner = "PRS-005"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/runtime/bundle_control.py"
+-kind = "file"
+-owner = "PRS-006"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/runtime/bundle_lifecycle.py"
+-kind = "file"
+-owner = "PRS-006"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/runtime/bundle_transition.py"
+-kind = "file"
+-owner = "PRS-006"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/rerun.py"
+-kind = "file"
+-owner = "PRS-006"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/runtime/run_observation.py"
+-kind = "file"
+-owner = "PRS-006"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/runtime/session_workbench.py"
+-kind = "file"
+-owner = "PRS-006"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/runtime/work_unit_storage.py"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/runtime/work_unit_store.py"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/runtime/bootstrap_bundle.py"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/runtime/request_bundle.py"
+-kind = "file"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/domain"
+-kind = "directory"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/domain/__init__.py"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/domain/context.py"
+-kind = "file"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/domain/enums.py"
+-kind = "file"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/domain/node_spec.py"
+-kind = "file"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/domain/invocation.py"
+-kind = "file"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/domain/bootstrap.py"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/domain/lifecycle.py"
+-kind = "file"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/domain/human_interaction.py"
+-kind = "file"
+-owner = "PRS-010"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/domain/research_confirmation.py"
+-kind = "file"
+-owner = "PRS-016"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/domain/run_experience.py"
+-kind = "file"
+-owner = "PRS-005"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/domain/run_observation.py"
+-kind = "file"
+-owner = "PRS-006"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/domain/session_workbench.py"
+-kind = "file"
+-owner = "PRS-006"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/domain/state.py"
+-kind = "file"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/domain/bundle.py"
+-kind = "file"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/domain/work_units.py"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/domain/profile.py"
+-kind = "file"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/domain/topics.py"
+-kind = "file"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/domain/critics.py"
+-kind = "file"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/domain/untrusted.py"
+-kind = "file"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/domain/wave1.py"
+-kind = "file"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/domain/readiness.py"
+-kind = "file"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/nodes/wave1/prompts.py"
+-kind = "file"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/engine"
+-kind = "directory"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/engine/__init__.py"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/engine/real_gates.py"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/engine/work_units/__init__.py"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/engine/work_units/ids.py"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/engine/work_units/validation.py"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/engine/work_units/kernel.py"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/agents"
+-kind = "directory"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/agents/__init__.py"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/agents/node_cognitive_control_program.py"
+-kind = "file"
+-owner = "PRS-011"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph"
+-kind = "directory"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/__init__.py"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/prompt_catalog.py"
+-kind = "file"
+-owner = "PRS-011"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/components/__init__.py"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/components/work_units.py"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/registry.py"
+-kind = "file"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/builder.py"
+-kind = "file"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/implementation_map.py"
+-kind = "file"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/topology.py"
+-kind = "file"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/topology_snapshot.py"
+-kind = "file"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/nodes"
+-kind = "directory"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/nodes/bootstrap"
+-kind = "directory"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/nodes/hitl1"
+-kind = "directory"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/nodes/hitl1/prompts.py"
+-kind = "file"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/nodes/topic_planning"
+-kind = "directory"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/nodes/topic_planning/prompts.py"
+-kind = "file"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/nodes/wave0"
+-kind = "directory"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/nodes/wave0/prompts.py"
+-kind = "file"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/nodes/wave1"
+-kind = "directory"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/nodes/wave2_synthesis"
+-kind = "directory"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/nodes/targeted_evidence"
+-kind = "directory"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/nodes/targeted_evidence/prompts.py"
+-kind = "file"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/nodes/targeted_evidence/materializer.py"
+-kind = "file"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/nodes/targeted_evidence/subgraph.py"
+-kind = "file"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/nodes/hitl2"
+-kind = "directory"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/nodes/hitl2/prompts.py"
+-kind = "file"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/nodes/rerun"
+-kind = "directory"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/nodes/readiness"
+-kind = "directory"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/nodes/final_delivery"
+-kind = "directory"
+-owner = "PRS-003"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/resources"
+-kind = "directory"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/config"
+-kind = "directory"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/config/deerflow.fragment.yaml"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/config/extensions.fragment.json"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/config/agent-template"
+-kind = "directory"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/config/agent-template/config.yaml"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/config/agent-template/SOUL.md"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/config/public-skill"
+-kind = "directory"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/config/public-skill/deep-research-controller"
+-kind = "directory"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/config/public-skill/deep-research-controller/SKILL.md"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/scripts"
+-kind = "directory"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/scripts/prompt_dump.py"
+-kind = "file"
+-owner = "PRS-011"
+-
+-[[required_paths]]
+-path = "deep_research_harness/scripts/check_node_workflows.py"
+-kind = "file"
+-owner = "PRS-014"
+-
+-[[required_paths]]
+-path = "deep_research_harness/scripts/configure.py"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/scripts/prepare.py"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/scripts/render_topology.py"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/scripts/local_profiles.py"
+-kind = "file"
+-owner = "PRS-007"
+-
+-[[required_paths]]
+-path = "deep_research_harness/scripts/demo_sessions.py"
+-kind = "file"
+-owner = "PRS-006"
+-
+-[[required_paths]]
+-path = "deep_research_harness/scripts/session_workbench.py"
+-kind = "file"
+-owner = "PRS-006"
+-
+-[[required_paths]]
+-path = "deep_research_harness/.gitignore"
+-kind = "file"
+-owner = "PRS-006"
+-
+-[[required_paths]]
+-path = "deep_research_harness/docs"
+-kind = "directory"
+-owner = "PRS-009"
+-
+-[[required_paths]]
+-path = "deep_research_harness/docs/README.md"
+-kind = "file"
+-owner = "PRS-009"
+-
+-[[required_paths]]
+-path = "deep_research_harness/docs/runtime-architecture.md"
+-kind = "file"
+-owner = "PRS-009"
+-
+-[[required_paths]]
+-path = "deep_research_harness/docs/local-operations.md"
+-kind = "file"
+-owner = "PRS-009"
+-
+-[[required_paths]]
+-path = "deep_research_harness/docs/testing-and-evaluation.md"
+-kind = "file"
+-owner = "PRS-009"
+-
+-[[required_paths]]
+-path = "deep_research_harness/docs/deep-research-topology.md"
+-kind = "file"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/docker"
+-kind = "directory"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/unit"
+-kind = "directory"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/unit/test_gateway_observer.py"
+-kind = "file"
+-owner = "PRS-005"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/unit/test_node_cognitive_control_program.py"
+-kind = "file"
+-owner = "PRS-011"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/unit/test_node_agent_bridge.py"
+-kind = "file"
+-owner = "PRS-011"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/contract"
+-kind = "directory"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/contract/test_live_architecture_contract.py"
+-kind = "file"
+-owner = "PRS-011"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/contract/test_node_workflow_reader_interface.py"
+-kind = "file"
+-owner = "PRS-014"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/domain/test_human_interaction.py"
+-kind = "file"
+-owner = "PRS-010"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/domain/test_research_confirmation.py"
+-kind = "file"
+-owner = "PRS-016"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/contract/test_local_profiles.py"
+-kind = "file"
+-owner = "PRS-007"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/contract/test_session_operations_contract.py"
+-kind = "file"
+-owner = "PRS-006"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/contract/test_session_operations_broker.py"
+-kind = "file"
+-owner = "PRS-006"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/contract/test_session_workbench_contract.py"
+-kind = "file"
+-owner = "PRS-006"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/contract/test_session_workbench_runtime.py"
+-kind = "file"
+-owner = "PRS-006"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/unit/test_session_operation_resolver.py"
+-kind = "file"
+-owner = "PRS-006"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/unit/test_run_session_store.py"
+-kind = "file"
+-owner = "PRS-006"
+-
+-[[required_paths]]
+-path = "profiles"
+-kind = "directory"
+-owner = "PRS-007"
+-
+-[[required_paths]]
+-path = "profiles/README.md"
+-kind = "file"
+-owner = "PRS-007"
+-
+-[[required_paths]]
+-path = "profiles/.gitignore"
+-kind = "file"
+-owner = "PRS-007"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/graph"
+-kind = "directory"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/graph/test_prompt_catalog.py"
+-kind = "file"
+-owner = "PRS-011"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/graph/test_prompt_dump.py"
+-kind = "file"
+-owner = "PRS-011"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/integration"
+-kind = "directory"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/integration/test_session_operations_lifecycle.py"
+-kind = "file"
+-owner = "PRS-006"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/integration/test_session_workbench.py"
+-kind = "file"
+-owner = "PRS-006"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/fixtures"
+-kind = "directory"
+-owner = "PRS-001"
+-
+-[[required_paths]]
+-path = "openspec/governance/architecture-policy.md"
+-kind = "file"
+-owner = "PRS-004"
+-
+-[[required_paths]]
+-path = "openspec/governance/test-evidence-policy.md"
+-kind = "file"
+-owner = "PRS-004"
+-
+-[[required_paths]]
+-path = "openspec/governance/project-structure.toml"
+-kind = "file"
+-owner = "PRS-004"
+-
+-[[required_paths]]
+-path = "openspec/governance/check_project_architecture.py"
+-kind = "file"
+-owner = "PRS-004"
+-
+-[[required_paths]]
+-path = "openspec/README.md"
+-kind = "file"
+-owner = "PRS-009"
+-
+-[[required_paths]]
+-path = "openspec/product"
+-kind = "directory"
+-owner = "PRS-009"
+-
+-[[required_paths]]
+-path = "openspec/product/README.md"
+-kind = "file"
+-owner = "PRS-009"
+-
+-[[required_paths]]
+-path = "openspec/change-guidance"
+-kind = "directory"
+-owner = "PRS-009"
+-
+-[[required_paths]]
+-path = "openspec/change-guidance/README.md"
+-kind = "file"
+-owner = "PRS-009"
+-
+-[[required_paths]]
+-path = "openspec/change-guidance/core"
+-kind = "directory"
+-owner = "PRS-009"
+-
+-[[required_paths]]
+-path = "openspec/change-guidance/core/change-practice.md"
+-kind = "file"
+-owner = "PRS-009"
+-
+-[[required_paths]]
+-path = "openspec/change-guidance/profiles"
+-kind = "directory"
+-owner = "PRS-009"
+-
+-[[required_paths]]
+-path = "openspec/change-guidance/profiles/workflow-control"
+-kind = "directory"
+-owner = "PRS-009"
+-
+-[[required_paths]]
+-path = "openspec/change-guidance/profiles/workflow-control/workflow-control.md"
+-kind = "file"
+-owner = "PRS-009"
+-
+-[[required_paths]]
+-path = "openspec/change-guidance/profiles/node-agent"
+-kind = "directory"
+-owner = "PRS-009"
+-
+-[[required_paths]]
+-path = "openspec/change-guidance/profiles/node-agent/node-agent.md"
+-kind = "file"
+-owner = "PRS-009"
+-
+-[[required_paths]]
+-path = "openspec/change-guidance/profiles/deerflow-downstream"
+-kind = "directory"
+-owner = "PRS-009"
+-
+-[[required_paths]]
+-path = "openspec/change-guidance/profiles/deerflow-downstream/deerflow-downstream.md"
+-kind = "file"
+-owner = "PRS-009"
+-
+-[[required_paths]]
+-path = "openspec/change-guidance/local"
+-kind = "directory"
+-owner = "PRS-009"
+-
+-[[required_paths]]
+-path = "openspec/change-guidance/local/deep-research.md"
+-kind = "file"
+-owner = "PRS-009"
+-
+-[[required_paths]]
+-path = "openspec/governance/check_change_guidance.py"
+-kind = "file"
+-owner = "PRS-009"
+-
+-[[required_paths]]
+-path = "openspec/governance/change_guidance_kernel.py"
+-kind = "file"
+-owner = "PRS-009"
+-
+-[[required_paths]]
+-path = "openspec/governance/portable_change_guidance_export.py"
+-kind = "file"
+-owner = "PRS-009"
+-
+-[[required_paths]]
+-path = "openspec/governance/check_harness_dependency_direction.py"
+-kind = "file"
+-owner = "PRS-009"
+-
+-[[required_paths]]
+-path = "openspec/governance/check_project_gate.py"
+-kind = "file"
+-owner = "PRS-009"
+-
+-[[required_paths]]
+-path = "openspec/governance/check_project_reqs.py"
+-kind = "file"
+-owner = "PRS-009"
+-
+-[[required_paths]]
+-path = "openspec/governance/check_project_specs.py"
+-kind = "file"
+-owner = "PRS-009"
+-
+-[[required_paths]]
+-path = "openspec/governance/check_project_req_coverage.py"
+-kind = "file"
+-owner = "PRS-009"
+-
+-[[required_paths]]
+-path = "openspec/governance/check_doc_hygiene.py"
+-kind = "file"
+-owner = "PRS-020"
+-
+-[[required_paths]]
+-path = "openspec/tests"
+-kind = "directory"
+-owner = "PRS-009"
+-
+-[[required_paths]]
+-path = "openspec/tests/governance"
+-kind = "directory"
+-owner = "PRS-009"
+-
+-[[required_paths]]
+-path = "openspec/tests/governance/test_project_gate.py"
+-kind = "file"
+-owner = "PRS-009"
+-
+-[[required_paths]]
+-path = "openspec/governance/selected-change-closeout.md"
+-kind = "file"
+-owner = "PRS-009"
+-
+-[[required_paths]]
+-path = "openspec/governance/selected-change-closeout.py"
+-kind = "file"
+-owner = "PRS-009"
+-
+-[[required_paths]]
+-path = "_backlog/_done/_closed_plans/policy-gate-injection-layer/05-operation-guidance-probe-evidence.md"
+-kind = "file"
+-owner = "PRS-009"
++[inventory]
++path = "openspec/governance/required-paths.toml"
+ 
+ # Import-boundary keys: the six import layers (including `nodes`, the graph-owned
+ # node-package import sub-layer). External namespaces are TOML-authorized per layer;
+@@ -1066,278 +64,3 @@ required_files = ["__init__.py", "node.py", "contracts.py"]
+ optional_files = ["subgraph.py", "capabilities.py"]
+ forbidden_files = ["fake.py"]
+ public_export = "NODE_SPEC"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/agents/capabilities.py"
+-kind = "file"
+-owner = "PRS-012"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/nodes/hitl1/capabilities.py"
+-kind = "file"
+-owner = "PRS-013"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/nodes/hitl1/capabilities"
+-kind = "directory"
+-owner = "PRS-012"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/nodes/hitl1/capabilities/hitl1-semantic-intake.md"
+-kind = "file"
+-owner = "PRS-012"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/nodes/hitl1/capabilities/hitl1-semantic-intake-repair.md"
+-kind = "file"
+-owner = "PRS-012"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/nodes/hitl1/capabilities/hitl1-profile-brief.md"
+-kind = "file"
+-owner = "PRS-013"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/nodes/hitl1/capabilities/hitl1-profile-brief-repair.md"
+-kind = "file"
+-owner = "PRS-013"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/nodes/wave0/capabilities.py"
+-kind = "file"
+-owner = "PRS-012"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/nodes/wave0/capabilities"
+-kind = "directory"
+-owner = "PRS-012"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/nodes/wave0/capabilities/wave0-authoritative-source-intake.md"
+-kind = "file"
+-owner = "PRS-012"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/nodes/wave0/capabilities/wave0-source-intake-repair.md"
+-kind = "file"
+-owner = "PRS-012"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/nodes/wave2_synthesis/capabilities.py"
+-kind = "file"
+-owner = "PRS-012"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/nodes/wave2_synthesis/capabilities"
+-kind = "directory"
+-owner = "PRS-012"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/nodes/wave2_synthesis/capabilities/wave2-evidence-synthesis.md"
+-kind = "file"
+-owner = "PRS-012"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/graph/nodes/wave2_synthesis/capabilities/wave2-evidence-synthesis-repair.md"
+-kind = "file"
+-owner = "PRS-012"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/runtime/evaluation"
+-kind = "directory"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/runtime/evaluation/__init__.py"
+-kind = "file"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/runtime/evaluation/controls.py"
+-kind = "file"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/runtime/evaluation/runner.py"
+-kind = "file"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/runtime/evaluation/review.py"
+-kind = "file"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/src/deerflow_deep_research/domain/evaluation.py"
+-kind = "file"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/evals/control"
+-kind = "directory"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/evals/control/registry.json"
+-kind = "file"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/evals/control/cases"
+-kind = "directory"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/evals/control/cases/hitl1-brief-v1.json"
+-kind = "file"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/evals/control/cases/wave0-worker-v1.json"
+-kind = "file"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/evals/control/cases/public-controller-direction-loop-v1.json"
+-kind = "file"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/evals/control/cases/topic-planning-direction-loop-v1.json"
+-kind = "file"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/evals/control/contracts"
+-kind = "directory"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/evals/control/contracts/hitl1-brief-v1.md"
+-kind = "file"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/evals/control/contracts/wave0-worker-v1.md"
+-kind = "file"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/evals/control/contracts/public-controller-direction-loop-v1.md"
+-kind = "file"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/evals/control/contracts/topic-planning-direction-loop-v1.md"
+-kind = "file"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/evals/control/rubrics"
+-kind = "directory"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/evals/control/rubrics/hitl1-brief-v1.json"
+-kind = "file"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/evals/control/rubrics/wave0-worker-v1.json"
+-kind = "file"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/evals/control/rubrics/public-controller-direction-loop-v1.json"
+-kind = "file"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/evals/control/rubrics/topic-planning-direction-loop-v1.json"
+-kind = "file"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/evals/control/review_protocol-v1.md"
+-kind = "file"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/evals/control/schemas"
+-kind = "directory"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/evals/control/schemas/evaluation-case-v1.schema.json"
+-kind = "file"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/eval/test_cognitive_evaluation_suite.py"
+-kind = "file"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/fixtures/evaluation-control-invalid"
+-kind = "directory"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/fixtures/evaluation-control-invalid/missing-controller-execution"
+-kind = "directory"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/fixtures/evaluation-control-invalid/missing-controller-execution/registry.json"
+-kind = "file"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/fixtures/evaluation-control-invalid/missing-controller-execution/review_protocol-v1.md"
+-kind = "file"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/fixtures/evaluation-control-invalid/missing-controller-execution/cases/public-controller-direction-loop-v1.json"
+-kind = "file"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/fixtures/evaluation-control-invalid/missing-controller-execution/contracts/public-controller-direction-loop-v1.md"
+-kind = "file"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/fixtures/evaluation-control-invalid/missing-controller-execution/rubrics/public-controller-direction-loop-v1.json"
+-kind = "file"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/fixtures/evaluation-control-invalid/topic-repeat-count"
+-kind = "directory"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/fixtures/evaluation-control-invalid/topic-repeat-count/registry.json"
+-kind = "file"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/fixtures/evaluation-control-invalid/topic-repeat-count/review_protocol-v1.md"
+-kind = "file"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/fixtures/evaluation-control-invalid/topic-repeat-count/cases/topic-planning-direction-loop-v1.json"
+-kind = "file"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/fixtures/evaluation-control-invalid/topic-repeat-count/contracts/topic-planning-direction-loop-v1.md"
+-kind = "file"
+-owner = "PRS-015"
+-
+-[[required_paths]]
+-path = "deep_research_harness/tests/fixtures/evaluation-control-invalid/topic-repeat-count/rubrics/topic-planning-direction-loop-v1.json"
+-kind = "file"
+-owner = "PRS-015"

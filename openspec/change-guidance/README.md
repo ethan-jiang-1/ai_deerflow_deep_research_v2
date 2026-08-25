@@ -30,4 +30,5 @@ and [local/deep-research.md](local/deep-research.md).
 All three profiles are enabled for this project. A change selects every triggered
 canonical policy; disabled profiles would contribute no selectable policy or review.
 Local Program grammar, paths, budgets, module map, and operations remain under
-`local/`. Exact paths remain solely in `governance/project-structure.toml`.
+`local/`. Exact paths remain solely in the project-structure manifest
+(`governance/project-structure.toml` contract + `governance/required-paths.toml` inventory).

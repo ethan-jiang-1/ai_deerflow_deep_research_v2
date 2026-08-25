@@ -13,5 +13,6 @@
 - [Governance](governance/README.md) owns project registries, deterministic
   checkers, and the bounded closeout-evidence command.
 
-This map is navigation only. Exact project topology remains owned by
-`governance/project-structure.toml`.
+This map is navigation only. Exact project topology remains owned by the
+project-structure manifest: `governance/project-structure.toml` (contract) and
+`governance/required-paths.toml` (inventory).

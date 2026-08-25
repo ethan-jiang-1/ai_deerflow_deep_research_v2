@@ -27,6 +27,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 
 MANIFEST_RELATIVE = PurePosixPath("openspec/governance/project-structure.toml")
+INVENTORY_RELATIVE = PurePosixPath("openspec/governance/required-paths.toml")
 REGISTRY_RELATIVE = PurePosixPath("openspec/governance/req-registry.yaml")
 MAIN_SPEC_RELATIVE = PurePosixPath("openspec/specs/project-structure/spec.md")
 UPSTREAM_GITLINK_PATH = PurePosixPath("deerflow")
@@ -311,30 +312,72 @@ def load_manifest(root: Path) -> StructureManifest:
             "ignored_paths.entries must contain normalized repository-local directory entries",
         )
 
-    raw_required_paths = data.get("required_paths")
-    if not isinstance(raw_required_paths, list) or not raw_required_paths:
-        raise ContractViolation("manifest.schema", "required_paths must be a non-empty array of tables")
+    inventory_raw = data.get("inventory")
+    if not isinstance(inventory_raw, dict):
+        raise ContractViolation("inventory.schema", "inventory must be a TOML table")
+    inventory_path = _relative_path(inventory_raw.get("path"), "inventory.path")
+    if inventory_path != INVENTORY_RELATIVE:
+        raise ContractViolation(
+            "inventory.path",
+            f"inventory.path must be {INVENTORY_RELATIVE.as_posix()}",
+        )
+    inventory_file = root / INVENTORY_RELATIVE
+    if not inventory_file.is_file():
+        raise ContractViolation("inventory.missing", f"required-path inventory is missing: {INVENTORY_RELATIVE}")
+    try:
+        inventory_data = tomllib.loads(inventory_file.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, tomllib.TOMLDecodeError) as exc:
+        raise ContractViolation("inventory.parse", f"cannot parse {INVENTORY_RELATIVE}: {exc}") from exc
+    if inventory_data.get("schema_version") != 1:
+        raise ContractViolation("inventory.schema", "inventory schema_version must be integer 1")
+    if inventory_data.get("contract") != "project-structure-inventory":
+        raise ContractViolation(
+            "inventory.schema",
+            "inventory contract must be 'project-structure-inventory'",
+        )
+    raw_path_sections = inventory_data.get("paths")
+    if not isinstance(raw_path_sections, dict) or not raw_path_sections:
+        raise ContractViolation(
+            "inventory.schema",
+            "inventory must declare a non-empty [paths.<ID>] section table",
+        )
     required_paths: list[RequiredPath] = []
     seen_paths: set[PurePosixPath] = set()
-    for index, raw_entry in enumerate(raw_required_paths):
-        entry = _expect_mapping(raw_entry, f"required_paths[{index}]")
-        item_path = _relative_path(entry.get("path"), f"required_paths[{index}].path")
-        if item_path in seen_paths:
-            raise ContractViolation("path.duplicate", f"required path appears more than once: {item_path}")
-        seen_paths.add(item_path)
-        kind = _expect_string(entry.get("kind"), f"required_paths[{index}].kind")
-        if kind not in {"file", "directory"}:
-            raise ContractViolation("manifest.schema", f"unsupported required path kind: {kind}")
-        owner = _expect_string(entry.get("owner"), f"required_paths[{index}].owner")
-        if owner not in registered or owner not in requirement_ids:
-            raise ContractViolation("owner.unknown", f"required path {item_path} has unknown owner {owner}")
-        if any(item_path == root_path or root_path in item_path.parents for root_path in forbidden_source_roots):
-            raise ContractViolation("path.forbidden_owner", f"required path is under an upstream root: {item_path}")
-        required_paths.append(RequiredPath(item_path, kind, owner))
+    for section_owner in sorted(raw_path_sections):
+        if not ID_RE.fullmatch(section_owner):
+            raise ContractViolation("inventory.owner", f"inventory section has an invalid owner ID: {section_owner}")
+        section = _expect_mapping(raw_path_sections[section_owner], f"paths.{section_owner}")
+        for kind, key in (("file", "files"), ("directory", "directories")):
+            raw_values = section.get(key)
+            if raw_values is None:
+                continue
+            for item_path_raw in _expect_string_list(raw_values, f"paths.{section_owner}.{key}"):
+                item_path = _relative_path(item_path_raw, f"paths.{section_owner}.{key}")
+                if item_path in seen_paths:
+                    raise ContractViolation("path.duplicate", f"required path appears more than once: {item_path}")
+                seen_paths.add(item_path)
+                if section_owner not in registered or section_owner not in requirement_ids:
+                    raise ContractViolation(
+                        "owner.unknown",
+                        f"required path {item_path} has unknown owner {section_owner}",
+                    )
+                if any(item_path == root_path or root_path in item_path.parents for root_path in forbidden_source_roots):
+                    raise ContractViolation(
+                        "path.forbidden_owner",
+                        f"required path is under an upstream root: {item_path}",
+                    )
+                required_paths.append(RequiredPath(item_path, kind, section_owner))
+    if not required_paths:
+        raise ContractViolation("manifest.schema", "required_paths must be a non-empty set of inventory entries")
     if not any(item.path == ignored_path and item.kind == "file" for item in required_paths):
         raise ContractViolation(
             "manifest.schema",
             "ignored_paths.path must be registered as a required file",
+        )
+    if not any(item.path == INVENTORY_RELATIVE and item.kind == "file" for item in required_paths):
+        raise ContractViolation(
+            "inventory.unregistered",
+            "the required-path inventory must be registered as a required file",
         )
 
     raw_imports = _expect_mapping(data.get("imports"), "imports")

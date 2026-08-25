@@ -1,0 +1,346 @@
+schema_version = 1
+contract = "project-structure-inventory"
+
+# Required-path inventory, grouped by owning requirement ID.
+# Every path is repository-relative, normalized, and MUST exist with the
+# declared kind. Owner IDs MUST be registered in req-registry.yaml and
+# declared in the manifest requirement_ids. See project-structure.toml [inventory].
+
+[paths.PRS-001]
+files = [
+  "deep_research_harness/Makefile",
+  "deep_research_harness/README.md",
+  "deep_research_harness/config/agent-template/SOUL.md",
+  "deep_research_harness/config/agent-template/config.yaml",
+  "deep_research_harness/config/deerflow.fragment.yaml",
+  "deep_research_harness/config/extensions.fragment.json",
+  "deep_research_harness/config/public-skill/deep-research-controller/SKILL.md",
+  "deep_research_harness/docs/deep-research-topology.md",
+  "deep_research_harness/pyproject.toml",
+  "deep_research_harness/scripts/configure.py",
+  "deep_research_harness/scripts/prepare.py",
+  "deep_research_harness/scripts/render_topology.py",
+  "deep_research_harness/scripts/soft_bundle.py",
+  "deep_research_harness/src/deerflow_deep_research/__about__.py",
+  "deep_research_harness/src/deerflow_deep_research/__init__.py",
+  "deep_research_harness/src/deerflow_deep_research/agents/__init__.py",
+  "deep_research_harness/src/deerflow_deep_research/domain/__init__.py",
+  "deep_research_harness/src/deerflow_deep_research/domain/bootstrap.py",
+  "deep_research_harness/src/deerflow_deep_research/domain/work_units.py",
+  "deep_research_harness/src/deerflow_deep_research/engine/__init__.py",
+  "deep_research_harness/src/deerflow_deep_research/engine/real_gates.py",
+  "deep_research_harness/src/deerflow_deep_research/engine/work_units/__init__.py",
+  "deep_research_harness/src/deerflow_deep_research/engine/work_units/ids.py",
+  "deep_research_harness/src/deerflow_deep_research/engine/work_units/kernel.py",
+  "deep_research_harness/src/deerflow_deep_research/engine/work_units/validation.py",
+  "deep_research_harness/src/deerflow_deep_research/graph/__init__.py",
+  "deep_research_harness/src/deerflow_deep_research/graph/components/__init__.py",
+  "deep_research_harness/src/deerflow_deep_research/graph/components/work_units.py",
+  "deep_research_harness/src/deerflow_deep_research/runtime/__init__.py",
+  "deep_research_harness/src/deerflow_deep_research/runtime/bootstrap_bundle.py",
+  "deep_research_harness/src/deerflow_deep_research/runtime/checkpoint.py",
+  "deep_research_harness/src/deerflow_deep_research/runtime/control.py",
+  "deep_research_harness/src/deerflow_deep_research/runtime/human_input.py",
+  "deep_research_harness/src/deerflow_deep_research/runtime/research.py",
+  "deep_research_harness/src/deerflow_deep_research/runtime/startup_snapshot.py",
+  "deep_research_harness/src/deerflow_deep_research/runtime/work_unit_storage.py",
+  "deep_research_harness/src/deerflow_deep_research/runtime/work_unit_store.py",
+  "deep_research_harness/src_fake/deerflow_deep_research_fixtures/__init__.py",
+  "deep_research_harness/src_fake/deerflow_deep_research_fixtures/catalog.py",
+  "deep_research_harness/tests/contract/test_soft_bundle_cli.py",
+  "deep_research_harness/uv.lock",
+]
+directories = [
+  "deep_research_harness/config",
+  "deep_research_harness/config/agent-template",
+  "deep_research_harness/config/public-skill",
+  "deep_research_harness/config/public-skill/deep-research-controller",
+  "deep_research_harness/docker",
+  "deep_research_harness/scripts",
+  "deep_research_harness/src/deerflow_deep_research",
+  "deep_research_harness/src/deerflow_deep_research/agents",
+  "deep_research_harness/src/deerflow_deep_research/domain",
+  "deep_research_harness/src/deerflow_deep_research/engine",
+  "deep_research_harness/src/deerflow_deep_research/graph",
+  "deep_research_harness/src/deerflow_deep_research/resources",
+  "deep_research_harness/src/deerflow_deep_research/runtime",
+  "deep_research_harness/src_fake/deerflow_deep_research_fixtures",
+  "deep_research_harness/tests/contract",
+  "deep_research_harness/tests/fixtures",
+  "deep_research_harness/tests/graph",
+  "deep_research_harness/tests/integration",
+  "deep_research_harness/tests/unit",
+]
+
+[paths.PRS-003]
+files = [
+  "deep_research_harness/src/deerflow_deep_research/domain/bundle.py",
+  "deep_research_harness/src/deerflow_deep_research/domain/context.py",
+  "deep_research_harness/src/deerflow_deep_research/domain/critics.py",
+  "deep_research_harness/src/deerflow_deep_research/domain/enums.py",
+  "deep_research_harness/src/deerflow_deep_research/domain/invocation.py",
+  "deep_research_harness/src/deerflow_deep_research/domain/lifecycle.py",
+  "deep_research_harness/src/deerflow_deep_research/domain/node_spec.py",
+  "deep_research_harness/src/deerflow_deep_research/domain/profile.py",
+  "deep_research_harness/src/deerflow_deep_research/domain/readiness.py",
+  "deep_research_harness/src/deerflow_deep_research/domain/state.py",
+  "deep_research_harness/src/deerflow_deep_research/domain/topics.py",
+  "deep_research_harness/src/deerflow_deep_research/domain/untrusted.py",
+  "deep_research_harness/src/deerflow_deep_research/domain/wave1.py",
+  "deep_research_harness/src/deerflow_deep_research/graph/builder.py",
+  "deep_research_harness/src/deerflow_deep_research/graph/implementation_map.py",
+  "deep_research_harness/src/deerflow_deep_research/graph/nodes/hitl1/prompts.py",
+  "deep_research_harness/src/deerflow_deep_research/graph/nodes/hitl2/prompts.py",
+  "deep_research_harness/src/deerflow_deep_research/graph/nodes/targeted_evidence/materializer.py",
+  "deep_research_harness/src/deerflow_deep_research/graph/nodes/targeted_evidence/prompts.py",
+  "deep_research_harness/src/deerflow_deep_research/graph/nodes/targeted_evidence/subgraph.py",
+  "deep_research_harness/src/deerflow_deep_research/graph/nodes/topic_planning/prompts.py",
+  "deep_research_harness/src/deerflow_deep_research/graph/nodes/wave0/prompts.py",
+  "deep_research_harness/src/deerflow_deep_research/graph/nodes/wave1/prompts.py",
+  "deep_research_harness/src/deerflow_deep_research/graph/registry.py",
+  "deep_research_harness/src/deerflow_deep_research/graph/topology.py",
+  "deep_research_harness/src/deerflow_deep_research/graph/topology_snapshot.py",
+  "deep_research_harness/src/deerflow_deep_research/runtime/request_bundle.py",
+]
+directories = [
+  "deep_research_harness/src/deerflow_deep_research/graph/nodes",
+  "deep_research_harness/src/deerflow_deep_research/graph/nodes/bootstrap",
+  "deep_research_harness/src/deerflow_deep_research/graph/nodes/final_delivery",
+  "deep_research_harness/src/deerflow_deep_research/graph/nodes/hitl1",
+  "deep_research_harness/src/deerflow_deep_research/graph/nodes/hitl2",
+  "deep_research_harness/src/deerflow_deep_research/graph/nodes/readiness",
+  "deep_research_harness/src/deerflow_deep_research/graph/nodes/rerun",
+  "deep_research_harness/src/deerflow_deep_research/graph/nodes/targeted_evidence",
+  "deep_research_harness/src/deerflow_deep_research/graph/nodes/topic_planning",
+  "deep_research_harness/src/deerflow_deep_research/graph/nodes/wave0",
+  "deep_research_harness/src/deerflow_deep_research/graph/nodes/wave1",
+  "deep_research_harness/src/deerflow_deep_research/graph/nodes/wave2_synthesis",
+]
+
+[paths.PRS-004]
+files = [
+  "deep_research_harness/AGENTS.md",
+  "openspec/governance/architecture-policy.md",
+  "openspec/governance/check_project_architecture.py",
+  "openspec/governance/project-structure.toml",
+  "openspec/governance/required-paths.toml",
+  "openspec/governance/test-evidence-policy.md",
+]
+
+[paths.PRS-005]
+files = [
+  "deep_research_harness/src/deerflow_deep_research/domain/run_experience.py",
+  "deep_research_harness/src/deerflow_deep_research/runtime/gateway_observer.py",
+  "deep_research_harness/src/deerflow_deep_research/runtime/run_experience.py",
+  "deep_research_harness/tests/unit/test_gateway_observer.py",
+]
+
+[paths.PRS-006]
+files = [
+  "deep_research_harness/.gitignore",
+  "deep_research_harness/scripts/demo_sessions.py",
+  "deep_research_harness/scripts/session_workbench.py",
+  "deep_research_harness/src/deerflow_deep_research/domain/run_observation.py",
+  "deep_research_harness/src/deerflow_deep_research/domain/session_workbench.py",
+  "deep_research_harness/src/deerflow_deep_research/graph/rerun.py",
+  "deep_research_harness/src/deerflow_deep_research/runtime/bundle_control.py",
+  "deep_research_harness/src/deerflow_deep_research/runtime/bundle_lifecycle.py",
+  "deep_research_harness/src/deerflow_deep_research/runtime/bundle_transition.py",
+  "deep_research_harness/src/deerflow_deep_research/runtime/run_observation.py",
+  "deep_research_harness/src/deerflow_deep_research/runtime/session_workbench.py",
+  "deep_research_harness/tests/contract/test_session_operations_broker.py",
+  "deep_research_harness/tests/contract/test_session_operations_contract.py",
+  "deep_research_harness/tests/contract/test_session_workbench_contract.py",
+  "deep_research_harness/tests/contract/test_session_workbench_runtime.py",
+  "deep_research_harness/tests/integration/test_session_operations_lifecycle.py",
+  "deep_research_harness/tests/integration/test_session_workbench.py",
+  "deep_research_harness/tests/unit/test_run_session_store.py",
+  "deep_research_harness/tests/unit/test_session_operation_resolver.py",
+]
+
+[paths.PRS-007]
+files = [
+  "deep_research_harness/scripts/local_profiles.py",
+  "deep_research_harness/tests/contract/test_local_profiles.py",
+  "profiles/.gitignore",
+  "profiles/README.md",
+]
+directories = [
+  "profiles",
+]
+
+[paths.PRS-009]
+files = [
+  "_backlog/_done/_closed_plans/policy-gate-injection-layer/05-operation-guidance-probe-evidence.md",
+  "deep_research_harness/CLAUDE.md",
+  "deep_research_harness/docs/README.md",
+  "deep_research_harness/docs/local-operations.md",
+  "deep_research_harness/docs/runtime-architecture.md",
+  "deep_research_harness/docs/testing-and-evaluation.md",
+  "openspec/README.md",
+  "openspec/change-guidance/README.md",
+  "openspec/change-guidance/core/change-practice.md",
+  "openspec/change-guidance/local/deep-research.md",
+  "openspec/change-guidance/profiles/deerflow-downstream/deerflow-downstream.md",
+  "openspec/change-guidance/profiles/node-agent/node-agent.md",
+  "openspec/change-guidance/profiles/workflow-control/workflow-control.md",
+  "openspec/governance/change_guidance_kernel.py",
+  "openspec/governance/check_change_guidance.py",
+  "openspec/governance/check_harness_dependency_direction.py",
+  "openspec/governance/check_project_gate.py",
+  "openspec/governance/check_project_req_coverage.py",
+  "openspec/governance/check_project_reqs.py",
+  "openspec/governance/check_project_specs.py",
+  "openspec/governance/portable_change_guidance_export.py",
+  "openspec/governance/selected-change-closeout.md",
+  "openspec/governance/selected-change-closeout.py",
+  "openspec/product/README.md",
+  "openspec/tests/governance/test_project_gate.py",
+]
+directories = [
+  "deep_research_harness/docs",
+  "openspec/change-guidance",
+  "openspec/change-guidance/core",
+  "openspec/change-guidance/local",
+  "openspec/change-guidance/profiles",
+  "openspec/change-guidance/profiles/deerflow-downstream",
+  "openspec/change-guidance/profiles/node-agent",
+  "openspec/change-guidance/profiles/workflow-control",
+  "openspec/product",
+  "openspec/tests",
+  "openspec/tests/governance",
+]
+
+[paths.PRS-010]
+files = [
+  "deep_research_harness/src/deerflow_deep_research/domain/human_interaction.py",
+  "deep_research_harness/tests/domain/test_human_interaction.py",
+]
+
+[paths.PRS-011]
+files = [
+  "deep_research_harness/scripts/prompt_dump.py",
+  "deep_research_harness/src/deerflow_deep_research/agents/node_cognitive_control_program.py",
+  "deep_research_harness/src/deerflow_deep_research/graph/prompt_catalog.py",
+  "deep_research_harness/tests/contract/test_live_architecture_contract.py",
+  "deep_research_harness/tests/graph/test_prompt_catalog.py",
+  "deep_research_harness/tests/graph/test_prompt_dump.py",
+  "deep_research_harness/tests/unit/test_node_agent_bridge.py",
+  "deep_research_harness/tests/unit/test_node_cognitive_control_program.py",
+]
+
+[paths.PRS-012]
+files = [
+  "deep_research_harness/src/deerflow_deep_research/agents/capabilities.py",
+  "deep_research_harness/src/deerflow_deep_research/graph/nodes/hitl1/capabilities/hitl1-semantic-intake-repair.md",
+  "deep_research_harness/src/deerflow_deep_research/graph/nodes/hitl1/capabilities/hitl1-semantic-intake.md",
+  "deep_research_harness/src/deerflow_deep_research/graph/nodes/wave0/capabilities.py",
+  "deep_research_harness/src/deerflow_deep_research/graph/nodes/wave0/capabilities/wave0-authoritative-source-intake.md",
+  "deep_research_harness/src/deerflow_deep_research/graph/nodes/wave0/capabilities/wave0-source-intake-repair.md",
+  "deep_research_harness/src/deerflow_deep_research/graph/nodes/wave2_synthesis/capabilities.py",
+  "deep_research_harness/src/deerflow_deep_research/graph/nodes/wave2_synthesis/capabilities/wave2-evidence-synthesis-repair.md",
+  "deep_research_harness/src/deerflow_deep_research/graph/nodes/wave2_synthesis/capabilities/wave2-evidence-synthesis.md",
+]
+directories = [
+  "deep_research_harness/src/deerflow_deep_research/graph/nodes/hitl1/capabilities",
+  "deep_research_harness/src/deerflow_deep_research/graph/nodes/wave0/capabilities",
+  "deep_research_harness/src/deerflow_deep_research/graph/nodes/wave2_synthesis/capabilities",
+]
+
+[paths.PRS-013]
+files = [
+  "deep_research_harness/src/deerflow_deep_research/graph/nodes/hitl1/capabilities.py",
+  "deep_research_harness/src/deerflow_deep_research/graph/nodes/hitl1/capabilities/hitl1-profile-brief-repair.md",
+  "deep_research_harness/src/deerflow_deep_research/graph/nodes/hitl1/capabilities/hitl1-profile-brief.md",
+]
+
+[paths.PRS-014]
+files = [
+  "deep_research_harness/scripts/check_node_workflows.py",
+  "deep_research_harness/tests/contract/test_node_workflow_reader_interface.py",
+]
+
+[paths.PRS-015]
+files = [
+  "deep_research_harness/evals/control/cases/hitl1-brief-v1.json",
+  "deep_research_harness/evals/control/cases/public-controller-direction-loop-v1.json",
+  "deep_research_harness/evals/control/cases/topic-planning-direction-loop-v1.json",
+  "deep_research_harness/evals/control/cases/wave0-worker-v1.json",
+  "deep_research_harness/evals/control/contracts/hitl1-brief-v1.md",
+  "deep_research_harness/evals/control/contracts/public-controller-direction-loop-v1.md",
+  "deep_research_harness/evals/control/contracts/topic-planning-direction-loop-v1.md",
+  "deep_research_harness/evals/control/contracts/wave0-worker-v1.md",
+  "deep_research_harness/evals/control/registry.json",
+  "deep_research_harness/evals/control/review_protocol-v1.md",
+  "deep_research_harness/evals/control/rubrics/hitl1-brief-v1.json",
+  "deep_research_harness/evals/control/rubrics/public-controller-direction-loop-v1.json",
+  "deep_research_harness/evals/control/rubrics/topic-planning-direction-loop-v1.json",
+  "deep_research_harness/evals/control/rubrics/wave0-worker-v1.json",
+  "deep_research_harness/evals/control/schemas/evaluation-case-v1.schema.json",
+  "deep_research_harness/src/deerflow_deep_research/domain/evaluation.py",
+  "deep_research_harness/src/deerflow_deep_research/runtime/evaluation/__init__.py",
+  "deep_research_harness/src/deerflow_deep_research/runtime/evaluation/controls.py",
+  "deep_research_harness/src/deerflow_deep_research/runtime/evaluation/review.py",
+  "deep_research_harness/src/deerflow_deep_research/runtime/evaluation/runner.py",
+  "deep_research_harness/tests/eval/test_cognitive_evaluation_suite.py",
+  "deep_research_harness/tests/fixtures/evaluation-control-invalid/missing-controller-execution/cases/public-controller-direction-loop-v1.json",
+  "deep_research_harness/tests/fixtures/evaluation-control-invalid/missing-controller-execution/contracts/public-controller-direction-loop-v1.md",
+  "deep_research_harness/tests/fixtures/evaluation-control-invalid/missing-controller-execution/registry.json",
+  "deep_research_harness/tests/fixtures/evaluation-control-invalid/missing-controller-execution/review_protocol-v1.md",
+  "deep_research_harness/tests/fixtures/evaluation-control-invalid/missing-controller-execution/rubrics/public-controller-direction-loop-v1.json",
+  "deep_research_harness/tests/fixtures/evaluation-control-invalid/topic-repeat-count/cases/topic-planning-direction-loop-v1.json",
+  "deep_research_harness/tests/fixtures/evaluation-control-invalid/topic-repeat-count/contracts/topic-planning-direction-loop-v1.md",
+  "deep_research_harness/tests/fixtures/evaluation-control-invalid/topic-repeat-count/registry.json",
+  "deep_research_harness/tests/fixtures/evaluation-control-invalid/topic-repeat-count/review_protocol-v1.md",
+  "deep_research_harness/tests/fixtures/evaluation-control-invalid/topic-repeat-count/rubrics/topic-planning-direction-loop-v1.json",
+]
+directories = [
+  "deep_research_harness/evals/control",
+  "deep_research_harness/evals/control/cases",
+  "deep_research_harness/evals/control/contracts",
+  "deep_research_harness/evals/control/rubrics",
+  "deep_research_harness/evals/control/schemas",
+  "deep_research_harness/src/deerflow_deep_research/runtime/evaluation",
+  "deep_research_harness/tests/fixtures/evaluation-control-invalid",
+  "deep_research_harness/tests/fixtures/evaluation-control-invalid/missing-controller-execution",
+  "deep_research_harness/tests/fixtures/evaluation-control-invalid/topic-repeat-count",
+]
+
+[paths.PRS-016]
+files = [
+  "deep_research_harness/src/deerflow_deep_research/domain/research_confirmation.py",
+  "deep_research_harness/tests/domain/test_research_confirmation.py",
+]
+
+[paths.PRS-017]
+files = [
+  ".agents/skills/.openspec-target",
+  ".agents/skills/openspec-apply-change/SKILL.md",
+  ".agents/skills/openspec-archive-change/SKILL.md",
+  ".agents/skills/openspec-explore/SKILL.md",
+  ".agents/skills/openspec-propose/SKILL.md",
+  ".agents/skills/openspec-sync-specs/SKILL.md",
+  ".agents/skills/openspec-update-change/SKILL.md",
+  ".agents/skills/polish-openspec-change/SKILL.md",
+  ".agents/skills/polish-openspec-change/agents/openai.yaml",
+  ".github/workflows/agent-live-evaluation.yml",
+  ".github/workflows/agent-tests.yml",
+  ".gitignore",
+]
+
+[paths.PRS-019]
+files = [
+  "deep_research_harness/scripts/debug_scripted_real_workflow.py",
+  "deep_research_harness/src_fake/deerflow_deep_research_fixtures/scripted_real/__init__.py",
+  "deep_research_harness/src_fake/deerflow_deep_research_fixtures/scripted_real/baseline.py",
+  "deep_research_harness/tests/contract/test_scripted_real_debug_command.py",
+  "deep_research_harness/tests/integration/test_scripted_real_workflow_debug.py",
+]
+directories = [
+  "deep_research_harness/src_fake/deerflow_deep_research_fixtures/scripted_real",
+]
+
+[paths.PRS-020]
+files = [
+  "openspec/governance/check_doc_hygiene.py",
+]

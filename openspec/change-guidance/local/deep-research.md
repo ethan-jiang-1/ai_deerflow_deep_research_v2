@@ -36,7 +36,8 @@ caller-declared Git closeout evidence remain advisory.
 
 Coding guidance selects the smallest spec/source/test seam; human README routes product
 use; `openspec/config.yaml` routes authoring; `product/README.md` routes product
-questions; `project-structure.toml` alone enumerates exact structure. Keep detailed
+questions; the project-structure manifest (`project-structure.toml` contract +
+`required-paths.toml` inventory) alone enumerates exact structure. Keep detailed
 reader roles and line budgets here, while current facts and behavior remain in owners.
 
 ## Reader Roles

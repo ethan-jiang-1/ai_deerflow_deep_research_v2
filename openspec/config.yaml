@@ -15,7 +15,7 @@ context: |
      pending behavior.
   2. Code, typed contracts, tests, and the authority that owns a runtime fact define
      current behavior and conformance evidence.
-  3. `openspec/governance/project-structure.toml` is the exact structural inventory;
+  3. `openspec/governance/project-structure.toml` (contract) and `openspec/governance/required-paths.toml` (inventory) form the exact structural manifest;
      `architecture-policy.md` defines its update protocol.
   4. [Change Guidance](change-guidance/README.md) guides local design and
      admission only. It never creates runtime behavior, authority, or permission.

@@ -37,7 +37,7 @@ for reservations and collisions, and native strict change validation for MODIFIE
 requirement/scenario preservation) and a `closeout` phase requiring zero exit from
 every component checker; closeout SHALL NOT add a separate consistency checker
 because the component checkers own registry, header, and evidence consistency. The
-aggregate and its focused tests SHALL be registered in `project-structure.toml`.
+aggregate and its focused tests SHALL be registered in the project-structure manifest.
 Registering the aggregate SHALL NOT register the portable validation module as a
 general project architecture, requirement, specification, coverage, or runtime
 checker.
@@ -49,11 +49,12 @@ any unregistered member after cutover. It SHALL continue to register
 `openspec/governance/selected-change-closeout.py`, its `selected-change-closeout.md`
 usage guide, and `openspec/README.md` at their bounded roles.
 
-The exact inventory SHALL remain only in
-`openspec/governance/project-structure.toml`. Product documents, local composition,
+The exact inventory SHALL remain only in the project-structure manifest, consisting
+of the contract file `openspec/governance/project-structure.toml` and the inventory
+file `openspec/governance/required-paths.toml`. Product documents, local composition,
 checker constants, and authoring entries SHALL link to or validate against that
-registry and SHALL NOT duplicate its source/test/import/gitlink member facts. The
-registry, Change Guidance wrapper, current authoring pointers, and downstream entry
+manifest and SHALL NOT duplicate its source/test/import/gitlink member facts. The
+manifest, Change Guidance wrapper, current authoring pointers, and downstream entry
 documents SHALL remain synchronized. Repository-root `AGENTS.md` and
 `CLAUDE.md`, Deep Research production structure, glossary authority, and the
 `deerflow/` gitlink SHALL remain unchanged. (`PRS-009`)
@@ -88,7 +89,7 @@ governance script's `@impl` declaration and SHALL NOT require a parallel pytest 
 
 #### Scenario: Project structure remains the single exact authority
 - **WHEN** product or local composition needs to explain a registered path
-- **THEN** it links to `project-structure.toml` and does not recreate an exact inventory or competing machine schema
+- **THEN** it links to the project-structure manifest (`project-structure.toml` contract and `required-paths.toml` inventory) and does not recreate an exact inventory or competing machine schema
 
 #### Scenario: Product front door cutover is clean
 - **WHEN** current consumers move from `product/deep-research.md` to `product/README.md`
@@ -154,7 +155,7 @@ Real HITL1 SHALL retain the canonical downstream production paths
 `deep_research_harness/src/deerflow_deep_research/domain/profile.py`,
 `deep_research_harness/src/deerflow_deep_research/graph/nodes/hitl1/prompts.py`, and
 `deep_research_harness/src/deerflow_deep_research/runtime/request_bundle.py`. These
-paths SHALL remain registered in `openspec/governance/project-structure.toml` and
+paths SHALL remain registered in the project-structure manifest and
 reflected in the generated `deep_research_harness/AGENTS.md` block.
 
 Real topic planning SHALL retain
@@ -163,7 +164,7 @@ Real topic planning SHALL retain
 Real Wave0 SHALL retain
 `deep_research_harness/src/deerflow_deep_research/graph/nodes/wave0/prompts.py` and its
 existing package-local source-intake result contract. These paths SHALL remain
-registered in `openspec/governance/project-structure.toml` and reflected in the
+registered in the project-structure manifest and reflected in the
 generated `deep_research_harness/AGENTS.md` block. topic_planning and wave0 remain
 non-HITL nodes and their production modules import only `domain`/`engine` under the
 existing policy.
@@ -174,7 +175,7 @@ at `deep_research_harness/tests/contract/test_local_profiles.py`. The project-ow
 `profiles/` directory SHALL continue to contain only its committed `README.md` and
 `.gitignore`, plus ignored materialized profile directories. It remains local
 configuration data rather than source or launcher tooling. These paths SHALL remain
-registered in `openspec/governance/project-structure.toml` and reflected in the
+registered in the project-structure manifest and reflected in the
 generated `deep_research_harness/AGENTS.md` block. No shell hook, source interception,
 profile implementation, command adapter, documentation, or ignore rule SHALL modify a
 pre-existing root DeerFlow file or directory. The resolver remains pre-process
@@ -370,8 +371,9 @@ capability.
 
 ### Requirement: Structural authority survives change archival
 
-The active `project-structure` main spec and
-`openspec/governance/project-structure.toml` SHALL retain their existing normative
+The active `project-structure` main spec and the project-structure manifest — the
+contract file `openspec/governance/project-structure.toml` and the inventory file
+`openspec/governance/required-paths.toml` — SHALL retain their existing normative
 relationship, synchronized-change protocol, and checker guarantees. The one bounded
 checker-rendered locator SHALL live at `deep_research_harness/AGENTS.md`, refer to the
 canonical Harness root, and be rendered from the registry. An old-root locator or
@@ -382,7 +384,6 @@ old paths when they do not navigate to or validate the current checkout. (`PRS-0
 - **WHEN** the architecture checker validates the active main spec and generated locator
 - **THEN** both identify `deep_research_harness/` as the downstream root and no active
   structural authority names `deerflow_research/`
-
 ### Requirement: Run-experience contracts use the canonical domain and runtime ownership layers
 
 The existing run-experience domain and runtime contracts SHALL remain under
