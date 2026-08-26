@@ -29,7 +29,7 @@
 | 002 | [`runbook-002-easy-scripted-real.md`](runbook-002-easy-scripted-real.md) | 花（少） | 无 | 稍难：用脚本化的真实控制链路跑一遍，验证“真适配器+门+持久化通不通”，且会产出 Markdown report | `What is one bounded fact about grid energy storage?` |
 | 003 | [`runbook-003-medium-real-auto.md`](runbook-003-medium-real-auto.md) | 花（中） | `.env` 三个变量（`DEEPSEEK_API_KEY`、`TAVILY_API_KEY`、`DEERFLOW_DEMO_MODEL`）+ 网络 | 更难：接真实模型和网页工具，全自动跑完，不等人（声明 minimal 意图 → 单 topic / 每 wave 1 work unit） | `What is one bounded fact about China's EV battery market in 2024?` |
 | 004 | [`runbook-004-hard-real-auto.md`](runbook-004-hard-real-auto.md) | 花（多） | 同 003 的 `.env` 三变量 + 网络 | 最难：真机全自动跑**默认意图**（不声明 minimal），固定比较题压多 topic 链路，专门用来找茬 | `Compare China and US EV battery market in 2024.` |
-| 010 | [`runbook-010-tui-auto.md`](runbook-010-tui-auto.md) + `RUN-010.command` | 花（中） | 同 003 的 `.env` 三变量 + `make install`（含 demo-tui extra）+ 网络（**真人零操作**） | **同一例子的 TUI 自动全跑**——真人只看不动手，hitl1/hitl2 全自动（scripted 默认产品路径），验证"TUI 一层真实图能自主到终态"。入口 `make demo-tui-real-auto`（BUG-061 落地） | 同 003：`What is one bounded fact about China's EV battery market in 2024?` |
+| 010 | [`runbook-010-tui-auto.md`](runbook-010-tui-auto.md) + `RUN-010.command` | 花（中） | 同 003 的 `.env` 三变量 + `make install`（含 demo-tui extra）+ 网络（**真人零操作**） | **同一例子的 TUI 自动全跑**——真人只看不动手，hitl1/hitl2 全自动（scripted 默认产品路径），验证"TUI 一层真实图能自主到终态"。入口 `make demo-tui-real-auto`（BUG-061 → change `add-demo-tui-auto-entry`，2026-08-25 归档） | 同 003：`What is one bounded fact about China's EV battery market in 2024?` |
 | 020 | [`runbook-020-tui-manual.md`](runbook-020-tui-manual.md) + `RUN-020.command` | 花（中） | 同 003 的 `.env` 三变量 + `make install`（含 demo-tui extra）+ 网络 + **真人坐镇** | 手动 TUI：**与 010 同一例子**，真人 HITL1 交互——**启动后先进侦察模式**（看环境/闲聊，不触发研究），点「Start Deep Research」或说触发语才启动；hitl1 里有快捷修订按钮/输入回显/修订确认，修订 profile proposal 并显式确认（semantic intake 真模型分类你的自由文本）；HITL2 是自主 continuation 不需要人。启动器不再提供 Stage A 选择（010 已覆盖通路）。language CHOICE 不在本 run（条件性 B2，前置 BUG-060） | 同 003：`What is one bounded fact about China's EV battery market in 2024?` |
 
 > 📐 手册命名规则固定为 `runbook-00X-难度-用途.md`，以后按这个补。
@@ -51,7 +51,8 @@
 > - **010（自动 TUI）**：入口 `make demo-tui-real-auto`（= `demo_tui.py
 >   --embedded-smoke --auto` → `StartRun(scripted=True, profile_intent=None)`，
 >   默认产品路径同 004），runbook-010-tui-auto.md + RUN-010.command；落地载体
->   BUG-061（openspec change `add-demo-tui-auto-entry`）；
+>   BUG-061（openspec change `add-demo-tui-auto-entry`，2026-08-25 已归档
+>   `archive/2026-08-25-add-demo-tui-auto-entry/`）；
 > - **020（手动 TUI）**：= 原 runbook-010 交互战役，已更名
 >   `runbook-020-tui-manual.md` + RUN-020.command，入口
 >   `make demo-tui-embedded-smoke`。

@@ -1,6 +1,6 @@
 # Fixed Bugs Index — 已修复 bug 归档
 
-> 最后更新: 2026-08-19 | `_backlog/_done/_fixed_bugs/` — 已修复 bug 的归档目录。
+> 最后更新: 2026-08-25 | `_backlog/_done/_fixed_bugs/` — 已修复 bug 的归档目录。
 > 接收来自 [`../../bugs/`](../../bugs/) 的 bug。`_` 前缀 = coding agent 默认忽略。
 >
 > **本目录是 bug 编号的唯一权威来源——新 bug 的编号 = 本目录最大编号 + 1。**
@@ -78,8 +78,9 @@ bug 修完后从 `_backlog/bugs/` 通过 `git mv` 移入本目录：
 | BUG-058 | 2026-08-19 | wave1 source-diagnostic critic bool 字段被真实模型字符串标签击穿，004 必然 blocked（fix-wave1-critic-label-shapes） |
 | BUG-059 | 2026-08-19 | wave2 synthesis 别名映射不收录 evidence 内 claim_id，模型引用 claim 被拒（fix-synthesis-claim-ref-aliases） |
 | BUG-060 | 2026-08-21 | Demo TUI 把 composer 输入一律按 text 提交，hitl1 language CHOICE 轮无法被合法回答（fix-demo-tui-choice-option） |
+| BUG-061 | 2026-08-25 | Demo TUI 缺少 010 自动全跑入口——无 `--auto`/`--scripted` 开关，TUI 一层无法复现 scripted 自动形态（add-demo-tui-auto-entry） |
 
-**Next available bug ID: BUG-061**
+**Next available bug ID: BUG-062**
 
 ---
 

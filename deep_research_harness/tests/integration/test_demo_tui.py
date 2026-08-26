@@ -447,7 +447,9 @@ async def _wait_for_hitl1_prompt(app: DeepResearchDemoTUI, pilot, *, mode: str, 
 
 @pytest.mark.asyncio
 async def test_tui_auto_mode_submits_fixed_scripted_question(monkeypatch: pytest.MonkeyPatch) -> None:
-    """010 auto TUI: after preflight the adapter dispatches one scripted start.
+    """@impl RED-010
+
+    010 auto TUI: after preflight the adapter dispatches one scripted start.
 
     The human never types: the graph-owned policy answers HITL1/HITL2, and the
     default product path is used (no ``profile_intent`` declaration).
@@ -471,7 +473,10 @@ async def test_tui_auto_mode_submits_fixed_scripted_question(monkeypatch: pytest
 
 @pytest.mark.asyncio
 async def test_tui_auto_mode_stays_interactive_when_embedded_only(monkeypatch: pytest.MonkeyPatch) -> None:
-    """The auto flag applies only to the direct local real-graph route."""
+    """@impl RED-010
+
+    The auto flag applies only to the direct local real-graph route.
+    """
     _install_scripted(
         monkeypatch,
         report=_ready_report(),
@@ -486,6 +491,19 @@ async def test_tui_auto_mode_stays_interactive_when_embedded_only(monkeypatch: p
     intents = _ScriptedExperience.instances[0].intents
     assert isinstance(intents[0], StartRun)
     assert intents[0].scripted is False
+
+
+def test_tui_auto_flag_is_rejected_outside_embedded_smoke() -> None:
+    """@impl RED-010
+
+    The --auto flag is rejected at argument parsing without --embedded-smoke.
+    """
+    parser = demo_tui._build_parser()
+    args = parser.parse_args(["--auto"])
+    with pytest.raises(SystemExit):
+        demo_tui._validate_args(parser, args)
+    accepted = parser.parse_args(["--embedded-smoke", "--auto"])
+    demo_tui._validate_args(parser, accepted)  # accepted only with --embedded-smoke
 
 
 @pytest.mark.asyncio

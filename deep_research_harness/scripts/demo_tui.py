@@ -1687,7 +1687,7 @@ class DeepResearchDemoTUI(App[None]):
             self._dispatch(CancelRun())
 
 
-def main() -> None:
+def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Run the standalone Deep Research Textual demo.",
         epilog=(
@@ -1713,13 +1713,22 @@ def main() -> None:
             "Applies only with --embedded-smoke."
         ),
     )
-    args = parser.parse_args()
+    return parser
+
+
+def _validate_args(parser: argparse.ArgumentParser, args: argparse.Namespace) -> None:
     if args.fixture and args.embedded_smoke:
         parser.error("--fixture and --embedded-smoke cannot be combined")
     if args.profile is not None and (args.fixture or args.embedded_smoke):
         parser.error("--profile applies only to the default Gateway observer mode")
     if args.auto and not args.embedded_smoke:
         parser.error("--auto applies only with --embedded-smoke")
+
+
+def main() -> None:
+    parser = _build_parser()
+    args = parser.parse_args()
+    _validate_args(parser, args)
     mode: Literal["fixture", "gateway", "embedded_smoke"]
     if args.fixture:
         mode = "fixture"

@@ -171,4 +171,4 @@ report/citation artifacts、HITL1/HITL2 以 phase 经过的 trace。对"具体�
 - 与 020 的对照：同一例子下，010（scripted auto）vs 020（真人确认后
   profile）的 profile 来源差异可对照——逻辑同现状 003 vs 020 对照；
 - bug 按 `_backlog/bugs/` 流程；修复走 openspec change（BUG-061 先例：
-  `add-demo-tui-auto-entry`）。
+  `add-demo-tui-auto-entry`，2026-08-25 已归档）。

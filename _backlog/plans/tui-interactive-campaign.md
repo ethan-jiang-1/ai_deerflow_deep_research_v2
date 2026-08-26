@@ -5,7 +5,9 @@
 > `make demo-tui-embedded-smoke`）；**010 = 自动 TUI 孪生**（runbook-010-tui-auto.md，
 > 入口 `make demo-tui-real-auto`，BUG-061）。本文件描述的 010 即现在的 020 内容。
 >
-> 生成: 2026-08-20 | 更新: 2026-08-20 | 状态: **v4——已消化独立审阅并逐条核验代码，尚未执行**
+> 生成: 2026-08-20 | 更新: 2026-08-25 | 状态: **v4——已消化独立审阅；Stage 0/A
+> 与 change 双闭环已执行（BUG-060 `fix-demo-tui-choice-option`、BUG-061
+> `add-demo-tui-auto-entry`）；战役主体 Stage B1 未跑**
 > 前置: 001-004 战役完结（全 CLI、全自动）；本战役换轴——**HITL1 真人交互与 TUI 观察性**。
 > v4 变更: 全量消化 `tui-interactive-campaign-review.md`（另一 agent 的独立审阅）——
 > 其事实主张已逐条回到当前代码核验，**全部成立**；修复 v3 的内部矛盾，
@@ -223,7 +225,7 @@ ordinal、最终 `request/profile.json`、终态 State、report/citation artifac
 - openspec change（仅当修 TUI/共享交互行为时；primary causal owner 从
   presentation adapter 与 shared typed interaction boundary 的实际问题中
   选定，不把 route/profile admission 下放给 TUI）
-- handoff-010（战役进行中使用，完结后按 004 先例收口删除）
+- handoff-020（战役进行中使用，完结后按 004 先例收口删除）
 
 ## 8. 风险与坑（预判）
 
@@ -241,7 +243,13 @@ ordinal、最终 `request/profile.json`、终态 State、report/citation artifac
 
 ## 9. 下一步
 
-1. Stage 0 收口：重写 runbook-010 → 同步/下线 launcher → 登记 BUG-060 →
-   修 README 阶梯表行。
-2. Stage A → B1 按序执行（人工 TUI 操作 + agent 侧证据收集），bug 流程随行。
-3. B2/C 事后按 D4/D5 决定。
+1. ✅ 已执行（2026-08-21 ~ 08-25）：Stage 0 校准（v4/runbook/launcher/BUG-060/
+   阶梯表）→ Stage A fixture smoke（6 bundle 全 completed）→ BUG-060 change
+   （`fix-demo-tui-choice-option`，归档）→ 010/020 拆分双轨落地 → BUG-061
+   change（`add-demo-tui-auto-entry`，归档）。进度见
+   `tui-interactive-campaign-progress.md`（Phase 0/1/3/4 完成）。
+2. **Stage B1（战役主体）**：`make demo-tui-embedded-smoke`，真人 HITL1 交互
+   （固定问题 + 条件式修订 → 四步证据链 → exact bundle 验收，runbook-020 §3），
+   agent 侧证据收集 + bug 流程随行。
+3. B2（CHOICE 专项，前置 BUG-060 已满足）→ C（Gateway observer，可选）→
+   收口（Phase 7），事后按 D4/D5 决定。

@@ -68,7 +68,8 @@ demo）→ composer 出示例问题 → 回车起 run → hitl1 TEXT 提示 → 
 
 ## 撞茬处置
 
-- 任何异常：保留现场描述 → 报我登记 `_backlog/bugs/`（下一号 BUG-061）；
+- 任何异常：保留现场描述 → 报我登记 `_backlog/bugs/`（下一号 BUG-062；
+  BUG-061 已于 2026-08-25 修复归档）；
 - semantic intake 形状缺陷是预期高危（BUG-058/059 同类：真实模型 vs 确定性
   契约边界）——撞上算产出；
 - 收尾纪律同 004：bug 修复走独立 change，战役记录折进 runbook 附录后本文件

@@ -1,6 +1,6 @@
 # BUG-061: Demo TUI 缺少 010 自动全跑入口（--auto / scripted start）
 
-> 严重级别: P1 | 发现: 2026-08-21 | 状态: 活跃（已带修复）
+> 严重级别: P1 | 发现: 2026-08-21 | 状态: 已修复（2026-08-25）
 
 ## 症状
 
@@ -32,19 +32,25 @@ make demo-tui-embedded-smoke   # 只能手动；没有任何 flag 能自动派�
 
 ## 修复关联
 
-本次修复（已实现 + 测试 20 passed，待走 openspec change 载体）：
+openspec change **`add-demo-tui-auto-entry`**（2026-08-25 闭环：
+propose → polish → apply → archive，归档为
+`openspec/changes/archive/2026-08-25-add-demo-tui-auto-entry/`）：
 
-- `scripts/demo_tui.py`：新增 `--auto`（仅限 `--embedded-smoke`）；`_initialize`
-  就绪后若 `mode == "embedded_smoke" and auto`，自动
+- `scripts/demo_tui.py`：新增 `--auto`（仅限 `--embedded-smoke`；`--auto`
+  无 `--embedded-smoke` 在 argparse 报错）；`_initialize` 就绪后若
+  `mode == "embedded_smoke" and auto`，自动
   `_dispatch(StartRun(question=AUTO_QUESTION, scripted=True, profile_intent=None))`；
   固定问题 = 003 同款 `What is one bounded fact about China's EV battery market in 2024?`；
-  banner 标注 `· auto`。
+  banner 标注 `· auto`；parser 构造/校验抽为 `_build_parser`/`_validate_args`
+  （demo_sessions 先例，供确定性测试）。
 - `Makefile`：新增 `demo-tui-real-auto` target（010 自动入口）。
-- `tests/integration/test_demo_tui.py`：新增 2 用例
-  （auto 派发 scripted StartRun 且直达 Terminal；fixture+auto 仍保持交互）。
+- `tests/integration/test_demo_tui.py`：3 用例——auto 派发 scripted StartRun
+  且直达 Terminal；fixture+auto 仍保持交互；`--auto` 无 `--embedded-smoke`
+  argparse 拒绝（apply 阶段补齐 scenario 2 缺口）。
+- 契约：delta spec 新增 **RED-010**（research-demo-tui 显式零人工自动入口），
+  同步进主 spec；`openspec/governance/req-registry.yaml` 登记 RED-010。
 
 运行笔记：原集成测试两个新用例首次跑失败，根因是 (a) auto dispatch 未限定
 `mode == "embedded_smoke"` 导致 fixture 也触发，(b) 测试等待 `Ready` 而 auto
-直达 `Terminal`；均已修正，`tests/integration/test_demo_tui.py` 20 passed。
-
-openops change 名称（实施时补全）：`add-demo-tui-auto-entry`。
+直达 `Terminal`；均已修正。验证：3 auto 用例全绿 +
+`UV_OFFLINE=1 make verify` 全绿（fast 2650 + integration 301[4 skipped] + workflow 35）。
