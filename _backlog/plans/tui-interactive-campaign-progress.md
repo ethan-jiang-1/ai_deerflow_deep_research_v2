@@ -4,8 +4,8 @@
 > （runbook-020-tui-manual.md）；**010 = 自动 TUI 孪生**（runbook-010-tui-auto.md，
 > BUG-061，入口 `make demo-tui-real-auto`）。下文"010"均指本战役的 020 内容。
 >
-> 生成: 2026-08-21 | 最近同步: 2026-08-25 | 状态: **进行中——Phase 0/1/3/4 完成
-> （含 BUG-061 change 闭环归档）；战役主体 Stage B1 未跑**
+> 生成: 2026-08-21 | 最近同步: 2026-08-29 | 状态: **进行中——Phase 0/1/3/4 完成
+> （含 BUG-061 change 闭环归档）；Stage B1 环境就绪、待真人实跑**
 > 用途: 以最少 openspec change 落地 [`tui-interactive-campaign.md`](tui-interactive-campaign.md)（v4）
 > 与 [`../bugs/BUG-060-demo-tui-choice-option-unprojected.md`](../bugs/BUG-060-demo-tui-choice-option-unprojected.md)，
 > 并全程 track 战役进展。
@@ -18,6 +18,11 @@
 > 大扩展、01x/02x 交互原则）。本次同步折叠进 Phase 4，并把 §1「只 1 个预规划
 > change」的结论修订为「2 个 change」，并已于 2026-08-25 全部闭环归档
 > （BUG-060 `fix-demo-tui-choice-option`、BUG-061 `add-demo-tui-auto-entry`）。
+>
+> **三文件分工（2026-08-30 定盘）**：本文件 = **战役核心推进账本**（唯一活文件：
+> 勾项 + §4 append-only 记录）；[`tui-interactive-campaign.md`](tui-interactive-campaign.md)
+> = 计划 v4（战略权威，仅大决策点更新）；[`tui-interactive-campaign-review.md`](tui-interactive-campaign-review.md)
+> = 已被 v4 全量消化的独立审阅（历史产物，**冻结**，不再更新）。
 
 ## 1. 落地策略：从「1 个预规划 change」到「2 个」（08-25 修订）
 
@@ -92,11 +97,12 @@
 - [ ] （可选）再跑一次验证 Cancel 分支（未跑，可选项，不阻塞）
 - [x] 记录 UI 形状结论进 handoff-020（不声称 real cognition / CHOICE / 报告质量）
 
-### Phase 2 — Stage B1：embedded 真人 HITL1 真实跑（战役主体）⬜ 未开始
+### Phase 2 — Stage B1：embedded 真人 HITL1 真实跑（战役主体）🟡 进行中
 
-> **这是整个 020 战役存在的意义，目前一个字都没跑。**
+> **这是整个 020 战役存在的意义。环境已就绪，等待真人实跑一次。**
 
-- [ ] agent 侧：启动前 bundle 目录集合快照（runbook §3.0）
+- [x] agent 侧环境就绪：三要素非空（`DEERFLOW_DEMO_MODEL`/`DEEPSEEK_API_KEY`/`TAVILY_API_KEY`，仅验非空不打值）+ `entry-preflight` EXIT=0 + textual 可导入
+- [x] agent 侧：启动前 bundle 目录集合快照（runbook §3.0）——65 bundles，存 `/tmp/bundles_before_020.txt` + `_local_demo/.evidence/`
 - [ ] 用户跑 `make demo-tui-embedded-smoke`：侦察模式 → 触发研究 → 固定问题 + 条件式修订应答（runbook §3.0.5/§3.1）
 - [ ] 四步证据链记录：初始 proposal depth / 修订语句 / 修订后 depth / 显式确认
 - [ ] agent 侧：exact bundle 绑定（唯一新增，否则记"证据未绑定"）
@@ -186,6 +192,13 @@
 | 2026-08-22 | 4 | 01x/02x 交互差异表 + API 依赖原则定稿（观察者 vs 操作者，同步 vs 流式） | ✅ 原则定稿 |
 | 2026-08-25 | — | 进度文件同步：折叠 010/020 拆分与双轨落地进 Phase 4；§1 change 结论 1→2 修订 | 📋 本版 |
 | 2026-08-25 | 4 | BUG-061 change `add-demo-tui-auto-entry` 闭环：propose/polish/apply/archive；RED-010 登记 + 同步主 spec；`UV_OFFLINE=1 make verify` 全绿（fast 2650 + integration 301[4 skipped] + workflow 35）；BUG-061 → `_done/_fixed_bugs/`（编号权威 → BUG-062） | ✅ Phase 4 完全闭环 |
+| 2026-08-29 | 2 | Stage B1 环境就绪：三要素非空 + `entry-preflight` EXIT=0 + textual 可导入；before 快照落盘（65 bundles → `/tmp/bundles_before_020.txt` + `.evidence/`） | 🟡 待真人实跑 |
+| 2026-08-29 | 2 | B1 证据工具就绪：摸清 real bundle 证据形状（state.json schema5 `research_depth/degraded_profile/terminal_status`、request/profile.json schema2 `depth/audience/format`、events.jsonl hitl1 `model_tool` 无 capability / hitl2 自主 node 无 interrupt）；写 `verify_b1_pass.py`（7 条 PASS 的机械判据 1/3/4/5 + 2/6 支持证据），对历史 all_real bundle dry-run 通过，并捕获其 degenerate report 标记 | ✅ 工具可战 |
+| 2026-08-30 | 2 | B1 推进前复核：三要素非空 + `entry-preflight` EXIT=0 + textual 8.2.8 可导入；before 快照仍有效（/tmp 与 .evidence 双份 65 = 当前 65，期间无新增）——环境就绪未漂移，直接进入真人实跑；三文件分工定盘（本文件 = 核心推进账本，review 冻结） | 🟡 待用户实跑（本会话即跑） |
+| 2026-08-30 | 2 | B1 第 1 跑（`b_l_W3Z6…`）：hitl1 交互链路完整、planning+wave0+wave1 过、证据 2 条入库，wave2_synthesis 唯一模型调用挂 16m22s 被 bridge_wall_time 掐死（provider.timeout）**零重试** → readiness `synthesis_findings_unavailable` 终局 blocked；hitl2 自主经过✅。登记 **BUG-062**（P1）+ **BUG-063**（P2 挂起记账 mislabel） | ❌ blocked，三值待用户回报 |
+| 2026-08-30 | 2 | B1 第 2 跑（`b_yFAvXIr8…`）：14:18 confirm 后跑到 wave1，14:23:45 网络断 → **TUI 进程树死亡**，bundle 遗弃 suspended（journal complete 53 事件）无恢复入口、safe-inspect 拒绝 → 登记 **BUG-064**（P1 UX：无 attach/resume）。两跑三 bug，B1 尚无 completed run；用户 hitl1 交互本身两跑均无障碍 | ❌ 孤儿，战况记录在 handoff-020 |
+| 2026-08-30 | — | 老数据清理（用户指令，按 todo 纪律手工执行）：67 → **3 bundles**（23M→4.1M）。保留 = B1 两跑证据（BUG-062/063/064）+ 最新 003 时代 completed all_real（§3.6 对照 / verify_b1_pass.py 可测）+ `tui-78024.log`（BUG-064 现场）；删除 = 58-bundle fixture scope + 6 老 all_real scope + 08-30 前日志；**基线快照重建**（/tmp + .evidence 双份，=3），第 3 跑验收以此为新基线 | ✅ 清理完毕，B1 可续跑 |
+| 2026-08-30 | 5 | **C1 `close-provider-timeout-budget-handback` 闭环**（BUG-062）：propose 四件套 → polish 三 pass（Focus Card 格式 + `_timeout_origin` 公开化 + R1/R3 预算执法当场取证：middleware.py:121-128 `AgentBudgetError(BUDGET_EXHAUSTED, MODEL_CALL_LIMIT)`）→ apply TDD（红 5 → 绿 49：`_is_provider_transient` 谓词 + 主/repair 调用点 `_invoke_with_provider_retry`；发现 domain 契约已禁"PROVIDER_TIMEOUT 观察无 origin"形态）→ closeout 六项全绿（含 @impl/@bug 标注行规修正）→ WSN-012 同步主 spec → 归档 `archive/2026-08-30-close-provider-timeout-budget-handback/`；verify 全绿 fast **2656** + integration 301[4 skipped] + workflow 35 | ✅ C1 完全闭环，BUG-062 → `_done/_fixed_bugs/`（编号权威 → BUG-065） |
 
 ## 5. 条件性 change 追踪（战役撞出的 bug，按需追加行）
 
@@ -193,4 +206,13 @@
 | --- | --- | --- |
 | BUG-060 | `fix-demo-tui-choice-option`（Phase 3） | ✅ 已修复并归档（2026-08-21） |
 | BUG-061 | `add-demo-tui-auto-entry`（Phase 4） | ✅ 已修复并归档（2026-08-25） |
+| BUG-062 | **C1 `close-provider-timeout-budget-handback`** | ✅ 已修复并归档（2026-08-30：propose → polish 三 pass → apply TDD 6 用例 → verify 全绿 fast 2656 + integration 301[4 skipped] + workflow 35；WSN-012 进主 spec；BUG-062 → `_done/_fixed_bugs/`） |
+| BUG-063 | **并入 C2**（同一契约：suspension 一等状态） | 🟡 活跃，C2 进行中（2026-08-30） |
+| BUG-064 | **C2 `add-suspended-run-recovery`**（含 063） | 🟡 活跃，C2 进行中（2026-08-30 propose 开始） |
 | （新 bug 填行） | | |
+
+> **分组决议（2026-08-30）**：三 bug 收敛为 **2 个 change**（用户要求少量）。
+> C1 = 062（engine/graph：wall-time 超时补进 BUG-050 budget-handback 机制，战役
+> 关键路径先行）；C2 = 064+063（domain/runtime/TUI："suspension 是一等可恢复状态"
+> ——attach/resume + safe-inspect 放宽 + journal 挂起标签，同一契约同一 writer 族）。
+> 详见 handoff-020 与当日讨论记录。

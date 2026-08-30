@@ -290,11 +290,11 @@ def derive_provider_diagnostic_reference(
             else None
         ),
     }
-    final_timeout_origin = _timeout_origin(problem.provider_observation)
+    final_timeout_origin = timeout_origin_of(problem.provider_observation)
     if final_timeout_origin is not None:
         payload["final_timeout_origin"] = final_timeout_origin
     if recovery is not None:
-        trigger_timeout_origin = _timeout_origin(recovery.trigger_observation)
+        trigger_timeout_origin = timeout_origin_of(recovery.trigger_observation)
         if trigger_timeout_origin is not None:
             payload["recovery"]["trigger_timeout_origin"] = trigger_timeout_origin
     encoded = json.dumps(payload, ensure_ascii=True, sort_keys=True, separators=(",", ":")).encode("utf-8")
@@ -321,7 +321,12 @@ def _observation_identity(observation: object) -> tuple[str | None, int | None]:
     )
 
 
-def _timeout_origin(observation: object) -> str | None:
+def timeout_origin_of(observation: object) -> str | None:
+    """Return the typed provider-timeout origin carried by an observation, if any.
+
+    Public so node-level recovery policies can key on the same closed fact the
+    diagnostic projections use, without re-deriving the origin set.
+    """
     origin = getattr(observation, "timeout_origin", None)
     return origin if origin in {"bridge_wall_time_budget", "provider_sdk_timeout"} else None
 
@@ -336,5 +341,6 @@ __all__ = [
     "invoke_and_normalize",
     "is_structured_validation_error",
     "normalize_invocation_outcome",
+    "timeout_origin_of",
     "worker_failure_for_invocation",
 ]

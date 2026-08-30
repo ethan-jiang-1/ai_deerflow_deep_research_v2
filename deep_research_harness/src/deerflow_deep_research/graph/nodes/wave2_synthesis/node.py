@@ -33,6 +33,7 @@ from deerflow_deep_research.domain.workflow_outcomes import (
     derive_provider_diagnostic_reference,
     invoke_and_normalize,
     is_structured_validation_error,
+    timeout_origin_of,
 )
 
 from .materializer import materialize_synthesis
@@ -225,6 +226,34 @@ def _is_budget_class(outcome: InvocationFailure) -> bool:
     return outcome.finish_reason is NodeFinishReason.BUDGET_EXHAUSTED
 
 
+def _is_provider_transient(outcome: InvocationFailure) -> bool:
+    """Provider-timeout origins mark the failure as transient and retryable.
+
+    Keyed on the typed origin fact (not the failure code): the domain contract
+    already guarantees a PROVIDER_TIMEOUT observation carries an origin, and
+    every other failure — budget exhaustion included — stays non-transient.
+    """
+    return timeout_origin_of(outcome.problem.provider_observation) is not None
+
+
+async def _invoke_with_provider_retry(
+    invoke,
+    *,
+    phase,
+):
+    """Invoke a bounded synthesis call, retrying only provider-transient timeouts.
+
+    Retry bound is the existing model-call policy envelope: every invocation
+    consumes one call ordinal, and the middleware's budget enforcement ends the
+    sequence with a non-transient budget failure, which the caller classifies
+    through the unchanged budget/exhausted paths. Cancellation is never caught.
+    """
+    while True:
+        outcome = await invoke_and_normalize(invoke, phase=phase)
+        if not (isinstance(outcome, InvocationFailure) and _is_provider_transient(outcome)):
+            return outcome
+
+
 def _exhausted_update(
     problem: NodeProblem,
     *,
@@ -293,7 +322,7 @@ def build_real(dependencies: NodeBuildDependencies):
             )
         except ValueError as input_error:
             return _exhausted_update(_pre_model_problem(input_error), state=state, dependencies=dependencies)
-        outcome = await invoke_and_normalize(
+        outcome = await _invoke_with_provider_retry(
             lambda: dependencies.capabilities.run_agent(context=dependencies.agent_context, request=request),
             phase="wave2_synthesis",
         )
@@ -309,7 +338,7 @@ def build_real(dependencies: NodeBuildDependencies):
         except ValueError as initial_error:
             validation_category = _synthesis_validation_category(initial_error)
             repair_detail = getattr(initial_error, "detail", None)
-            repair_outcome = await invoke_and_normalize(
+            repair_outcome = await _invoke_with_provider_retry(
                 lambda: dependencies.capabilities.run_agent(
                     context=dependencies.agent_context,
                     request=build_synthesis_repair_prompt(

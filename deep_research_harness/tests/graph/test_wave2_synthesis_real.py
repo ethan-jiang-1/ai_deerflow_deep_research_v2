@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import dataclasses
 import json
 import shutil
@@ -1321,6 +1322,174 @@ async def test_non_budget_failures_keep_their_terminal_disposition(tmp_path: Pat
     assert update["route"] == "exhausted"
     assert update["terminal_status"] == LifecycleStatus.BLOCKED.value
     assert "wave2_budget_exhausted" not in update or update.get("wave2_budget_exhausted") is False
+
+
+class _RetrySequenceCapabilities:
+    """Ordered results that record contexts and requests for retry assertions."""
+
+    def __init__(self, *results: object) -> None:
+        self._results = list(results)
+        self.contexts: list[NodeAgentContext] = []
+        self.requests: list[object] = []
+
+    async def run_agent(self, *, context: NodeAgentContext, request: object) -> NodeExecutionResult:
+        if not isinstance(context, NodeAgentContext):
+            raise TypeError("node_agent_context_required")
+        self.contexts.append(context)
+        self.requests.append(request)
+        result = self._results.pop(0)
+        if isinstance(result, BaseException):
+            raise result
+        return result  # type: ignore[return-value]
+
+
+def _transient_timeout_result(origin: str = "bridge_wall_time_budget") -> NodeExecutionResult:
+    observation = ProviderObservation(response_kind="no_response", timeout_origin=origin)  # type: ignore[arg-type]
+    problem = NodeProblem(
+        code=RunFailureCode.PROVIDER_TIMEOUT,
+        phase="wave2_synthesis",
+        certainty=FailureCertainty.DIRECT,
+        provider_observation=observation,
+    )
+    return NodeExecutionResult(finish_reason=NodeFinishReason.FAILED, problem=problem)
+
+
+async def test_provider_transient_timeout_retries_and_succeeds(tmp_path: Path) -> None:
+    """@impl WSN-012
+    @bug BUG-062
+
+    A wall-time provider timeout is provider-transient: the node retries the
+    same bounded invocation instead of handing back budget exhaustion or
+    blocking; a successful retry behaves as if the timeout never happened.
+    """
+
+    capabilities = _RetrySequenceCapabilities(
+        _transient_timeout_result("bridge_wall_time_budget"),
+        NodeExecutionResult(finish_reason=NodeFinishReason.SUCCESS, summary=_synthesis_json()),
+    )
+    dependencies = _dependencies(tmp_path, capabilities)
+
+    update = await NODE_SPEC.real_factory(dependencies)(_state())
+
+    assert len(capabilities.requests) == 2  # one retry, journaled as its own call
+    assert capabilities.contexts[0] == capabilities.contexts[1]  # same node attempt identity
+    assert update["execution_trace"] == ("wave2_synthesis",)
+    assert update.get("route") is None
+    assert "terminal_status" not in update
+    assert update["wave2_budget_exhausted"] is False
+    artifact = tmp_path / bundle_host_relative_root(BUNDLE) / "synthesis" / "findings.json"
+    assert artifact.exists()
+
+
+async def test_provider_sdk_timeout_origin_retries_equally(tmp_path: Path) -> None:
+    """@impl WSN-012 — both provider-timeout origins are the transient class."""
+
+    capabilities = _RetrySequenceCapabilities(
+        _transient_timeout_result("provider_sdk_timeout"),
+        NodeExecutionResult(finish_reason=NodeFinishReason.SUCCESS, summary=_synthesis_json()),
+    )
+
+    update = await NODE_SPEC.real_factory(_dependencies(tmp_path, capabilities))(_state())
+
+    assert len(capabilities.requests) == 2
+    assert update["execution_trace"] == ("wave2_synthesis",)
+
+
+async def test_provider_transient_retries_end_in_budget_handback(tmp_path: Path) -> None:
+    """@impl WSN-012
+
+    Retries stop when a non-transient outcome arrives: the middleware's
+    model-call budget failure (no timeout origin) exits the loop into the
+    existing budget-class hand-back, unchanged from the BUG-050 contract.
+    """
+
+    budget_problem = NodeProblem(
+        code=RunFailureCode.BUDGET_EXHAUSTED,
+        phase="wave2_synthesis",
+        certainty=FailureCertainty.DIRECT,
+    )
+    capabilities = _RetrySequenceCapabilities(
+        _transient_timeout_result(),
+        _transient_timeout_result("provider_sdk_timeout"),
+        NodeExecutionResult(finish_reason=NodeFinishReason.BUDGET_EXHAUSTED, problem=budget_problem),
+    )
+
+    update = await NODE_SPEC.real_factory(_dependencies(tmp_path, capabilities))(_state())
+
+    assert len(capabilities.requests) == 3
+    assert update.get("route") is None
+    assert "terminal_status" not in update
+    assert update["wave2_budget_exhausted"] is True
+    assert update[WAVE2_GATE_PREVIEW_KEY] == Wave2GatePreview(searchable_gap_ids=())
+
+
+def test_provider_transient_classification_requires_timeout_origin() -> None:
+    """@impl WSN-012 — transient classification is keyed on the typed origin fact.
+
+    The domain contract (provider_timeout_observation_invalid) already forbids
+    a PROVIDER_TIMEOUT observation without an origin, so the representable
+    non-transient boundary is: no observation at all, or a non-timeout failure.
+    """
+
+    from deerflow_deep_research.domain.workflow_outcomes import InvocationFailure
+    from deerflow_deep_research.graph.nodes.wave2_synthesis.node import _is_provider_transient
+
+    for origin in ("bridge_wall_time_budget", "provider_sdk_timeout"):
+        observation = ProviderObservation(response_kind="no_response", timeout_origin=origin)  # type: ignore[arg-type]
+        transient = InvocationFailure(
+            finish_reason=NodeFinishReason.FAILED,
+            problem=NodeProblem(
+                code=RunFailureCode.PROVIDER_TIMEOUT,
+                phase="wave2_synthesis",
+                certainty=FailureCertainty.DIRECT,
+                provider_observation=observation,
+            ),
+        )
+        assert _is_provider_transient(transient) is True
+
+    no_observation = InvocationFailure(
+        finish_reason=NodeFinishReason.FAILED,
+        problem=NodeProblem(
+            code=RunFailureCode.PROVIDER_TIMEOUT,
+            phase="wave2_synthesis",
+            certainty=FailureCertainty.DIRECT,
+        ),
+    )
+    budget = InvocationFailure(
+        finish_reason=NodeFinishReason.BUDGET_EXHAUSTED,
+        problem=NodeProblem(
+            code=RunFailureCode.BUDGET_EXHAUSTED,
+            phase="wave2_synthesis",
+            certainty=FailureCertainty.DIRECT,
+        ),
+    )
+    assert _is_provider_transient(no_observation) is False
+    assert _is_provider_transient(budget) is False
+
+
+async def test_repair_invocation_retries_provider_transient_timeout(tmp_path: Path) -> None:
+    """@impl WSN-012 — the repair call site shares the same retry classification."""
+
+    capabilities = _RetrySequenceCapabilities(
+        NodeExecutionResult(finish_reason=NodeFinishReason.SUCCESS, summary="not-json"),
+        _transient_timeout_result(),
+        NodeExecutionResult(finish_reason=NodeFinishReason.SUCCESS, summary=_synthesis_json()),
+    )
+
+    update = await NODE_SPEC.real_factory(_dependencies(tmp_path, capabilities))(_state())
+
+    assert len(capabilities.requests) == 3  # main + failed repair + retried repair
+    assert update["execution_trace"] == ("wave2_synthesis",)
+    assert update.get("route") is None
+
+
+async def test_provider_transient_retry_does_not_swallow_cancellation(tmp_path: Path) -> None:
+    """@impl WSN-012 — cancellation passes through the retry loop uncaught."""
+
+    capabilities = _RetrySequenceCapabilities(asyncio.CancelledError())
+
+    with pytest.raises(asyncio.CancelledError):
+        await NODE_SPEC.real_factory(_dependencies(tmp_path, capabilities))(_state())
 
 
 def _claim_evidence() -> tuple[SynthesisEvidence, ...]:

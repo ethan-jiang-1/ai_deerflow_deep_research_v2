@@ -532,6 +532,7 @@ WSN-008: wave2-synthesis-node — Wave2 runtime capabilities own bounded accepte
 WSN-009: wave2-synthesis-node — Synthesis disposes every projected Wave1 question through exactly one searchable gap or an explicit resolution with deterministic coverage, bounded repair, and exhausted terminal
 WSN-010: wave2-synthesis-node — Wave2 structured repair carries the full trusted open-question disposition contract plus the concrete failing coverage detail (missing/duplicated/foreign projected ids) so coverage repair is non-blind
 WSN-011: wave2-synthesis-node — The wave2 output contract includes a concrete minimal example object of the findings/relations/gaps shape and an explicit negative contrast against a wave1 claims verdict list
+WSN-012: wave2-synthesis-node — Provider-transient timeouts (typed provider-timeout origins) retry within the existing model-call policy envelope before any degradation or terminal disposition, and fall back to unchanged budget-class handling when retries end
 
 # rerun-node
 REN-001: rerun-node — Rerun scope is deterministically parsed from HITL2 decision payload producing a typed RerunPlan with scope, reason, target topics, target findings, and retained topics, defaulting to full scope when metadata is absent
