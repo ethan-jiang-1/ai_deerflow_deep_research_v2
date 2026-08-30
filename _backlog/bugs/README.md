@@ -16,9 +16,10 @@
 
 | Bug | 标题 | 发现 | 状态 |
 |-----|------|------|------|
-| （无活跃 bug） |
+| [BUG-063](BUG-063-hitl-suspension-journal-mislabel.md) | HITL interrupt 挂起被 journal 记为 internal.unexpected（诊断误导） | 2026-08-30 · 020 战役 B1 监控 | 活跃（并入 C2） |
+| [BUG-064](BUG-064-no-attach-resume-after-process-death.md) | 断网/进程死亡即失去 run：无 attach/resume 入口，孤儿 bundle 不可恢复也不可 inspect | 2026-08-30 · 020 战役 B1 第 2 跑 | 活跃（C2 进行中） |
 
-**Next available bug ID: BUG-062**
+**Next available bug ID: BUG-065**
 
 
 ---

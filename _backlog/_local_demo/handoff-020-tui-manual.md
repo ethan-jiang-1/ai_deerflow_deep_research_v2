@@ -4,9 +4,10 @@
 > 位置: 本文件在 `_backlog/_local_demo/`；设计文档在 `_backlog/plans/tui-interactive-campaign.md`（v4 消化版）；
 > 进度追踪在 `_backlog/plans/tui-interactive-campaign-progress.md`；实施载体已归档 `openspec/changes/archive/2026-08-21-fix-demo-tui-choice-option/`
 >
-> **状态: 🟡 进行中**。已完成：Stage 0 校准（review 全消化）→ 唯一预规划 change
-> `fix-demo-tui-choice-option` 闭环（BUG-060 修复 + RED-009 注册 + 归档）。
-> 待办：**Stage A（你操作 fixture smoke）→ Stage B1（你操作 embedded 真跑，战役主体）**
+> **状态: 🟡 进行中**。已完成：Stage 0 校准（review 全消化）→ Stage A fixture
+> smoke（6 bundle 全 completed）→ 两个 change 闭环（`fix-demo-tui-choice-option`
+> 修 BUG-060、`add-demo-tui-auto-entry` 修 BUG-061，均已归档）。
+> 待办：**Stage B1（你操作 embedded 真跑，战役主体，环境已就绪）**
 > →（条件 B2 / 可选 C）→ 收口。
 
 ## 目标（一句话）
@@ -45,7 +46,8 @@ report。HITL2 是自主 continuation **不需要人**。PASS 判据 7 条见 ru
 | 尝试 | 阶段 | bundle / 证据 | 结果 | 判定 |
 | --- | --- | --- | --- | --- |
 | Stage A（2026-08-21 15:40-16:17，`RUN-020.command` 选 1） | A | fixture scope `s_At5E33X…` 6 个 bundle（15:40/15:55×2/15:59×2/16:17） | 全部 `terminal_status: completed`、`implementation_mode: fixture`；每次 hitl1 完整往返（4 事件）；图走完 final_delivery | ✅ PASS（交互面/启动/退出均正常；Cancel 分支未跑，可选项） |
-| （待填：Stage B1 第 1 跑） | B1 | — | — | — |
+| Stage B1 第 1 跑（2026-08-30 13:19-13:59，agent 侧全程监控） | B1 | real bundle `b_l_W3Z6jthJlZwk0G9ANJMOzQr-acZEW26q1aHn9teZ4`（exact 绑定：本窗口新增之一，按时间戳区分） | hitl1 交互完整（两轮往返，最终 depth=quick_overview / en / 未降级）→ planning+wave0+wave1 全过、证据 2 条入库（4.4KB submissions）→ **wave2_synthesis 唯一模型调用挂 16m22s 被 `bridge_wall_time` 掐死（provider.timeout），零重试** → readiness `synthesis_findings_unavailable` 终局 blocked | ❌ blocked → **BUG-062**（P1）；hitl2 自主经过✅；四步链三值待用户回报 |
+| Stage B1 第 2 跑（2026-08-30 14:10-14:23，**已死**） | B1 | real bundle `b_yFAvXIr8zct6c8sraXXuDcIUhjhtpmA6M-tOJ-0jCeU` | 初始 proposal 即 depth=quick_overview；用户 14:14 输入被 TUI 判"与当前配置一致"（无字段变更）→ 14:18 confirm → topic_planning+wave0 过 → 14:23:45 wave1 model 调用中**网络断，TUI 进程树死亡**；bundle 遗弃为 suspended（journal complete 53 事件），无恢复入口，inspect 拒绝 | ❌ 孤儿 → **BUG-064**；四步链第 2 步存疑（无实际字段修订）+ 三值待用户回报 |
 
 > Stage A 观察备注：①"没跑出什么"= 预期形态——fixture 图 `final/` 为空
 > （不产 report.md），终态只有 "Research complete" + bundle 信息，真实内容
@@ -55,22 +57,43 @@ report。HITL2 是自主 continuation **不需要人**。PASS 判据 7 条见 ru
 > demo workspace 的 fixture scope，只是非真实模型 run），不影响绑定逻辑
 > （exact-bundle 绑定仅用于 real 模式）。
 
-## 你要做的事（Stage A，现在就可以）
+## 你要做的事（Stage B1，现在）
 
-```bash
-cd deep_research_harness && make demo-tui-fixture
-```
+双击仓库根 **`RUN-020.command`**（或 `bash RUN-020.command`）。启动器自带
+应答提示卡 + exact-bundle 绑定（退出后自动打印 terminal/profile/report 开头）。
 
-（或仓库根双击 `RUN-020.command` 选 1。）预期形状：banner（fixture-graph
-demo）→ composer 出示例问题 → 回车起 run → hitl1 TEXT 提示 → 随便答一句回车
-→ Terminal completed → Ctrl-C/q 退出无异常。把"看到什么、有没有卡"报给我，
-我记进战况表。（可选加跑一次中途 Cancel。）
+**关键：你要在 TUI 里记下三值（只有你看得到，事后 bundle 证据里没有初始值）**：
+
+1. hitl1 出初始 proposal → **抄下初始 `depth` 值**；
+2. 条件式修订：depth 不是 `quick_overview` → 点「深度: 快速概览」或输入
+   `depth: quick overview.`；已是 `quick_overview` → 点「深度: 深入」或输入
+   `depth: deep dive.`（**必然不同于初始值**）；
+3. 修订确认行出现 → **抄下你实际输的那句修订** + **修订后的 `depth` 值**；
+4. 目标达成 → 点 **Start proposal** 显式确认；
+5. hitl2 **别碰**（自主经过），等 Terminal；**只跑这一轮研究**，然后 q 退出
+   （多跑一轮 = 多一个 bundle，exact-bundle 会报"证据未绑定"）。
+
+把 **三值（初始 depth / 修订句 / 修订后 depth）+ 有没有卡/报错** 报给我，
+我按 7 条 PASS 判据核对并记进 progress 战况表。
 
 ## 撞茬处置
 
-- 任何异常：保留现场描述 → 报我登记 `_backlog/bugs/`（下一号 BUG-062；
-  BUG-061 已于 2026-08-25 修复归档）；
+- 任何异常：保留现场描述 → 报我登记 `_backlog/bugs/`（下一号 **BUG-065**；
+  BUG-062/063/064 已于 2026-08-30 登记，活跃）；
 - semantic intake 形状缺陷是预期高危（BUG-058/059 同类：真实模型 vs 确定性
   契约边界）——撞上算产出；
 - 收尾纪律同 004：bug 修复走独立 change，战役记录折进 runbook 附录后本文件
   删除。
+
+## 数据清理记录（2026-08-30，用户授权）
+
+老数据 67 → **3 bundles**（基线快照已重建双份，=3）。**保留的证据**：
+
+| 保留物 | 用途 |
+| --- | --- |
+| `s_WwIyPhgXRkVr6hD6Cvqi…/b_l_W3Z6…`（B1 第 1 跑） | BUG-062（wave2 timeout 零重试）+ BUG-063 证据 |
+| `s_WwIyPhgXRkVr6hD6Cvqi…/b_yFAvXIr8…`（B1 第 2 跑） | BUG-064（孤儿 suspended 无恢复入口）证据 |
+| `s_WSPqmaB…/b_IzhRp8…`（003 时代 completed all_real） | runbook §3.6 对照 + `verify_b1_pass.py` 可测 |
+| `logs/tui-78024.log` | BUG-064 现场（14:23:45 冻结的屏幕记录） |
+
+**第 3 跑的 exact-bundle 验收以新基线（3）为准**——退出后唯一新增即本次 bundle。

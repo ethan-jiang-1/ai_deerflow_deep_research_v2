@@ -20,6 +20,7 @@
 | # | 文件 | 优先级 | 简述 | 阻塞 / 备注 |
 |---|------|--------|------|-------------|
 | 1 | [todo-a009-risk-based-semantic-traceability.md](todo-a009-risk-based-semantic-traceability.md) | 低 | 为高风险改动设计有界语义 traceability | 仅在高风险 requirement change 明确触发时启动；当前没有可执行 action |
+| 2 | [todo-demo-workspace-cleanup-command.md](todo-demo-workspace-cleanup-command.md) | 中 | `make demo-clean` + workspace 只读盘点（现状零清理命令） | 与 BUG-064 配套（claim 语义前保守清理）；2026-08-30 B1 实跑期间撞出 |
 
 ---
 
