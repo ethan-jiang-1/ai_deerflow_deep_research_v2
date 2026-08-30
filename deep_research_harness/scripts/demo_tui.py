@@ -49,6 +49,7 @@ from deerflow_deep_research.domain.run_experience import (
     AnswerRun,
     AwaitingInput,
     CancelRun,
+    ContinueRun,
     FailureCertainty,
     Fault,
     ReadinessCheck,
@@ -62,6 +63,7 @@ from deerflow_deep_research.domain.run_experience import (
     Terminal,
     Working,
 )
+from deerflow_deep_research.domain.session_workbench import WorkbenchAvailability
 from deerflow_deep_research.runtime.gateway_observer import (
     GatewayObserver,
     GatewayTransportObservation,
@@ -903,6 +905,8 @@ class DeepResearchDemoTUI(App[None]):
         self._chat_model: Any | None = None
         self._chat_history: list[tuple[str, str]] = []
         self._last_terminal_bundle: str | None = None
+        self._recoverable_bundle_id: str | None = None
+        self._recoverable_phase = "unknown"
         self._last_typed = ""
         self._pending_timer: Any | None = None
         self._pending_started = 0.0
@@ -1000,6 +1004,7 @@ class DeepResearchDemoTUI(App[None]):
                 # the environment and chat freely; only an explicit
                 # research-start phrase dispatches the fixed question.
                 self._onboarding = True
+                await self._scan_recoverable_run()
                 self._render_recon()
         except asyncio.CancelledError:
             raise
@@ -1303,6 +1308,58 @@ class DeepResearchDemoTUI(App[None]):
         if self._tui_log_path is not None:
             log.write(Text(f"TUI 日志文件: {self._tui_log_path}", style="dim"))
 
+    async def _scan_recoverable_run(self) -> None:
+        """Project one recoverable orphan (legal next action = resume) for attach.
+
+        Presentation only (RED-011): the lifecycle owns recovery semantics; this
+        scan renders what the lifecycle already judged legal, best effort.
+        """
+        adapter = self._adapter
+        if adapter is None:
+            return
+        try:
+            workbench = adapter.local_bundle_workbench()
+            found = await workbench.discover()
+        except Exception:
+            return
+        for item in found:
+            action = item.legal_next_action
+            if item.bundle_id is not None and action is not None and action.value == "resume":
+                self._recoverable_bundle_id = item.bundle_id.value
+                self._recoverable_phase = item.phase.value if item.phase is not None else "unknown"
+                return
+
+    def _attach_card_lines(self) -> tuple[str, ...]:
+        if self._recoverable_bundle_id is None:
+            return ()
+        short = self._recoverable_bundle_id[:16]
+        return (
+            f"· 📎 检测到未完成的研究: {short}…（阶段: {self._recoverable_phase}，证据已保存）",
+            "  输入「继续」从断点恢复 · 「查看」检查诊断 · 「新跑」放弃并重新开始",
+        )
+
+    async def _show_recoverable_summary(self) -> None:
+        """Render the read-only diagnosis of the recoverable bundle, best effort."""
+        adapter = self._adapter
+        bid = self._recoverable_bundle_id
+        if adapter is None or bid is None:
+            return
+        log = self.query_one("#log", RichLog)
+        log.write(Text("── 未完成研究诊断 ──", style="bold"))
+        try:
+            workbench = adapter.local_bundle_workbench()
+            diagnosis = await workbench.diagnosis(bundle_id=bid)
+        except Exception:
+            log.write(Text("· 诊断暂不可用。", style="dim"))
+            return
+        summary = diagnosis.summary
+        if diagnosis.availability is not WorkbenchAvailability.AVAILABLE or summary is None:
+            log.write(Text("· journal 暂不可读（可能正被另一进程使用）。", style="dim"))
+            return
+        log.write(Text(f"· 状态: {summary.status}@{summary.phase} generation {summary.generation}", style="dim"))
+        journal = summary.journal_availability.value
+        log.write(Text(f"· journal: {journal} · 事件 {len(diagnosis.events)} 条", style="dim"))
+
     def _render_recon(self, *, terminal: Terminal | None = None) -> None:
         """Render the 020 recon-mode screen (before and after each research run).
 
@@ -1345,6 +1402,7 @@ class DeepResearchDemoTUI(App[None]):
                 "  — 触发后运行固定问题: What is one bounded fact about China's EV battery market in 2024?",
             ]
         )
+        lines.extend(self._attach_card_lines())
         if self._last_terminal_bundle:
             lines.append(f"· 上一轮研究 bundle: {self._last_terminal_bundle}")
         if root is not None:
@@ -1658,6 +1716,18 @@ class DeepResearchDemoTUI(App[None]):
         self._render_inspect(("支持: /ls [路径] · /cat <文件> · /inspect <bundle_id> · /clear",))
 
     async def _handle_onboarding_input(self, value: str) -> None:
+        if self._recoverable_bundle_id is not None and value == "继续":
+            bundle_id = self._recoverable_bundle_id
+            self._recoverable_bundle_id = None
+            self._dispatch(ContinueRun(bundle_id=bundle_id))
+            return
+        if self._recoverable_bundle_id is not None and value == "查看":
+            await self._show_recoverable_summary()
+            return
+        if self._recoverable_bundle_id is not None and value == "新跑":
+            self._recoverable_bundle_id = None
+            self._render_recon()
+            return
         if is_research_trigger(value):
             self._start_research()
             return

@@ -868,7 +868,11 @@ class BundleLifecycle:
             elif state.admitted_refinement is not None or state.current_refinement is not None:
                 next_action = LegalNextAction.STATUS
             else:
-                next_action = LegalNextAction.REFINE
+                # An active state without a pending human request is a process
+                # death orphan (BUG-064): legally recoverable from its durable
+                # checkpoint (REG-023) instead of only offering a full rerun.
+                # Execution exclusivity stays with the resume path's lease.
+                next_action = LegalNextAction.RESUME
             pending_input = (
                 PendingInputProjection(
                     request_id=state.pending_request_id,

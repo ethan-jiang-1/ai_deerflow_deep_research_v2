@@ -499,3 +499,34 @@ async def test_hitl1_language_choice_rejects_text_answer_at_the_dispatch_seam() 
     assert update.failure is not None
     assert update.failure.code == RunFailureCode.INPUT_INVALID_RESPONSE
     assert transport.calls == [("start", None, None)]
+
+
+async def test_continue_run_adopts_orphan_bundle_and_routes_empty_resume() -> None:
+    """@impl REG-023
+    @bug BUG-064
+
+    A cross-session continue intent adopts the orphan bundle id and routes the
+    resume action with no messages — never a fabricated human response.
+    """
+
+    from deerflow_deep_research.domain.run_experience import ContinueRun
+
+    transport = ReplayTransport([])
+    experience = ResearchRunExperience(transport=transport, mode="fixture")
+
+    action, bundle_id, context = experience._prepare_intent(ContinueRun(bundle_id=BUNDLE_ID))
+
+    assert action == "resume"
+    assert str(bundle_id) == BUNDLE_ID
+    assert context is None
+    assert tuple(experience._messages) == ()
+
+
+def test_continue_run_rejects_malformed_bundle_id() -> None:
+    """@impl REG-023 — the adopted id must satisfy the opaque bundle id shape."""
+
+    from deerflow_deep_research.domain.run_experience import ContinueRun
+
+    experience = ResearchRunExperience(transport=ReplayTransport([]), mode="fixture")
+    with pytest.raises(ValueError):
+        experience._prepare_intent(ContinueRun(bundle_id="not-a-bundle-id"))

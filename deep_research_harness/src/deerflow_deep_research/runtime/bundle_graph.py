@@ -703,6 +703,59 @@ class BundleGraphExecutor:
                 execution_lease=execution_lease,
             )
 
+    async def continue_run(
+        self,
+        *,
+        lifecycle: BundleLifecycle,
+        bundle: RunBundleRef,
+        envelope: Any,
+        tool_call_id: str,
+    ) -> dict[str, Any] | Command:
+        """Continue a process-death orphan from its durable checkpoint (REG-023).
+
+        No human response is constructed or required: the graph re-enters at its
+        persisted checkpoint under the execution exclusion lease and proceeds
+        through its normal phase machinery to a natural terminal.
+        """
+        async with lifecycle.execution_exclusion(bundle) as execution_lease:
+            execution_lease.ensure_live()
+            async with lifecycle.open_graph_checkpoint(bundle) as saver:
+                graph = self._recipe.builder.compile(checkpointer=saver)
+                config = self._config(bundle)
+                snapshot = await graph.aget_state(config)
+                if not snapshot or not snapshot.values:
+                    raise BundleLifecycleError("bundle_graph_missing")
+                state = await lifecycle.read_state(bundle)
+                journal_envelope = await self._journal_envelope(
+                    lifecycle=lifecycle,
+                    bundle=bundle,
+                    state=state,
+                    envelope=envelope,
+                )
+                await graph.ainvoke(
+                    None,
+                    config=config,
+                    context=await self._context(envelope=journal_envelope, bundle=bundle),
+                )
+                execution_lease.ensure_live()
+                result = await self._project(
+                    lifecycle=lifecycle,
+                    bundle=bundle,
+                    envelope=envelope,
+                    action=LifecycleAction.RESUME,
+                    graph=graph,
+                    config=config,
+                    tool_call_id=tool_call_id,
+                )
+            return await self._continue_completed_refinement_if_eligible(
+                lifecycle=lifecycle,
+                bundle=bundle,
+                envelope=envelope,
+                action=LifecycleAction.RESUME,
+                initial_result=result,
+                execution_lease=execution_lease,
+            )
+
     async def reproject(
         self,
         *,

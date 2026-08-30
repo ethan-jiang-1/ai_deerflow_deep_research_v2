@@ -199,6 +199,7 @@
 | 2026-08-30 | 2 | B1 第 2 跑（`b_yFAvXIr8…`）：14:18 confirm 后跑到 wave1，14:23:45 网络断 → **TUI 进程树死亡**，bundle 遗弃 suspended（journal complete 53 事件）无恢复入口、safe-inspect 拒绝 → 登记 **BUG-064**（P1 UX：无 attach/resume）。两跑三 bug，B1 尚无 completed run；用户 hitl1 交互本身两跑均无障碍 | ❌ 孤儿，战况记录在 handoff-020 |
 | 2026-08-30 | — | 老数据清理（用户指令，按 todo 纪律手工执行）：67 → **3 bundles**（23M→4.1M）。保留 = B1 两跑证据（BUG-062/063/064）+ 最新 003 时代 completed all_real（§3.6 对照 / verify_b1_pass.py 可测）+ `tui-78024.log`（BUG-064 现场）；删除 = 58-bundle fixture scope + 6 老 all_real scope + 08-30 前日志；**基线快照重建**（/tmp + .evidence 双份，=3），第 3 跑验收以此为新基线 | ✅ 清理完毕，B1 可续跑 |
 | 2026-08-30 | 5 | **C1 `close-provider-timeout-budget-handback` 闭环**（BUG-062）：propose 四件套 → polish 三 pass（Focus Card 格式 + `_timeout_origin` 公开化 + R1/R3 预算执法当场取证：middleware.py:121-128 `AgentBudgetError(BUDGET_EXHAUSTED, MODEL_CALL_LIMIT)`）→ apply TDD（红 5 → 绿 49：`_is_provider_transient` 谓词 + 主/repair 调用点 `_invoke_with_provider_retry`；发现 domain 契约已禁"PROVIDER_TIMEOUT 观察无 origin"形态）→ closeout 六项全绿（含 @impl/@bug 标注行规修正）→ WSN-012 同步主 spec → 归档 `archive/2026-08-30-close-provider-timeout-budget-handback/`；verify 全绿 fast **2656** + integration 301[4 skipped] + workflow 35 | ✅ C1 完全闭环，BUG-062 → `_done/_fixed_bugs/`（编号权威 → BUG-065） |
+| 2026-08-30 | 5 | **C2 `add-suspended-run-recovery` 闭环**（BUG-064+063）：propose 四件套 + polish（posture 闭集值修正 + human-interaction-integrity 补列）→ apply：journal 挂起分类（`observed_run` 认 GraphInterrupt，outcome=suspended）、orphan `legal_next_action=RESUME` + `BundleGraphExecutor.continue_run`（lease+checkpoint `ainvoke(None)` 无伪造应答）+ `BundleControl._resume` 孤儿分支 + TUI attach 卡片（扫描/卡片/继续/查看/新跑，`ContinueRun` intent）；**apply 取证两项**：诊断对非 terminal 本已可用（15:05 拒绝=活持有者锁，RWB-009 定性契约锁）；run 2 实为冻结 69 分钟后自愈完成（BUG-064 证据注记已修）→ closeout 六项全绿 → REG-023/REJ-011/RWB-009/RED-011 同步四主 spec → 归档 `archive/2026-08-30-add-suspended-run-recovery/`；verify 全绿 exit 0 | ✅ C2 完全闭环，BUG-063/064 → `_done/_fixed_bugs/`（编号权威 → BUG-066） |
 
 ## 5. 条件性 change 追踪（战役撞出的 bug，按需追加行）
 
@@ -207,8 +208,8 @@
 | BUG-060 | `fix-demo-tui-choice-option`（Phase 3） | ✅ 已修复并归档（2026-08-21） |
 | BUG-061 | `add-demo-tui-auto-entry`（Phase 4） | ✅ 已修复并归档（2026-08-25） |
 | BUG-062 | **C1 `close-provider-timeout-budget-handback`** | ✅ 已修复并归档（2026-08-30：propose → polish 三 pass → apply TDD 6 用例 → verify 全绿 fast 2656 + integration 301[4 skipped] + workflow 35；WSN-012 进主 spec；BUG-062 → `_done/_fixed_bugs/`） |
-| BUG-063 | **并入 C2**（同一契约：suspension 一等状态） | 🟡 活跃，C2 进行中（2026-08-30） |
-| BUG-064 | **C2 `add-suspended-run-recovery`**（含 063） | 🟡 活跃，C2 进行中（2026-08-30 propose 开始） |
+| BUG-063 | **并入 C2** `add-suspended-run-recovery` | ✅ 已修复并归档（2026-08-30） |
+| BUG-064 | **C2 `add-suspended-run-recovery`**（含 063） | ✅ 已修复并归档（2026-08-30） |
 | （新 bug 填行） | | |
 
 > **分组决议（2026-08-30）**：三 bug 收敛为 **2 个 change**（用户要求少量）。

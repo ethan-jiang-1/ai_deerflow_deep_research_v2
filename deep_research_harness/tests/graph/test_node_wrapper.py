@@ -503,6 +503,34 @@ class TestWrapperJournalEvents:
         assert recorder.events[-1]["worker_failure_category"] == "unknown"
         assert "raw exception" not in str(recorder.events)
 
+    async def test_wrapper_records_human_interrupt_suspension_without_internal_unexpected(self) -> None:
+        """@impl REJ-011
+        @bug BUG-063
+
+        A node visit suspended by the graph's human-interrupt signal is a normal
+        suspension awaiting recovery: the journal records the attempt as
+        suspended rather than an unexpected internal failure, and the signal
+        still propagates to the graph machinery.
+        """
+        from langgraph.errors import GraphInterrupt
+
+        recorder = _JournalRecorder()
+        spec = _request_bundle_spec(declares=False, seen=[])
+
+        def suspending_factory(_dependencies: NodeBuildDependencies):
+            async def run(_state: ResearchState) -> dict[str, str]:
+                raise GraphInterrupt()
+
+            return run
+
+        graph = _compile_custom(spec, NodeAdapter(suspending_factory, AdapterKind.FIXTURE, requires_gate=False))
+        await graph.ainvoke(_state(), config=_config(), context=_context(None, event_recorder=recorder))
+
+        suspension_events = [event for event in recorder.events if event["outcome"] == "suspended"]
+        assert suspension_events, recorder.events
+        assert all(event.get("failure_category") != "internal.unexpected" for event in suspension_events)
+        assert all(event.get("worker_failure_category") != "unknown" for event in suspension_events)
+
     async def test_fixture_declaring_factory_does_not_receive_request_bundle(self) -> None:
         seen: list[object] = []
         spec = _request_bundle_spec(declares=True, seen=seen)

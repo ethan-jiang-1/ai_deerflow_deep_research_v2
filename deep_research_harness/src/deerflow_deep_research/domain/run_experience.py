@@ -318,6 +318,17 @@ class CancelRun(FrozenRunContract):
     kind: Literal["cancel"] = "cancel"
 
 
+class ContinueRun(FrozenRunContract):
+    """Cross-session adoption of one recoverable orphan bundle (REG-023).
+
+    Carries the opaque bundle id to adopt; no human response is constructed or
+    required — the run continues from its durable checkpoint.
+    """
+
+    kind: Literal["continue"] = "continue"
+    bundle_id: str = Field(min_length=45, max_length=45)
+
+
 class StatusRun(FrozenRunContract):
     kind: Literal["status"] = "status"
 
@@ -327,7 +338,7 @@ class RefineRun(FrozenRunContract):
     text: str = Field(min_length=1, max_length=4_096)
 
 
-type RunIntent = StartRun | AnswerRun | SelectControlRun | CancelRun | StatusRun | RefineRun
+type RunIntent = StartRun | AnswerRun | SelectControlRun | CancelRun | ContinueRun | StatusRun | RefineRun
 
 
 class RunSnapshot(FrozenRunContract):
@@ -492,6 +503,7 @@ __all__ = [
     "AnswerRun",
     "AwaitingInput",
     "CancelRun",
+    "ContinueRun",
     "FailureCertainty",
     "FRESH_START_NEXT_ACTION",
     "Fault",

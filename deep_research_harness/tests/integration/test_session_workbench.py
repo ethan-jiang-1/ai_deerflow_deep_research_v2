@@ -378,3 +378,50 @@ def test_workbench_journal_projection_renders_only_safe_incomplete_reasons() -> 
     assert "Incomplete because: legacy, capacity, persistence" in rendered.detail
     assert "manifest" not in rendered.detail.lower()
     assert "journal-manifest.json" not in rendered.detail
+
+
+@pytest.mark.asyncio
+async def test_diagnosis_is_available_for_a_suspended_bundle_with_complete_journal(tmp_path) -> None:
+    """@impl RWB-009
+    @bug BUG-064
+
+    A suspended bundle whose journal is present and consistent yields an
+    available read-only diagnosis regardless of its non-terminal status: an
+    operator can inspect what a recoverable run was doing before resuming or
+    discarding it.
+    """
+    from _demo_core import DemoAdapter
+
+    from deerflow_deep_research.runtime.run_observation import RunObservationStore
+
+    adapter = DemoAdapter(bundle_root=tmp_path)
+    try:
+        await adapter.open()
+        workbench = adapter.local_bundle_workbench()
+        lifecycle = adapter._bundle_lifecycle
+        bundle = await lifecycle.start(
+            scope=workbench._scope,
+            request_text="Recover a stalled research run.",
+            implementation_mode="all_real",
+        )
+        await lifecycle.sync_graph_progress(
+            bundle=bundle,
+            values={
+                "phase": "wave1",
+                "phase_status": "in_progress",
+                "generation": 0,
+                "execution_trace": ("bootstrap", "hitl1", "topic_planning", "wave0", "wave1"),
+            },
+            pending=None,
+        )
+        store = RunObservationStore(
+            bundle_root=lifecycle.private_root(bundle),
+            bundle_id=bundle.bundle_id.value,
+        )
+        await store._establish(generation=0, phase="bootstrap", durability="restart_durable")
+        diagnosis = await workbench.diagnosis(bundle_id=bundle.bundle_id.value)
+    finally:
+        await adapter.aclose()
+
+    assert diagnosis.availability is WorkbenchAvailability.AVAILABLE
+    assert diagnosis.summary is not None

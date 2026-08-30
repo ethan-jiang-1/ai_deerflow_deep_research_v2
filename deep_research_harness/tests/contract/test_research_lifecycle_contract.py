@@ -335,3 +335,43 @@ async def test_bundle_control_distinguishes_new_pending_direction_from_current_o
     assert first_current.current_refinement is not None
     assert replay["code"] == "refinement_applied"
     assert replay["refinement"] == {"disposition": "applied", "current_round": 2}
+
+
+def test_suspended_orphan_without_pending_input_projects_resume(tmp_path) -> None:
+    """@impl REG-023
+    @bug BUG-064
+
+    A process-death orphan (active, no pending human request, no refinement
+    context) is legally recoverable: the lifecycle projects RESUME so the run
+    can continue from its durable checkpoint instead of only offering a full
+    rerun.
+    """
+
+    result = _result(tmp_path, _state())
+
+    from deerflow_deep_research.domain.lifecycle import LegalNextAction
+
+    assert result.legal_next_action is LegalNextAction.RESUME
+    assert result.terminal_reason is None
+
+
+def test_pending_input_resume_projection_unchanged(tmp_path) -> None:
+    """@impl REG-023 — the awaiting-human answer-resume contract is unchanged."""
+
+    state = _state(pending_request_id="req-1", waiting_for="hitl1")
+    result = _result(tmp_path, state)
+
+    from deerflow_deep_research.domain.lifecycle import LegalNextAction
+
+    assert result.legal_next_action is LegalNextAction.RESUME
+    assert result.pending_input is not None
+
+
+def test_terminal_projection_keeps_refine(tmp_path) -> None:
+    """@impl REG-023 — terminal invariance and REFINE/START are unchanged."""
+
+    result = _result(tmp_path, _terminal(_state()))
+
+    from deerflow_deep_research.domain.lifecycle import LegalNextAction
+
+    assert result.legal_next_action is LegalNextAction.REFINE

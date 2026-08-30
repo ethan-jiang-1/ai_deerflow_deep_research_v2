@@ -5,8 +5,10 @@
 020 战役 B1 第 2 跑（bundle `b_yFAvXIr8…`，BUG-064）实证：网络断开使 TUI 进程
 树死亡，bundle 遗弃为 `status=suspended`、journal 完整（53 事件、0 dropped），
 但——重开 TUI 无任何"继续上次 run"入口（只能新跑 = 重付全部成本）；
-`make demo-sessions inspect` 拒绝该 bundle（safe-inspect 只认可安全读取的
-形态）；无人认领 66+ 分钟无超时无提示。同时 BUG-063 实证：正常 HITL 挂起
+`make demo-sessions inspect` 拒绝该 bundle（冻结进程持锁期间的保守拒绝）；
+无人认领 66+ 分钟无超时无提示。**后续证据（同日 15:33）**：网络恢复后该次
+wave1 调用自行完成、run 自愈跑到 `terminal=completed`——冻结期间操作者完全
+失去可见性与干预入口，"进程是否还活着"无法判定，恢复需求依旧成立。同时 BUG-063 实证：正常 HITL 挂起
 在 journal 里被记为 `failure_category=internal.unexpected`——2026-08-30 实
 跑监控中被当场误读为内部故障。恢复能力躺在 runtime/domain（`restart_durable`
 + checkpoint + `session_workbench.resume()` + `legal_next_action`），但：
@@ -29,8 +31,8 @@ suspend≠fail 的分类学没有建立，孤儿（进程死亡、无 pending in
 - **TUI attach 入口（BUG-064a）**：`demo_tui.py` 启动时扫描 demo workspace，
   发现未完成 bundle（suspended）时呈现 attach 卡片（继续 / 查看 / 放弃新跑）；
   TUI 不获得任何 admission/route 权威，继续决策仍走 lifecycle。
-- 网络断开时 TUI 呈现降级状态而非进程死亡（BUG-064c）随 attach 面一并按
-  既有异常呈现机制处理，本 change 只覆盖其最小可见面。
+- attach 面使断网冻结后的 run 具备可判定的恢复入口（本 change 实际范围）；
+  冻结期间的实时降级反馈（连接状态横幅等呈现增强）不在本 change。
 
 ## Change Focus
 
@@ -40,7 +42,7 @@ suspend≠fail 的分类学没有建立，孤儿（进程死亡、无 pending in
 - **Necessary adjacent/external contracts:** `domain/lifecycle.py`（`LegalNextAction` 既有枚举——orphan 复用 RESUME 值，不加新值）；`langgraph` checkpoint 再入（`bundle_graph.resume` 既有 lease+`Command(resume=…)` 机制——orphan 继续复用，不新造执行通道）；`run-event-journal`（attempt 事实语义——挂起标签是 journal 记账修正）；`research-demo-tui`（attach 卡片是呈现投影）。
 - **Evidence seam:** `tests/graph/test_builder_suspension_journal.py`（063 标签）、`tests/unit/test_run_observation*.py`（inspectability）、`tests/unit/test_bundle_lifecycle*.py`（legal_next_action）、`tests/integration/test_demo_tui.py`（attach 卡片零凭证投影）。
 - **Not in scope:** terminal bundle（completed/blocked/stopped/cancelled）的 resume（终态不可变是既有契约，REFINE/START 路径不变）；TUI 获得任何 route/admission 权威；多进程并发认领同一 bundle（execution lease 既有互斥已保证单持有者）；gateway observer 路线；journal schema_version 升级（outcome 值域内的最小修正）；`deerflow/` gitlink 不改动、不 source-browse（ordinary downstream work）。
-- **Triggered review policies:** workflow-outcome-review, control-placement
+- **Triggered review policies:** workflow-outcome-review, control-placement, human-interaction-integrity
 
 ## Workflow Outcome Review
 
@@ -54,8 +56,8 @@ suspend≠fail 的分类学没有建立，孤儿（进程死亡、无 pending in
 
 | Changed decision or fact | Cognitive candidate or human judgment | Direct fact and deterministic owner/evaluator | Design posture | Protected invariant or legal recovery | Reuse or complexity removed/avoided | Deterministic evidence seam |
 | --- | --- | --- | --- | --- | --- | --- |
-| 挂起 vs 异常的分类 | 无（不涉认知） | `builder.observed_run` 对 interrupt 信号的确定性识别 | non-bypassable（异常仍 re-raise，记账不吞异常） | journal 事实如实：挂起不冒充内部故障 | 不新增事件类别，复用既有 attempt 事实字段 | graph 层确定性单测 |
-| orphan 可恢复判定 | 无 | `bundle_lifecycle.result_for_state`：active+suspended+无 pending → RESUME | non-bypassable（权威在 lifecycle，gate 路由不可绕过） | terminal 不可变不变；lease 互斥不变 | 复用 RESUME 值，不新增 LegalNextAction | lifecycle 单测 |
+| 挂起 vs 异常的分类 | 无（不涉认知） | `builder.observed_run` 对 interrupt 信号的确定性识别 | non-bypassable | journal 事实如实：挂起不冒充内部故障 | 不新增事件类别，复用既有 attempt 事实字段 | graph 层确定性单测 |
+| orphan 可恢复判定 | 无 | `bundle_lifecycle.result_for_state`：active+suspended+无 pending → RESUME | non-bypassable | terminal 不可变不变；lease 互斥不变 | 复用 RESUME 值，不新增 LegalNextAction | lifecycle 单测 |
 | attach 卡片呈现 | 用户决定是否继续（决策权在人） | TUI 只渲染 lifecycle 已判定的 legal 动作 | human-decision | 不把 admission 下放 TUI（plan v4 原则）；无选择即不变更 | 复用 workbench 既有扫描/状态投影 | 集成用例（零凭证） |
 
 ## Capabilities

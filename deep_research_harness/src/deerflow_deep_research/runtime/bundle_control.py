@@ -255,6 +255,15 @@ class BundleControl:
                     bundle=bundle,
                     state=state,
                 ).model_dump(mode="json", exclude_none=True)
+            if state.pending_request_id is None and not messages:
+                # A process-death orphan (REG-023, BUG-064) continues from its
+                # durable checkpoint; no human response is constructed.
+                return await executor.continue_run(
+                    lifecycle=self._lifecycle,
+                    bundle=bundle,
+                    envelope=envelope,
+                    tool_call_id=tool_call_id,
+                )
             response = self._response_from_messages(messages=messages, state=state)
             return await executor.resume(
                 lifecycle=self._lifecycle,

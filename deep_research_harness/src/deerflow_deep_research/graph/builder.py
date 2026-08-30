@@ -17,6 +17,7 @@ from collections.abc import Mapping
 from dataclasses import replace
 from typing import Any
 
+from langgraph.errors import GraphInterrupt
 from langgraph.graph import END, START, StateGraph
 from langgraph.runtime import Runtime
 
@@ -312,6 +313,20 @@ def _node_wrapper(
         try:
             return await run(state, runtime)
         except asyncio.CancelledError:
+            raise
+        except GraphInterrupt:
+            # A human-interrupt suspension is a normal pause awaiting recovery,
+            # never an internal failure (BUG-063): record the attempt as
+            # suspended and let the signal propagate to the graph machinery.
+            context = runtime.context
+            await _record_node_event(
+                context,
+                bundle_id=(state.get("bundle_id") if isinstance(state.get("bundle_id"), str) else None),
+                category=RunEventCategory.NODE,
+                phase=logical_name,
+                attempt_id=make_node_visit_id(state, logical_name),
+                outcome="suspended",
+            )
             raise
         except Exception:
             context = runtime.context

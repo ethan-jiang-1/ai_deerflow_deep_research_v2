@@ -70,17 +70,20 @@ outcome="suspended"——journal 已有 outcome 字段是自由字符串值域�
 - 恢复执行：`bundle_graph.resume` 增加无应答变体（不构造
   `AcceptedHumanResponse`，`ainvoke(None, config)` 从 checkpoint 续跑），
   lease/`ensure_live()`/journal envelope 机制逐字复用。
-- `session_workbench.resume`：pending request 存在走既有应答匹配；孤儿
-  （无 pending）允许 `expected_request_id=None` 的继续入口。
+- **apply 修正（实际落点）**：孤儿的执行入口在
+  `bundle_control._resume`（controller 持有图执行权；`session_workbench.resume`
+  是状态投影层、无图执行权，不在此实现）——`pending_request_id is None and
+  not messages` → `executor.continue_run`。
 - 取消/失败语义不变：续跑后图自然走向终态。
 
-### D3 inspectability 放宽：只读诊断独立于终态
+### D3 inspectability——apply 取证结论：无需产品改动
 
-`RunObservationStore.inspect` 的 inspectability 判定只看 journal 完整性/
-一致性（manifest、事件 schema、summary 可读），不看 bundle 终态；apply 用
-真实孤儿 bundle `b_yFAvXIr8…` 复现拒绝点后精确修（候选：journal complete
-判定被 summary 状态联动覆盖，或 demo-sessions 路径在 workbench 之外另设
-了终态过滤）。既有 INVALID_REFERENCE / 记录缺失拒绝语义逐字保留。
+复现取证（真实孤儿 `b_yFAvXIr8…` + fixture）：`RunObservationStore.inspect`
+与 workbench `diagnosis` 对非 terminal 且 journal 完整的 bundle **本已可用**
+（`tests/integration/test_session_workbench.py::test_diagnosis_is_available_
+for_a_suspended_bundle_with_complete_journal` 绿锁）。15:05 实跑拒绝的真实
+原因 = 冻结 TUI 进程持有 journal 锁——对正在写入的 journal 拒读是正确的保守
+语义，予以保留。本 facet 定性为契约锁（RWB-009），无产品改动。
 
 ### D4 TUI attach 卡片：只投影，不决策
 

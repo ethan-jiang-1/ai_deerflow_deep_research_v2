@@ -308,6 +308,7 @@ RED-007: research-demo-tui — The standalone demo TUI renders shared visible co
 RED-008: research-demo-tui — Demo TUI projects the shared Bundle lifecycle contract without local state inference or recovery
 RED-009: research-demo-tui — The standalone demo TUI answers the current advertised HITL1 language CHOICE prompt with the shared typed option answer for that advertised option id while TEXT prompts and non-language CHOICE forwarding stay unchanged
 RED-010: research-demo-tui — The standalone demo TUI offers an explicit zero-human-input auto entry in embedded-smoke mode that dispatches a fixed scripted start after preflight and reaches a terminal outcome, while fixture and Gateway observer modes keep interactive behavior
+RED-011: research-demo-tui — On startup the demo TUI presents an attach projection for recoverable bundles (bounded list, phase summary) with continue/inspect/discard choices routed through lifecycle actions, constructing no human response and changing nothing when no recoverable bundle exists
 
 # research-cli-onboarding
 REC-001: research-cli-onboarding — The standalone real CLI asks for or clearly confirms a non-blank research question before a model call and gives a first-time user a bounded explanation of the two graph-owned human-input checkpoint types
@@ -330,6 +331,7 @@ REJ-007: run-event-journal — Journal attribution retains closed budget-stop su
 REJ-008: run-event-journal — Wave1 critic review dispatch validation facts carry exactly one closed critic kind and retain no raw critic output while remaining observation-only
 REJ-009: run-event-journal — Run summary retains per-phase policy-envelope snapshots of executed phases as provenance only, never admission or routing authority
 REJ-010: run-event-journal — Readiness route decisions, targeted-evidence drained no-op visits, and structural failure attribution retain only closed observation facts without changing control authority
+REJ-011: run-event-journal — A node attempt suspended by the graph human-interrupt signal is journaled as suspension (never internal.unexpected), unexpected exceptions keep existing labels and propagate, and no new event category or schema version is introduced
 
 # research-run-experience
 RER-001: research-run-experience — One runtime-owned module converts lifecycle wire results into shared safe run updates for presentation adapters
@@ -392,6 +394,7 @@ RWB-005: research-local-session-workbench — The local workbench renders author
 RWB-006: research-local-session-workbench — The local workbench renders and submits only authorized projected typed input actions through the broker
 RWB-007: research-local-session-workbench — The local workbench renders only broker-projected visible controls and submits a selected control id with the expected request id without exposing action ids, inferring controls, or retaining reply text
 RWB-008: research-local-session-workbench — Local workbench consumes shared Bundle lifecycle results without a session broker or local recovery controller
+RWB-009: research-local-session-workbench — Read-only diagnosis is available for a bundle whose journal is present and consistent regardless of terminal disposition, while absent/invalid/unreadable refusal semantics and presentation-only posture are unchanged
 
 # runtime-integration
 RUI-001: runtime-integration — DeerFlow exposes one stable Deep Research control tool with an infrastructure probe action
@@ -435,6 +438,7 @@ REG-019: research-graph-lifecycle — Every generic graph recipe supplies a comp
 REG-020: research-graph-lifecycle — Deep Research graph lifecycle persists only through the selected Run Bundle rather than a generic external checkpoint
 REG-021: research-graph-lifecycle — Graph lifecycle actions use Bundle identity and safe refinement transitions
 REG-022: research-graph-lifecycle — Bundle graph checkpoints cross one explicit registered serialization boundary that registers exactly the persisted project value types (ContentRef, AttemptStatus, Wave1OpenQuestionRef) and keeps strict msgpack failing closed for every other project type
+REG-023: research-graph-lifecycle — A suspended bundle without a pending human request projects RESUME as its legal next action and resumes from its durable checkpoint under the execution exclusion lease without any fabricated human response, while pending-input and terminal contracts are unchanged
 
 # fixture-source-isolation
 FSI-001: fixture-source-isolation — Deterministic fixture implementations live in deep_research_harness/src_fake/deerflow_deep_research_fixtures, a separate non-production package that production source, wheel, editable runtime, and Docker paths never import or include

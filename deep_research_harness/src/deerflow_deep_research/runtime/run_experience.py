@@ -37,6 +37,7 @@ from deerflow_deep_research.domain.run_experience import (
     AnswerRun,
     AwaitingInput,
     CancelRun,
+    ContinueRun,
     FailureCertainty,
     Fault,
     PendingInputProjection,
@@ -417,6 +418,13 @@ class ResearchRunExperience:
             if self._bundle_id is None:
                 raise ValueError("status_without_research")
             return "status", self._bundle_id, None
+        if isinstance(intent, ContinueRun):
+            # Cross-session orphan adoption (REG-023, BUG-064): adopt the
+            # bundle id and route the resume action with no human response.
+            from deerflow_deep_research.domain.bundle import BundleId as _BundleId
+
+            self._bundle_id = _BundleId(intent.bundle_id)
+            return "resume", self._bundle_id, None
         if isinstance(intent, RefineRun):
             if self._bundle_id is None:
                 raise ValueError("refine_without_research")
