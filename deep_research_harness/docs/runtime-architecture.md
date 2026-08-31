@@ -137,8 +137,9 @@ fixture source lives under
 boundaries, the stable node-package shape, development order, and the current structure
 contract.
 
-The canonical machine-readable structure registry is
-The application boundary is verified from this directory with:
+The canonical machine-readable structure registry is declared by the owning
+`project-structure` specification. The application boundary is verified from this
+directory with:
 
 ```bash
 UV_OFFLINE=1 make verify
