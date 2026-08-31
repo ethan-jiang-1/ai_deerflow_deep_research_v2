@@ -4,8 +4,9 @@
 > （runbook-020-tui-manual.md）；**010 = 自动 TUI 孪生**（runbook-010-tui-auto.md，
 > BUG-061，入口 `make demo-tui-real-auto`）。下文"010"均指本战役的 020 内容。
 >
-> 生成: 2026-08-21 | 最近同步: 2026-08-29 | 状态: **进行中——Phase 0/1/3/4 完成
-> （含 BUG-061 change 闭环归档）；Stage B1 环境就绪、待真人实跑**
+> 生成: 2026-08-21 | 最近同步: 2026-08-31 | 状态: **进行中——Phase 0/1/3/4 完成；
+> B1 两跑撞出的 BUG-062/063/064 已由 C1/C2 修复归档；环境复验全绿、
+> exact-bundle 基线重建 =7；待第 3 跑真人实跑**
 > 用途: 以最少 openspec change 落地 [`tui-interactive-campaign.md`](tui-interactive-campaign.md)（v4）
 > 与 [`../bugs/BUG-060-demo-tui-choice-option-unprojected.md`](../bugs/BUG-060-demo-tui-choice-option-unprojected.md)，
 > 并全程 track 战役进展。
@@ -200,6 +201,8 @@
 | 2026-08-30 | — | 老数据清理（用户指令，按 todo 纪律手工执行）：67 → **3 bundles**（23M→4.1M）。保留 = B1 两跑证据（BUG-062/063/064）+ 最新 003 时代 completed all_real（§3.6 对照 / verify_b1_pass.py 可测）+ `tui-78024.log`（BUG-064 现场）；删除 = 58-bundle fixture scope + 6 老 all_real scope + 08-30 前日志；**基线快照重建**（/tmp + .evidence 双份，=3），第 3 跑验收以此为新基线 | ✅ 清理完毕，B1 可续跑 |
 | 2026-08-30 | 5 | **C1 `close-provider-timeout-budget-handback` 闭环**（BUG-062）：propose 四件套 → polish 三 pass（Focus Card 格式 + `_timeout_origin` 公开化 + R1/R3 预算执法当场取证：middleware.py:121-128 `AgentBudgetError(BUDGET_EXHAUSTED, MODEL_CALL_LIMIT)`）→ apply TDD（红 5 → 绿 49：`_is_provider_transient` 谓词 + 主/repair 调用点 `_invoke_with_provider_retry`；发现 domain 契约已禁"PROVIDER_TIMEOUT 观察无 origin"形态）→ closeout 六项全绿（含 @impl/@bug 标注行规修正）→ WSN-012 同步主 spec → 归档 `archive/2026-08-30-close-provider-timeout-budget-handback/`；verify 全绿 fast **2656** + integration 301[4 skipped] + workflow 35 | ✅ C1 完全闭环，BUG-062 → `_done/_fixed_bugs/`（编号权威 → BUG-065） |
 | 2026-08-30 | 5 | **C2 `add-suspended-run-recovery` 闭环**（BUG-064+063）：propose 四件套 + polish（posture 闭集值修正 + human-interaction-integrity 补列）→ apply：journal 挂起分类（`observed_run` 认 GraphInterrupt，outcome=suspended）、orphan `legal_next_action=RESUME` + `BundleGraphExecutor.continue_run`（lease+checkpoint `ainvoke(None)` 无伪造应答）+ `BundleControl._resume` 孤儿分支 + TUI attach 卡片（扫描/卡片/继续/查看/新跑，`ContinueRun` intent）；**apply 取证两项**：诊断对非 terminal 本已可用（15:05 拒绝=活持有者锁，RWB-009 定性契约锁）；run 2 实为冻结 69 分钟后自愈完成（BUG-064 证据注记已修）→ closeout 六项全绿 → REG-023/REJ-011/RWB-009/RED-011 同步四主 spec → 归档 `archive/2026-08-30-add-suspended-run-recovery/`；verify 全绿 exit 0 | ✅ C2 完全闭环，BUG-063/064 → `_done/_fixed_bugs/`（编号权威 → BUG-066） |
+| 2026-08-31 | 2 | 第 3 跑推进前盘点（磁盘实核）：C1/C2 归档确实在位、BUG-062/063/064 均在 `_done/_fixed_bugs/`、无活跃 bug；清理后用户又跑了 2 轮 fixture smoke（16:21 / 21:51-22:10，4 bundle 全 completed，非 real）→ **基线失效已重建 =7**（/tmp + .evidence 双份）；环境复验三要素非空 + `make entry-preflight` EXIT=0 + textual 8.2.8；遗留 suspended 仅 B1 第 1 跑 `b_l_W3Z6…`（blocked，BUG-062 证据保留） | 🟡 环境就绪，待用户第 3 跑实跑 |
+| 2026-08-31 | 2 | 第 3 跑三连挂 + 根因确诊：hitl1 provider_sdk_timeout blocked ×3（02:51 / 02:56 / 02:57，各自动重试 1 次后 exhausted→干净 handback）；curl 直探 api.deepseek.com **TCP 不可达**（HTTP 000，connect 0s）→ 机器级网络问题，非 app/key/操作缺陷，不立新 bug；**C1 连续 3 次实战验证**（快失败 + 闭合诊断，对比 BUG-062 挂 16 分钟）；三值取证升级：初始 depth/修订句可从 `logs/tui-<pid>.log` 自取（run 2 冻结日志实测），用户不再抄数值；基线随 blocked bundle 重建 =10 | 🟡 等网络恢复后同会话重触发；C1 侧收获已落袋 |
 
 ## 5. 条件性 change 追踪（战役撞出的 bug，按需追加行）
 

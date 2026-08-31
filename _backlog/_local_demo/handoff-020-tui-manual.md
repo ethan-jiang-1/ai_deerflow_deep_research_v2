@@ -48,6 +48,9 @@ report。HITL2 是自主 continuation **不需要人**。PASS 判据 7 条见 ru
 | Stage A（2026-08-21 15:40-16:17，`RUN-020.command` 选 1） | A | fixture scope `s_At5E33X…` 6 个 bundle（15:40/15:55×2/15:59×2/16:17） | 全部 `terminal_status: completed`、`implementation_mode: fixture`；每次 hitl1 完整往返（4 事件）；图走完 final_delivery | ✅ PASS（交互面/启动/退出均正常；Cancel 分支未跑，可选项） |
 | Stage B1 第 1 跑（2026-08-30 13:19-13:59，agent 侧全程监控） | B1 | real bundle `b_l_W3Z6jthJlZwk0G9ANJMOzQr-acZEW26q1aHn9teZ4`（exact 绑定：本窗口新增之一，按时间戳区分） | hitl1 交互完整（两轮往返，最终 depth=quick_overview / en / 未降级）→ planning+wave0+wave1 全过、证据 2 条入库（4.4KB submissions）→ **wave2_synthesis 唯一模型调用挂 16m22s 被 `bridge_wall_time` 掐死（provider.timeout），零重试** → readiness `synthesis_findings_unavailable` 终局 blocked | ❌ blocked → **BUG-062**（P1）；hitl2 自主经过✅；四步链三值待用户回报 |
 | Stage B1 第 2 跑（2026-08-30 14:10-14:23，**已死**） | B1 | real bundle `b_yFAvXIr8zct6c8sraXXuDcIUhjhtpmA6M-tOJ-0jCeU` | 初始 proposal 即 depth=quick_overview；用户 14:14 输入被 TUI 判"与当前配置一致"（无字段变更）→ 14:18 confirm → topic_planning+wave0 过 → 14:23:45 wave1 model 调用中**网络断，TUI 进程树死亡**；bundle 遗弃为 suspended（journal complete 53 事件），无恢复入口，inspect 拒绝 | ❌ 孤儿 → **BUG-064**；四步链第 2 步存疑（无实际字段修订）+ 三值待用户回报 |
+| 清理后 fixture smoke ×2（2026-08-30 16:21、21:51-22:10，scope `s_At5E33X7YKq…`） | — | 4 个 fixture bundle（16:21 ×2 / 22:10 ×2），全部 `terminal_status: completed`、`implementation_mode: fixture`、`final/` 空（预期形态）；日志 tui-97920/36275/36649/38298（各 80B 快跑） | 真实 B1 未跑——**基线因此失效，已重建 =7**（/tmp + .evidence 双份）；第 3 跑验收以 7 为准 | ✅ 无影响，仅基线刷新 |
+| B1 第 3 跑 attempt（2026-08-31 02:51，同会话可重触发） | B1 | real bundle `b_Idursp09h6fsm7SZFf0mIyWw0lopw3Y2c-veKcbPnrI`（scope `s_iUfVh9oU…`，terminal=**blocked**） | **hitl1 第一跳（初始 brief/proposal 生成）DeepSeek API 无响应**：provider_sdk_timeout → C1 机制**自动重试 1 次**（Model invocations: 2）→ 仍无响应 → Recovery disposition: exhausted → **干净 handback 回 blocked**，TUI 回侦察模式并给出明确恢复指引 | ❌ blocked（provider 瞬时不可用，非产品缺陷，**不立新 bug**）；**C1 行为当场验证生效**（快失败+闭合诊断 diag_0517f78915cd2d2677e6d81d，对比 BUG-062 挂 16 分钟）；基线重建 **=8**（含本 bundle），重跑后唯一新增即验收对象 |
+| B1 第 3 跑 attempt ×2 续挂 + 根因确诊（2026-08-31 02:56-02:57） | B1 | real bundle `b_YoW1-fzJKPEcXDySO5MH-NktSVSyaQc3vrQPQhrRWHg`、`b_kW8IWw9xy-bFWQ_Q_6Ze_vu2G70lHYTYbCTsRDzuCaM`（同 scope，均 terminal=**blocked**，同 hitl1 provider_sdk_timeout 形态） | 用户同会话再触发两次，**同因三连挂**。agent 侧 curl 直探：`https://api.deepseek.com` **TCP 连接超时**（裸连 HTTP 000 / connect 0s；带 key 25s 无响应）——**机器级网络不可达**，与 key/app/操作无关。C1 三次全部按设计快失败+闭合诊断 | ❌ 三连挂同因（网络不可达，等恢复）；**不立新 bug**；C1 连续 3 次实战验证（对比 BUG-062 时代挂 16 分钟）；处置=停手等网络恢复后再触发；基线重建 **=10** |
 
 > Stage A 观察备注：①"没跑出什么"= 预期形态——fixture 图 `final/` 为空
 > （不产 report.md），终态只有 "Research complete" + bundle 信息，真实内容
@@ -62,24 +65,26 @@ report。HITL2 是自主 continuation **不需要人**。PASS 判据 7 条见 ru
 双击仓库根 **`RUN-020.command`**（或 `bash RUN-020.command`）。启动器自带
 应答提示卡 + exact-bundle 绑定（退出后自动打印 terminal/profile/report 开头）。
 
-**关键：你要在 TUI 里记下三值（只有你看得到，事后 bundle 证据里没有初始值）**：
+**操作四步（不需要抄任何数值——三值由 agent 从证据侧自取）**：
 
-1. hitl1 出初始 proposal → **抄下初始 `depth` 值**；
-2. 条件式修订：depth 不是 `quick_overview` → 点「深度: 快速概览」或输入
-   `depth: quick overview.`；已是 `quick_overview` → 点「深度: 深入」或输入
-   `depth: deep dive.`（**必然不同于初始值**）；
-3. 修订确认行出现 → **抄下你实际输的那句修订** + **修订后的 `depth` 值**；
-4. 目标达成 → 点 **Start proposal** 显式确认；
-5. hitl2 **别碰**（自主经过），等 Terminal；**只跑这一轮研究**，然后 q 退出
-   （多跑一轮 = 多一个 bundle，exact-bundle 会报"证据未绑定"）。
+1. hitl1 出初始 proposal → 看初始 `depth`：不是 `quick_overview` → 点
+   「深度: 快速概览」或输入 `depth: quick overview.`；已是 `quick_overview`
+   → 点「深度: 深入」或输入 `depth: deep dive.`（**必然不同于初始值**）；
+2. 修订确认行出现 → 点 **Start proposal** 显式确认；
+3. hitl2 **别碰**（自主经过），等 Terminal；**只跑这一轮研究**，然后 q 退出
+   （多跑一轮 = 多一个 bundle，exact-bundle 会报"证据未绑定"）；
+4. 回来口头报一声"跑完了"（有卡顿/报错/怪文案，描述一句即可）。
 
-把 **三值（初始 depth / 修订句 / 修订后 depth）+ 有没有卡/报错** 报给我，
-我按 7 条 PASS 判据核对并记进 progress 战况表。
+**三值取证分工（2026-08-31 实测定盘）**：初始 depth + 修订句 =
+`logs/tui-<pid>.log`（Phase 4 体验底线：proposal 卡片与交互回显全文落盘，
+run 2 冻结日志 tui-78024 实测验证）；修订后 depth = `request/profile.json`
+（权威）。`state.json` 的 `admitted_refinement` 为被 admission 的字段变更
+佐证（无变更则为 null，如 run 2）。用户口头观察仅作旁证，不再是证据链要件。
 
 ## 撞茬处置
 
-- 任何异常：保留现场描述 → 报我登记 `_backlog/bugs/`（下一号 **BUG-065**；
-  BUG-062/063/064 已于 2026-08-30 登记，活跃）；
+- 任何异常：保留现场描述 → 报我登记 `_backlog/bugs/`（下一号 **BUG-066**；
+  BUG-062/063/064 均已修复归档 `_done/_fixed_bugs/`，当前无活跃 bug）；
 - semantic intake 形状缺陷是预期高危（BUG-058/059 同类：真实模型 vs 确定性
   契约边界）——撞上算产出；
 - 收尾纪律同 004：bug 修复走独立 change，战役记录折进 runbook 附录后本文件
@@ -96,4 +101,6 @@ report。HITL2 是自主 continuation **不需要人**。PASS 判据 7 条见 ru
 | `s_WSPqmaB…/b_IzhRp8…`（003 时代 completed all_real） | runbook §3.6 对照 + `verify_b1_pass.py` 可测 |
 | `logs/tui-78024.log` | BUG-064 现场（14:23:45 冻结的屏幕记录） |
 
-**第 3 跑的 exact-bundle 验收以新基线（3）为准**——退出后唯一新增即本次 bundle。
+**第 3 跑的 exact-bundle 验收基线：2026-08-31 复核重建 =8**（清理基线 3 + 清理后
+fixture smoke 4 + 第 3 跑 hitl1 blocked 1）——**重跑后唯一新增即本次 bundle**；
+同一 TUI 会话除重跑外勿再多跑。
