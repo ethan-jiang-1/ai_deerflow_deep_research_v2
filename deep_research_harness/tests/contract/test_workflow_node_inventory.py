@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.check_test_assets import collect_pytest_selectors
+from scripts.checks.check_test_assets import collect_pytest_selectors
 from tests.assets.evidence import (
     EVIDENCE_CLAIMS,
     AssetClass,

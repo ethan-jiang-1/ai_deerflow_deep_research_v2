@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from scripts.check_test_assets import collect_deterministic_selectors
+from scripts.checks.check_test_assets import collect_deterministic_selectors
 
 
 def test_regression_descent_log_classifies_each_discovery_and_names_live_rationale_or_collected_test() -> None:

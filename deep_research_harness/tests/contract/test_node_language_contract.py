@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.check_node_language import NodeLanguageError, scan_tracked_language
+from scripts.checks.check_node_language import NodeLanguageError, scan_tracked_language
 
 ROOT = Path(__file__).resolve().parents[3]
 

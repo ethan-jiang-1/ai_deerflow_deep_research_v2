@@ -10,7 +10,7 @@ from dataclasses import replace
 
 import pytest
 
-from scripts.check_test_assets import collect_deterministic_selectors, collect_pytest_selectors
+from scripts.checks.check_test_assets import collect_deterministic_selectors, collect_pytest_selectors
 from tests.assets.selection import LIVE_EXPRESSION, LIVE_PATHS
 from tests.scenarios.canaries import LIVE_CANARIES, validate_live_canary_deadlines
 from tests.scenarios.contracts import ScenarioCase

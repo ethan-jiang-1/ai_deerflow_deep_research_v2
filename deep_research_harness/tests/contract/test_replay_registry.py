@@ -7,7 +7,7 @@
 
 from __future__ import annotations
 
-from scripts.check_test_assets import collect_pytest_selectors
+from scripts.checks.check_test_assets import collect_pytest_selectors
 from tests.assets.evidence import EVIDENCE_CLAIMS
 from tests.assets.selection import DETERMINISTIC_EXCLUDE
 from tests.scenarios.governance import validate_scenario_evidence

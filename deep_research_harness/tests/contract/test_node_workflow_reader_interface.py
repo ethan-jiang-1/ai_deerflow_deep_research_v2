@@ -17,7 +17,7 @@ from pathlib import Path
 import pytest
 
 from deerflow_deep_research.graph.prompt_catalog import prompt_catalog_cases
-from scripts.check_node_workflows import (
+from scripts.checks.check_node_workflows import (
     AUTHORITY_NOTICE,
     LLM_NODE_ROUTE_HEADING,
     NODE_ROOT,
@@ -69,7 +69,7 @@ def _card(node: str) -> str:
 
 
 def test_live_reader_inventory_passes() -> None:
-    from scripts.check_node_workflows import validate_reader_inventory
+    from scripts.checks.check_node_workflows import validate_reader_inventory
 
     validate_reader_inventory(Path(__file__).resolve().parents[3])
 

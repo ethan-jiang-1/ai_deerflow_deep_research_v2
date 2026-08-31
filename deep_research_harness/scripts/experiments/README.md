@@ -1,0 +1,18 @@
+# experiments/ — 实验尖刺
+
+> 放「回答一个设计问题」的临时脚本。零契约、只读优先、**不进 verify 门**。
+
+## 生命周期（进/出规则）
+
+1. **进**：实验脚本落本目录；它回答的问题与结论必须记进
+   `_backlog/plans/<对应 plan>.md` 的实验清单/进展记录（§L）。
+2. **毕业**：实验结论被 openspec change 采纳 → 实现进 `src/` 或提升到
+   `scripts/` 根 / `scripts/checks/`，本目录的尖刺稿随之删除（实现以 change 为准，
+   不留第二份）。
+3. **出**：问题被证伪或过时 → 直接删除，结论保留在 plan 里。
+
+## 现存
+
+| 脚本 | 回答的问题 | 状态 |
+| --- | --- | --- |
+| `tui_trace.py` | bundle 的逐超步 checkpoint 能否回放成 per-node 卡片流（TUI 步进轴 E1–E3） | ✅ 结论已落 `_backlog/plans/tui_step_progressive_plan.md`；C3 `add-tui-trace-observation` apply 时固化为交付物，届时删除本稿 |

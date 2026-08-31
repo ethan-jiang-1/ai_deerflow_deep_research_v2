@@ -42,7 +42,7 @@ def test_makefile_exposes_exact_non_mutating_verify_composition() -> None:
         assert re.search(rf"^{target}:\n\t@started=.* elapsed:", text, re.MULTILINE)
     assert (
         "test-duration-policy:\n"
-        "\tuv run python scripts/check_test_durations.py .reports/test-fast.xml "
+        "\tuv run python scripts/checks/check_test_durations.py .reports/test-fast.xml "
         "$(if $(PYTEST_XDIST),--parallel)"
     ) in text
     assert ('uv run $(PYTEST) $(PYTEST_XDIST) -m "not (requires_llm or release_e2e or periodic)"') in text
@@ -53,6 +53,6 @@ def test_makefile_exposes_exact_non_mutating_verify_composition() -> None:
         "\t\ttests/scenarios_periodic \\\n"
         '\t\t-m "periodic and not (requires_llm or release_e2e)" \\\n'
         "\t\t--durations=20 --junitxml=.reports/test-entry-environment.xml\n"
-        "\tuv run --no-sync python scripts/check_test_durations.py "
+        "\tuv run --no-sync python scripts/checks/check_test_durations.py "
         ".reports/test-entry-environment.xml --lane periodic"
     ) in text

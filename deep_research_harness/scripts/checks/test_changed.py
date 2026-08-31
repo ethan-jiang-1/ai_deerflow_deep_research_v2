@@ -22,7 +22,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-AGENT_ROOT = Path(__file__).resolve().parents[1]
+AGENT_ROOT = Path(__file__).resolve().parents[2]
 TEST_PREFIX = "tests/"
 
 

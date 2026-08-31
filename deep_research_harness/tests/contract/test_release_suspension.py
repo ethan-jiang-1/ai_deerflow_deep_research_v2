@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from scripts.check_test_assets import collect_pytest_selectors
+from scripts.checks.check_test_assets import collect_pytest_selectors
 from tests.assets.evidence import EVIDENCE_CLAIMS, AssetClass, FocusedSelection
 from tests.assets.selection import FAST_EXPRESSION, FAST_PATHS, PERIODIC_EXPRESSION, PERIODIC_PATHS
 

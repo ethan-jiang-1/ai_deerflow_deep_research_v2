@@ -16,9 +16,9 @@ from pathlib import Path
 import pytest
 
 from deerflow_deep_research.graph.topology import LOGICAL_NODES
-from scripts import check_test_assets
-from scripts.check_node_workflows import load_reader_inventory
-from scripts.check_test_assets import collect_pytest_selectors
+from scripts.checks import check_test_assets
+from scripts.checks.check_node_workflows import load_reader_inventory
+from scripts.checks.check_test_assets import collect_pytest_selectors
 from tests.assets.cognitive_program_board import COGNITIVE_PROGRAM_BOARD
 from tests.assets.evidence import (
     EVIDENCE_CLAIMS,

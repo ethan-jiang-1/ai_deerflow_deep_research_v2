@@ -8,7 +8,7 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from scripts.check_test_assets import collect_pytest_selectors
+from scripts.checks.check_test_assets import collect_pytest_selectors
 from tests.assets.evidence import EVIDENCE_CLAIMS
 from tests.assets.selection import FAST_PATHS, INTEGRATION_PATHS, LIVE_PATHS, PERIODIC_PATHS, WORKFLOW_PATHS
 

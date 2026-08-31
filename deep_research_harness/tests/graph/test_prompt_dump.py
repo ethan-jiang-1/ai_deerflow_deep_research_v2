@@ -16,7 +16,7 @@ import pytest
 from deerflow_deep_research.agents import factory as agent_factory
 from deerflow_deep_research.graph.prompt_catalog import prompt_catalog_cases
 from deerflow_deep_research.runtime import node_agent_bridge
-from scripts import prompt_dump
+from scripts.checks import prompt_dump
 
 
 @pytest.fixture

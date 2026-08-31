@@ -17,7 +17,7 @@ from deerflow_deep_research.agents.capabilities import load_node_agent_capabilit
 from deerflow_deep_research.domain.context import NodeExecutionResult
 from deerflow_deep_research.domain.enums import NodeFinishReason
 from scripts._demo_core import DemoAppConfig
-from scripts.check_test_assets import collect_deterministic_selectors, collect_pytest_selectors
+from scripts.checks.check_test_assets import collect_deterministic_selectors, collect_pytest_selectors
 from tests.assets.selection import LIVE_EXPRESSION, LIVE_PATHS
 from tests.scenarios import evidence_intake_live
 from tests.scenarios.canaries import LIVE_CANARIES, validate_live_canary_deadlines

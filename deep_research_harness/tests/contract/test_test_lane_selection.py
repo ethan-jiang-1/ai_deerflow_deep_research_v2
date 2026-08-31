@@ -13,7 +13,7 @@ import socket
 
 import pytest
 
-from scripts.check_test_assets import collect_pytest_selectors
+from scripts.checks.check_test_assets import collect_pytest_selectors
 from tests.assets.selection import (
     DETERMINISTIC_EXCLUDE,
     FAST_EXPRESSION,

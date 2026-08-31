@@ -21,13 +21,13 @@ from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from pathlib import Path
 
-AGENT_ROOT = Path(__file__).resolve().parents[1]
+AGENT_ROOT = Path(__file__).resolve().parents[2]
 if str(AGENT_ROOT) not in sys.path:
     sys.path.insert(0, str(AGENT_ROOT))
 
 from deerflow_deep_research.graph.registry import load_research_node_specs  # noqa: E402
 from deerflow_deep_research.graph.topology import LOGICAL_NODES  # noqa: E402
-from scripts.check_node_workflows import (  # noqa: E402
+from scripts.checks.check_node_workflows import (  # noqa: E402
     WorkflowReaderError,
     load_reader_inventory,
 )
@@ -134,7 +134,7 @@ PROVIDER_DISCOVERY_DISPOSITIONS = (
     *RELEASE_DISCOVERY_DISPOSITIONS_15_25,
 )
 DEFAULT_COLLECTION_COMMAND = (sys.executable,)
-CATALOG_SCRIPT = AGENT_ROOT / "scripts" / "collect_test_catalog.py"
+CATALOG_SCRIPT = AGENT_ROOT / "scripts" / "checks" / "collect_test_catalog.py"
 
 # Suite-level case budget: the deterministic gate must not grow without review.
 # Baselines are the measured 2026-08-22 counts (fast=2648, integration=304,

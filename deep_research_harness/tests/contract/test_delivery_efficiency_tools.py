@@ -13,8 +13,8 @@ from pathlib import Path
 
 import pytest
 
-from scripts.benchmark_fast import validate_report
-from scripts.check_test_durations import MAX_PERIODIC_TEST_SECONDS, DurationWaiver, slow_selectors
+from scripts.checks.benchmark_fast import validate_report
+from scripts.checks.check_test_durations import MAX_PERIODIC_TEST_SECONDS, DurationWaiver, slow_selectors
 
 
 def test_duration_policy_rejects_unwaived_and_expired_slow_test(tmp_path: Path) -> None:

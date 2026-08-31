@@ -47,7 +47,7 @@ ALL_CALIBRATION_CASES = tuple(case for registry in CALIBRATION_CASES_BY_REGISTRY
 
 
 def _reader_records():
-    from scripts.check_node_workflows import load_reader_inventory
+    from scripts.checks.check_node_workflows import load_reader_inventory
 
     return load_reader_inventory(REPO_ROOT)
 

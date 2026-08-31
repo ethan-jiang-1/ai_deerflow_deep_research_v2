@@ -137,7 +137,7 @@ Raw provider responses are not retained as test fixtures.
 `tests/assets/workflow_nodes.py` syntax-discovers every production graph-node package
 that invokes `run_agent`. Each discovered owner declares its applicable closed failure
 outcome classes and references collected deterministic evidence for both the phase seam
-and its lifecycle or work-controller projection. `scripts/check_test_assets.py` rejects
+and its lifecycle or work-controller projection. `scripts/checks/check_test_assets.py` rejects
 a missing owner, declared class, collected selector, or projection assertion, including
 an empty or mis-scoped discovery root. The inventory is a traceability join, not a retry
 or lifecycle authority; the scripted real-node and controller/lifecycle tests remain
@@ -169,7 +169,7 @@ implementation defect, or release result.
 The runtime-control digests in `evals/control/cases/*.json` pin each case to the exact
 source files it declares (prompts and domain modules). When a pinned source file
 changes, run `make control-digests-check` to see the drift and re-pin deliberately with
-`uv run python scripts/regenerate_control_digests.py` once the change is reviewed; the
+`uv run python scripts/checks/regenerate_control_digests.py` once the change is reviewed; the
 deterministic gate (`test-fast`) enforces the pin, so a stale digest turns the eval
 contracts red until re-pinned.
 
@@ -186,7 +186,7 @@ this directory, is offline-capable via `UV_OFFLINE=1 make verify`, and leaves
 The asset gate (`make test-assets`, part of `verify`) enforces a **suite-level case
 budget** in addition to coverage: each lane (fast / integration / workflow / live /
 periodic) and the deterministic total must stay under the limits declared in
-`scripts/check_test_assets.py::CASE_BUDGETS` / `DETERMINISTIC_TOTAL_BUDGET`. Adding
+`scripts/checks/check_test_assets.py::CASE_BUDGETS` / `DETERMINISTIC_TOTAL_BUDGET`. Adding
 tests beyond a budget without a current `CaseBudgetWaiver` (reason + owner +
 expiry) turns the gate red, so test-count growth is an explicit reviewed decision
 rather than silent accumulation. Budget baselines are the 2026-08-22 measured counts
@@ -210,7 +210,7 @@ clean-copy install cost is deliberately outside the rapid gate. Its scenarios ar
 credential-free, carry `periodic`, and are run with
 `UV_OFFLINE=1 make test-entry-environment-regression`, which writes
 `.reports/test-entry-environment.xml` and enforces a 180-second per-scenario duration
-budget. Owner/reason/expiry waivers live in `scripts/check_test_durations.py`; an expiry
+budget. Owner/reason/expiry waivers live in `scripts/checks/check_test_durations.py`; an expiry
 requires a deliberate renewal. `make test-assets` collects the periodic selectors to
 validate their central claims without running their process bodies. The distinct
 `agent-entry-environment-regression.yml` CI job runs the target for declared

@@ -219,7 +219,7 @@ files = [
 
 [paths.PRS-011]
 files = [
-  "deep_research_harness/scripts/prompt_dump.py",
+  "deep_research_harness/scripts/checks/prompt_dump.py",
   "deep_research_harness/src/deerflow_deep_research/agents/node_cognitive_control_program.py",
   "deep_research_harness/src/deerflow_deep_research/graph/prompt_catalog.py",
   "deep_research_harness/tests/contract/test_live_architecture_contract.py",
@@ -256,7 +256,7 @@ files = [
 
 [paths.PRS-014]
 files = [
-  "deep_research_harness/scripts/check_node_workflows.py",
+  "deep_research_harness/scripts/checks/check_node_workflows.py",
   "deep_research_harness/tests/contract/test_node_workflow_reader_interface.py",
 ]
 

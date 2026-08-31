@@ -171,31 +171,31 @@ test-strict-checkpoint:
 	@started=$$(date +%s); echo "strict-checkpoint: serde and current-only checkpoint admission"; LANGGRAPH_STRICT_MSGPACK=true uv run $(PYTEST) tests/unit/test_checkpoint_msgpack.py tests/unit/test_retained_checkpoint_cutover.py tests/unit/test_state_contracts.py tests/unit/test_bundle_graph_journal.py tests/engine/test_gate_kernel.py; status=$$?; echo "strict-checkpoint elapsed: $$(( $$(date +%s) - started ))s"; exit $$status
 
 test-duration-policy:
-	uv run python scripts/check_test_durations.py .reports/test-fast.xml $(if $(PYTEST_XDIST),--parallel)
+	uv run python scripts/checks/check_test_durations.py .reports/test-fast.xml $(if $(PYTEST_XDIST),--parallel)
 
 # Local iteration speed-up (L8): run only tests touched by the working-tree diff,
 # optionally plus the previously failed set. NOT part of verify/CI — the gate
 # stays the full lane selection. Usage: `make test-changed` or
 # `make test-changed ARGS="--last-failed --base HEAD~1"`.
 test-changed:
-	uv run python scripts/test_changed.py $(ARGS)
+	uv run python scripts/checks/test_changed.py $(ARGS)
 
 # Verify or re-pin the source-controlled eval control digests. Run --check
 # before/after any change to a pinned source file (prompts, domain modules);
 # re-pin deliberately with the same command after the change is reviewed.
 control-digests-check:
-	uv run python scripts/regenerate_control_digests.py --check
+	uv run python scripts/checks/regenerate_control_digests.py --check
 
 benchmark-fast:
-	uv run python scripts/benchmark_fast.py
+	uv run python scripts/checks/benchmark_fast.py
 
 # Opt-in local review projection. The deterministic verification gate does not invoke it.
 prompt-dump:
-	env -u VIRTUAL_ENV uv run python scripts/prompt_dump.py
+	env -u VIRTUAL_ENV uv run python scripts/checks/prompt_dump.py
 
 # Read-only validation of a reviewer-generated local projection.
 prompt-dump-check:
-	env -u VIRTUAL_ENV uv run python scripts/prompt_dump.py --check
+	env -u VIRTUAL_ENV uv run python scripts/checks/prompt_dump.py --check
 
 test-integration:
 	uv run $(PYTEST) $(PYTEST_XDIST) \
@@ -215,7 +215,7 @@ test-entry-environment-regression:
 		tests/scenarios_periodic \
 		-m "periodic and not (requires_llm or release_e2e)" \
 		--durations=20 --junitxml=.reports/test-entry-environment.xml
-	uv run --no-sync python scripts/check_test_durations.py .reports/test-entry-environment.xml --lane periodic
+	uv run --no-sync python scripts/checks/check_test_durations.py .reports/test-entry-environment.xml --lane periodic
 
 test-live:
 	rm -rf .reports/live
@@ -224,7 +224,7 @@ test-live:
 	LIVE_REPORT_DIR=.reports/live uv run $(LOCAL_ENV_ARG) $(PYTEST) -m "requires_llm and not release_e2e"
 
 test-assets:
-	uv run python scripts/check_test_assets.py
+	uv run python scripts/checks/check_test_assets.py
 
 test-unit:
 	uv run $(PYTEST) tests/unit

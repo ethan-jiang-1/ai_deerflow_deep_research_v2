@@ -22,8 +22,8 @@ import json
 import sys
 from pathlib import Path, PurePosixPath
 
-CONTROL_ROOT = Path(__file__).resolve().parents[1] / "evals" / "control"
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+CONTROL_ROOT = Path(__file__).resolve().parents[2] / "evals" / "control"
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 def _project_file(relative: str) -> Path:

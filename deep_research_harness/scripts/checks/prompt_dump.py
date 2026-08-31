@@ -17,7 +17,7 @@ import re
 import sys
 from pathlib import Path, PurePosixPath
 
-AGENT_ROOT = Path(__file__).resolve().parents[1]
+AGENT_ROOT = Path(__file__).resolve().parents[2]
 CATALOG_ROOT = AGENT_ROOT / ".node-prompt-review"
 if str(AGENT_ROOT) not in sys.path:
     sys.path.insert(0, str(AGENT_ROOT))
