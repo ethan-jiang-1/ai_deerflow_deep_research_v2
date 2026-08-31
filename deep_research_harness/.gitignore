@@ -8,3 +8,4 @@ evals/runs/
 .agents/
 .claude/
 .repro-tmp/
+.uv-cache/
