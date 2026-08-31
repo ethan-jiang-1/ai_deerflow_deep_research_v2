@@ -20,7 +20,7 @@
 
 | Plan | 类型 | 下一步 |
 |------|------|--------|
-| [tui_step_progressive_plan.md](tui_step_progressive_plan.md) | 递进执行计划 | TUI 步进轴（当前唯一活跃 plan）：Stage 0 拍板 D6/D7 → C3 观察叙述 → C4 步进驱动（openspec change 阶梯）；并行线含 B1 第 3 跑收尾 |
+| [tui_step_progressive_plan.md](tui_step_progressive_plan.md) | 递进执行计划 | Local workflow debugger（当前唯一活跃 plan）：历史 C1/C2 已归档；下一步只可 propose 新增纠错闸门 C0 observation truth，之后 C3 trace -> C4a headless driving -> C4b TUI adapter -> real validation；并行线含 B1 第 3 跑收尾 |
 
 **Next available plan ID: CLS-058**（移入 `_closed_plans/` 时分配）
 
@@ -31,9 +31,10 @@
 
 | Plan | 是什么 | 冻结日期 |
 |------|--------|----------|
-| [archive/tui-interactive-campaign.md](archive/tui-interactive-campaign.md) | 020 战役计划 v5（§10 = 步进轴设计权威） | 2026-08-31 |
+| [archive/tui-interactive-campaign.md](archive/tui-interactive-campaign.md) | 020 战役计划 v5（历史 provenance；§10 已被当前 progressive plan 取代） | 2026-08-31 |
 | [archive/tui-interactive-campaign-progress.md](archive/tui-interactive-campaign-progress.md) | 战役进度账本（Phase 0–8 全记录） | 2026-08-31 |
 | [archive/tui-interactive-campaign-review.md](archive/tui-interactive-campaign-review.md) | 独立审阅（已被 v4 消化） | 2026-08-31 |
+| [archive/tui-step-debugger-grounding-review.md](archive/tui-step-debugger-grounding-review.md) | 当前 debugger plan 的冻结证据底稿、纠错、E4 结果与被拒方案；不是执行权威 | 2026-08-31 |
 
 ## 已归档（移至 `_done/_closed_plans/`）
 
