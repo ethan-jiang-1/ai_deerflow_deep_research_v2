@@ -1,6 +1,6 @@
 # Active Todos — 活跃 todo + 依赖链 + 执行顺序
 
-> 最后更新: 2026-08-31 | `_backlog/todos/` — 活跃 todo 在此，做完移入 [`../_done/_done_todos/`](../_done/_done_todos/)。
+> 最后更新: 2026-08-31（walkthrough 完成，随 CLS-057 关账） | `_backlog/todos/` — 活跃 todo 在此，做完移入 [`../_done/_done_todos/`](../_done/_done_todos/)。
 >
 > **本文件是所有活跃工作的中枢。** todo 没有编号，文件名即标识（`todo-<name>.md`）。完成后文件名不变，位置即状态。
 
@@ -21,7 +21,6 @@
 |---|------|--------|------|-------------|
 | 1 | [todo-a009-risk-based-semantic-traceability.md](todo-a009-risk-based-semantic-traceability.md) | 低 | 为高风险改动设计有界语义 traceability | 仅在高风险 requirement change 明确触发时启动；当前没有可执行 action |
 | 2 | [todo-demo-workspace-cleanup-command.md](todo-demo-workspace-cleanup-command.md) | 中 | `make demo-clean` + workspace 只读盘点（现状零清理命令） | 与 BUG-064 配套（claim 语义前保守清理）；2026-08-30 B1 实跑期间撞出 |
-| 3 | [todo-run-lifecycle-walkthrough.md](todo-run-lifecycle-walkthrough.md) | 中 | run 生命周期 worked example（一个 bundle 的一生，术语按登场标注） | 属 plan `doc-gate-docs-layer-and-fresh-agent-narrative` 缺口 B；纯账本 prose 工作，无 change |
 
 ---
 
@@ -39,8 +38,8 @@
 
 ## 依赖链
 
-> N-002 与 A-002 已完成；A-004-T01 已暂停等待外部 owner。A-009 仍未满足启动条件；
-> run-lifecycle-walkthrough（plan 缺口 B）无前置依赖，可立即执行。
+> N-002 与 A-002 已完成；A-004-T01 已暂停等待外部 owner；run-lifecycle-walkthrough
+> 已完成（DONE-003）。A-009 仍未满足启动条件。
 
 ```mermaid
 flowchart LR
@@ -48,7 +47,7 @@ flowchart LR
   A002["A-002 completed"]
   T01["A-004-T01 suspended: upstream OpenSpec"]
   A009["A-009 candidate: trigger absent"]
-  PLN["plan: doc-gate-docs-layer-and-fresh-agent-narrative"] --> WLK["todo: run-lifecycle-walkthrough"]
+  WLK["todo: run-lifecycle-walkthrough completed (DONE-003)"]
 ```
 
 ---
@@ -59,9 +58,8 @@ flowchart LR
 
 | 顺序 | 项 | 为什么 |
 |------|-----|--------|
-| 1 | run-lifecycle-walkthrough | 有 plan 背书（缺口 B）、零依赖、纯文档工作；直接降低 fresh agent 的词汇税。 |
-| 2 | demo-workspace-cleanup-command | 等 BUG-064 claim 语义配套，动运行时脚本，成本更高；保持既有备注约束。 |
-| 3 | A-009 risk-based semantic traceability | 唯一被动候选，当前没有高风险 requirement change 触发；保持未排期，不能为"继续"而虚构实施。 |
+| 1 | demo-workspace-cleanup-command | 等 BUG-064 claim 语义配套，动运行时脚本；保持既有备注约束。 |
+| 2 | A-009 risk-based semantic traceability | 唯一被动候选，当前没有高风险 requirement change 触发；保持未排期，不能为"继续"而虚构实施。 |
 
 _（暂无排期。）_
 

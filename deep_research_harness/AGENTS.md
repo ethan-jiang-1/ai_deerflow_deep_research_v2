@@ -77,6 +77,7 @@ cognition is not causal. Do not invent a capability, prompt, or repair loop.
 
 | Need | Read first |
 | --- | --- |
+| How one run unfolds end to end (lifecycle vocabulary in order) | [`docs/run-lifecycle-walkthrough.md`](docs/run-lifecycle-walkthrough.md) |
 | Product use, setup, demo, or operator journey | [`README.md`](README.md) |
 | Runtime and authority boundaries | [`docs/runtime-architecture.md`](docs/runtime-architecture.md) |
 | Local commands and profiles | [`docs/local-operations.md`](docs/local-operations.md) |

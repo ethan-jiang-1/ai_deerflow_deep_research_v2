@@ -22,9 +22,8 @@
 | [tui-interactive-campaign-progress.md](tui-interactive-campaign-progress.md) | 进度 | 020 TUI 交互战役（原 010 手动 TUI）的落地进度账本；Phase 0/1/3/4 完成（含 BUG-060/061 change 闭环），战役主体 B1 未跑 |
 | [tui-interactive-campaign.md](tui-interactive-campaign.md) | 设计 | TUI 真人交互跑通真实 Deep Research（010 交互专项探路）；v4 已消化审阅；Stage 0/A 与 change 双闭环已执行，战役主体 B1 待跑 |
 | [tui-interactive-campaign-review.md](tui-interactive-campaign-review.md) | 审阅 | 校正 HITL2、CHOICE、证据归因、exact Bundle 与产品边界后再启动真实 API 战役 |
-| [doc-gate-docs-layer-and-fresh-agent-narrative.md](doc-gate-docs-layer-and-fresh-agent-narrative.md) | 设计 | CLS-056 两个收尾：doc gate 扩到 docs/ 层（`54886b8` 悬空句为引例，prose 修复已执行）+ run 生命周期叙事 todo；下一步开 change `doc-gate-docs-layer` |
 
-**Next available plan ID: CLS-057**（移入 `_closed_plans/` 时分配）
+**Next available plan ID: CLS-058**（移入 `_closed_plans/` 时分配）
 
 ## 已归档（移至 `_done/_closed_plans/`）
 
@@ -59,6 +58,7 @@
 | soft-bundle-session-cli.md | CLS-045 | 2026-08-18 |
 | low-scale-real-auto-runs.md | CLS-046 | 2026-08-18 |
 | test-regression-speedup.md | CLS-053 | 2026-08-22 |
+| doc-gate-docs-layer-and-fresh-agent-narrative.md | CLS-057 | 2026-08-31 |
 | openspec-product-boundary-portability.md | CLS-054 | 2026-08-17 |
 
 ---

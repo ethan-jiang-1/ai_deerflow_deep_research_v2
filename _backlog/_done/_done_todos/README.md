@@ -1,6 +1,6 @@
 # Done Todos Index — 已完成 todo 归档
 
-> 最后更新: 2026-08-13 | `_backlog/_done/_done_todos/` — 已完成 todo 的归档目录。
+> 最后更新: 2026-08-31 | `_backlog/_done/_done_todos/` — 已完成 todo 的归档目录。
 > 接收来自 [`../../todos/`](../../todos/) 的 todo。`_` 前缀 = coding agent 默认忽略。
 >
 > **todo 完成后文件名不变（`todo-<name>.md`），位置即状态。** 移入时分配 `DONE-NNN` 序号，按完成时间递增。
@@ -21,5 +21,6 @@ todo 完成后从 `_backlog/todos/` 通过 `git mv` 移入本目录：
 |----|------|------|---------|
 | DONE-001 | 2026-08-13 | [todo-n002-policy-routing-cardinality.md](todo-n002-policy-routing-cardinality.md) | 统一多 policy 路由术语，并归档对应 OpenSpec change。 |
 | DONE-002 | 2026-08-13 | [todo-a002-gitlink-boundary-detector.md](todo-a002-gitlink-boundary-detector.md) | 建立 `deerflow/` metadata-only gitlink boundary detector，并归档对应 OpenSpec change。 |
+| DONE-003 | 2026-08-31 | [todo-run-lifecycle-walkthrough.md](todo-run-lifecycle-walkthrough.md) | `docs/run-lifecycle-walkthrough.md`（97 行 reader projection）：一个 bundle 的一生，CONTEXT.md 术语按登场加粗；登记进 doc gate 范围并挂 Information Map（CLS-057 缺口 B）。 |
 
-**Next available DONE ID: DONE-003**
+**Next available DONE ID: DONE-004**

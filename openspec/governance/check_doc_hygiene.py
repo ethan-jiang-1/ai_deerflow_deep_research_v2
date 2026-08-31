@@ -56,6 +56,7 @@ DOC_LAYER_DOCS: tuple[str, ...] = (
     "deep_research_harness/docs/live-evaluation-baseline-2026-07-17.md",
     "deep_research_harness/docs/local-operations.md",
     "deep_research_harness/docs/regression-descent.md",
+    "deep_research_harness/docs/run-lifecycle-walkthrough.md",
     "deep_research_harness/docs/runtime-architecture.md",
     "deep_research_harness/docs/testing-and-evaluation.md",
     # docs/adr/ decision records and their index.
