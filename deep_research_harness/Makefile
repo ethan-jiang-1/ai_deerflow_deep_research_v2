@@ -1,10 +1,16 @@
 .PHONY: install entry-preflight verify lock-check format lint test test-fast test-integration test-workflow test-entry-environment-regression test-live test-unit test-contract test-viability test-durability test-blocking-io test-assets test-intake test-retained-observation test-work-unit test-strict-checkpoint test-duration-policy test-changed benchmark-fast prompt-dump prompt-dump-check profile-setup profile-preflight profiles profile-init profile-check profile-dev demo demo-scripted demo-fixture-graph demo-real demo-real-embedded-smoke demo-real-scripted demo-tui demo-tui-embedded-smoke demo-tui-fixture demo-tui-real-auto demo-sessions session-workbench debug-scripted-real-workflow soft-bundle demo-workspace-report demo-clean
 
 DEMO_ARGS ?=
-# Operator demo/session/soft-bundle/profile entry commands default to no uv cache:
-# sandboxed environments return EPERM reading the global uv cache and block every
-# such command (BUG-032). Override with UV_NO_CACHE=0. Verify goes further: it
-# relocates its cache into the workspace-local .uv-cache (see the verify target).
+# BUG-032 conclusion: sandboxed environments (DSH workspace-write) EPERM on the
+# global uv cache (~/.cache/uv), so EVERY uv invocation in this Makefile uses the
+# git-ignored workspace-local .uv-cache instead — installs, lock checks, lint,
+# tests, and the wheel-build contract test. The global cache is never read or
+# written. On a fresh clone (cold .uv-cache) warm it once online:
+#   UV_CACHE_DIR=$PWD/.uv-cache uv build --wheel --out-dir /tmp/warmup
+# Operator entry commands additionally set UV_NO_CACHE=1 (their `uv run
+# --locked --no-sync` never installs, so the cache is irrelevant to them).
+# Override with UV_NO_CACHE=0 if a cache-enabled entry run is wanted.
+export UV_CACHE_DIR := $(CURDIR)/.uv-cache
 UV_NO_CACHE ?= 1
 # Real demo targets default to the standard demo profile so runbook/script callers
 # that pass only DEMO_ARGS still launch; an explicitly empty PROFILE= is rejected.
@@ -51,13 +57,9 @@ profile-dev: profile-preflight
 	$(PROFILE_RUN) launch "$(PROFILE)"
 
 verify: export UV_NO_SYNC := 1
-# BUG-032: sandboxed environments get EPERM reading the global uv cache
-# (~/.cache/uv), so the gate relocates the cache into the git-ignored
-# workspace-local .uv-cache. UV_NO_SYNC=1 keeps uv from rebuilding the project
-# env; the local cache lets the wheel-build contract test resolve its hatchling
-# backend offline. On a fresh clone (cold .uv-cache) warm it once online:
-#   UV_CACHE_DIR=$PWD/.uv-cache uv build --wheel --out-dir /tmp/warmup
-verify: export UV_CACHE_DIR := $(CURDIR)/.uv-cache
+# The wheel-build contract test resolves its hatchling backend from the
+# workspace-local UV_CACHE_DIR exported above; it works offline once that
+# cache is warm (see the warm-up note at the top of this file).
 verify: lock-check lint test-assets test-fast test-integration test-workflow
 
 # Fixed fixture-graph lifecycle demo. Zero API, no Gateway, config.yaml,
