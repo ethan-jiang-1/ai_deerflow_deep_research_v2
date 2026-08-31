@@ -1,13 +1,13 @@
 ---
 name: openspec-archive-change
 description: Archive a completed change in the experimental workflow. Use when the user wants to finalize and archive a change after implementation is complete.
-allowed-tools: Bash(openspec:*), Bash(python3:*), Bash(python:*), Bash(git:*)
+allowed-tools: Bash(openspec:*)
 license: MIT
 compatibility: Requires openspec CLI.
 metadata:
   author: openspec
   version: "1.0"
-  generatedBy: "1.9.0"
+  generatedBy: "1.11.0"
 ---
 
 Archive a completed change in the experimental workflow.
@@ -72,39 +72,6 @@ Archive a completed change in the experimental workflow.
    - Display warning listing incomplete artifacts
    - Ask the user to confirm they want to proceed
    - Proceed if user confirms
-
-2b. **Run the deterministic project-governance closeout gate**
-
-   From the repository root, run:
-
-   ```bash
-   python3 openspec/governance/check_project_gate.py --phase closeout
-   ```
-
-   This is an independent deterministic gate over the registered OpenSpec component
-   checkers. Its stopping authority comes solely from component checker exit codes; it
-   is not operation guidance and not selected-change closeout evidence. A non-zero
-   result stops this repository-managed archive workflow with the failing checker
-   named; fix the named finding and re-run until it exits zero. A direct native
-   `openspec archive` invocation is never blocked or modified by this gate; the stop is
-   repository workflow enforcement only.
-
-   **Bootstrap (gate not yet present):** when `check_project_gate.py` does not exist in
-   this checkout, run each of the six registered component checkers individually from
-   the repository root and preserve each exact exit code:
-
-   ```bash
-   python3 openspec/governance/check_project_reqs.py
-   python3 openspec/governance/check_project_specs.py
-   python3 openspec/governance/check_project_architecture.py
-   python3 openspec/governance/check_change_guidance.py
-   python3 openspec/governance/check_project_req_coverage.py
-   python3 openspec/governance/check_harness_dependency_direction.py
-   ```
-
-   Treat a non-zero component the same way — report it and do not proceed through the
-   repository-managed archive workflow. Report plainly that the aggregate gate was not
-   available and which component checks ran.
 
 3. **Check task completion status**
 
@@ -202,7 +169,7 @@ Archive a completed change in the experimental workflow.
 **Guardrails**
 - Announce the selected change; prompt for selection when it is ambiguous
 - Use artifact graph (openspec status --json) for completion checking
-- Don't block archive on advisory warnings or incomplete-task confirmation alone - just inform and confirm; this does not apply to the deterministic closeout gate in step 2b, whose non-zero exit stops the repository-managed workflow
+- Don't block archive on warnings - just inform and confirm
 - Preserve .openspec.yaml when moving to archive (it moves with the directory)
 - Show clear summary of what happened
 - If sync is requested, run the `openspec-sync-specs` workflow inline (agent-driven)
