@@ -16,9 +16,8 @@
 
 | Bug | 标题 | 发现 | 状态 |
 |-----|------|------|------|
-| （无活跃 bug） |
 
-**Next available bug ID: BUG-066**
+**Next available bug ID: BUG-067**
 
 
 ---

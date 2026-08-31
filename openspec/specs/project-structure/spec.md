@@ -1,6 +1,6 @@
 # project-structure Specification
 
-> req: PRS-001, PRS-002, PRS-003, PRS-004, PRS-005, PRS-006, PRS-007, PRS-009, PRS-010, PRS-011, PRS-012, PRS-013, PRS-014, PRS-015, PRS-016, PRS-017, PRS-018, PRS-019, PRS-020, PRS-021
+> req: PRS-001, PRS-002, PRS-003, PRS-004, PRS-005, PRS-006, PRS-007, PRS-009, PRS-010, PRS-011, PRS-012, PRS-013, PRS-014, PRS-015, PRS-016, PRS-017, PRS-018, PRS-019, PRS-020, PRS-021, PRS-022
 > structure: openspec/governance/project-structure.toml
 
 ## Purpose
@@ -105,6 +105,25 @@ governance script's `@impl` declaration and SHALL NOT require a parallel pytest 
   component checker with exit-code preservation and read-only behavior, delegates
   plan-phase semantics to the owning component scopes, adds no duplicate closeout
   consistency checker, and never writes the requirement registry or judges prose
+
+### Requirement: Registered ignore policy mirrors the harness gitignore
+
+The project-structure manifest's registered ignore policy (`[ignored_paths].entries`
+in `openspec/governance/project-structure.toml`) SHALL mirror the effective
+`deep_research_harness/.gitignore` directory entries exactly — same lines, same
+order — and the architecture checker SHALL fail closed (`ignore.entries`) on any
+drift between the two. The `.gitignore` remains the fact source for locally ignored
+paths; the manifest remains the single registered policy the checker compares
+against, and neither surface SHALL be synchronized by editing only one side.
+(`PRS-022`)
+
+#### Scenario: Registered ignore policy matches the harness gitignore
+- **WHEN** the architecture checker compares `[ignored_paths].entries` with `deep_research_harness/.gitignore`
+- **THEN** the comparison passes only on exact ordered equality, and the governance gate exits 0 on a clean working tree
+
+#### Scenario: Ignore policy drift fails closed
+- **WHEN** `.gitignore` gains, loses, or reorders an ignored directory without a synchronized manifest entry (as happened when `.uv-cache/` landed in commit `07a7a1c` without a registry sync — BUG-066)
+- **THEN** the checker reports `ignore.entries` and exits nonzero instead of accepting a partially synchronized policy
 
 ### Requirement: Reader-interface validation uses canonical downstream governance paths
 
