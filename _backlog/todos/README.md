@@ -19,8 +19,7 @@
 
 | # | 文件 | 优先级 | 简述 | 阻塞 / 备注 |
 |---|------|--------|------|-------------|
-| 1 | [todo-a009-risk-based-semantic-traceability.md](todo-a009-risk-based-semantic-traceability.md) | 低 | 为高风险改动设计有界语义 traceability | 仅在高风险 requirement change 明确触发时启动；当前没有可执行 action |
-| 2 | [todo-demo-workspace-cleanup-command.md](todo-demo-workspace-cleanup-command.md) | 中 | `make demo-clean` + workspace 只读盘点（现状零清理命令） | 与 BUG-064 配套（claim 语义前保守清理）；2026-08-30 B1 实跑期间撞出 |
+| 1 | [todo-demo-workspace-cleanup-command.md](todo-demo-workspace-cleanup-command.md) | 中 | `make demo-clean` + workspace 只读盘点（现状零清理命令） | 与 BUG-064 配套（claim 语义前保守清理）；2026-08-30 B1 实跑期间撞出；2026-08-31 复核仍无清理命令 |
 
 ---
 
@@ -29,6 +28,7 @@
 | 项 | 暂停原因 | 重启条件 |
 | --- | --- | --- |
 | A-004-T01 scenario-rename validator | 当前行为由外部 `@fission-ai/openspec@1.8.0` 共同的 validate/archive scenario-presence guard 拥有；本仓没有安全局部修改。 | 用户单独授权对 Fission-AI/OpenSpec 的 issue/proposal/PR，或授权调查一个明确支持 scenario identity/rename 的版本升级。 |
+| A-009 risk-based semantic traceability | 长期候选未排期（2026-08-13 起），触发条件自创建起从未满足，无任何可执行 action。 | 出现高风险 requirement change 且审查明确需要 scenario 级语义 traceability 时重新设计。 |
 
 完整卡片和研究证据在
 [`../_done/_suspended_plans/todo-a004t01-openspec-scenario-rename-validator.md`](../_done/_suspended_plans/todo-a004t01-openspec-scenario-rename-validator.md)
@@ -38,15 +38,14 @@
 
 ## 依赖链
 
-> N-002 与 A-002 已完成；A-004-T01 已暂停等待外部 owner；run-lifecycle-walkthrough
-> 已完成（DONE-003）。A-009 仍未满足启动条件。
+> N-002 与 A-002 已完成；A-004-T01 与 A-009 已暂停（后者长期无触发条件）；
+> run-lifecycle-walkthrough 已完成（DONE-003）。
 
 ```mermaid
 flowchart LR
   N002["N-002 completed"] --> Close["alignment audit closed"]
   A002["A-002 completed"]
   T01["A-004-T01 suspended: upstream OpenSpec"]
-  A009["A-009 candidate: trigger absent"]
   WLK["todo: run-lifecycle-walkthrough completed (DONE-003)"]
 ```
 
@@ -58,8 +57,7 @@ flowchart LR
 
 | 顺序 | 项 | 为什么 |
 |------|-----|--------|
-| 1 | demo-workspace-cleanup-command | 等 BUG-064 claim 语义配套，动运行时脚本；保持既有备注约束。 |
-| 2 | A-009 risk-based semantic traceability | 唯一被动候选，当前没有高风险 requirement change 触发；保持未排期，不能为"继续"而虚构实施。 |
+| 1 | demo-workspace-cleanup-command | 当前唯一活跃 todo；BUG-064 attach/claim 已落地（6df126f），保守清理的配套语义已具备，可开工。 |
 
 _（暂无排期。）_
 

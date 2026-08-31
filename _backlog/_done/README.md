@@ -34,7 +34,7 @@ _done/
 | 归档目录 | 数量 | 重启方式 |
 |---------|------|---------|
 | `_suspended_bugs/` | 0 | 确认修复后移回活跃 bug 流程 |
-| `_suspended_plans/` | 5 | — |
+| `_suspended_plans/` | 6 | — |
 
 _Closed plan count follows the indexed CLS records; each future move increments the count and Next ID together._
 
