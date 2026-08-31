@@ -82,6 +82,7 @@ bug 修完后从 `_backlog/bugs/` 通过 `git mv` 移入本目录：
 | BUG-062 | 2026-08-30 | wave2_synthesis 单次 provider.timeout（wall-time 16m22s）无重试即全 run 终局 blocked——瞬态超时拆出 budget-class、预算内有界重试（close-provider-timeout-budget-handback） |
 | BUG-063 | 2026-08-30 | HITL interrupt 挂起被 journal 记为 internal.unexpected——挂起/崩溃分类学修正（add-suspended-run-recovery） |
 | BUG-064 | 2026-08-30 | 断网/进程死亡无 attach/resume 入口——孤儿 legal_next_action=RESUME + checkpoint 续跑 + TUI attach + 诊断锁（add-suspended-run-recovery） |
+| BUG-065 | 2026-08-31 | wheel 排除契约测试全树冷缓存并行首跑一次性假红——`uv build` timeout 60s 在满载下不够（负例控制坐实失败通路），提至 300s |
 
 **Next available bug ID: BUG-066**
 

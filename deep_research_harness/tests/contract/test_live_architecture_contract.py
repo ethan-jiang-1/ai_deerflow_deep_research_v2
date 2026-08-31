@@ -37,7 +37,11 @@ def test_production_wheel_excludes_fixture_package() -> None:
             check=False,
             capture_output=True,
             text=True,
-            timeout=60,
+            # Serial cold build costs ~29s; under a cold-cache full-tree -n 4
+            # run the isolated build environment competes with three loaded
+            # workers, and a 60s budget produced one spurious TimeoutExpired
+            # red (BUG-065). 300s still bounds a genuinely hung build.
+            timeout=300,
         )
         assert result.returncode == 0, result.stderr
         wheels = list(Path(temporary).glob("*.whl"))
