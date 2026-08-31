@@ -1,5 +1,7 @@
 """Attach projection for recoverable bundles (RED-011, BUG-064).
 
+@impl RED-011
+
 Presentation-only contract: the scan filters lifecycle-projected RESUME
 bundles, the card renders the bounded choice list, and no other state changes.
 """
