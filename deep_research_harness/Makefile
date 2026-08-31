@@ -1,4 +1,4 @@
-.PHONY: install entry-preflight verify lock-check format lint test test-fast test-integration test-workflow test-entry-environment-regression test-live test-unit test-contract test-viability test-durability test-blocking-io test-assets test-intake test-retained-observation test-work-unit test-strict-checkpoint test-duration-policy test-changed benchmark-fast prompt-dump prompt-dump-check profile-setup profile-preflight profiles profile-init profile-check profile-dev demo demo-scripted demo-fixture-graph demo-real demo-real-embedded-smoke demo-real-scripted demo-tui demo-tui-embedded-smoke demo-tui-fixture demo-tui-real-auto demo-sessions session-workbench debug-scripted-real-workflow soft-bundle
+.PHONY: install entry-preflight verify lock-check format lint test test-fast test-integration test-workflow test-entry-environment-regression test-live test-unit test-contract test-viability test-durability test-blocking-io test-assets test-intake test-retained-observation test-work-unit test-strict-checkpoint test-duration-policy test-changed benchmark-fast prompt-dump prompt-dump-check profile-setup profile-preflight profiles profile-init profile-check profile-dev demo demo-scripted demo-fixture-graph demo-real demo-real-embedded-smoke demo-real-scripted demo-tui demo-tui-embedded-smoke demo-tui-fixture demo-tui-real-auto demo-sessions session-workbench debug-scripted-real-workflow soft-bundle demo-workspace-report demo-clean
 
 DEMO_ARGS ?=
 # Operator demo/session/soft-bundle/profile entry commands default to no uv cache:
@@ -106,6 +106,17 @@ demo-sessions: entry-preflight
 # and session entry points; never a product lifecycle surface.
 soft-bundle: entry-preflight
 	PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) python scripts/soft_bundle.py $(DEMO_ARGS)
+
+# Read-only demo workspace inventory (bundles, lifecycle status, sizes; operator
+# view, not a lifecycle authority; DPL-014).
+demo-workspace-report: entry-preflight
+	PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) python scripts/soft_bundle.py workspace-report
+
+# Guarded demo workspace cleanup: dry-run by default; CONFIRM=1 deletes only
+# terminal bundles (never non-terminal/resumable ones); `DEMO_ARGS="--logs"`
+# also cleans the logs subtree under the same confirmation gate.
+demo-clean: entry-preflight
+	PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) python scripts/soft_bundle.py workspace-clean $(DEMO_ARGS)
 
 # Fixed-profile local operator surface. It is not Gateway, Web, upstream Terminal
 # Workbench, or a generic recovery client, and accepts no profile/path authority.

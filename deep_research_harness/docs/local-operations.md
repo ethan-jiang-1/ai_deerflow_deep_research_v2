@@ -244,9 +244,13 @@ authorize `status`, `resume`, `cancel`, `refine`, State reconstruction, or Bundl
 recreation.
 
 Use `make demo-sessions DEMO_ARGS="inspect <bundle-id>"` only to inspect such an observation.
-There is no observation-backed list, open, discovery, cleanup, or lifecycle-control
-command. A missing or corrupt observation is reported as unavailable for inspection and
-does not alter the underlying Bundle result.
+There is still no observation-backed list, open, discovery, or lifecycle-control command;
+a missing or corrupt observation is reported as unavailable for inspection and does not
+alter the underlying Bundle result. The separate operator-only workspace pair
+`make demo-workspace-report` (read-only inventory) and `make demo-clean` (guarded
+cleanup: dry-run by default, `CONFIRM=1` deletes only terminal bundles, never
+non-terminal ones; `DEMO_ARGS="--logs"` includes the logs subtree) is a view over local
+files — never a lifecycle control surface.
 
 When a returned lifecycle result says a Bundle is unavailable, start a distinct run if
 its legal next action allows it. Do not try to migrate or copy local diagnostics into a

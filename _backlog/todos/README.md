@@ -1,6 +1,6 @@
 # Active Todos — 活跃 todo + 依赖链 + 执行顺序
 
-> 最后更新: 2026-08-31（walkthrough 完成，随 CLS-057 关账） | `_backlog/todos/` — 活跃 todo 在此，做完移入 [`../_done/_done_todos/`](../_done/_done_todos/)。
+> 最后更新: 2026-08-31（demo-workspace-cleanup 完成，DONE-004） | `_backlog/todos/` — 活跃 todo 在此，做完移入 [`../_done/_done_todos/`](../_done/_done_todos/)。
 >
 > **本文件是所有活跃工作的中枢。** todo 没有编号，文件名即标识（`todo-<name>.md`）。完成后文件名不变，位置即状态。
 
@@ -19,7 +19,7 @@
 
 | # | 文件 | 优先级 | 简述 | 阻塞 / 备注 |
 |---|------|--------|------|-------------|
-| 1 | [todo-demo-workspace-cleanup-command.md](todo-demo-workspace-cleanup-command.md) | 中 | `make demo-clean` + workspace 只读盘点（现状零清理命令） | 与 BUG-064 配套（claim 语义前保守清理）；2026-08-30 B1 实跑期间撞出；2026-08-31 复核仍无清理命令 |
+| （无活跃 todo） |
 
 ---
 
@@ -57,7 +57,7 @@ flowchart LR
 
 | 顺序 | 项 | 为什么 |
 |------|-----|--------|
-| 1 | demo-workspace-cleanup-command | 当前唯一活跃 todo；BUG-064 attach/claim 已落地（6df126f），保守清理的配套语义已具备，可开工。 |
+_（暂无活跃 todo；A-009 与 A-004-T01 见上方暂停表。）_
 
 _（暂无排期。）_
 

@@ -45,18 +45,17 @@ soft-bundle 辅助动词：`inspect` / `phases` / `status` / `verify`（对同�
 | `make session-workbench` | 本地 Bundle 只读投影（时间线/目录），不是恢复客户端 |
 | TUI 日志 | `.deep-research-demo-runs/logs/tui-<pid>.log`（另 `gateway-*.stderr.log`） |
 
-## 3. workspace 与清理（现状：**没有清理命令**）
-
-`.deep-research-demo-runs/`（workspace bundles / logs / outputs）**只会增长，
-没有 list/cleanup 生命周期命令**（`docs/local-operations.md` 明示此空缺）。
+## 3. workspace 与清理
 
 - **bundle 历史是证据**：战役验收用"启动前目录快照 vs 退出后唯一新增"绑定
   （runbook §exact-bundle），对照跑（如 003）依赖历史 bundle——**别随手删**；
-- 手工清理（明确不需要历史证据时）：`rm -rf .deep-research-demo-runs/workspace`
-  之后**必须重新做基线快照**，且不要在有进行中 run / 活跃战役时做；
-- 官方 `demo-clean` 设计约束见 todo
-  [`todo-demo-workspace-cleanup-command`](../_backlog/todos/todo-demo-workspace-cleanup-command.md)
-  （与 BUG-064 的 attach/claim 语义配套：清不掉的东西先要能认领）。
+- 盘点：`make demo-workspace-report`——只读列出 workspace 内全部 bundle 的
+  id / 生命周期状态 / 大小，非 terminal 标注 `resumable`，另给 logs 与 archive 摘要；
+- 清理：`make demo-clean` 默认 **dry-run**（只列将删/将留，零删除）；
+  `CONFIRM=1 make demo-clean` 才真删，且**只删 terminal bundle**（suspended 等
+  非 terminal 可被 attach/resume，永不触碰）；`CONFIRM=1 make demo-clean DEMO_ARGS="--logs"`
+  连 logs 一起清（同一确认门）；
+- 真删后**必须重新做基线快照**（命令输出会重申），且不要在有进行中 run / 活跃战役时做。
 
 ## 4. 验证与开发
 

@@ -23,4 +23,6 @@ todo 完成后从 `_backlog/todos/` 通过 `git mv` 移入本目录：
 | DONE-002 | 2026-08-13 | [todo-a002-gitlink-boundary-detector.md](todo-a002-gitlink-boundary-detector.md) | 建立 `deerflow/` metadata-only gitlink boundary detector，并归档对应 OpenSpec change。 |
 | DONE-003 | 2026-08-31 | [todo-run-lifecycle-walkthrough.md](todo-run-lifecycle-walkthrough.md) | `docs/run-lifecycle-walkthrough.md`（97 行 reader projection）：一个 bundle 的一生，CONTEXT.md 术语按登场加粗；登记进 doc gate 范围并挂 Information Map（CLS-057 缺口 B）。 |
 
-**Next available DONE ID: DONE-004**
+| DONE-004 | 2026-08-31 | [todo-demo-workspace-cleanup-command.md](todo-demo-workspace-cleanup-command.md) | `make demo-workspace-report` + `make demo-clean`（dry-run 默认 / CONFIRM=1 仅删 terminal / 日志分离 / 基线警示），change `2026-08-31-demo-workspace-cleanup` 归档（DPL-014） |
+
+**Next available DONE ID: DONE-005**

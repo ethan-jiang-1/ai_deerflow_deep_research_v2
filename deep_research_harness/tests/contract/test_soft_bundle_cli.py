@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -37,11 +38,13 @@ def _patch_paths(tmp_path: Path):
     runs.mkdir(parents=True)
     soft_root = runs / "soft-bundles"
     soft_root.mkdir(parents=True)
+    logs = harness / ".deep-research-demo-runs" / "logs"
     return patch.multiple(
         soft_bundle,
         HARNESS=harness,
         RUNS_ROOT=runs,
         DEFAULT_SOFT_BUNDLES_ROOT=soft_root,
+        LOGS_ROOT=logs,
     )
 
 
@@ -926,3 +929,147 @@ def test_clean_run_bundles_empty_root_creates_no_archive(tmp_path: Path, capsys)
         assert (runs / "deep-research").is_dir() and not any((runs / "deep-research").iterdir())
         assert (runs / "scripted-real").is_dir() and not any((runs / "scripted-real").iterdir())
         assert "archived prior run bundles" not in capsys.readouterr().out
+
+
+# ---------------------------------------------------------------------------
+# DPL-014: guarded workspace report / workspace-clean
+# ---------------------------------------------------------------------------
+
+
+def _make_bundle(scopes: Path, status: str | None) -> Path:
+    bundle_dir = scopes / "s_test" / f"b_{'t' * 24}{len(list(scopes.rglob('b_*')))}"
+    (bundle_dir / "diagnostics").mkdir(parents=True)
+    (bundle_dir / "work").mkdir(parents=True)
+    (bundle_dir / "work" / "content.txt").write_text("payload", encoding="utf-8")
+    if status is None:
+        (bundle_dir / "diagnostics" / "run-summary.json").write_text("{not json", encoding="utf-8")
+    else:
+        summary = {"status": status}
+        (bundle_dir / "diagnostics" / "run-summary.json").write_text(json.dumps(summary), encoding="utf-8")
+    return bundle_dir
+
+
+def _make_workspace(tmp_path: Path) -> tuple[Path, Path, Path, Path]:
+    """Terminal + suspended + unreadable bundles, a soft record each, and logs."""
+    harness = tmp_path / "harness"
+    runs = harness / ".deep-research-demo-runs" / "workspace"
+    scopes = runs / "deep-research" / "scopes"
+    terminal = _make_bundle(scopes, "completed")
+    suspended = _make_bundle(scopes, "suspended")
+    unknown = _make_bundle(scopes, None)
+    soft_root = runs / "soft-bundles" / "demo-root"
+    (soft_root / "bundles").mkdir(parents=True)
+    for bundle in (terminal, suspended, unknown):
+        (soft_root / "bundles" / f"{bundle.name}.json").write_text("{}", encoding="utf-8")
+    logs = harness / ".deep-research-demo-runs" / "logs"
+    logs.mkdir(parents=True)
+    (logs / "tui-1.log").write_text("log line", encoding="utf-8")
+    return terminal, suspended, unknown, soft_root
+
+
+def _tree_state(root: Path) -> list[tuple[str, bytes]]:
+    return sorted((str(p.relative_to(root)), p.read_bytes()) for p in root.rglob("*") if p.is_file())
+
+
+def test_workspace_report_inventories_bundles(tmp_path: Path, capsys) -> None:
+    """@impl DPL-014
+
+    Report lists every live bundle with lifecycle status, flags non-terminal
+    bundles as resumable, and stays an operator view (not a lifecycle authority).
+    """
+    with _patch_paths(tmp_path):
+        terminal, suspended, unknown, _ = _make_workspace(tmp_path)
+        code = soft_bundle.cmd_workspace_report(_args())
+        out = capsys.readouterr().out
+        assert code == 0
+        assert "not a lifecycle authority" in out
+        assert terminal.name in out and "terminal (completed)" in out
+        assert suspended.name in out and "resumable (status: suspended)" in out
+        assert unknown.name in out and "resumable (status: unknown)" in out
+        assert "logs:" in out and "archive:" in out
+
+
+def test_workspace_clean_dry_run_deletes_nothing(tmp_path: Path, capsys) -> None:
+    """@impl DPL-014
+
+    Without CONFIRM=1 the cleanup is a dry run: nothing is deleted and both
+    would-delete and would-keep sides are listed.
+    """
+    terminal, suspended, unknown, soft_root = None, None, None, None
+    with _patch_paths(tmp_path):
+        terminal, suspended, unknown, soft_root = _make_workspace(tmp_path)
+        before = _tree_state(terminal.parent)
+        code = soft_bundle.cmd_workspace_clean(_args(logs=False))
+        out = capsys.readouterr().out
+        assert code == 0
+        assert "dry-run" in out and "no deletion performed" in out
+        assert terminal.name in out and suspended.name in out
+        assert _tree_state(terminal.parent) == before
+        assert terminal.is_dir() and suspended.is_dir() and unknown.is_dir()
+        assert (soft_root / "bundles" / f"{terminal.name}.json").is_file()
+
+
+def test_workspace_clean_confirmed_deletes_only_terminal(tmp_path: Path, capsys) -> None:
+    """@impl DPL-014
+
+    CONFIRM=1 deletes only terminal bundles and their soft-bundle records;
+    non-terminal bundles are byte-identical afterwards and keep their records.
+    """
+    with _patch_paths(tmp_path), patch.dict(os.environ, {"CONFIRM": "1"}):
+        terminal, suspended, unknown, soft_root = _make_workspace(tmp_path)
+        suspended_before = _tree_state(suspended)
+        unknown_before = _tree_state(unknown)
+        code = soft_bundle.cmd_workspace_clean(_args(logs=False))
+        out = capsys.readouterr().out
+        assert code == 0
+        assert not terminal.exists()
+        assert not (soft_root / "bundles" / f"{terminal.name}.json").exists()
+        assert suspended.exists() and _tree_state(suspended) == suspended_before
+        assert unknown.exists() and _tree_state(unknown) == unknown_before
+        assert (soft_root / "bundles" / f"{suspended.name}.json").is_file()
+        assert "baseline snapshots are invalidated" in out
+
+
+def test_workspace_clean_unreadable_status_is_kept(tmp_path: Path, capsys) -> None:
+    """@impl DPL-014
+
+    A bundle whose run summary cannot be read is treated as non-terminal: it is
+    kept in confirmed mode and reported with an unknown status.
+    """
+    with _patch_paths(tmp_path), patch.dict(os.environ, {"CONFIRM": "1"}):
+        terminal, suspended, unknown, _ = _make_workspace(tmp_path)
+        code = soft_bundle.cmd_workspace_clean(_args(logs=False))
+        out = capsys.readouterr().out
+        assert code == 0
+        assert terminal.exists() is False
+        assert unknown.exists() and "unknown" in out
+
+
+def test_workspace_clean_logs_scope_is_gated(tmp_path: Path, capsys, monkeypatch) -> None:
+    """@impl DPL-014
+
+    Log files are removed only when the separate logs scope is requested AND
+    CONFIRM=1 is set; either gate alone keeps them.
+    """
+    with _patch_paths(tmp_path), patch.dict(os.environ, {"CONFIRM": "1"}):
+        _make_workspace(tmp_path)
+        logs = tmp_path / "harness" / ".deep-research-demo-runs" / "logs"
+        code = soft_bundle.cmd_workspace_clean(_args(logs=False))
+        assert code == 0
+        assert (logs / "tui-1.log").is_file()
+        code = soft_bundle.cmd_workspace_clean(_args(logs=True))
+        out = capsys.readouterr().out
+        assert code == 0
+        assert "logs cleaned" in out
+        assert not logs.exists() or not any(logs.iterdir())
+
+    monkeypatch.delenv("CONFIRM", raising=False)
+    (tmp_path / "second").mkdir()
+    with _patch_paths(tmp_path / "second"):
+        _make_workspace(tmp_path / "second")
+        logs = tmp_path / "second" / "harness" / ".deep-research-demo-runs" / "logs"
+        code = soft_bundle.cmd_workspace_clean(_args(logs=True))
+        out = capsys.readouterr().out
+        assert code == 0
+        assert "logs cleaned" not in out
+        assert (logs / "tui-1.log").is_file()

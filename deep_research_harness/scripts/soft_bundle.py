@@ -32,6 +32,10 @@ from deerflow_deep_research.runtime.run_observation import RunObservationStore
 HARNESS = Path(__file__).resolve().parents[1]
 RUNS_ROOT = HARNESS / ".deep-research-demo-runs" / "workspace"
 DEFAULT_SOFT_BUNDLES_ROOT = RUNS_ROOT / "soft-bundles"
+LOGS_ROOT = HARNESS / ".deep-research-demo-runs" / "logs"
+
+TERMINAL_STATUSES = frozenset({"completed", "stopped", "cancelled", "blocked"})
+ARCHIVE_SUBDIR = "archive"
 
 BUNDLE_ID_RE = re.compile(r"^b_[A-Za-z0-9_-]{20,}$")
 MANIFEST_NAME = "manifest.json"
@@ -175,6 +179,95 @@ def _clean_run_bundles() -> None:
     (RUNS_ROOT / "scripted-real").mkdir(parents=True, exist_ok=True)
     for archive in archived:
         print(f"archived prior run bundles -> {_to_relative(archive)}")
+
+
+def _dir_size(path: Path) -> int:
+    total = 0
+    for item in path.rglob("*"):
+        try:
+            if item.is_file():
+                total += item.stat().st_size
+        except OSError:
+            continue
+    return total
+
+
+def _bundle_status(bundle_dir: Path) -> str | None:
+    """Read the run summary's lifecycle status; ``None`` when unreadable.
+
+    Fail-closed on purpose (DPL-014): an unreadable run summary means the bundle
+    is treated as non-terminal and never becomes a cleanup candidate.
+    """
+    summary = bundle_dir / "diagnostics" / "run-summary.json"
+    try:
+        data = json.loads(summary.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    status = data.get("status")
+    return status if isinstance(status, str) else None
+
+
+def _live_bundles(runs_root: Path) -> list[Path]:
+    """Live (non-archived) bundle directories under the workspace."""
+    if not runs_root.exists():
+        return []
+    return sorted(
+        (p for p in runs_root.rglob("b_*") if p.is_dir() and ARCHIVE_SUBDIR not in p.relative_to(runs_root).parts),
+        key=lambda p: p.name,
+    )
+
+
+def collect_workspace(runs_root: Path) -> list[dict]:
+    """Inventory every live run bundle with its lifecycle status and size."""
+    entries: list[dict] = []
+    for bundle_dir in _live_bundles(runs_root):
+        status = _bundle_status(bundle_dir)
+        entries.append(
+            {
+                "bundle_id": bundle_dir.name,
+                "path": bundle_dir,
+                "status": status,
+                "terminal": status in TERMINAL_STATUSES,
+                "size_bytes": _dir_size(bundle_dir),
+            }
+        )
+    return entries
+
+
+def clean_workspace(
+    runs_root: Path,
+    logs_root: Path,
+    *,
+    confirm: bool,
+    clean_logs: bool,
+) -> dict:
+    """Guarded workspace cleanup: only terminal bundles are ever deleted.
+
+    Dry-run default (``confirm=False``) deletes nothing. Non-terminal bundles —
+    including every bundle whose status cannot be read — are neither modified
+    nor deleted, so BUG-064 attach/resume keeps working for them. Log files are
+    removed only through the separate logs scope, under the same confirmation.
+    """
+    entries = collect_workspace(runs_root)
+    would_delete = [entry for entry in entries if entry["terminal"]]
+    would_keep = [entry for entry in entries if not entry["terminal"]]
+    deleted: list[str] = []
+    if confirm:
+        soft_bundles_root = runs_root / "soft-bundles"
+        for entry in would_delete:
+            shutil.rmtree(entry["path"], ignore_errors=True)
+            deleted.append(entry["bundle_id"])
+            if soft_bundles_root.is_dir():
+                for record in soft_bundles_root.glob(f"*/{BUNDLES_SUBDIR}/{entry['bundle_id']}.json"):
+                    record.unlink(missing_ok=True)
+        if clean_logs and logs_root.is_dir():
+            shutil.rmtree(logs_root, ignore_errors=True)
+    return {
+        "would_delete": would_delete,
+        "kept": would_keep,
+        "deleted": deleted,
+        "logs_cleaned": bool(confirm and clean_logs),
+    }
 
 
 def _run_make(args: list[str], env_extra: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
@@ -516,6 +609,48 @@ def cmd_clean(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_workspace_report(args: argparse.Namespace) -> int:
+    print("operator view over local demo files; not a lifecycle authority")
+    entries = collect_workspace(RUNS_ROOT)
+    terminal_count = sum(1 for entry in entries if entry["terminal"])
+    print(f"bundles: {len(entries)} (terminal {terminal_count}, non-terminal {len(entries) - terminal_count})")
+    for entry in entries:
+        if entry["terminal"]:
+            mark = f"terminal ({entry['status']})"
+        else:
+            mark = f"resumable (status: {entry['status'] or 'unknown'})"
+        print(f"  {entry['bundle_id']}  [{mark}]  {entry['size_bytes']} bytes")
+    for name, root in (("logs", LOGS_ROOT), ("archive", RUNS_ROOT / ARCHIVE_SUBDIR)):
+        size = _dir_size(root) if root.is_dir() else None
+        print(f"{name}: {size} bytes" if size is not None else f"{name}: absent")
+    return 0
+
+
+def cmd_workspace_clean(args: argparse.Namespace) -> int:
+    confirm = os.environ.get("CONFIRM") == "1"
+    result = clean_workspace(RUNS_ROOT, LOGS_ROOT, confirm=confirm, clean_logs=bool(args.logs))
+    if result["would_delete"]:
+        print(f"{'deleted' if confirm else 'would delete (terminal)'}: {len(result['would_delete'])}")
+        for entry in result["would_delete"]:
+            print(f"  - {entry['bundle_id']} (status: {entry['status']})")
+    else:
+        print("nothing to delete (no terminal bundles)")
+    if result["kept"]:
+        print(f"kept {len(result['kept'])} non-terminal bundle(s):")
+        for entry in result["kept"]:
+            print(f"  - {entry['bundle_id']} (status: {entry['status'] or 'unknown'})")
+    if confirm and result["deleted"]:
+        print(
+            "warning: exact-bundle baseline snapshots are invalidated; "
+            "re-take a before-snapshot before the next campaign run"
+        )
+    if result["logs_cleaned"]:
+        print("logs cleaned")
+    if not confirm:
+        print("dry-run: no deletion performed (set CONFIRM=1 to delete)")
+    return 0
+
+
 def cmd_verify(args: argparse.Namespace) -> int:
     root = _resolve_soft_root(args.root)
     manifest = _require_manifest(root)
@@ -701,6 +836,23 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_clean = sub.add_parser("clean", help="clean prior run bundles")
     p_clean.set_defaults(func=cmd_clean)
+
+    p_ws_report = sub.add_parser(
+        "workspace-report",
+        help="read-only inventory of the demo workspace (operator view, not a lifecycle authority)",
+    )
+    p_ws_report.set_defaults(func=cmd_workspace_report)
+
+    p_ws_clean = sub.add_parser(
+        "workspace-clean",
+        help="guarded cleanup: dry-run by default, deletes only terminal bundles with CONFIRM=1",
+    )
+    p_ws_clean.add_argument(
+        "--logs",
+        action="store_true",
+        help="also clean the logs subtree (still gated by CONFIRM=1)",
+    )
+    p_ws_clean.set_defaults(func=cmd_workspace_clean)
 
     p_verify = sub.add_parser("verify", help="verify the bound bundle and print PASS/FAIL")
     p_verify.add_argument("root")
