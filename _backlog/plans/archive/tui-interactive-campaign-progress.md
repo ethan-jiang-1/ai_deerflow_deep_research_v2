@@ -6,7 +6,8 @@
 >
 > 生成: 2026-08-21 | 最近同步: 2026-08-31 | 状态: **进行中——Phase 0/1/3/4 完成；
 > B1 两跑撞出的 BUG-062/063/064 已由 C1/C2 修复归档；环境复验全绿、
-> exact-bundle 基线重建 =7；待第 3 跑真人实跑**
+> exact-bundle 基线重建 =7；待第 3 跑真人实跑；08-31 新增 Phase 8（步进观察轴提案，
+> 设计权威 = campaign v5 §10）待拍板**
 > 用途: 以最少 openspec change 落地 [`tui-interactive-campaign.md`](tui-interactive-campaign.md)（v4）
 > 与 [`../bugs/BUG-060-demo-tui-choice-option-unprojected.md`](../bugs/BUG-060-demo-tui-choice-option-unprojected.md)，
 > 并全程 track 战役进展。
@@ -175,6 +176,19 @@
 - [ ] handoff-020 收口删除（004 先例）
 - [ ] 本文件终检：全部 Phase 状态落定，§4 记录完整，标记 **完成**
 
+### Phase 8 — 步进观察轴（提案，待拍板 D6–D8）⬜ 未开始
+
+> 2026-08-31 新增（用户启发 + 图观察面分割盘点）。设计权威在 campaign v5 §10，
+> 本 Phase 只记进度——三文件分工不变，无双套路文件
+> （原 `tui-step-debug-axis.md` 已并入 §10 后删除）。与 B1 第 3 跑并行不互斥。
+
+- [ ] D6–D8 拍板（形态 / 先做零契约原型 / 战役内延伸轴定位）
+- [ ] （D7 通过后）第 0 步零契约 trace projector：读历史 bundle checkpoint + events.jsonl
+      渲染 per-node 卡片，fixture 先验证体验
+- [ ] （体验成立后）openspec change：`BundleGraphExecutor.step_run` + TUI run/step 切挡
+      + 节点边界 delta fact（带 capability 归因，接住 plan v4 §5.3 推迟项）
+- [ ] （可选独立增量）连续模式 astream("updates") 替换 events 轮询
+
 ## 4. 进展记录（append-only）
 
 | 日期 | Phase | 事项 | 结果 |
@@ -203,6 +217,7 @@
 | 2026-08-30 | 5 | **C2 `add-suspended-run-recovery` 闭环**（BUG-064+063）：propose 四件套 + polish（posture 闭集值修正 + human-interaction-integrity 补列）→ apply：journal 挂起分类（`observed_run` 认 GraphInterrupt，outcome=suspended）、orphan `legal_next_action=RESUME` + `BundleGraphExecutor.continue_run`（lease+checkpoint `ainvoke(None)` 无伪造应答）+ `BundleControl._resume` 孤儿分支 + TUI attach 卡片（扫描/卡片/继续/查看/新跑，`ContinueRun` intent）；**apply 取证两项**：诊断对非 terminal 本已可用（15:05 拒绝=活持有者锁，RWB-009 定性契约锁）；run 2 实为冻结 69 分钟后自愈完成（BUG-064 证据注记已修）→ closeout 六项全绿 → REG-023/REJ-011/RWB-009/RED-011 同步四主 spec → 归档 `archive/2026-08-30-add-suspended-run-recovery/`；verify 全绿 exit 0 | ✅ C2 完全闭环，BUG-063/064 → `_done/_fixed_bugs/`（编号权威 → BUG-066） |
 | 2026-08-31 | 2 | 第 3 跑推进前盘点（磁盘实核）：C1/C2 归档确实在位、BUG-062/063/064 均在 `_done/_fixed_bugs/`、无活跃 bug；清理后用户又跑了 2 轮 fixture smoke（16:21 / 21:51-22:10，4 bundle 全 completed，非 real）→ **基线失效已重建 =7**（/tmp + .evidence 双份）；环境复验三要素非空 + `make entry-preflight` EXIT=0 + textual 8.2.8；遗留 suspended 仅 B1 第 1 跑 `b_l_W3Z6…`（blocked，BUG-062 证据保留） | 🟡 环境就绪，待用户第 3 跑实跑 |
 | 2026-08-31 | 2 | 第 3 跑三连挂 + 根因确诊：hitl1 provider_sdk_timeout blocked ×3（02:51 / 02:56 / 02:57，各自动重试 1 次后 exhausted→干净 handback）；curl 直探 api.deepseek.com **TCP 不可达**（HTTP 000，connect 0s）→ 机器级网络问题，非 app/key/操作缺陷，不立新 bug；**C1 连续 3 次实战验证**（快失败 + 闭合诊断，对比 BUG-062 挂 16 分钟）；三值取证升级：初始 depth/修订句可从 `logs/tui-<pid>.log` 自取（run 2 冻结日志实测），用户不再抄数值；基线随 blocked bundle 重建 =10 | 🟡 等网络恢复后同会话重触发；C1 侧收获已落袋 |
+| 2026-08-31 | — | 步进观察轴提案 + 图观察面分割盘点（11 节点 / 40 边 / 22 route / 4 自环+6 回边；一次 run 最短 9 步、典型 10–20 步；L1段-L2步-L3内层-L4认知四层谱系）：方向采纳、形态修正为「一个图 + step mode」，弃「每 Node 独立 CLI」（绕过 `_node_wrapper` = 假 trace + 第二权威）；设计澄清 run/step 是同一套路的两个挡位（同一 trace/卡片/契约，run = 自动连放）；整合进 campaign v5 §10，独立提案文件 `tui-step-debug-axis.md` 删除，本文件开 Phase 8 | 📋 提案待拍板（D6–D8） |
 
 ## 5. 条件性 change 追踪（战役撞出的 bug，按需追加行）
 

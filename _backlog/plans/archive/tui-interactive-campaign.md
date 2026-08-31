@@ -1,17 +1,21 @@
-# Plan: TUI 交互战役（v4 消化版）
+# Plan: TUI 交互战役（v5——v4 消化版 + 步进观察轴提案）
 
 > ⚠️ **编号更新（2026-08-21）**：本战役的"手动交互"主线按新命名轴
 > **010/020 拆分**后成为 **020**（runbook-020-tui-manual.md，入口
 > `make demo-tui-embedded-smoke`）；**010 = 自动 TUI 孪生**（runbook-010-tui-auto.md，
 > 入口 `make demo-tui-real-auto`，BUG-061）。本文件描述的 010 即现在的 020 内容。
 >
-> 生成: 2026-08-20 | 更新: 2026-08-25 | 状态: **v4——已消化独立审阅；Stage 0/A
-> 与 change 双闭环已执行（BUG-060 `fix-demo-tui-choice-option`、BUG-061
-> `add-demo-tui-auto-entry`）；战役主体 Stage B1 未跑**
+> 生成: 2026-08-20 | 更新: 2026-08-31 | 状态: **v5——v4 基础上新增 §10 步进观察轴
+> （提案，待拍板 D6–D8）；Stage 0/A 与 change 双闭环已执行（BUG-060
+> `fix-demo-tui-choice-option`、BUG-061 `add-demo-tui-auto-entry`）；战役主体
+> Stage B1 未跑（待第 3 跑收尾，照旧执行，不受 §10 影响）**
 > 前置: 001-004 战役完结（全 CLI、全自动）；本战役换轴——**HITL1 真人交互与 TUI 观察性**。
 > v4 变更: 全量消化 `tui-interactive-campaign-review.md`（另一 agent 的独立审阅）——
 > 其事实主张已逐条回到当前代码核验，**全部成立**；修复 v3 的内部矛盾，
 > 范围收窄为 B1 主线，CHOICE 移出 PASS 范围。
+> v5 变更: 消化 2026-08-31 讨论——TUI 第一性体验从「陪跑整个 run + 等 interrupt」
+> 转向「图节点边界的步进/trace 观察」（§10，提案待拍板）；B1 与既定 PASS 定义不变。
+> 独立提案文件 `tui-step-debug-axis.md` 已删除并入本节（避免双套路）。
 
 ## 0. 审阅采纳记录（v4）
 
@@ -253,3 +257,82 @@ ordinal、最终 `request/profile.json`、终态 State、report/citation artifac
    agent 侧证据收集 + bug 流程随行。
 3. B2（CHOICE 专项，前置 BUG-060 已满足）→ C（Gateway observer，可选）→
    收口（Phase 7），事后按 D4/D5 决定。
+4. **§10 步进观察轴（提案）**：D6–D8 拍板 → 第 0 步零契约 trace projector 原型
+   （fixture 验证体验）→ 视体验立 openspec change；与 B1 收尾并行不互斥。
+
+## 10. 步进观察轴（v5 新增，提案待拍板 D6–D8）
+
+> 触发: 2026-08-31 用户启发——"TUI 直接跑整个 langgraph 工作流是半黑箱；能否每个
+> NODE 支持一步步调用，输入输出 schema 化存储，TUI 串起来做 trace/debug"。
+> 本节即原 `tui-step-debug-axis.md` 提案的整合稿（该文件已删除，避免双套路）。
+
+### 10.1 判断
+
+方向采纳、形态修正：TUI 的第一性体验从「陪跑整个 run + 等 interrupt」转向「节点边界的
+步进/trace 观察」。但**不做「每 Node 一个 CLI 入口」**——节点调用逻辑（capability 注入、
+attempt 铸造、gate 评估、事件记录、budget handback）全住在唯一 `_node_wrapper`
+（`graph/builder.py`），绕过它逐个调 node = 假 trace + 第二执行权威。正确形态：
+**一个图、第三种驱动模式（step mode）**——同一 recipe 的 `interrupt_after=LOGICAL_NODES`
+compile 变体，每步 `ainvoke(None)` 推进一个节点边界 + `_project` 投影。基建已存约七成：
+checkpoint 逐超步持久化、`execution_trace` 字段、`continue_run`/refinement 单任务推进
+两个「推进一段再投影」生产先例、HITL1 interrupt 边界应答。与 TUI 既定产品定义一致
+（README：contributor/operator visualizer——visualizer 的本分即 step-through debugger）。
+
+### 10.2 观察面分割盘点（不是一块）
+
+实核数字（`topology.py` + `builder.py` + 节点包清单）：11 节点类型 / **40** 条 typed 边 /
+**22** 个闭集 route / **4** 自环（hitl1.needs_followup、wave0/wave1/final_delivery.repair）
++ **6** 类回边循环（wave2↔targeted_evidence 环、readiness 三 repair 回边、hitl2 两条回边、
+rerun 三条代际重入）；每 node 包强制 `contracts.py`（registry `_REQUIRED_FILES`）——
+11 份节点输入输出 schema 已作为代码结构存在；`topology_snapshot.py` 已有确定性拓扑渲染先例。
+
+一次真实 run 展开的观察点是四层谱系：
+
+| 层 | 粒度 | 数量级 | 既有记录物 |
+| --- | --- | --- | --- |
+| L1 段 | 7 自然段 | 7 | 投影视图（topology_snapshot 思路） |
+| L2 步 | 节点边界 | 最短 **9** 步；典型 **10–20** 步 | events + gate verdict + 每超步 checkpoint delta + execution_trace |
+| L3 内层 | work unit × attempt | 每 wave N×M（run 2 journal 53 事件即此层证据） | work/attempt 状态字段 + attempt 事实 |
+| L4 认知 | 模型调用 | 每 attempt K 次 | journal model_tool fact（§10.4 delta fact 补 capability 归因） |
+
+7 段：S1 Profile intake(bootstrap,hitl1) / S2 Planning(topic_planning) /
+S3 Evidence waves(wave0,wave1 含 repair 自环) / S4 Synthesis(wave2_synthesis,
+targeted_evidence 环) / S5 Decision(hitl2 自主) / S6 Assurance(readiness 含回边) /
+S7 Delivery(final_delivery 含自环)。**「只有一个」不成立：最短 run 也有 9 个边界。**
+
+### 10.3 一个套路，不是两个（设计澄清）
+
+step 不是第二套 TUI 体验：**run 模式 = 同一条 trace 的自动连放，step 模式 = 在边界暂停**。
+同一组卡片、同一事件流、同一交互契约（StartRun/AnswerRun/CancelRun/ContinueRun、
+typed OPTION 不变）；HITL1 interrupt 在此模型里降格为「需要人插手的那一步」。
+换的只是**驱动粒度**（连续 → 可步进）与**观察面**（tick → 节点边界 delta），
+不新增第二套交互范式。
+
+### 10.4 缺口三件事与最小路径
+
+1. `BundleGraphExecutor.step_run`：interrupt_after 编译变体；每步拿放
+   `execution_exclusion`（步进会话绝不常驻锁）；每步 `_project` 返回卡片数据。
+2. 节点边界 delta fact：带 capability/phase 归因的闭集新 fact 族——接住 plan v4 §5.3
+   推迟的 closed observation fact 需求（当初推迟因无产品需求，现在有了）；走 openspec change。
+3. TUI node 卡片流（节点名 → 输入摘要 → 输出 delta → route → 耗时/预算 → failure
+   category）+ run/step 切挡。
+
+最小路径：**第 0 步零契约原型**——纯读侧 trace projector（读历史 bundle checkpoint +
+events.jsonl 渲染 per-node 卡片，fixture 先行，对既有 bundle 立即有效，一行契约不动）
+→ 第 1 步 openspec change（step_run + TUI 切挡 + delta fact）。第 2 步（可选、独立增量）：
+连续模式 `astream("updates")` 替换 events 轮询，不与 step mode 混同一 change。
+
+### 10.5 诚实边界
+
+步进停在**节点边界**，不解决节点内部可视性（模型调用内部仍由 journal fact + C1 预算管）；
+但 L2 卡片的每节点 wall-time/预算足以让 BUG-062 那类 16 分钟挂起**当场可见**。
+work-unit 级是 L3（已有 work unit store/attempt 记录），本轴不重复建。实施验证点：
+interrupt_after 变体与 refinement `snapshot.tasks` 断言的相互作用（步进/连续不得共用
+同一 config 混跑）；SQLite saver checkpoint 历史留存策略。
+
+### 10.6 待拍板决策点
+
+- **D6 形态**：采纳「一个图 + step mode」、放弃「每 Node 独立 CLI」。
+- **D7 原型**：先做第 0 步零契约 trace projector（fixture 验证体验再谈 change）。
+- **D8 轴位**：本轴为 020 战役内延伸轴（本节）而非独立 030 战役（2026-08-31 用户定向：
+  别弄两个套路）；B1 第 3 跑照旧收尾，两线不互斥。

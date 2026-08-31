@@ -1,6 +1,7 @@
 # Plans — plan/分析文档索引
 
-> 最后更新: 2026-08-31 | `_backlog/plans/` — 活跃 plan 在此，完成的普通 plan 移入 [`../_done/_closed_plans/`](../_done/_closed_plans/)。
+> 最后更新: 2026-08-31 | `_backlog/plans/` — 活跃 plan 在此（顶层），冻结未关闭的历史在
+> [`archive/`](archive/)，完成的普通 plan 移入 [`../_done/_closed_plans/`](../_done/_closed_plans/)。
 >
 > **plan 没有编号，文件名即标识。完成后文件名不变，位置即状态。**
 
@@ -19,11 +20,20 @@
 
 | Plan | 类型 | 下一步 |
 |------|------|--------|
-| [tui-interactive-campaign-progress.md](tui-interactive-campaign-progress.md) | 进度 | 020 TUI 交互战役（原 010 手动 TUI）的落地进度账本；Phase 0/1/3/4 完成（含 BUG-060/061 change 闭环），战役主体 B1 未跑 |
-| [tui-interactive-campaign.md](tui-interactive-campaign.md) | 设计 | TUI 真人交互跑通真实 Deep Research（010 交互专项探路）；v4 已消化审阅；Stage 0/A 与 change 双闭环已执行，战役主体 B1 待跑 |
-| [tui-interactive-campaign-review.md](tui-interactive-campaign-review.md) | 审阅 | 校正 HITL2、CHOICE、证据归因、exact Bundle 与产品边界后再启动真实 API 战役 |
+| [tui_step_progressive_plan.md](tui_step_progressive_plan.md) | 递进执行计划 | TUI 步进轴（当前唯一活跃 plan）：Stage 0 拍板 D6/D7 → C3 观察叙述 → C4 步进驱动（openspec change 阶梯）；并行线含 B1 第 3 跑收尾 |
 
 **Next available plan ID: CLS-058**（移入 `_closed_plans/` 时分配）
+
+## 冻结存档（`archive/`，只读，未关闭）
+
+> 位置即状态：`archive/` = 冻结的历史稿（不再更新，旧相对链接随层级失效属预期）。
+> 未关闭 ≠ 完成；战役收口后按上面步骤整组迁入 `_done/_closed_plans/`。
+
+| Plan | 是什么 | 冻结日期 |
+|------|--------|----------|
+| [archive/tui-interactive-campaign.md](archive/tui-interactive-campaign.md) | 020 战役计划 v5（§10 = 步进轴设计权威） | 2026-08-31 |
+| [archive/tui-interactive-campaign-progress.md](archive/tui-interactive-campaign-progress.md) | 战役进度账本（Phase 0–8 全记录） | 2026-08-31 |
+| [archive/tui-interactive-campaign-review.md](archive/tui-interactive-campaign-review.md) | 独立审阅（已被 v4 消化） | 2026-08-31 |
 
 ## 已归档（移至 `_done/_closed_plans/`）
 
