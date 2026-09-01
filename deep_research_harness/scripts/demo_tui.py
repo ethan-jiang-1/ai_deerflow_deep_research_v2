@@ -1219,6 +1219,12 @@ class DeepResearchDemoTUI(App[None]):
         value = raw_value.strip()
         if not value:
             return
+        if self.debug_mode and self._debug_driver is not None and value.startswith("/detach"):
+            self.run_worker(self._debug_command(value), exclusive=True, group="debug")
+            return
+        if self.debug_mode and self._debug_driver is not None and value.startswith("/context"):
+            self.run_worker(self._debug_command(value), exclusive=True, group="debug")
+            return
         if value.startswith("/"):
             # Global inspect commands work at any time (recon or mid-research)
             # and are never routed as chat or research answers.
@@ -1933,6 +1939,9 @@ async def _debug_command(self, value: str) -> None:
             answer_text=answer_text,
         )
     )
+    if kind == "detach" and result.denied is None:
+        self._debug_driver = None
+        self._debug_bundle_id = None
     await self._render_debug_result(result)
 
 
