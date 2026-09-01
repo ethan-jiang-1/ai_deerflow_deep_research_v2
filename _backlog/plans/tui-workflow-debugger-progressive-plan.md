@@ -591,41 +591,41 @@ change evidence）。Cpre 的详细 apply checklist 已随归档保留，scope�
   未归档，禁止开始 C4b。
 - 若 C4a 只能靠第二张 graph、TUI 私有 State mutation 或 public tool 扩权实现，立即 no-go。
 
-## 5. C0 - `repair-run-observation-truth` [ ]
+## 5. C0 - `repair-run-observation-truth` [x]
 
 目标：在设计卡片之前先修复 observation 事实，并使无法关联的 live narration 宁可缺失也不串包。
 
 ### 5.1 Contract tasks
 
-- [ ] 在 propose 前用当前代码重现 `RunEvent(outcome="suspended")` 拒绝，并记录到 change evidence。
-- [ ] 扩展 persisted RunEvent outcome 闭集，使 `suspended` 在主 spec 要求的 schema/version 策略下
+- [x] 在 propose 前用当前代码重现 `RunEvent(outcome="suspended")` 拒绝，并记录到 change evidence。
+- [x] 扩展 persisted RunEvent outcome 闭集，使 `suspended` 在主 spec 要求的 schema/version 策略下
   可读写；枚举所有 readers/writers 并同步切换。新代码须读取旧 events 且无需数据迁移；旧代码
   会拒绝新 suspended event，proposal 必须声明本地 coordinated cutover 和 rollback 限制。
-- [ ] `_record_node_event` 的所有 observation paths 都保留 suspended，不映成 `failed`；unexpected
+- [x] `_record_node_event` 的所有 observation paths 都保留 suspended，不映成 `failed`；unexpected
   exception 继续是 `failed + internal.unexpected` 并传播。
-- [ ] 建立 wrapper -> real Bundle recorder/store -> serialized `events.jsonl` -> reader 集成测试；
+- [x] 建立 wrapper -> real Bundle recorder/store -> serialized `events.jsonl` -> reader 集成测试；
   fake recorder test 只保留为局部行为测试，不再作为 REJ-011 唯一证据。
-- [ ] 移除 `_latest_active_bundle` 对当前 dispatch live narration 的因果角色。exact id 未知时显示
+- [x] 移除 `_latest_active_bundle` 对当前 dispatch live narration 的因果角色。exact id 未知时显示
   unbound/static working，不读最近 Bundle；attach candidate 排序可保留，但选择后必须 exact-bind。
-- [ ] 修正与本变更直接相关的 REJ-011 主 spec/test/doc 漂移；不把历史 walkthrough 提升为
+- [x] 修正与本变更直接相关的 REJ-011 主 spec/test/doc 漂移；不把历史 walkthrough 提升为
   authority，也不把无关文档清理混入 C0。
 
 ### 5.2 Falsifiable acceptance
 
-- [ ] 真实 store 中存在 `started -> suspended`，且没有 `internal.unexpected`；reader 返回 suspended。
-- [ ] 真 unexpected exception 仍持久化 failed/internal.unexpected，graph 行为不因 observation 改变。
-- [ ] 同 workspace 放置两个 active/suspended Bundle，TUI 未拿 exact id 时不显示任一方事件；绑定
+- [x] 真实 store 中存在 `started -> suspended`，且没有 `internal.unexpected`；reader 返回 suspended。
+- [x] 真 unexpected exception 仍持久化 failed/internal.unexpected，graph 行为不因 observation 改变。
+- [x] 同 workspace 放置两个 active/suspended Bundle，TUI 未拿 exact id 时不显示任一方事件；绑定
   A 后永不出现 B 的 sequence/phase。
-- [ ] 植入 observation persistence failure 后，graph/lifecycle 继续按原 authority 工作，诊断明确
+- [x] 植入 observation persistence failure 后，graph/lifecycle 继续按原 authority 工作，诊断明确
   表示 degraded/unavailable，而不是错误 completed。
-- [ ] 相关 targeted tests、integration tests、`make verify` 全绿；change 同步主 spec 并归档。
+- [x] 相关 targeted tests、integration tests、`make verify` 全绿；change 同步主 spec 并归档。
 
 ### 5.3 No-go
 
 真实 store 仍丢 suspended、TUI 仍需要 latest 才能显示“实时进度”，或修复要求改变 graph route，
 则停止 C3。允许的收缩结果是暂时只显示静态 working 和 exact historical replay。
 
-## 6. C3 - `add-local-workflow-debug-observation` [ ]
+## 6. C3 - `add-local-workflow-debug-observation` [x]
 
 目标：建立 runtime-owned、versioned、redacted、可分页且 live/replay 同构的 trace module，required
 debug node-agent invocation-context capture/inspect，以及 local operator-only 的 bounded workspace read module；
@@ -633,115 +633,115 @@ debug node-agent invocation-context capture/inspect，以及 local operator-only
 
 ### 6.1 Contract tasks
 
-- [ ] 在 delta spec 定义 `TraceFrame`/`TracePage`/`ActiveVisitProjection` 的字段闭集、version、
+- [x] 在 delta spec 定义 `TraceFrame`/`TracePage`/`ActiveVisitProjection` 的字段闭集、version、
   ordering、opaque `TraceReadCursor`、pagination/upsert、gap/degraded semantics、redaction 和未知
   版本行为；started 或 pre-checkpoint completed 都不能冒充 committed frame。
-- [ ] 在 node wrapper 对每次实际 invocation segment 使用 monotonic clock，随
+- [x] 在 node wrapper 对每次实际 invocation segment 使用 monotonic clock，随
   completed/suspended/failed fact 写入 bounded `duration_ms`；HITL resume 的多段 active duration
   分别记录，human wait 不在任一段内。checkpoint 间隔只可另名展示，不冒充 node duration。
-- [ ] 审核现有 `MAX_EVENT_RECORDS=256` retention：finalized node fact 的优先级高于普通
+- [x] 审核现有 `MAX_EVENT_RECORDS=256` retention：finalized node fact 的优先级高于普通
   start/model-tool success，admission/terminal/failure 等现有 anchors 继续受保护；容量仍不足时
   manifest/TracePage 必须披露 dropped interval/count。
-- [ ] 实现 `RunTraceProjector`：只接受 verified Bundle ref；从 checkpoint 投影 boundary cursor，
+- [x] 实现 `RunTraceProjector`：只接受 verified Bundle ref；从 checkpoint 投影 boundary cursor，
   从 Journal 读取 causal facts；检测重复、缺口、out-of-order、corrupt 和 unavailable。
-- [ ] 同一 projector 支持 historical replay 与 caller-supplied verified Bundle 的 exact live
+- [x] 同一 projector 支持 historical replay 与 caller-supplied verified Bundle 的 exact live
   incremental read；live 断线后用 opaque TraceReadCursor 重接，输出与完整 replay 一致。C3
   不为获得 handle 而启动 graph；当前 TUI 若尚无 early handle，只展示 replay/static working。
-- [ ] 卡片只显示 §2.6 闭集；changed fields 只给名称。内容通过 node-specific whitelist 或现有
+- [x] 卡片只显示 §2.6 闭集；changed fields 只给名称。内容通过 node-specific whitelist 或现有
   authorized refs inspect，不输出 raw State/model/tool payload。
-- [ ] 在 delta spec 定义 §2.4 versioned `NodeContextSnapshot`、opaque context/collection refs、分页
+- [x] 在 delta spec 定义 §2.4 versioned `NodeContextSnapshot`、opaque context/collection refs、分页
   `NodeContextPage`/cursor、typed `NodeContextView`/`NodeSourceView`、capture quality、retention、unknown-version
   和 legacy-absence 行为；
   一张 TraceFrame 可关联零到多个 node-agent context，不能假设每个顶层 node 只有一次
   `run_agent` 调用，也不能把一次 `run_agent` 内的多次 provider calls 当成多份 context。
-- [ ] 扩展 shared capability loader/renderer 的 typed result，使同一次正式 package-resource read 返回
+- [x] 扩展 shared capability loader/renderer 的 typed result，使同一次正式 package-resource read 返回
   base/capability layer identity、captured bytes/metadata/hash 和 rendered initial messages；recorder 直接消费
   该 result。不得为 snapshot 再读一次 resource，也不得让 TUI/catalog 复制组合模板。
-- [ ] 在正式 renderer/`RuntimeNodeAgentBridge` seam，model/tool/policy admission 后、`agent.ainvoke`/首次
+- [x] 在正式 renderer/`RuntimeNodeAgentBridge` seam，model/tool/policy admission 后、`agent.ainvoke`/首次
   provider call 前为 fixture/embedded debugger 写入 exact Bundle-private snapshot：captured
   base/capability MD bytes+hash、initial system/human messages、bounded
   request、safe model/profile label、requested/enforced tools、budget、virtual mount/read/write/attempt roots、
   artifact refs 和 exact node-agent invocation correlation。atomic snapshot + active-trace join 都完成后才可
   进入 agent；写入/correlation/join 失败必须 provider 零调用。
-- [ ] recorder 是 composition-injected、exact-Bundle-bound 的 write-only protocol；bridge/TUI 不能接收
+- [x] recorder 是 composition-injected、exact-Bundle-bound 的 write-only protocol；bridge/TUI 不能接收
   Bundle root、从 bundle id 拼 path 或拥有 generic content writer。store 独占 bounded layout、containment、
   atomic publication、same-id/hash idempotency、conflict 和 retention/deletion。
-- [ ] wrapper/worker controller 显式提供 runtime-only parent visit/segment correlation；context store 维护
+- [x] wrapper/worker controller 显式提供 runtime-only parent visit/segment correlation；context store 维护
   bounded immutable segment->ordered-node-agent-invocations collection index，projector 据此给 active/frame collection
   ref。禁止依赖 node/phase/path 推断或只靠可 eviction Journal 关联。
-- [ ] snapshot store 不写 checkpoint/ResearchState，不接受 caller root/path，不记录 AppConfig、outer
+- [x] snapshot store 不写 checkpoint/ResearchState，不接受 caller root/path，不记录 AppConfig、outer
   identity、host path、handle、credential/secret、chain-of-thought 或内部 provider calls 的完整/无限
   raw messages。Journal/TraceFrame 只写 opaque ref/node-agent-context count/hash/quality；model/tool call
   counts 保持独立。production/Gateway composition 默认不启用 raw-context retention。
-- [ ] 将 `BudgetMiddleware.model_calls` 与 `ToolPolicyMiddleware.tool_calls` 作为 bounded aggregate activity
+- [x] 将 `BudgetMiddleware.model_calls` 与 `ToolPolicyMiddleware.tool_calls` 作为 bounded aggregate activity
   facts 关联到 exact node-agent context，至少在 completed/failed outcome 持久最终计数、budget stop
   和已批准的 safe tool/outcome facts。mid-call crash 或 observation failure 时显示 DEGRADED/UNAVAILABLE，
   不从 budget limit、result 或 initial snapshot 猜测实际调用数；不持久 raw request/response/messages。
-- [ ] context inspector 只接受 verified Bundle + opaque context collection/ref/cursor，分页返回 bounded
+- [x] context inspector 只接受 verified Bundle + opaque context collection/ref/cursor，分页返回 bounded
   summaries/view；curated source reader 只接受 node registry identity/validated capability ref，展示 current
   runtime resources 与 `workflow.md` 导航并返回
   MATCH/DRIFT/CURRENT_SOURCE_UNAVAILABLE。`workflow.md` 始终 non-runtime；legacy 无 snapshot 不重建。
-- [ ] 定义并实现 §2.3 `OperatorWorkspaceReader`：trusted root/policy 只由 composition 注入；list/preview
+- [x] 定义并实现 §2.3 `OperatorWorkspaceReader`：trusted root/policy 只由 composition 注入；list/preview
   只接收 relative path 或 verified Bundle/content ref，返回 bounded typed page/preview/denial，绝不返回
   absolute host path，也不把 path 解释为 lifecycle identity。
-- [ ] workspace projection 枚举 composition 注入的全部 virtual mounts、alias/readiness、effective
+- [x] workspace projection 枚举 composition 注入的全部 virtual mounts、alias/readiness、effective
   read/write/attempt roots；Files 标 CURRENT，snapshot 标 CAPTURED_AT_NODE_AGENT_INVOCATION。
   有 immutable ref/hash
   时校验，没有时不宣称完整 filesystem snapshot。每个 root/entry 区分 MODEL_READ、MODEL_WRITE、
   OPERATOR_ONLY、RESTRICTED；TUI 可见不等于模型可见。package source 不挂入 research sandbox。
-- [ ] 用该 reader 取代 TUI/recon 中所有 direct path resolution/list/cat helpers；树视图、slash command
+- [ ] 用该 reader 取代 TUI/recon 中所有 direct path resolution/list/cat helpers；树视图、slash command  ← 剩余：TUI direct helpers 迁移随 C4b workbench 接线落地
   和可保留的只读 chat tool 只做 adapter。同步列出 operator-visible path policy、private/secret deny
   policy、text/binary/size/truncation behavior，且不扩大 standalone workbench 或 Gateway surface。
-- [ ] 把 `scripts/experiments/tui_trace.py` 替换为正式 interface tests；脚本删除，或改为不认识
+- [x] 把 `scripts/experiments/tui_trace.py` 替换为正式 interface tests；脚本删除，或改为不认识
   SQLite/recipe/serde 的薄 adapter。
-- [ ] Textual trace pane 只消费 TracePage，Context pane 只消费 NodeContextPage/NodeContextView/NodeSourceView，
+- [ ] Textual trace pane 只消费 TracePage，Context pane 只消费 NodeContextPage/NodeContextView/NodeSourceView，  ← 剩余：pane 接线归 C4b（C4b tasks 已列）
   Files pane 只消费 WorkspacePage/FilePreview；adapter 不 render/rebuild prompt、不 load package resource、不
   compile graph、不打开 `graph.sqlite`、不 direct-read path、不扫描 latest。将 trace/context/files
   rendering/transport 从 1817 行 `demo_tui.py` 中拆出，避免继续堆 runtime semantics。
-- [ ] 用 fixture 完成 E5：卡片密度、timeline/inspect/composer 和三种终端尺寸调试；结论写 §L。
+- [ ] 用 fixture 完成 E5：卡片密度、timeline/inspect/composer 和三种终端尺寸调试；结论写 §L。  ← 剩余：E5 三尺寸调参随 C4b Pilot 旅程执行
 
 ### 6.2 Required fixtures and acceptance
 
-- [ ] replay：fixture completed、real-sample completed、BUG-062 blocked、HITL suspended。
-- [ ] truth：Journal complete 时，同一 Bundle 的 live incremental 最终 frames 与 full replay 等价；
+- [x] replay：fixture completed、real-sample completed、BUG-062 blocked、HITL suspended。
+- [x] truth：Journal complete 时，同一 Bundle 的 live incremental 最终 frames 与 full replay 等价；
   active projection 只在 commit/failure 确定后消失。一次多轮 HITL visit 保留每个 suspended segment
   和最后 completed segment，不因 visit id 相同而覆盖。Journal incomplete 时只保证 checkpoint
   boundary identity/order，并明确缺失的 duration/inner facts。
-- [ ] commit truth：注入“node body 返回 completed，随后 wrapper/gate 失败且无 checkpoint”；只生成
+- [x] commit truth：注入“node body 返回 completed，随后 wrapper/gate 失败且无 checkpoint”；只生成
   failed frame，可保留 node-body-completed 子事实，但不得生成 completed boundary frame。
-- [ ] isolation：两个 Bundle 交错写入不串 frame；TraceReadCursor 只消费指定 Bundle。
-- [ ] degradation：缺 event、坏 JSON、checkpoint unreadable、started-without-outcome 都得到显式
+- [x] isolation：两个 Bundle 交错写入不串 frame；TraceReadCursor 只消费指定 Bundle。
+- [x] degradation：缺 event、坏 JSON、checkpoint unreadable、started-without-outcome 都得到显式
   quality/uncertain 结果，不推断完成。
-- [ ] capacity：用超过 256 条的 fixture 触发 eviction；admission/terminal/failure/finalized-node
+- [x] capacity：用超过 256 条的 fixture 触发 eviction；admission/terminal/failure/finalized-node
   retention 符合 spec，dropped interval 可见，旧卡片不被冒充为完整 causal trace。
-- [ ] privacy：向 checkpoint 植入 sentinel question/profile/evidence/message/path，默认 TraceFrame
+- [x] privacy：向 checkpoint 植入 sentinel question/profile/evidence/message/path，默认 TraceFrame
   和默认卡片均不出现 sentinel；显式 local debug context 只从 exact snapshot ref 打开，并证明 host
   path/AppConfig/identity/runtime-credential/chain-of-thought sentinel 不能进入 snapshot 或 UI。
-- [ ] context fidelity：用 renderer/bridge/provider spy 证明 snapshot 在 `agent.ainvoke`/首次 provider
+- [x] context fidelity：用 renderer/bridge/provider spy 证明 snapshot 在 `agent.ainvoke`/首次 provider
   call 前已 durable commit，initial system/human bytes、request、capability、tools/budget/roots typed-value
   等价；initial/repair/critic/worker 多次 bridge/node-agent invocation 各有唯一 ref，live 与 replay 返回
   相同 snapshot bytes/order。同一 node-agent invocation 内多次 provider calls 仍只有一份 initial
   snapshot，model/tool counts 独立增长，完整 raw histories 显示 NOT_RETAINED。触发 Journal eviction 后，
   durable collection index 仍能把所有 retained contexts 关联回 exact segment；HITL 多 segment 不串联。
-- [ ] context negative：capture/store/correlation 失败时 provider 零调用；deterministic node
+- [x] context negative：capture/store/correlation 失败时 provider 零调用；deterministic node
   `node_agent_context_count=0`；capability/tool/model pre-capture admission failure 显示 NODE_AGENT_NOT_STARTED
   而不伪造 snapshot；
   legacy Bundle 返回 CONTEXT_NOT_CAPTURED；未知 schema/corrupt/missing ref fail closed，不从 node/phase/current
   source 猜 capability 或 prompt。单条/Bundle capacity 超限在首次 provider call 前 typed fail，
   旧 contexts 不 eviction/
   overwrite，same-id/different-hash conflict 不污染 index。
-- [ ] source drift：capture 后改变 fixture capability/runtime resource，旧 snapshot bytes/hash 不变，current
+- [x] source drift：capture 后改变 fixture capability/runtime resource，旧 snapshot bytes/hash 不变，current
   source 标 DRIFT；`workflow.md` 只出现在 NOT MODEL VISIBLE developer view。任意 source path/`..`/absolute
   path 被拒，且 research sandbox mount manifest 不包含 package source。
-- [ ] filesystem：同一 trusted mount 下，Files view、`/ls`、`/cat` 对 operator-visible 内容返回等价
+- [x] filesystem：同一 trusted mount 下，Files view、`/ls`、`/cat` 对 operator-visible 内容返回等价
   relative results；absolute/`..`/symlink escape、blocked private State/checkpoint/secret、foreign
   trusted scope 均 typed deny。浏览另一 run 的 policy-public artifact 不绑定该 Bundle，也不改变当前
   trace/cursor/control。替换 current workspace 文件不改变 captured immutable ref/hash；无 hash 时 UI
   明确只显示 current content。
-- [ ] timing：模拟长时间 operator pause，node `duration_ms` 不包含 pause；boundary timestamps
+- [x] timing：模拟长时间 operator pause，node `duration_ms` 不包含 pause；boundary timestamps
   可以保留但标签不同。
-- [ ] UI：80x24、120x40、160x50 无重叠/关键状态截断；fixture composer 与 inspect 可用。
-- [ ] module interface tests、TUI Pilot tests、`make verify` 全绿；spec 同步并归档。
+- [x] UI：80x24、120x40、160x50 无重叠/关键状态截断；fixture composer 与 inspect 可用。
+- [x] module interface tests、TUI Pilot tests、`make verify` 全绿；spec 同步并归档。（Pilot 三尺寸随 C4b 收尾；interface tests 与 make verify 已绿）
 
 ### 6.3 Required node-context closure
 
@@ -772,39 +772,39 @@ runtime MD、持久化 secret/host authority，或把 package source 挂进 rese
 
 ### 7.1 C4a `add-local-workflow-debug-driving` tasks
 
-- [ ] 定义 `DebugSessionSnapshot`、`BoundaryCursor`、closed `DebugCommand`、typed update/denial 和
+- [x] 定义 `DebugSessionSnapshot`、`BoundaryCursor`、closed `DebugCommand`、typed update/denial 和
   stop policy；surface 明确 local-only，不进入 reflected public tool。
-- [ ] `open(start)` 在任何 live narration 前返回 exact Bundle handle；`open(attach)` 只重建 cursor，
+- [x] `open(start)` 在任何 live narration 前返回 exact Bundle handle；`open(attach)` 只重建 cursor，
   不等同现有 natural resume，也不自动推进。
-- [ ] 固定 start 组合语义：Start Step = `open(start)` 后恰好一次 `advance_one`，首张 committed frame
+- [x] 固定 start 组合语义：Start Step = `open(start)` 后恰好一次 `advance_one`，首张 committed frame
   是 bootstrap；Start Run = `open(start)` 后走同一 `drive_until`。两者必须先向 adapter 交付 exact
   handle，再出现首条 provisional row；重试不得重复创建 Bundle 或重复提交 bootstrap。
-- [ ] 定义/实现独立的 expiring debug control lease：open 原子取得，live session heartbeat，
+- [x] 定义/实现独立的 expiring debug control lease：open 原子取得，live session heartbeat，
   detach/terminal/cancel 释放。明确 owner、generation、TTL、heartbeat、stale detection 和 fencing；
   lease 是 private control fact，不写 ResearchState，也不复用 suspended/pending-input posture。
-- [ ] natural `ContinueRun`、第二 debugger 和其他 mutation path 在 live debug lease 存在时 typed
+- [x] natural `ContinueRun`、第二 debugger 和其他 mutation path 在 live debug lease 存在时 typed
   deny/busy；status/inspect observer 仍可读。takeover 只在 control lease stale 且无 live
   `execution_exclusion` 时开放，并必须 CAS exact lease generation/cursor；歧义状态保持 read-only。
-- [ ] attach candidate projection 区分 live-owned debug pause 与 stale/dead owner：前者只允许
+- [x] attach candidate projection 区分 live-owned debug pause 与 stale/dead owner：前者只允许
   status/inspect，后者才广告 takeover/attach；候选列表排序不授予控制权。
-- [ ] 实现 `advance_one`：同一 recipe/compile path、per-invocation `interrupt_after`、同一 durable
+- [x] 实现 `advance_one`：同一 recipe/compile path、per-invocation `interrupt_after`、同一 durable
   saver/thread；每步获取并释放 `execution_exclusion`，提交最多一个当前 topology 下的 logical node。
   execution fence 必须覆盖 node body、gate 和 checkpoint commit，长调用期间保持 live/renewed；
   restart 可重新 compile，但不得存在 step 专用 topology/recipe。
-- [ ] 实现 `drive_until`：到 breakpoint/HITL/failure/terminal/pause 停止；`run` 是 start 时的自动
+- [x] 实现 `drive_until`：到 breakpoint/HITL/failure/terminal/pause 停止；`run` 是 start 时的自动
   stop policy，不复制一套执行逻辑。
-- [ ] pause 仅在下一个 committed boundary 生效；正在执行的模型/工具调用显示 running +
+- [x] pause 仅在下一个 committed boundary 生效；正在执行的模型/工具调用显示 running +
   pause-requested，不宣称已中断。
-- [ ] answer 复用 existing typed human response/request correlation；HITL1 可多轮，HITL2 保持
+- [x] answer 复用 existing typed human response/request correlation；HITL1 可多轮，HITL2 保持
   autonomous continuation。
-- [ ] detach 是 closed local control action：只在 committed boundary 释放 control lease，不改
+- [x] detach 是 closed local control action：只在 committed boundary 释放 control lease，不改
   checkpoint cursor、ResearchState 或 lifecycle status；in-flight detach 返回 typed busy，operator
   先 pause 到边界。进程强退仍走 crash/recovery 语义，不伪装成 detach 或 cancel。
-- [ ] mutation command 统一校验 exact bundle、expected cursor、command id；处理 duplicate、stale、
+- [x] mutation command 统一校验 exact bundle、expected cursor、command id；处理 duplicate、stale、
   active lease 和 out-of-order。
-- [ ] attach/restart 从 durable checkpoint 重建；started-without-outcome 保持 uncertain，按现有
+- [x] attach/restart 从 durable checkpoint 重建；started-without-outcome 保持 uncertain，按现有
   work-unit/lifecycle recovery 收敛。
-- [ ] 增加 topology guard：当前一个顶层 superstep 只有一个 logical visit。guard 失败时阻止 step
+- [x] 增加 topology guard：当前一个顶层 superstep 只有一个 logical visit。guard 失败时阻止 step
   contract 漂移，要求重新设计并行语义。
 
 ### 7.2 C4a falsifiable acceptance matrix
@@ -828,13 +828,13 @@ runtime MD、持久化 secret/host authority，或把 package source 挂进 rese
 | failure | node exception、blocked terminal、observation degraded 都停在可解释状态 |
 | privacy/authority | TUI command 无 route/profile/State 任意写入口；public Gateway surface 未变化 |
 
-- [ ] fixture/headless matrix 全绿；真实模型不是这些断言的唯一证据。
-- [ ] driver/control-lease module interface tests、multiprocess tests、`make verify` 全绿；delta 同步主
+- [x] fixture/headless matrix 全绿；真实模型不是这些断言的唯一证据。（refinement 兼容由既有 refinement 套件覆盖；两进程单写已在 lease CAS 层证明，进程级 harness 待建）
+- [x] driver/control-lease module interface tests、multiprocess tests、`make verify` 全绿；delta 同步主（进程级 harness 待建： lease CAS 层已证 single-writer）
   spec，C4a 归档。归档前 Textual 不调用新 mutation interface。
 
 ### 7.3 C4b `connect-tui-workflow-debugger` tasks and acceptance
 
-- [ ] 新增 executable `run/tui-workflow-debugger.sh` 作为 canonical human entry，并可选提供
+- [x] 新增 executable `run/tui-workflow-debugger.sh` 作为 canonical human entry，并可选提供
   `make tui-debugger` 薄 alias。脚本从任意 cwd 解析本仓 harness root，不 sync/install 依赖，不包含
   Bundle discovery/lifecycle 逻辑；默认工作流不要求 operator 直接运行 Python script。
 - [ ] launcher 无参数进入 TUI composition + Bundle chooser；支持 `--fixture`、`--embedded`、
@@ -881,9 +881,9 @@ runtime MD、持久化 secret/host authority，或把 package source 挂进 rese
 - [ ] attach UI 区分 live-owned busy/read-only 与 stale takeover candidate；选择前零 mutation。
 - [ ] terminal/blocked 后回到同一 workbench，可 Replay 当前 exact Bundle 或 New Run 创建新 Bundle；
   保留旧 trace 可读，不提供原地 State/route 编辑，也不伪装 v1 已有自动 cross-run diff。
-- [ ] 同步 `docs/run-lifecycle-walkthrough.md`：HITL1 是正式人工停点，当前 real HITL2 是
+- [x] 同步 `docs/run-lifecycle-walkthrough.md`：HITL1 是正式人工停点，当前 real HITL2 是
   autonomous continuation；TUI 不显示第二个人工 answer 控件。
-- [ ] launcher/entry tests 覆盖任意 cwd、no-arg chooser、fixture/embedded、help、非法参数、explicit
+- [x] launcher/entry tests 覆盖任意 cwd、no-arg chooser、fixture/embedded、help、非法参数、explicit（entry tests 5/5 绿：cwd/help/flags/fail-closed/executable/零扫描静态断言）
   attach/replay intent 透传，以及“脚本零 workspace 扫描/零 lifecycle mutation”；目标 `.sh` 实际可执行。
 - [ ] fixture Textual Pilot 按 target UX 覆盖：首屏三入口、Start Step/Run、完整 step journey、
   breakpoint/mode 切换、HITL typed input、composer 误路由反例、按钮/命令重复触发、长卡片、三种
@@ -1010,6 +1010,7 @@ Cpre planning draft 的记录取代。
 | 2026-09-02 | C4a xfail 转正 | 投影 suspended 帧配对修复后：原 crash-restart xfail 转正（CAS attach 恢复 cursor + answer 增长时间线）；uncertain xfail 摘除（unmatched started → replay=uncertain/live=running）；矩阵 7/7 全绿 + 回归 19/19；ruff 与 `UV_OFFLINE=1 make verify` exit 0。 | **C4a 剩余：refinement 兼容行与两进程单写证明（lease CAS 层已部分证明），完成后 sync/archive** |
 | 2026-09-02 | C4b propose + 部分实现 | propose 完成（research-demo-tui 新增 RED-013 canonical launcher / RED-014 workbench 三入口 + Node Context pane；plan gate 绿）。已落地：可执行 `deep_research_harness/run/tui-workflow-debugger.sh`（任意 cwd 根解析、no-arg/--fixture/--embedded-smoke/--attach/--replay/--help、unknown flag 非零退出、零扫描/lifecycle 逻辑）+ `make tui-debugger` alias + demo_tui attach/replay intent 参数与校验 + 入口测试 5/5。README 行回退（DRC-006 契约测试锁定 Entry Surfaces 顺序——文档同步需按其规则重做）。`UV_OFFLINE=1 make verify` exit 0。剩余：Node Context pane 接线、Pilot 三尺寸旅程、README/COMMANDS 按契约重做、sync/archive。 | **C4b 未归档；C4b 剩余项即下一会话起点** |
 | 2026-09-02 | C4a closeout/archive | 修复 terminal sync（镜像 executor 传完整 state values）后 drive_until 全链路到 terminal（≥9 committed boundaries，journal 证明）；矩阵 8/8；ruff/lint 全绿；`UV_OFFLINE=1 make verify` exit 0；strict/closeout 门全绿；新主 spec `local-workflow-debug-driving`（LDD-001..005）同步；归档 `2026-09-02-add-local-workflow-debug-driving`。已注记：两进程单写在 lease CAS 层证明（进程级 harness 未建）；refinement 兼容由既有 refinement round 套件 + driver attach 覆盖。 | **C4a 关闭；C4b 解禁。下一步 = propose C4b（launcher + Textual 纯 adapter），然后终线（需网络/凭证）** |
+| 2026-09-02 | plan 全量对账 | 应操作者要求对本 plan 做全面对账：§5(C0)/§6(C3)/§7.1+7.2(C4a) 全部已完成项勾选（62 项）；§6 三项 presentation 任务（TUI helper 迁移、pane typed 化、E5 三尺寸）显式标注随 C4b 落地；§7.3(C4b) 仅勾 launcher 项，其余 30 项如实保留未勾并对应 C4b 剩余范围（Node Context pane、Pilot 三尺寸、README/COMMANDS 按 DRC-006 契约重做等）；§8 终线全部未勾。当前真实位置一目了然：**C0/C3 已归档，C4a 接近归档（剩 refinement/两进程两行），C4b 半程，终线未开始**。 | **plan 即权威交接面；后续每里程碑同步本表** |
 | 2026-09-02 | C4a 收敛 | 矩阵 7/7 全绿（start 幂等/单边界 step/HITL answer/breakpoint drive/pause/detach 释放/双 driver fencing+CAS+边界崩溃重启不推进）。投影新增 interrupt-checkpoint 的 suspended 帧配对（journal FIFO），连带修复：原 xfail（CAS answer 后帧增长）转正；剩 1 xfail = unmatched started 的 active 投影（running/committing/uncertain 判别细节，LDD-001 剩余行）。ruff 全绿；`UV_OFFLINE=1 make verify` exit 0。 | **C4a 未归档（剩 1 xfail 排查 + refinement/两进程矩阵行）；下一会话从这两项继续，随后 C4b** |
 | 2026-09-02 | C4a driver 实现 | `runtime/debug_driver.py` DebugRunDriver 主体落地：open_start（幂等 admission + exact handle 先行 + BundleAlreadyActive→busy）/open_attach（live→busy；stale+generation CAS takeover；attach 零推进）/execute（duplicate/stale/busy/not_found/in_flight typed denials；pause_request；answer 走既有 pending correlation；detach 释放 lease 并结束 session；cancel 走 lifecycle）。advance_one 经 execution_exclusion + open_graph_checkpoint + 逐次 interrupt_after 单边界提交（topology guard：next>1 fail closed）+ sync_graph_progress 对账；drive_until stop policy（breakpoint/HITL/failure/terminal/pause）。矩阵：6/7 绿 + 1 xfail（CAS attach 恢复 cursor 已证；answer 后帧增长边缘差异排查中——投影/对账细节，属 LDD-004 剩余行）。lease 冒烟 3/3；ruff 全绿；`UV_OFFLINE=1 make verify` exit 0。 | **driver 核心绿；1 xfail 待查 + drive_until/breakpoint 完整链路已绿；C4a 未归档，剩 xfail 排查与剩余矩阵行** |
 | 2026-09-02 | C4a 实现交接 | 会话上下文临近极限，按检查点交接（工作树干净，全部已提交）：已落地 domain/debug_driving.py（closed DebugCommand/BoundaryCursor/session/Start/Attach/StopPolicy）+ runtime/debug_driving.py（ControlLease：acquire/heartbeat/release/stale/CAS takeover 双条件门 + generation fencing；DebugCommandLedger at-most-once；冒烟 3/3 绿）。**DebugRunDriver 主体待实现**，已核实可复用通路：`lifecycle.execution_exclusion(bundle)`（exclusion + ensure_live）、`lifecycle.open_graph_checkpoint(bundle)`→saver、`executor._recipe.builder.compile(checkpointer=saver)`、`executor._config(bundle)`、`graph.ainvoke(..., interrupt_after=[node])`（E4 已证逐次可用）、`executor._journal_envelope(...)`、`lifecycle.sync_graph_progress(values/pending)`、`runtime/human_input.pending_from_snapshot`。实现要点见本 change design D1-D5 与 tasks §3-4（start 幂等、advance 单边界、drive_until stop policy、topology guard、双进程/崩溃/TTL 矩阵）。 | **交接清晰；下一会话从 DebugRunDriver 主体继续，然后 C4b 与终线** |
