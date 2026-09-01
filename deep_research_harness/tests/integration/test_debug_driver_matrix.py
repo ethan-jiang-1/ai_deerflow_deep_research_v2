@@ -116,9 +116,9 @@ async def test_start_step_admission_and_double_start_busy(tmp_path: Path) -> Non
     result = await driver.execute(advance)
     assert result.snapshot is not None
     assert result.committed_node == "bootstrap"
-    # One advance commits exactly one boundary (bootstrap). The suspended
-    # hitl1 segment projects as its own frame but is not a committed advance.
-    assert result.snapshot.cursor.frame_sequence == 2
+    # One advance commits exactly one boundary (bootstrap); hitl1 has not run
+    # yet, so the timeline holds exactly one committed frame.
+    assert result.snapshot.cursor.frame_sequence == 1
     assert opened.snapshot.cursor.frame_sequence == 0
 
 
@@ -308,10 +308,6 @@ async def test_second_driver_is_fenced_until_lease_stale_then_cas(tmp_path: Path
     assert taken.snapshot.cursor.frame_sequence == 0
 
 
-@pytest.mark.xfail(
-    reason="CAS attach 恢复 cursor 已证；answer 后投影帧增长的边缘差异排查中（LDD-004 剩余行）",
-    strict=False,
-)
 @pytest.mark.asyncio
 async def test_boundary_crash_restart_restores_cursor_without_advancing(tmp_path: Path) -> None:
     clock = {"now": 1000.0}

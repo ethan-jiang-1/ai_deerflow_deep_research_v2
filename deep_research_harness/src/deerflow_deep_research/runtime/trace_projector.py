@@ -11,7 +11,7 @@ import base64
 import hashlib
 import json
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal
 
 from deerflow_deep_research.domain.bundle import RunBundleRef
 from deerflow_deep_research.domain.run_observation import (
@@ -61,6 +61,7 @@ class _Suspension:
 
 @dataclass(frozen=True)
 class _Commit:
+    kind: Literal["completed", "suspended"]
     checkpoint_id: str
     node: str
     changed: tuple[str, ...]
@@ -104,26 +105,22 @@ class RunTraceProjector:
         after_frame_sequence: int,
         page_size: int | None,
     ) -> TracePage:
-        commits, suspension, inspection = await self._collect(bundle)
+        commits, inspection = await self._collect(bundle)
         return self._build_page(
             bundle.bundle_id.value,
             commits,
-            suspension,
             inspection,
             live=live,
             after_frame_sequence=after_frame_sequence,
             page_size=page_size,
         )
 
-    async def _collect(
-        self, bundle: RunBundleRef
-    ) -> tuple[list[_Commit], _Suspension | None, RunObservationInspection]:
+    async def _collect(self, bundle: RunBundleRef) -> tuple[list[_Commit], RunObservationInspection]:
         commits: list[_Commit] = []
         async with self._lifecycle.open_graph_checkpoint(bundle) as saver:
             config = {"configurable": {"thread_id": bundle.bundle_id.value, "checkpoint_ns": ""}}
             tuples = [item async for item in saver.alist(config)]
 
-        suspension: _Suspension | None = None
         prev_values: dict[str, Any] | None = None
         prev_trace: tuple[str, ...] = ()
         for checkpoint_tuple in reversed(tuples):  # oldest first
@@ -132,6 +129,24 @@ class RunTraceProjector:
             trace = tuple(str(item) for item in raw_trace)
             if not trace:
                 continue  # input checkpoints commit no boundary
+            pending_here = values.get("route") == "needs_input"
+            if pending_here and len(trace) <= len(prev_trace) and trace:
+                # The human-interrupt pause checkpoints its own suspended
+                # boundary: same trace, but the pause is a card of its own.
+                commits.append(
+                    _Commit(
+                        kind="suspended",
+                        checkpoint_id=str(checkpoint_tuple.config["configurable"]["checkpoint_id"]),
+                        node="",
+                        changed=(),
+                        route=None,
+                        generation=(values["generation"] if isinstance(values.get("generation"), int) else None),
+                        terminal=None,
+                    )
+                )
+                prev_values = values
+                prev_trace = trace
+                continue
             if len(trace) <= len(prev_trace):
                 continue
             for node in trace[len(prev_trace) :]:
@@ -140,6 +155,7 @@ class RunTraceProjector:
                 )
                 commits.append(
                     _Commit(
+                        kind="completed",
                         checkpoint_id=str(checkpoint_tuple.config["configurable"]["checkpoint_id"]),
                         node=node,
                         changed=changed,
@@ -150,18 +166,12 @@ class RunTraceProjector:
                 )
             prev_values = values
             prev_trace = trace
-        if tuples and (tuples[0].metadata or {}).get("source") is not None:
-            newest_values = self._decode_channel_values(saver, tuples[0].checkpoint)
-            if newest_values.get("route") == "needs_input":
-                checkpoint_id = str(tuples[0].config["configurable"]["checkpoint_id"])
-                suspension = _Suspension(checkpoint_id=checkpoint_id)
-
         store = RunObservationStore(
             bundle_root=self._lifecycle.private_root(bundle),
             bundle_id=bundle.bundle_id.value,
         )
         inspection = await store.inspect(bundle_id=bundle.bundle_id.value)
-        return commits, suspension, inspection
+        return commits, inspection
 
     @staticmethod
     def _decode_channel_values(saver: Any, checkpoint: Any) -> dict[str, Any]:
@@ -183,7 +193,6 @@ class RunTraceProjector:
         self,
         bundle_id: str,
         commits: list[_Commit],
-        suspension: _Suspension | None,
         inspection: RunObservationInspection,
         *,
         live: bool,
@@ -213,6 +222,30 @@ class RunTraceProjector:
         sequence = 0
         for commit in commits:
             sequence += 1
+            if commit.kind == "suspended":
+                suspended_event = next(
+                    (event for event in finalized if id(event) not in consumed and event.outcome == "suspended"),
+                    None,
+                )
+                if suspended_event is None:
+                    sequence -= 1  # no journal fact yet: the pause is not a frame
+                    continue
+                consumed.add(id(suspended_event))
+                frames.append(
+                    TraceFrame(
+                        bundle_id=bundle_id,
+                        frame_sequence=sequence,
+                        checkpoint_id=commit.checkpoint_id,
+                        visit_id=suspended_event.attempt_id,
+                        node=suspended_event.phase,
+                        outcome="suspended",
+                        duration_ms=suspended_event.duration_ms,
+                        pending_input=suspended_event.phase,
+                        observation_quality=quality,  # type: ignore[arg-type]
+                        gap_reason=gap_reason,
+                    )
+                )
+                continue
             match = next(
                 (
                     event
@@ -241,29 +274,6 @@ class RunTraceProjector:
                     gap_reason=gap_reason,
                 )
             )
-
-        if suspension is not None:
-            suspended_event = next(
-                (event for event in finalized if id(event) not in consumed and event.outcome == "suspended"),
-                None,
-            )
-            if suspended_event is not None:
-                consumed.add(id(suspended_event))
-                sequence += 1
-                frames.append(
-                    TraceFrame(
-                        bundle_id=bundle_id,
-                        frame_sequence=sequence,
-                        checkpoint_id=suspension.checkpoint_id,
-                        visit_id=suspended_event.attempt_id,
-                        node=suspended_event.phase,
-                        outcome="suspended",
-                        duration_ms=suspended_event.duration_ms,
-                        pending_input=suspended_event.phase,
-                        observation_quality=quality,  # type: ignore[arg-type]
-                        gap_reason=gap_reason,
-                    )
-                )
 
         active: ActiveVisitProjection | None = None
         leftovers = [event for event in finalized if id(event) not in consumed]
