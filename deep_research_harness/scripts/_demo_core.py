@@ -781,15 +781,33 @@ def build_fixture_demo_recipe(
     )
 
 
-def build_real_demo_recipe(*, work_unit_store_factory: Any) -> ResearchGraphRecipe:
+def build_real_demo_recipe(
+    *, work_unit_store_factory: Any, node_agent_bridge_factory: Any = None
+) -> ResearchGraphRecipe:
     """Build the fixed all-real recipe used by credentialed demo roots.
 
     @impl DPL-003
     """
     return ResearchGraphRecipe.all_real(
         work_unit_store_factory=work_unit_store_factory,
-        node_agent_bridge_factory=build_demo_node_agent_bridge,
+        node_agent_bridge_factory=node_agent_bridge_factory or build_demo_node_agent_bridge,
     )
+
+
+def _make_recorder_bridge_factory(holder: dict[str, Any] | None) -> Any:
+    """Wrap the demo bridge factory to inject the debug context recorder."""
+
+    if holder is None:
+        return None
+
+    def factory(**kwargs: Any) -> Any:
+        bridge = build_demo_node_agent_bridge(**kwargs)
+        recorder = holder.get("recorder")
+        if recorder is not None:
+            bridge.node_context_recorder = recorder
+        return bridge
+
+    return factory
 
 
 def build_demo_runtime(
@@ -803,7 +821,10 @@ def build_demo_runtime(
     if mode == "real":
         if adapter.execution_profile is None:
             raise RuntimeError("demo_real_profile_required")
-        recipe = build_real_demo_recipe(work_unit_store_factory=adapter.create_work_unit_store)
+        recipe = build_real_demo_recipe(
+            work_unit_store_factory=adapter.create_work_unit_store,
+            node_agent_bridge_factory=_make_recorder_bridge_factory(node_context_recorder_holder),
+        )
     elif mode == "fixture_graph":
         recipe = build_fixture_demo_recipe(
             work_unit_store_factory=adapter.create_work_unit_store,
