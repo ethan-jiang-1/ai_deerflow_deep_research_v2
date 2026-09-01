@@ -222,6 +222,7 @@ class RunObservationStore:
         readiness_failure_codes: tuple[str, ...] = (),
         targeted_evidence_reason: str | None = None,
         targeted_gap_count: int | None = None,
+        duration_ms: int | None = None,
     ) -> None:
         """Append a redacted event only to an already-published observation."""
 
@@ -263,6 +264,7 @@ class RunObservationStore:
                     readiness_failure_codes,
                     targeted_evidence_reason,
                     targeted_gap_count,
+                    duration_ms,
                 )
             except (OSError, ValueError, RunObservationError):
                 # Observations cannot perturb graph or lifecycle execution.
@@ -511,6 +513,7 @@ class RunObservationStore:
         readiness_failure_codes: tuple[str, ...],
         targeted_evidence_reason: str | None,
         targeted_gap_count: int | None,
+        duration_ms: int | None = None,
     ) -> None:
         if generation is None:
             return
@@ -528,6 +531,7 @@ class RunObservationStore:
                 generation=generation,
                 phase=phase,
                 outcome=outcome,  # type: ignore[arg-type]
+                duration_ms=duration_ms,
                 work_id=work_id,
                 attempt_id=attempt_id,
                 validation_stage=validation_stage,  # type: ignore[arg-type]
@@ -751,6 +755,9 @@ class RunObservationStore:
             return 60
         if event.category is RunEventCategory.RETRY:
             return 50
+        if event.category is RunEventCategory.NODE and event.outcome in {"completed", "suspended", "failed"}:
+            # LDO-004: finalized node facts outlive plain start/model-tool facts.
+            return 45
         if event.category is RunEventCategory.LIFECYCLE:
             return 40
         return 10

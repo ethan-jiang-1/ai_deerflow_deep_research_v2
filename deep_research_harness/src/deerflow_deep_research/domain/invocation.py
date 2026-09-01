@@ -60,6 +60,7 @@ class RunEventRecorderProtocol(Protocol):
         category: RunEventCategory,
         phase: str,
         outcome: str | None = None,
+        duration_ms: int | None = None,
         work_id: str | None = None,
         attempt_id: str | None = None,
         validation_stage: str | None = None,

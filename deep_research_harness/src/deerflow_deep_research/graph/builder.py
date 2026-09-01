@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import asyncio
+import time
 import inspect
 import logging
 from collections.abc import Mapping
@@ -61,6 +62,7 @@ async def _record_node_event(
     outcome: str,
     failure_category: str | None = None,
     worker_failure_category: str | None = None,
+    duration_ms: int | None = None,
 ) -> None:
     if context.observation_projection is not None:
         # REJ-011: a suspension is projected as suspended, never relabeled as a
@@ -87,6 +89,7 @@ async def _record_node_event(
                 outcome=outcome,
                 failure_category=failure_category,
                 worker_failure_category=worker_failure_category,
+                duration_ms=duration_ms,
             )
         except Exception:
             # Observation must never change graph/checkpoint/route authority.
@@ -229,6 +232,9 @@ def _node_wrapper(
             phase=logical_name,
             attempt_id=current_attempt,
             outcome="completed",
+            duration_ms=(
+                int((time.perf_counter() - segment["t0"]) * 1000) if segment["t0"] is not None else None
+            ),
         )
 
         gate_view = result.pop(WORK_UNIT_GATE_VIEW_KEY, None)
@@ -313,12 +319,16 @@ def _node_wrapper(
             result = {**result, **gate_update}
         return result
 
+    segment = {"t0": None}
+
     async def observed_run(state: ResearchState, runtime: Runtime[GraphInvocationContext]) -> dict[str, Any]:
+        segment["t0"] = time.perf_counter()
         try:
             return await run(state, runtime)
         except asyncio.CancelledError:
             raise
         except GraphInterrupt:
+            duration_ms = int((time.perf_counter() - segment["t0"]) * 1000)
             # A human-interrupt suspension is a normal pause awaiting recovery,
             # never an internal failure (BUG-063): record the attempt as
             # suspended and let the signal propagate to the graph machinery.
@@ -330,9 +340,11 @@ def _node_wrapper(
                 phase=logical_name,
                 attempt_id=make_node_visit_id(state, logical_name),
                 outcome="suspended",
+                duration_ms=duration_ms,
             )
             raise
         except Exception:
+            duration_ms = int((time.perf_counter() - segment["t0"]) * 1000)
             context = runtime.context
             await _record_node_event(
                 context,
@@ -343,6 +355,7 @@ def _node_wrapper(
                 outcome="failed",
                 failure_category="internal.unexpected",
                 worker_failure_category="unknown",
+                duration_ms=duration_ms,
             )
             raise
 
