@@ -796,11 +796,15 @@ class DeepResearchDemoTUI(App[None]):
         mode: Literal["fixture", "gateway", "embedded_smoke"] = "gateway",
         profile: str | None = None,
         auto: bool = False,
+        attach_intent: str | None = None,
+        replay_intent: str | None = None,
     ) -> None:
         super().__init__()
         self.mode = mode
         self.profile = profile
         self.auto = auto
+        self._attach_intent = attach_intent
+        self._replay_intent = replay_intent
         self._adapter: DemoAdapter | None = None
         self._gateway_transport: GatewayObserver | None = None
         if self.mode == "gateway":
@@ -845,6 +849,8 @@ class DeepResearchDemoTUI(App[None]):
         self._chat_history: list[tuple[str, str]] = []
         self._last_terminal_bundle: str | None = None
         self._session_bundle_id: str | None = None
+        self._attach_intent: str | None = None
+        self._replay_intent: str | None = None
         self._recoverable_bundle_id: str | None = None
         self._recoverable_phase = "unknown"
         self._last_typed = ""
@@ -1761,7 +1767,13 @@ def main() -> None:
         mode = "embedded_smoke"
     else:
         mode = "gateway"
-    app = DeepResearchDemoTUI(mode=mode, profile=args.profile, auto=args.auto)
+    app = DeepResearchDemoTUI(
+        mode=mode,
+        profile=args.profile,
+        auto=args.auto,
+        attach_intent=args.attach,
+        replay_intent=args.replay,
+    )
     try:
         app.run()
     finally:

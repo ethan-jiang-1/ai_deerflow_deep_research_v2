@@ -89,6 +89,10 @@ demo-real-scripted: entry-preflight
 	$(ENTRY_RUN) $(LOCAL_ENV_ARG) --extra operations --extra demo-real python scripts/demo_real.py --embedded-smoke --scripted $(DEMO_ARGS)
 
 # Default real TUI: selected local Gateway observer. This is not the production Terminal Workbench.
+# Canonical debugger workbench entry (thin wrapper over the TUI entry; RED-013).
+tui-debugger:
+	./run/tui-workflow-debugger.sh $(DEBUGGER_ARGS)
+
 demo-tui: entry-preflight
 	test -n "$(PROFILE)" || { echo "Usage: make demo-tui PROFILE=demo"; exit 2; }
 	$(ENTRY_RUN) $(LOCAL_ENV_ARG) --extra operations --extra demo-real --extra demo-tui python scripts/demo_tui.py --profile "$(PROFILE)" $(DEMO_ARGS)
