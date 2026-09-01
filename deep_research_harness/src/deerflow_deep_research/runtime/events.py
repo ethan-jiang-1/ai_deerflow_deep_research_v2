@@ -53,6 +53,7 @@ class ObservationOutcome(StrEnum):
     CANCELLED = "cancelled"
     BLOCKED = "blocked"
     STOPPED = "stopped"
+    SUSPENDED = "suspended"
 
 
 _LIVE_OUTCOMES = {
@@ -61,6 +62,7 @@ _LIVE_OUTCOMES = {
             ObservationOutcome.STARTED,
             ObservationOutcome.COMPLETED,
             ObservationOutcome.FAILED,
+            ObservationOutcome.SUSPENDED,
         }
     ),
     "gate": frozenset(

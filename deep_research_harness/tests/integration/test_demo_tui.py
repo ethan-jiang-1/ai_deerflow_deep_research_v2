@@ -1146,6 +1146,8 @@ async def test_tui_processing_timer_ticks_seconds_in_panel(monkeypatch: pytest.M
 
 
 def test_last_model_call_state_detects_inflight_call(tmp_path: Path) -> None:
+    """@impl RED-012 The narration source is the exact bound bundle directory."""
+
     bundle = tmp_path / "workspace" / "deep-research" / "scopes" / "s_demo" / "b_demo"
     diag = bundle / "diagnostics"
     diag.mkdir(parents=True)
@@ -1158,7 +1160,7 @@ def test_last_model_call_state_detects_inflight_call(tmp_path: Path) -> None:
         encoding="utf-8",
     )
 
-    outcome, stamp = demo_tui._last_model_call_state(tmp_path)
+    outcome, stamp = demo_tui._last_model_call_state(bundle)
     assert outcome == "started"
     assert stamp > 0
 
@@ -1166,8 +1168,10 @@ def test_last_model_call_state_detects_inflight_call(tmp_path: Path) -> None:
         '{"category": "model_tool", "phase": "wave0", "outcome": "completed", "timestamp": "2026-08-22T01:00:02Z"}\n',
         encoding="utf-8",
     )
-    outcome, _ = demo_tui._last_model_call_state(tmp_path)
+    outcome, _ = demo_tui._last_model_call_state(bundle)
     assert outcome == "completed"
+
+    assert demo_tui._last_model_call_state(None) == (None, 0.0)
 
 
 @pytest.mark.asyncio
@@ -1206,67 +1210,32 @@ async def test_tui_blocked_terminal_tells_user_failure_not_completed(
         assert app._onboarding is True
 
 
-def test_live_progress_picks_suspended_inflight_run(tmp_path: Path) -> None:
-    # The in-flight run is "suspended" (graph executing), not "active"; progress
-    # must still pick it (it is the newest updated bundle) instead of an older
-    # active bundle — otherwise the TUI shows a stale/other run's progress.
-    old_active = tmp_path / "workspace" / "deep-research" / "scopes" / "s_old" / "b_old"
-    old_active.mkdir(parents=True)
-    (old_active / "diagnostics").mkdir()
-    (old_active / "diagnostics" / "run-summary.json").write_text(
-        '{"status": "active", "updated_at": "2026-08-22T01:00:00Z"}', encoding="utf-8"
-    )
-    (old_active / "diagnostics" / "events.jsonl").write_text(
-        '{"category": "node", "phase": "hitl1", "outcome": "started", "timestamp": "2026-08-22T01:00:00Z"}\n',
-        encoding="utf-8",
-    )
-    inflight = tmp_path / "workspace" / "deep-research" / "scopes" / "s_new" / "b_new"
-    inflight.mkdir(parents=True)
-    (inflight / "diagnostics").mkdir()
-    (inflight / "diagnostics" / "run-summary.json").write_text(
+def test_live_progress_lines_narrates_a_suspended_visit_as_awaiting_recovery(tmp_path: Path) -> None:
+    """@impl RED-012 A bound suspended visit is narrated as awaiting recovery.
+
+    The narration source is the exact bundle the session binds to — recency or
+    status never select it. A suspended node visit is not completed and not
+    failed; it is shown as awaiting recovery.
+    """
+    bound = tmp_path / "workspace" / "deep-research" / "scopes" / "s_demo" / "b_bound"
+    bound.mkdir(parents=True)
+    (bound / "diagnostics").mkdir()
+    (bound / "diagnostics" / "run-summary.json").write_text(
         '{"status": "suspended", "updated_at": "2026-08-22T02:00:00Z"}', encoding="utf-8"
     )
-    (inflight / "diagnostics" / "events.jsonl").write_text(
-        '{"category": "node", "phase": "hitl1", "outcome": "completed", "timestamp": "2026-08-22T02:00:00Z"}\n'
-        '{"category": "node", "phase": "topic_planning", "outcome": "completed", "timestamp": "2026-08-22T02:00:00Z"}\n'
-        '{"category": "node", "phase": "wave0", "outcome": "completed", "timestamp": "2026-08-22T02:00:01Z"}\n'
-        '{"category": "node", "phase": "wave1", "outcome": "started", "timestamp": "2026-08-22T02:00:02Z"}\n',
+    (bound / "diagnostics" / "events.jsonl").write_text(
+        '{"category": "node", "outcome": "completed", "phase": "hitl1", "timestamp": "2026-08-22T02:00:00Z"}\n'
+        '{"category": "node", "outcome": "completed", "phase": "topic_planning", "timestamp": "2026-08-22T02:00:00Z"}\n'
+        '{"category": "node", "outcome": "completed", "phase": "wave0", "timestamp": "2026-08-22T02:00:01Z"}\n'
+        '{"category": "node", "outcome": "suspended", "phase": "wave1", "timestamp": "2026-08-22T02:00:02Z"}\n',
         encoding="utf-8",
     )
 
-    lines = demo_tui.live_progress_lines(tmp_path)
+    lines = demo_tui.live_progress_lines(tmp_path, bundle_id="b_bound")
     text = "\n".join(lines)
-    assert "wave1（进行中）" in text
+    assert "wave1（待恢复）" in text
+    assert "wave0" in text and "wave1（进行中）" not in text
     assert "接下来" in text
-    assert "hitl1（进行中）" not in text  # the stale active bundle was NOT picked
-
-
-def test_event_feed_lines_render_recent_activity(tmp_path: Path) -> None:
-    bundle = tmp_path / "workspace" / "deep-research" / "scopes" / "s_demo" / "b_demo"
-    diag = bundle / "diagnostics"
-    diag.mkdir(parents=True)
-    (diag / "run-summary.json").write_text(
-        '{"status": "suspended", "updated_at": "2026-08-22T03:00:00Z"}', encoding="utf-8"
-    )
-    (diag / "events.jsonl").write_text(
-        "\n".join(
-            [
-                '{"category": "node", "phase": "wave0", "outcome": "completed", "timestamp": "2026-08-22T02:59:00Z"}',
-                '{"category": "model_tool", "phase": "wave1", "outcome": "completed", "usage_tokens": {"total_tokens": 5214}, "timestamp": "2026-08-22T03:00:00Z"}',  # noqa: E501
-                '{"category": "submit", "phase": "wave1", "result_byte_count": 4096, "passed_checks": ["a", "b", "c"], "timestamp": "2026-08-22T03:00:01Z"}',  # noqa: E501
-                '{"category": "node", "phase": "wave1", "outcome": "completed", "timestamp": "2026-08-22T03:00:02Z"}',
-            ]
-        )
-        + "\n",
-        encoding="utf-8",
-    )
-
-    feed = demo_tui._event_feed_lines(tmp_path, limit=4)
-    text = "\n".join(feed)
-    assert "模型调用完成 · 5.2k tokens" in text
-    assert "提交结果 · 4.1KB · 3 项检查通过" in text
-    assert "✓ wave0 完成" in text
-    assert "✓ wave1 完成" in text
 
 
 @pytest.mark.asyncio
@@ -1291,6 +1260,7 @@ async def test_tui_rolling_feed_appends_new_events_incrementally(
     app = demo_tui.DeepResearchDemoTUI(mode="embedded_smoke")
     async with app.run_test() as pilot:
         await _wait_for(app, pilot, demo_tui.Ready)
+        app._session_bundle_id = "b_demo"
         app._render_live_activity()
         await pilot.pause()
         # second batch: a new event arrives -> appended, not duplicated

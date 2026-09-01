@@ -236,7 +236,7 @@ def test_live_progress_lines_reports_active_bundle_journal(tmp_path: Path) -> No
     )
     assert bundle.is_dir()
 
-    lines = demo_tui.live_progress_lines(tmp_path)
+    lines = demo_tui.live_progress_lines(tmp_path, bundle_id="b_demo")
     assert lines
     text = "\n".join(lines)
     assert "进度: bootstrap → wave0 → wave1（进行中）" in text
@@ -247,7 +247,9 @@ def test_live_progress_lines_reports_active_bundle_journal(tmp_path: Path) -> No
     assert "journal 事件:" not in text
 
 
-def test_live_progress_lines_picks_most_recent_active_bundle(tmp_path: Path) -> None:
+def test_live_progress_lines_without_binding_reads_no_bundle(tmp_path: Path) -> None:
+    """RED-012: without an exact id, narration stays static and reads nothing."""
+
     _write_journal_bundle(
         tmp_path,
         scope="s_old",
@@ -268,11 +270,44 @@ def test_live_progress_lines_picks_most_recent_active_bundle(tmp_path: Path) -> 
         ],
     )
 
-    lines = demo_tui.live_progress_lines(tmp_path)
-    text = "\n".join(lines)
-    assert "b_new" not in text  # bundle id is not rendered; the *phase* is what matters
-    assert "wave2_synthesis（进行中）" in text
-    assert "bootstrap" not in text  # the older bundle was not selected
+    assert demo_tui.live_progress_lines(tmp_path) == ()
+    assert demo_tui.live_progress_lines(tmp_path, bundle_id=None) == ()
+    assert demo_tui.live_progress_lines(None, bundle_id="b_new") == ()
+
+
+def test_live_progress_lines_never_mixes_two_bound_bundles(tmp_path: Path) -> None:
+    """RED-012: narration exposes only the bound bundle's facts, never the other's."""
+
+    _write_journal_bundle(
+        tmp_path,
+        scope="s_a",
+        bundle="b_a",
+        updated_at="2026-08-21T11:00:00Z",
+        events=[
+            {"category": "node", "outcome": "completed", "phase": "topic_planning", "timestamp": "2026-08-21T11:00:01Z"},
+            {"category": "node", "outcome": "started", "phase": "wave0", "timestamp": "2026-08-21T11:00:02Z"},
+        ],
+    )
+    _write_journal_bundle(
+        tmp_path,
+        scope="s_b",
+        bundle="b_b",
+        updated_at="2026-08-21T12:00:00Z",
+        events=[
+            {"category": "node", "outcome": "started", "phase": "wave2_synthesis", "timestamp": "2026-08-21T12:00:01Z"},
+        ],
+    )
+
+    bound_a = "\n".join(demo_tui.live_progress_lines(tmp_path, bundle_id="b_a"))
+    progress_a = [line for line in bound_a.splitlines() if line.startswith("进度:")][-1]
+    assert "wave0（进行中）" in progress_a
+    assert "wave2_synthesis" not in progress_a
+
+    bound_b = "\n".join(demo_tui.live_progress_lines(tmp_path, bundle_id="b_b"))
+    progress_b = [line for line in bound_b.splitlines() if line.startswith("进度:")][-1]
+    assert "wave2_synthesis（进行中）" in progress_b
+    assert "wave0" not in progress_b
+    assert "topic_planning" not in progress_b
 
 
 def test_live_progress_lines_returns_empty_without_active_bundle(tmp_path: Path) -> None:

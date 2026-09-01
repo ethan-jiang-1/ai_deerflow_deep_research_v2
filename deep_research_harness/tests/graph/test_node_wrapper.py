@@ -29,6 +29,7 @@ from deerflow_deep_research.domain.node_spec import (
     PolicyRef,
 )
 from deerflow_deep_research.domain.profile import ResearchProfile
+from deerflow_deep_research.domain.run_observation import RunEventCategory
 from deerflow_deep_research.domain.state import BUNDLE_STATE_SCHEMA_VERSION, BundleLocalState, ContentRef, ResearchState
 from deerflow_deep_research.graph import builder as builder_module
 from deerflow_deep_research.graph.builder import _node_wrapper, _route
@@ -392,6 +393,24 @@ class TestWrapperJournalEvents:
             ("node", "started"),
             ("node", "completed"),
         ]
+
+    async def test_projection_keeps_suspension_distinct_from_failure(self) -> None:
+        """REJ-011: the live projection carries `suspended`, never relabeled `failed`."""
+
+        projection = _ObservationProjection()
+        context = _context(None, observation_projection=projection)
+
+        await builder_module._record_node_event(
+            context,
+            bundle_id=_BUNDLE_ID,
+            category=RunEventCategory.NODE,
+            phase="hitl1",
+            attempt_id="g0-hitl1-a1",
+            outcome="suspended",
+        )
+
+        assert [payload["outcome"] for payload in projection.events] == ["suspended"]
+        assert all(payload.get("code") != "provider_failed" for payload in projection.events)
 
     async def test_wrapper_projects_a_gate_verdict_without_changing_its_state_update(
         self,

@@ -240,43 +240,17 @@ def _format_timestamp(value: object) -> str:
         return value[-8:]
 
 
-def _latest_active_bundle(bundle_root: Path | None) -> Path | None:
-    """Locate the newest in-flight (active or suspended) bundle, if any."""
-    if bundle_root is None:
-        return None
-    scopes_dir = bundle_root / "workspace" / "deep-research" / "scopes"
-    if not scopes_dir.is_dir():
-        return None
-    candidates: list[tuple[str, Path]] = []
-    for scope in scopes_dir.iterdir():
-        if not scope.is_dir():
-            continue
-        for bundle in scope.iterdir():
-            summary = bundle / "diagnostics" / "run-summary.json"
-            try:
-                data = json.loads(summary.read_text(encoding="utf-8"))
-            except (OSError, ValueError):
-                continue
-            if data.get("status") not in ("active", "suspended"):
-                continue
-            candidates.append((str(data.get("updated_at", "")), bundle))
-    if not candidates:
-        return None
-    return max(candidates)[1]
+def live_progress_lines(bundle_root: Path | None, *, bundle_id: str | None = None) -> tuple[str, ...]:
+    """Read the *exact bound* bundle's journal and return human-readable
+    live-progress lines for the Working heartbeat.
 
-
-def live_progress_lines(bundle_root: Path | None) -> tuple[str, ...]:
-    """Read the most-recently updated *active* bundle's journal and return
-    human-readable live-progress lines for the Working heartbeat.
-
-    The TUI dispatch itself carries no phase/trace while the graph runs, so the
-    presentation layer reads the ignored retained-run journal on disk. Returns
-    () when there is no readable active bundle (preflight, fixture mode, no run
-    yet, or an I/O failure) so the heartbeat degrades to the static message.
+    RED-012: the narration source is only the Bundle the session's shared
+    updates identify; without a bound id the heartbeat degrades to the static
+    message and no other bundle's journal is ever read.
     """
-    if bundle_root is None:
+    if bundle_root is None or not bundle_id:
         return ()
-    bundle = _latest_active_bundle(bundle_root)
+    bundle = find_bundle_dir(bundle_root, bundle_id)
     if bundle is None:
         return ()
     events_path = bundle / "diagnostics" / "events.jsonl"
@@ -329,12 +303,18 @@ def live_progress_lines(bundle_root: Path | None) -> tuple[str, ...]:
     if done or last_node_phase:
         deduped = list(dict.fromkeys(done))  # dedupe repeated phases
         in_flight = last_node_outcome == "started" and last_node_phase is not None
+        suspended_wait = last_node_outcome == "suspended" and last_node_phase is not None
         if in_flight and (not deduped or last_node_phase != deduped[-1]):
             chain = " → ".join(deduped)
             chain = f"{chain} → {last_node_phase}（进行中）" if chain else f"{last_node_phase}（进行中）"
+        elif suspended_wait and (not deduped or last_node_phase != deduped[-1]):
+            chain = " → ".join(deduped)
+            chain = f"{chain} → {last_node_phase}（待恢复）" if chain else f"{last_node_phase}（待恢复）"
         else:
             chain = " → ".join(deduped)
         lines.append(f"进度: {chain}")
+        if suspended_wait:
+            lines.append("⏸ 已暂停，等待恢复输入。")
         # "What comes next": show the remaining pipeline so the operator knows
         # the run is still alive and how far it still has to go, instead of
         # staring at a static "in progress" line and assuming it died.
@@ -499,60 +479,18 @@ def _event_to_feed_line(event: dict[str, object]) -> str | None:
         return f"{stamp} ✓ {phase} 完成"
     if category == "node" and outcome == "failed":
         return f"{stamp} ⚠ {phase} 失败（重试中）"
+    if category == "node" and outcome == "suspended":
+        return f"{stamp} ⏸ {phase} 暂停，等待恢复"
     if category == "terminal" and outcome == "completed":
         return f"{stamp} 🏁 {phase} 结束"
     return None
 
 
-def _event_feed_lines(bundle_root: Path | None, *, limit: int = 6) -> tuple[str, ...]:
-    """Human-readable recent event feed from the in-flight bundle journal."""
-    bundle = _latest_active_bundle(bundle_root)
+def _last_model_call_state(bundle: Path | None) -> tuple[str | None, float]:
+    """(started|completed|None, epoch seconds of that event) from the bound journal."""
     if bundle is None:
-        return ()
+        return None, 0.0
     events_file = bundle / "diagnostics" / "events.jsonl"
-    try:
-        raw = events_file.read_text(encoding="utf-8").splitlines()
-    except OSError:
-        return ()
-    lines: list[str] = []
-    for line in reversed(raw):
-        try:
-            event = json.loads(line)
-        except ValueError:
-            continue
-        feed_line = _event_to_feed_line(event)
-        if feed_line is not None:
-            lines.append(feed_line)
-        if len(lines) >= limit:
-            break
-    return tuple(reversed(lines))
-
-
-def _last_model_call_state(bundle_root: Path) -> tuple[str | None, float]:
-    """(started|completed|None, epoch seconds of that event) from the journal tail."""
-    if bundle_root is None:
-        return None, 0.0
-    events_path = bundle_root / "workspace" / "deep-research" / "scopes"
-    # find the most recently updated active bundle journal, like live_progress_lines
-    latest: tuple[str, Path] | None = None
-    if events_path.is_dir():
-        for scope in events_path.iterdir():
-            if not scope.is_dir():
-                continue
-            for bundle in scope.iterdir():
-                summary = bundle / "diagnostics" / "run-summary.json"
-                try:
-                    data = json.loads(summary.read_text(encoding="utf-8"))
-                except (OSError, ValueError):
-                    continue
-                if data.get("status") not in ("active", "suspended"):
-                    continue
-                stamp = str(data.get("updated_at", ""))
-                if latest is None or stamp > latest[0]:
-                    latest = (stamp, bundle)
-    if latest is None:
-        return None, 0.0
-    events_file = latest[1] / "diagnostics" / "events.jsonl"
     try:
         raw = events_file.read_text(encoding="utf-8").splitlines()
     except OSError:
@@ -906,6 +844,7 @@ class DeepResearchDemoTUI(App[None]):
         self._chat_model: Any | None = None
         self._chat_history: list[tuple[str, str]] = []
         self._last_terminal_bundle: str | None = None
+        self._session_bundle_id: str | None = None
         self._recoverable_bundle_id: str | None = None
         self._recoverable_phase = "unknown"
         self._last_typed = ""
@@ -1019,7 +958,10 @@ class DeepResearchDemoTUI(App[None]):
         adapter = self._adapter
         if adapter is None:
             return ()
-        return live_progress_lines(getattr(adapter, "bundle_root", None))
+        return live_progress_lines(
+            getattr(adapter, "bundle_root", None),
+            bundle_id=self._session_bundle_id,
+        )
 
     def _terminal_report_path(self, update: RunUpdate) -> Path | None:
         """Resolve the produced report path for a completed terminal update."""
@@ -1065,6 +1007,14 @@ class DeepResearchDemoTUI(App[None]):
     def apply_run_update(self, update: RunUpdate) -> None:
         """Public adapter seam: consume a shared update without lifecycle parsing."""
         self.last_update = update
+        # RED-012: the narration source is exactly the Bundle the session's own
+        # updates identify; a fresh Ready resets the binding.
+        if isinstance(update, Ready):
+            self._session_bundle_id = None
+        else:
+            bound_id = getattr(update.snapshot, "bundle_id", None)
+            if bound_id:
+                self._session_bundle_id = bound_id
         view = render_run_update(
             update,
             progress=self._live_progress(),
@@ -1592,10 +1542,14 @@ class DeepResearchDemoTUI(App[None]):
         Every new journal event is appended to #log (a true scrolling feed,
         never cleared during research); #inspect shows the semantic status:
         progress chain, what comes next, and what is happening right now.
+        RED-012: the narration source is exactly the session's bound bundle —
+        no workspace-wide latest scan ever selects it.
         """
         adapter = self._adapter
         root = getattr(adapter, "bundle_root", None) if adapter is not None else None
-        bundle = _latest_active_bundle(root)
+        if root is None or not self._session_bundle_id:
+            return
+        bundle = find_bundle_dir(root, self._session_bundle_id)
         if bundle is None:
             return
         events_file = bundle / "diagnostics" / "events.jsonl"
@@ -1614,10 +1568,10 @@ class DeepResearchDemoTUI(App[None]):
                 log.write(Text(feed_line, style="dim"))
         self._feed_watermark = len(raw)
 
-        progress = list(live_progress_lines(root))
+        progress = list(live_progress_lines(root, bundle_id=self._session_bundle_id))
         if not progress:
             return
-        outcome, _stamp = _last_model_call_state(root)
+        outcome, _stamp = _last_model_call_state(bundle)
         lines = list(progress)
         if outcome == "started":
             lines.append("⚙ 正在: 模型调用中")

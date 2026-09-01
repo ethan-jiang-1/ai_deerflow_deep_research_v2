@@ -63,10 +63,14 @@ async def _record_node_event(
     worker_failure_category: str | None = None,
 ) -> None:
     if context.observation_projection is not None:
+        # REJ-011: a suspension is projected as suspended, never relabeled as a
+        # failure; the closed set mirrors the persisted RunEvent outcome values.
         fields: dict[str, object] = {
             "phase": phase,
             "operation": category.value,
-            "outcome": outcome if outcome in {"started", "completed", "failed"} else "failed",
+            "outcome": outcome
+            if outcome in {"started", "completed", "failed", "suspended"}
+            else "failed",
             "attempt_id": attempt_id,
         }
         if bundle_id is not None:

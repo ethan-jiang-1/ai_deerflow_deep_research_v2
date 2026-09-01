@@ -219,7 +219,7 @@ class RunEvent(FrozenRunObservationContract):
     category: RunEventCategory
     generation: int | None = Field(default=None, ge=0, le=2)
     phase: str = Field(min_length=1, max_length=32, pattern=r"^[a-z][a-z0-9_]*$")
-    outcome: Literal["started", "completed", "failed"] | None = None
+    outcome: Literal["started", "completed", "failed", "suspended"] | None = None
     work_id: str | None = Field(default=None, pattern=r"^[A-Za-z0-9:_-]{1,128}$")
     attempt_id: str | None = Field(default=None, pattern=r"^[A-Za-z0-9:_-]{1,128}$")
     validation_code: str | None = Field(default=None, pattern=_VALIDATION_CODE_PATTERN)

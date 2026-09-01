@@ -70,6 +70,7 @@ def _assert_redacted(candidate: dict[str, object], *, bundle_id: str, outer_run_
         "stopped",
         "blocked",
         "retrying",
+        "suspended",
     }
     assert candidate["bundle_id"] == bundle_id
     for key in ("phase", "operation", "outcome"):
