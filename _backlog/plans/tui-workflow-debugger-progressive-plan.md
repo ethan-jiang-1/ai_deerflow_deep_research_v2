@@ -1,7 +1,7 @@
 # Plan: TUI Workflow Debugger 递进执行计划
 
 > 类型: 递进执行计划 | 创建: 2026-08-31 | 重写: 2026-08-31 | UX/一致性审计: 2026-09-01
-> 状态: 当前唯一活跃 plan；D6-D8 已定，尚未创建 Cpre/C0/C3/C4a/C4b OpenSpec change
+> 状态: 当前唯一活跃 plan；D6-D8 已定；Cpre planning draft 已创建，仍在 plan/review，尚未 apply/sync/archive；C0/C3/C4a/C4b 尚未创建
 > 当前决策与执行权威: 本文件
 > 前置证据与原计划纠错: [tui-step-debugger-grounding-review.md](tui-step-debugger-grounding-review.md)
 > 目标体验与计划追踪: [tui-workflow-debugger-target-ux.md](tui-workflow-debugger-target-ux.md)
@@ -32,6 +32,110 @@ supporting 文档与本文件冲突时，以本文件为当前决策权威。主
 应用代码 -> 当期 OpenSpec change”阅读。`_archive/` 路径本身不赋予文档权威；不得从三份 campaign
 历史中复制 unchecked task、类名或接口建议进入 proposal。
 
+## 起点：原始意图与阶段因果链（先读）
+
+本节保留这项工作的“为什么”，防止后续 Agent 只看到 interface、checkbox 和 change slug，却不
+知道它们在阻止什么失败。它不把历史材料重新提升为当前 authority，也不替代后文任务；它只把
+原始意图、历史证据、目标原则和执行顺序连成一条可复核的因果链。
+
+### 原始意图
+
+最初的诉求是：**“像传统软件开发 debug，一步一步把 agentic workflow 调对，也能串起来跑。”**
+这里的“像 debugger”不是给现有 TUI 多加几个按钮，而是让 contributor/operator 能够：
+
+1. 在**同一张真实 StateGraph、同一套 Bundle lifecycle、同一个 checkpoint thread**上，既逐边界
+   Step，也能 Continue/Run；调试路径不能成为另一张只在 demo 中成立的 graph。
+2. 看懂一次 logical node 真正收到的初始 context、执行约束、内部活动、安全产物和失败原因，并
+   区分 captured runtime fact、当前源码/文件投影与未被保留的历史。
+3. 只在可信的 node boundary 或正式 HITL request 上暂停和输入；进程退出后仍能凭 exact Bundle/
+   cursor attach、replay，而不是靠“最近一个 run”猜测现场。
+4. 调整运行节奏、breakpoint 和观察深度。发现 prompt、代码或配置问题后，在正常开发工具中修改
+   并创建新 Bundle 重跑；v1 不原地篡改旧 checkpoint/State。
+
+成功标准因此不是“界面能走完 happy path”，而是 operator 可以相信：屏幕所说的 run、边界、
+context、等待输入和恢复位置都对应同一份 canonical execution。即使移除 Textual，headless
+interface 仍应能证明相同的 trace、drive、并发拒绝和恢复语义。
+
+### 为什么不能直接扩建旧 TUI
+
+旧 TUI 曾先后承担 Primary User UI、demo visualizer、recon/workbench、live progress 和 orphan
+attach。这些尝试留下了有用的交互经验，也让 presentation script 逐渐知道过多 runtime 细节。
+debugger 需要的可信事实实际分布在不同 owner：StateGraph/checkpoint 决定 durable boundary，Bundle
+lifecycle 决定 exact identity、pending input 和 recovery admission，Journal 记录有界活动事实，
+runtime bridge 才知道 node-agent invocation 当时真正生效的初始 context。
+
+TUI 无法从文件时间、phase、当前源码或若干事件自行重建这些事实。若继续在 adapter 内猜测并叠加
+卡片/按钮，会得到一个看起来完整、实际可能说谎的 debugger：
+
+| 历史压力或失败 | 容易产生的假结论 | 当前必须坚持的纠正 |
+| --- | --- | --- |
+| live progress 选择 latest active/suspended Bundle | 最近更新的 run 就是本次 run | admission/attach 起绑定 exact Bundle；拿不到 handle 就 fail closed |
+| Journal `completed` 先于 checkpoint commit，且 `suspended` 曾被真实 model 拒绝 | 有事件就等于 durable boundary 已完成 | checkpoint 是 commit authority；Journal 缺口显式 degraded |
+| 用相邻 checkpoint 时间戳计算耗时 | 两帧间隔就是 node 执行时间 | wrapper 只测实际 invocation；operator/HITL 等待不计入 node duration |
+| 用当前 resource/source 事后重建 prompt | 当前文件就是历史模型当时看到的内容 | invocation 前 capture immutable context；current source 只作 MATCH/DRIFT 对照 |
+| walkthrough 与主 specs 保留旧 HITL2 人工菜单 | TUI 应显示第二个 Answer/Resume | 先由 Cpre 收敛 authority；当前 real HITL2 autonomous，只有正式 pending request 才能输入 |
+| orphan `ContinueRun` 已能恢复到终态 | 它也可以充当 debugger continue | 保留既有 recovery intent；debug driving 使用独立 local command 与 stop policy |
+
+### 历史证据教会了什么，又没有证明什么
+
+010/020 campaign 与 digested 文档只作 provenance：它们解释问题如何暴露，不再产生当前 task。从中
+保留的教训是：fixture UI smoke 能证明 adapter 接线，却不能证明真实 cognition、report quality 或
+exact attribution；网络/进程失败会留下 suspended/orphan run；latest 证据会造成 false positive；
+typed option 不一致会让人工选择成为死路；非空 output/profile 不能证明变化来自某次 human decision；
+有界 Journal 也不能独自承担完整能力归因。
+
+E4 证明同一 recipe/compile path/saver/thread 可以完成 bootstrap boundary pause -> HITL1 typed
+resume -> 继续或运行到 completion，因此不需要 step 专用拓扑。E4 **没有**证明 restart、双进程竞争、
+refinement、stale lease、long-node pause、mid-node crash 或未来并行拓扑；这些必须由 C4a 的
+deterministic matrix 关闭，不能由 UI happy path 或旧 campaign 截图代替。
+
+### 从教训导出的设计原则
+
+1. **一个执行事实源**：run、step 和 replay 共享真实 graph、Bundle lifecycle 与 canonical
+   checkpoint；debugger 不创建第二份 State 或隐藏拓扑。
+2. **边界级控制**：v1 只在顶层 logical-node committed/suspended/failed boundary 停止；模型和工具
+   内部活动是只读 narration，不承诺任意指令级中断。
+3. **runtime 拥有语义**：capture、projection、drive、lease 和 recovery 由 runtime/domain deep
+   module 负责；Textual 只展示 typed view、提交 closed command。
+4. **live/replay 同构**：两者消费同一 versioned schema/projector；live 曾显示但未 durable-retain
+   的事实，replay 不得继续冒充存在。
+5. **exact identity、fail closed**：Bundle、cursor、request、context 和 command 必须精确关联；
+   missing、stale、gap、busy 或 uncertain 必须显式呈现，不能回退猜测。
+6. **权威与投影分离**：checkpoint、lifecycle、Journal、captured context、current workspace/source
+   各自说明自己知道的事实；一个投影不能因“看起来合理”取代另一个 owner。
+7. **只响应正式 HITL**：operator 只能回答现有 typed pending request；TUI 不创造 prompt、route 或
+   human subject。当前 HITL1 是人工边界，HITL2 是 autonomous graph phase。
+8. **原 run 不被随意改写**：v1 无 route/profile/arbitrary State mutation；未来 fork 必须新建有
+   lineage 的 Bundle，不能把历史 replay 变成可变现场。
+
+### 为什么必须按 Cpre -> C0 -> C3 -> C4a -> C4b 推进
+
+| 原始压力 | 必须先关闭的 contract 缺口 | 阶段 | 该阶段不拥有 |
+| --- | --- | --- | --- |
+| HITL2 owner/代码与依赖主 specs 冲突 | 原子收敛 autonomous HITL2，保留内部 route/topology | Cpre | debugger runtime、UI 或 graph 行为变更 |
+| persisted observation 会丢/误述 suspended，live trace 会串 Bundle | 修好 event truth 与 exact correlation | C0 | 卡片 UX、step/continue driving |
+| 没有可信的 boundary/context/files 投影 | 建立可回放的 observation deep modules 和只读 presentation | C3 | 启动、推进、恢复 graph |
+| 没有合法的 step/pause/attach owner 与并发 fence | 建立 headless driver、control lease、恢复/幂等 contract | C4a | Textual 私有执行语义 |
+| operator 需要可用入口和控制面 | 把 typed views/commands 接入同一 TUI 与 launcher | C4b | 新增 runtime authority 或绕过前阶段 denial |
+| deterministic tests 不能单独证明真实使用感 | 用固定问题做 bounded real validation | 终线 | 用真实模型替代 contract tests |
+
+顺序本身是正确性约束，不只是项目管理偏好。上游 authority/truth 未闭合时，后续 UI 越完整，错误
+事实越容易被包装成可信体验。任何阶段发现必须增加 owner、persisted/public surface、第二张 graph、
+远端控制或任意 State mutation，都先回到本 plan 修订，而不是在当期 change 或 adapter 中顺手实现。
+
+### 无上下文 Agent 的判断规则
+
+| 信息类别 | 位置/例子 | 使用规则 |
+| --- | --- | --- |
+| 原始动机与历史证据 | 本节、grounding review、campaign provenance | 解释“为何”，不直接生成任务；dated evidence 在 propose/apply 前重验 |
+| 已验证的当前事实 | §0.3、§9、主 specs 与应用代码 | 描述“现在是什么”；spec/代码冲突先 corrective change，不私自选边 |
+| 已批准的目标决策 | §0-§3、target UX 的受控目标 | 约束“最终必须是什么”；不得把目标写成当前已有能力 |
+| 执行任务与状态 | §4-§8、checkbox、§L 最新记录、当期 OpenSpec change | 决定“现在做什么”；只做当前 gate，完成后更新本文件 |
+
+若历史文档、旧 plan 记录、target UX、当前 spec/代码或 active change 冲突，先按“文档控制与解释
+顺序”定位事实与 owner，不能挑选最顺手的一份材料继续实施。尤其不能为了让界面更顺滑而弱化
+exact binding、typed pending input、degraded/unavailable 表达、lease/fence 或 no-State-mutation 原则。
+
 ## 0. 执行摘要与已定决策
 
 ### 0.1 目标
@@ -53,7 +157,7 @@ Textual，headless tests 仍能通过相同 interface 可信地 trace、step、r
 
 ### 0.3 关键纠错
 
-1. owning `hitl2-node` spec 与当前代码规定 real HITL2 autonomous，但四份依赖主 specs 仍要求人工
+1. owning `hitl2-node` spec 与当前代码规定 real HITL2 autonomous，但五份依赖主 specs 仍要求人工
    HITL2；Cpre 必须先原子收敛这组 authority，不能只修 walkthrough 或由 TUI 选边。
 2. `suspended` outcome 当前被真实 `RunEvent` 拒绝，C0 必须先修复；fake-recorder 绿测不足以
    证明 Journal truth。
@@ -418,18 +522,21 @@ workspace 替换文件不得改变 captured ref/hash。
 
 ## 4. OpenSpec change 阶梯
 
-所有代码、persisted schema 或 cross-module interface 变更都走独立 OpenSpec change。下面的表只列
-**当前尚未执行的链**；C1/C2 已经完成并归档，所以不会再次出现在待办顺序中：
+所有 accepted contract、代码、persisted schema 或 cross-module interface 变更都走独立 OpenSpec
+change。下面的表列出**当前尚未完成的链**；创建 planning draft 不等于 apply 或完成。C1/C2 已经
+完成并归档，所以不会再次出现在待办顺序中：
 **propose -> polish/apply-readiness -> TDD apply -> `UV_OFFLINE=1 make verify` -> sync/archive**。
-propose 时登记新 requirement ID，并核对当前没有会修改同一 authority 的 active change。
+propose 时声明 requirement impact；确需新增 requirement 时才登记新 ID，并核对当前没有会修改同一
+authority 的 overlapping active change。
 
-| 顺序 | 建议 change slug | 唯一载荷 | 前置 |
-| --- | --- | --- | --- |
-| C0 | `repair-run-observation-truth` | suspended Journal truth + fail-closed exact live correlation | 本 plan 已定 |
-| C3 | `add-local-workflow-debug-observation` | runtime TraceFrame/projector + required node-agent-context capture/inspect + bounded workspace reader + replay/live presentation | C0 归档 |
-| C4a | `add-local-workflow-debug-driving` | DebugRunDriver + control lease + 全部 headless drive/recovery contracts | C3 归档 |
-| C4b | `connect-tui-workflow-debugger` | Textual command adapter + executable launcher + fixture/embedded 接线；零新增 runtime 语义 | C4a 归档 |
-| 终线 | 无 change | 一次固定问题的真实模型体验/一致性验收 | C4b 归档 + 网络可用 |
+| 顺序 | change slug | 唯一载荷 | 当前状态 | 前置 |
+| --- | --- | --- | --- | --- |
+| Cpre | `reconcile-hitl2-autonomous-contracts` | 原子收敛 autonomous HITL2 的主 specs、registry、walkthrough 与受影响 fixtures/tests；零 runtime/topology 变更 | planning draft 已创建；待 review，禁止 apply/sync/archive | 本 plan 当前有效 |
+| C0 | `repair-run-observation-truth` | suspended Journal truth + fail-closed exact live correlation | 尚未创建 | Cpre 归档 |
+| C3 | `add-local-workflow-debug-observation` | runtime TraceFrame/projector + required node-agent-context capture/inspect + bounded workspace reader + replay/live presentation | 尚未创建 | C0 归档 |
+| C4a | `add-local-workflow-debug-driving` | DebugRunDriver + control lease + 全部 headless drive/recovery contracts | 尚未创建 | C3 归档 |
+| C4b | `connect-tui-workflow-debugger` | Textual command adapter + executable launcher + fixture/embedded 接线；零新增 runtime 语义 | 尚未创建 | C4a 归档 |
+| 终线 | 无 change | 一次固定问题的真实模型体验/一致性验收 | 未开始 | C4b 归档 + 网络可用 |
 
 编号保留 C3 与 C4a/C4b 中的“4”是为了延续 020 战役账本：历史 C1
 `close-provider-timeout-budget-handback` 与 C2
@@ -437,10 +544,37 @@ propose 时登记新 requirement ID，并核对当前没有会修改同一 autho
 新的 corrective change 前进，并保留 C2 的 orphan recovery 行为。C4a/C4b 是同一 driving 阶段的
 headless authority 与 presentation adapter 两个独立 cut，不增加新的轴编号。
 
+### 4.1 Cpre 当前状态、范围与出口
+
+Cpre 已在 `openspec/changes/reconcile-hitl2-autonomous-contracts/` 形成 proposal/design/tasks 与五份
+delta spec 的 **planning draft**，并通过 plan-phase 与 strict planning validation。它是本计划中
+HITL2 authority 纠错的具体化，不是计划外工作；但它尚未 apply、sync 或 archive，因此没有改变
+main specs、runtime、tests 或当前产品行为。本轮只更新本计划，不执行 Cpre。
+
+Cpre 的唯一目标是让所有 current authority 一致表达：HITL1 是当前唯一 human pending-input
+producer；real HITL2 校验 predecessor 后自主产生内部 graph route，不创建第二个 human prompt、
+Answer/Resume 或 retained HITL2 session。它必须保留仍有效的 HITL2 internal routes、rerun/readiness
+control facts、topology 和宽泛 decoder compatibility，不把“删除错误的人机投影”扩大为 runtime rewrite。
+
+Cpre 只有在以下条件全部成立后才能归档并放行 C0：
+
+- 五份受影响 main specs、现有 registry 摘要、lifecycle walkthrough 与直接相关 fixtures/tests 原子
+  同步，现行人工 HITL2 叙事无遗漏；archive provenance 不改写。
+- autonomous HITL2 与 HITL1 typed choice 的最低责任测试提供 deterministic evidence；不能只靠文档
+  搜索或 TUI 截图证明。
+- diff 不包含 runtime、public API、checkpoint schema、graph topology、dependency 或 `deerflow/`
+  变更；若审阅发现需要这些变化，停止并回本 plan 重新定界。
+- apply/closeout gates 全绿，delta sync 到 main specs，change archive，并在 §L 记录真实结果。
+
+在此之前只允许 review/polish Cpre planning artifacts；禁止开始 C0 proposal，更不能提前实现 C0/C3/
+C4a/C4b。Cpre 的详细 apply checklist 位于该 active change，但 scope、顺序和放行条件仍由本 plan
+约束；active change 不得反向扩张本计划。
+
 每个 change 在 `openspec propose` 前必须建立一张可审阅的 source mapping，并放入 proposal/design/tasks
 之一（具体载体由当期 OpenSpec 模板决定）：
 
-- 每个 proposal task 映射到本文件中同阶段的 exact task、acceptance 或 no-go；不得从 campaign
+- 每个 proposal task 映射到本文件中同阶段的 exact task、acceptance 或 no-go；Cpre 映射本节的
+  authority scope/gate；不得从 campaign
   历史直接导入 task。
 - C3/C4a/C4b 逐项映射 target UX 的相关主旅程、负路径、traceability row 和验收剧本；C0 也要
   映射其中依赖 observation truth/exact identity 的条目。
@@ -458,7 +592,7 @@ headless authority 与 presentation adapter 两个独立 cut，不增加新的�
   不能替代 deterministic contract tests。
 - 实验推翻计划时，只修订尚未 propose/apply 的阶段；已归档 change 通过新的 corrective change
   前进，不改历史归档。
-- C0 未通过，禁止开始 C3；C3 无法 exact-bind 或无法显式报告 degraded，禁止开始 C4a；C4a
+- Cpre 未归档，禁止开始 C0；C0 未通过，禁止开始 C3；C3 无法 exact-bind 或无法显式报告 degraded，禁止开始 C4a；C4a
   未归档，禁止开始 C4b。
 - 若 C4a 只能靠第二张 graph、TUI 私有 State mutation 或 public tool 扩权实现，立即 no-go。
 
@@ -838,11 +972,13 @@ observer/replay TUI；不允许创建第二 graph、隐藏 debug State 或 TUI �
 - runtime-loaded Markdown 只有 base `resources/node_agent/runtime_policy.md` 与 selected package-local
   `capabilities/*.md`；每个 node 的 `workflow.md` 是 non-runtime maintainer projection。TUI 必须同时可见但
   清楚分栏，且不得把 package source mount 进 research sandbox。
-- `openspec list --json` 在 2026-08-31 plan 重写时为空；propose C0 前仍须重新检查。
+- `openspec list --json` 在 2026-08-31 plan 重写时为空；该 dated fact 已被 2026-09-01 创建的 Cpre
+  planning draft 取代。当前 active planning scope 仅为 `reconcile-hitl2-autonomous-contracts`，尚未
+  apply/sync/archive；Cpre 归档并准备 propose C0 前仍须重新检查 overlapping active change。
 
 ## 10. 提案前交接清单
 
-接手者创建任何 change 前逐项确认：
+接手者 review/apply 当前 Cpre，或创建任何后续 change 前，逐项确认：
 
 - [ ] 完整阅读本 plan；按当前阶段阅读 grounding review；进入 C3/C4a/C4b/real validation 时完整
   阅读 target UX，并检查 git 中是否已有 overlapping active change。
@@ -858,6 +994,10 @@ observer/replay TUI；不允许创建第二 graph、隐藏 debug State 或 TUI �
 
 ## L. 进展记录（append-only）
 
+本表按当日认知保留历史，不回写旧行；旧行中的“下一步”若与后续行或页首状态冲突，以日期更晚的
+记录和 §4 当前阶梯为准。尤其是 2026-08-31 的“下一步仅可 propose C0”已被 2026-09-01 插入并创建
+Cpre planning draft 的记录取代。
+
 | 日期 | Stage | 事项 | 结果 |
 | --- | --- | --- | --- |
 | 2026-08-31 | — | 文件创建；体验定义定调（REPL 双面：叙述流 + 操作面） | 📋 Stage 0 待拍板 |
@@ -871,3 +1011,4 @@ observer/replay TUI；不允许创建第二 graph、隐藏 debug State 或 TUI �
 | 2026-09-01 | target UX audit | 新增从 executable `.sh` launcher、Bundle chooser、Start Step、HITL、breakpoint、run/pause、failure、detach/attach 到新 Bundle 全速复验的目标体验稿；补齐 `OperatorWorkspaceReader`、首屏三入口、start 首步、composer routing、detach/cancel 和 terminal iteration 验收。 | 目标体验逐项映射 C0/C3/C4a/C4b；无超出现有 authority 的隐含承诺 |
 | 2026-09-01 | node-context UX audit | 将研发调试所需的 exact initial node-agent context 从 optional attribution 提升为 C3 gate：`agent.ainvoke`/首次 provider call 前捕获 runtime MD/initial messages/request/policy/mount refs，live/replay 同构；分开 node-agent invocation 与内部 provider calls，后者只保留 bounded safe facts 并标 raw history NOT_RETAINED；分开 captured context、current workspace 与 non-runtime `workflow.md`，补 source drift、legacy、capture-failure 和 secret/host-path 反例。 | TUI 能解释 node 声明过的输入/enforcement/activity/outcome 上下文且不冒充未保留历史；package source/Gateway 权限不扩张 |
 | 2026-09-01 | cross-document consistency audit | 系统复核 current plan、target UX、grounding review 与三份 campaign 历史；建立文档 authority/read-order、OpenSpec source mapping 与 drift 回流规则；C4a 纳入 target UX 必读 gate；冻结材料增加 supersession/retirement 路由。 | 当前执行任务只来自本 plan；UX 承诺可追踪到 C0/C3/C4a/C4b；旧 §10/Phase 8 不再形成第二计划 |
+| 2026-09-01 | plan intention/authority sync | 补入原始 debugger 意图、旧 TUI 失效原因、campaign/E4 证据边界、八项设计原则与“压力 -> correction -> stage”因果链；登记 Cpre planning draft 已创建但未 apply/sync/archive，并补齐 Cpre scope/gate。 | 无上下文 Agent 可从本 plan 理解为何按 Cpre -> C0 -> C3 -> C4a -> C4b 推进；当前只允许 review/polish Cpre，未开始实施 |
