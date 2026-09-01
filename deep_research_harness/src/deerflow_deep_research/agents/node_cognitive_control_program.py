@@ -22,6 +22,7 @@ class RenderedNodeCognitiveControlProgram:
     system_policy: str
     user_message: str
     capability: LoadedNodeAgentCapability
+    base_policy: str = ""
 
 
 def render_node_cognitive_control_program(
@@ -50,6 +51,7 @@ def render_node_cognitive_control_program(
         system_policy=resolved_policy,
         user_message=prompt,
         capability=capability,
+        base_policy=load_policy_prompt(),
     )
 
 

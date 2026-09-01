@@ -59,35 +59,25 @@ async def test_human_interrupt_suspension_persists_as_suspended_not_failure(tmp_
     bundle = await lifecycle.resolve(scope=scope, bundle_id=BundleId(bundle_id))
     assert bundle is not None
     bundle_root = lifecycle.private_root(bundle)
-    journal = await RunObservationStore(bundle_root=bundle_root, bundle_id=bundle_id).inspect(
-        bundle_id=bundle_id
-    )
+    journal = await RunObservationStore(bundle_root=bundle_root, bundle_id=bundle_id).inspect(bundle_id=bundle_id)
     assert journal.inspectability is ObservationInspectability.AVAILABLE
 
     hitl1_attempts = [
-        event
-        for event in journal.events
-        if event.category is RunEventCategory.NODE and event.phase == "hitl1"
+        event for event in journal.events if event.category is RunEventCategory.NODE and event.phase == "hitl1"
     ]
     assert hitl1_attempts, "the hitl1 attempt must be journaled"
     assert hitl1_attempts[0].outcome == "started"
     assert hitl1_attempts[-1].outcome == "suspended"
-    assert not any(
-        event.failure_category == "internal.unexpected" for event in hitl1_attempts
-    )
+    assert not any(event.failure_category == "internal.unexpected" for event in hitl1_attempts)
 
     # The serialized round trip: events.jsonl itself carries the closed value and
     # a fresh reader returns it.
     events_file = bundle_root / "diagnostics" / "events.jsonl"
     raw_outcomes = [
-        json.loads(line).get("outcome")
-        for line in events_file.read_text(encoding="utf-8").splitlines()
-        if line
+        json.loads(line).get("outcome") for line in events_file.read_text(encoding="utf-8").splitlines() if line
     ]
     assert "suspended" in raw_outcomes
-    reloaded = await RunObservationStore(bundle_root=bundle_root, bundle_id=bundle_id).inspect(
-        bundle_id=bundle_id
-    )
+    reloaded = await RunObservationStore(bundle_root=bundle_root, bundle_id=bundle_id).inspect(bundle_id=bundle_id)
     assert reloaded.events[-1].outcome == "suspended"
 
 

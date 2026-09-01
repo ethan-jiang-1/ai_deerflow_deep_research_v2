@@ -18,7 +18,6 @@ from langgraph.types import Command
 
 from deerflow_deep_research.domain.bundle import BundleId
 from deerflow_deep_research.domain.run_observation import (
-    ObservationInspectability,
     RunEventCategory,
 )
 from deerflow_deep_research.domain.trace import TraceFrame, TracePage
@@ -83,7 +82,6 @@ async def test_replay_and_incremental_live_reads_are_isomorphic(tmp_path: Path) 
 
 def test_trace_cursor_fails_closed_on_tamper(tmp_path: Path) -> None:
     bundle_id = "b_" + "B" * 43
-    token = _decode_cursor.__globals__  # module-level smoke
     from deerflow_deep_research.runtime.trace_projector import _encode_cursor
 
     good = _encode_cursor({"bundle_id": bundle_id, "frame_sequence": 2, "journal": 5})
@@ -116,9 +114,7 @@ async def test_frames_carry_wrapper_measured_duration_and_privacy_sentinels(tmp_
 @pytest.mark.asyncio
 async def test_noncommitted_journal_failure_becomes_failed_frame(tmp_path: Path) -> None:
     lifecycle, bundle, bundle_id = await _suspended_fixture_bundle(tmp_path)
-    store = RunObservationStore(
-        bundle_root=lifecycle.private_root(bundle), bundle_id=bundle_id
-    )
+    store = RunObservationStore(bundle_root=lifecycle.private_root(bundle), bundle_id=bundle_id)
     recorder = __import__(
         "deerflow_deep_research.runtime.run_observation", fromlist=["RunObservationRecorder"]
     ).RunObservationRecorder(store=store, bundle_id=bundle_id)

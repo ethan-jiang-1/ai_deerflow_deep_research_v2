@@ -25,6 +25,7 @@ import logging
 import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -142,6 +143,9 @@ class _InvocationRecording:
     # inequality, and the provider usage counts of a successful invocation.
     budget_operands: dict[str, int] | None = None
     usage_tokens: dict[str, int] | None = None
+    node_context_key: str | None = None
+    model_calls_used: int = 0
+    tool_calls_used: int = 0
 
 
 def _default_model_resolver(envelope: TrustedRuntimeEnvelope) -> ResolvedNodeModel:
@@ -251,6 +255,9 @@ class RuntimeNodeAgentBridge:
     # Per-attempt model invocation ordinals (BUG-048 item 6): pair each
     # model_tool started/completed(+/failed) event with its request index.
     _call_ordinals: dict[str, int] = field(default_factory=dict)
+    # LDO-005: composition-injected write-only recorder; None outside the
+    # local debugger composition (production/Gateway behavior unchanged).
+    node_context_recorder: Any | None = None
 
     def _next_call_ordinal(self, attempt_id: str) -> int:
         ordinal = self._call_ordinals.get(attempt_id, 0) + 1
@@ -300,6 +307,27 @@ class RuntimeNodeAgentBridge:
             budget_operands=recording.budget_operands,
             usage_tokens=recording.usage_tokens,
         )
+        if recording.node_context_key and self.node_context_recorder is not None:
+            # LDO-005: bounded activity facts ride the finalized outcome; a
+            # failure to persist them can never change the invocation result.
+            try:
+                from deerflow_deep_research.domain.node_context import NodeContextActivityFacts
+
+                await self.node_context_recorder.record_activity(
+                    recording.node_context_key,
+                    NodeContextActivityFacts(
+                        model_calls=recording.model_calls_used,
+                        tool_calls=recording.tool_calls_used,
+                        budget_stop_reason=(
+                            recording.budget_stop_reason.value if recording.budget_stop_reason else None
+                        ),
+                        outcome="completed" if result.finish_reason is NodeFinishReason.COMPLETED else "failed",
+                    ),
+                )
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                pass
         return result
 
     async def _run_agent(
@@ -419,6 +447,92 @@ class RuntimeNodeAgentBridge:
             )
         self.agents_built += 1
 
+        if self.node_context_recorder is not None:
+            # LDO-005: durable capture of the exact initial envelope before the
+            # agent (and therefore any provider call) can run.
+            import hashlib
+
+            from deerflow_deep_research.domain.node_context import (
+                CapturedResourceLayer,
+                EnforcedToolPosture,
+                MountManifestEntryView,
+                NodeContextSnapshot,
+                VirtualRootsView,
+            )
+
+            ordinal = self._peek_call_ordinal(context.attempt_id) or 1
+            context_id = (
+                "ctx-"
+                + hashlib.sha256(
+                    f"{context.bundle_context.bundle_id.value}:{context.attempt_id}:{ordinal}".encode()
+                ).hexdigest()[:32]
+            )
+            envelope = self.envelope
+            budget = self.policy.budget
+            snapshot = NodeContextSnapshot(
+                context_id=context_id,
+                bundle_id=context.bundle_context.bundle_id.value,
+                node=context.node_name,
+                attempt_id=context.attempt_id,
+                node_agent_ordinal=ordinal,
+                created_at=datetime.now(UTC),
+                initial_system_policy=rendered_prompt.system_policy,
+                initial_human_message=rendered_prompt.user_message,
+                base_policy_layer=CapturedResourceLayer(
+                    identity="resources/node_agent/runtime_policy.md",
+                    text=rendered_prompt.base_policy,
+                    sha256=hashlib.sha256(rendered_prompt.base_policy.encode()).hexdigest(),
+                ),
+                capability_layer=CapturedResourceLayer(
+                    identity=(f"{rendered_prompt.capability.ref.package}:{rendered_prompt.capability.ref.resource}"),
+                    text=rendered_prompt.capability.policy,
+                    sha256=hashlib.sha256(rendered_prompt.capability.policy.encode()).hexdigest(),
+                ),
+                request_objective=request.objective,
+                request_expected_output=request.expected_output,
+                request_source_artifact_refs=tuple(
+                    f"{ref.artifact_id}:{ref.virtual_path}" for ref in request.source_artifact_refs
+                ),
+                safe_model_label=str(getattr(binding, "configured_service_label", None) or "configured-model"),
+                tool_posture=EnforcedToolPosture(
+                    requested_tool_names=tuple(sorted(getattr(self.policy, "allowed_tool_names", ()) or ())),
+                    enforced_tool_names=tuple(
+                        sorted(getattr(tool, "name", "") for tool in resolved_tools if getattr(tool, "name", ""))
+                    ),
+                    posture_kind=capability.posture.kind,
+                ),
+                budget=budget.model_dump() if hasattr(budget, "model_dump") else {},
+                virtual_roots=VirtualRootsView(
+                    workspace_root=getattr(envelope, "workspace_virtual_root", None),
+                    uploads_root=getattr(envelope, "uploads_virtual_root", None),
+                    outputs_root=getattr(envelope, "outputs_virtual_root", None),
+                    attempt_root=context.attempt_root,
+                    read_roots=tuple(getattr(self.policy, "read_roots", ()) or ()),
+                    write_roots=tuple(getattr(self.policy, "write_roots", ()) or ()),
+                ),
+                mount_manifest=tuple(
+                    MountManifestEntryView(alias=alias, virtual_path=path)
+                    for alias, path in (
+                        ("workspace", getattr(envelope, "workspace_virtual_root", "")),
+                        ("uploads", getattr(envelope, "uploads_virtual_root", "")),
+                        ("outputs", getattr(envelope, "outputs_virtual_root", "")),
+                    )
+                    if path
+                ),
+            )
+            try:
+                recording.node_context_key = await self.node_context_recorder.record(snapshot)
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                LOGGER.exception("node_context_capture_failed")
+                return self._safe_failure(
+                    context,
+                    NodeFinishReason.FAILED,
+                    error_code="node_context_capture_failed",
+                    code=RunFailureCode.INTERNAL_UNEXPECTED,
+                )
+
         child_state = self._ephemeral_child_state(context, rendered_prompt.user_message)
         child_context = self._ephemeral_child_context()
         admitted_provider_request = self._is_admitted_provider_request(request)
@@ -426,6 +540,8 @@ class RuntimeNodeAgentBridge:
         try:
             async with deadline:
                 result = await agent.ainvoke(child_state, context=child_context)
+            recording.model_calls_used = budget_middleware.model_calls
+            recording.tool_calls_used = tool_policy_middleware.tool_calls
         except TimeoutError:
             if deadline.expired():
                 recording.budget_stop_reason = BudgetStopReason.BRIDGE_WALL_TIME

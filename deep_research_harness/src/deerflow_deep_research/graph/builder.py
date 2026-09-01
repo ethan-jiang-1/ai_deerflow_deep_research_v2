@@ -11,9 +11,9 @@
 from __future__ import annotations
 
 import asyncio
-import time
 import inspect
 import logging
+import time
 from collections.abc import Mapping
 from dataclasses import replace
 from typing import Any
@@ -70,9 +70,7 @@ async def _record_node_event(
         fields: dict[str, object] = {
             "phase": phase,
             "operation": category.value,
-            "outcome": outcome
-            if outcome in {"started", "completed", "failed", "suspended"}
-            else "failed",
+            "outcome": outcome if outcome in {"started", "completed", "failed", "suspended"} else "failed",
             "attempt_id": attempt_id,
         }
         if bundle_id is not None:
@@ -232,9 +230,7 @@ def _node_wrapper(
             phase=logical_name,
             attempt_id=current_attempt,
             outcome="completed",
-            duration_ms=(
-                int((time.perf_counter() - segment["t0"]) * 1000) if segment["t0"] is not None else None
-            ),
+            duration_ms=(int((time.perf_counter() - segment["t0"]) * 1000) if segment["t0"] is not None else None),
         )
 
         gate_view = result.pop(WORK_UNIT_GATE_VIEW_KEY, None)

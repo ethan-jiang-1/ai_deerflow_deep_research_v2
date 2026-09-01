@@ -134,11 +134,9 @@ class RunTraceProjector:
                 continue  # input checkpoints commit no boundary
             if len(trace) <= len(prev_trace):
                 continue
-            for node in trace[len(prev_trace):]:
+            for node in trace[len(prev_trace) :]:
                 changed = tuple(
-                    key
-                    for key, value in values.items()
-                    if prev_values is not None and prev_values.get(key) != value
+                    key for key, value in values.items() if prev_values is not None and prev_values.get(key) != value
                 )
                 commits.append(
                     _Commit(
@@ -146,19 +144,14 @@ class RunTraceProjector:
                         node=node,
                         changed=changed,
                         route=str(values["route"]) if values.get("route") else None,
-                        generation=(
-                            values["generation"] if isinstance(values.get("generation"), int) else None
-                        ),
-                        terminal=(
-                            str(values["terminal_status"]) if values.get("terminal_status") else None
-                        ),
+                        generation=(values["generation"] if isinstance(values.get("generation"), int) else None),
+                        terminal=(str(values["terminal_status"]) if values.get("terminal_status") else None),
                     )
                 )
             prev_values = values
             prev_trace = trace
         if tuples and (tuples[0].metadata or {}).get("source") is not None:
             newest_values = self._decode_channel_values(saver, tuples[0].checkpoint)
-            newest_trace = tuple(str(item) for item in newest_values.get("execution_trace") or ())
             if newest_values.get("route") == "needs_input":
                 checkpoint_id = str(tuples[0].config["configurable"]["checkpoint_id"])
                 suspension = _Suspension(checkpoint_id=checkpoint_id)
@@ -177,11 +170,7 @@ class RunTraceProjector:
         raw = (checkpoint or {}).get("channel_values") or {}
         values: dict[str, Any] = {}
         for channel, value in raw.items():
-            if (
-                isinstance(value, tuple)
-                and len(value) == 2
-                and isinstance(value[1], (bytes, bytearray))
-            ):
+            if isinstance(value, tuple) and len(value) == 2 and isinstance(value[1], (bytes, bytearray)):
                 try:
                     values[channel] = saver.serde.loads_typed(value)
                 except Exception:  # noqa: S110 — undecodable channels are simply absent
@@ -228,9 +217,7 @@ class RunTraceProjector:
                 (
                     event
                     for event in finalized
-                    if id(event) not in consumed
-                    and event.phase == commit.node
-                    and event.outcome != "suspended"
+                    if id(event) not in consumed and event.phase == commit.node and event.outcome != "suspended"
                 ),
                 None,
             )
@@ -297,9 +284,7 @@ class RunTraceProjector:
                     )
                 )
             elif active is None:
-                active = ActiveVisitProjection(
-                    state="committing", node=event.phase, visit_id=event.attempt_id
-                )
+                active = ActiveVisitProjection(state="committing", node=event.phase, visit_id=event.attempt_id)
         unmatched_started = [
             event
             for event in events
@@ -320,9 +305,7 @@ class RunTraceProjector:
         if page_size is not None and len(visible) > page_size:
             visible = visible[:page_size]
         last_sequence = visible[-1].frame_sequence if visible else after_frame_sequence
-        next_cursor = _encode_cursor(
-            {"bundle_id": bundle_id, "frame_sequence": last_sequence, "journal": len(events)}
-        )
+        next_cursor = _encode_cursor({"bundle_id": bundle_id, "frame_sequence": last_sequence, "journal": len(events)})
 
         return TracePage(
             bundle_id=bundle_id,

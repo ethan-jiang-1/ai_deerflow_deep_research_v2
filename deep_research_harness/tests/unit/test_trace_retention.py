@@ -28,8 +28,12 @@ async def test_finalized_node_facts_survive_capacity_eviction(tmp_path: Path) ->
 
     finalized_phases = [f"wave{index}" for index in range(12)]
     for phase in finalized_phases:
-        await recorder.record(category=RunEventCategory.NODE, phase=phase, attempt_id=f"g0-{phase}-a1", outcome="started")
-        await recorder.record(category=RunEventCategory.NODE, phase=phase, attempt_id=f"g0-{phase}-a1", outcome="completed")
+        await recorder.record(
+            category=RunEventCategory.NODE, phase=phase, attempt_id=f"g0-{phase}-a1", outcome="started"
+        )
+        await recorder.record(
+            category=RunEventCategory.NODE, phase=phase, attempt_id=f"g0-{phase}-a1", outcome="completed"
+        )
     for index in range(400):
         await recorder.record(
             category=RunEventCategory.MODEL_TOOL,

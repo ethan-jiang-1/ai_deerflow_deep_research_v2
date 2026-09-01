@@ -284,7 +284,12 @@ def test_live_progress_lines_never_mixes_two_bound_bundles(tmp_path: Path) -> No
         bundle="b_a",
         updated_at="2026-08-21T11:00:00Z",
         events=[
-            {"category": "node", "outcome": "completed", "phase": "topic_planning", "timestamp": "2026-08-21T11:00:01Z"},
+            {
+                "category": "node",
+                "outcome": "completed",
+                "phase": "topic_planning",
+                "timestamp": "2026-08-21T11:00:01Z",
+            },
             {"category": "node", "outcome": "started", "phase": "wave0", "timestamp": "2026-08-21T11:00:02Z"},
         ],
     )
