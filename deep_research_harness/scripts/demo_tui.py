@@ -798,11 +798,13 @@ class DeepResearchDemoTUI(App[None]):
         auto: bool = False,
         attach_intent: str | None = None,
         replay_intent: str | None = None,
+        debug_mode: bool = False,
     ) -> None:
         super().__init__()
         self.mode = mode
         self.profile = profile
         self.auto = auto
+        self.debug_mode = debug_mode
         self._attach_intent = attach_intent
         self._replay_intent = replay_intent
         self._adapter: DemoAdapter | None = None
@@ -849,8 +851,9 @@ class DeepResearchDemoTUI(App[None]):
         self._chat_history: list[tuple[str, str]] = []
         self._last_terminal_bundle: str | None = None
         self._session_bundle_id: str | None = None
-        self._attach_intent: str | None = None
-        self._replay_intent: str | None = None
+        self._debug_driver: Any | None = None
+        self._debug_bundle_id: str | None = None
+        self._node_context_holder: dict[str, Any] | None = {"recorder": None} if debug_mode else None
         self._recoverable_bundle_id: str | None = None
         self._recoverable_phase = "unknown"
         self._last_typed = ""
@@ -1228,7 +1231,13 @@ class DeepResearchDemoTUI(App[None]):
         if self.last_update is None:
             return
         if isinstance(self.last_update, Ready) and self.last_update.report.ready:
+            if self.debug_mode:
+                self.run_worker(self._debug_start(value), exclusive=True, group="debug")
+                return
             self._dispatch(StartRun(question=value))
+        elif self._debug_driver is not None and self._debug_bundle_id:
+            self.run_worker(self._debug_command(value), exclusive=True, group="debug")
+            return
         elif isinstance(self.last_update, AwaitingInput):
             prompt = self.last_update.prompt
             if prompt.mode == "choice":
@@ -1736,6 +1745,23 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Use the direct local graph smoke route without Gateway history, trace, or SSE claims.",
     )
     parser.add_argument(
+        "--attach",
+        default=None,
+        metavar="BUNDLE_ID",
+        help="Open the debugger workbench attached to this exact bundle (validated by the lifecycle).",
+    )
+    parser.add_argument(
+        "--replay",
+        default=None,
+        metavar="BUNDLE_ID",
+        help="Open the debugger workbench in read-only replay for this exact bundle.",
+    )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Run the debugger workbench: node-boundary step/continue via the debug driver (fixture only).",
+    )
+    parser.add_argument(
         "--auto",
         action="store_true",
         help=(
@@ -1754,6 +1780,10 @@ def _validate_args(parser: argparse.ArgumentParser, args: argparse.Namespace) ->
         parser.error("--profile applies only to the default Gateway observer mode")
     if args.auto and not args.embedded_smoke:
         parser.error("--auto applies only with --embedded-smoke")
+    if args.attach and args.replay:
+        parser.error("--attach and --replay cannot be combined")
+    if args.debug and not args.fixture:
+        parser.error("--debug applies only with --fixture")
 
 
 def main() -> None:
@@ -1782,3 +1812,192 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+# ── C4b debugger workbench: debug-driver wiring (RED-013/RED-014) ────────────
+
+
+async def _debug_start(self, question: str) -> None:
+    """Open a debug session on the one real graph and perform Start Step."""
+    import time as _time
+
+    from deerflow_deep_research.domain.bundle import BundleId
+    from deerflow_deep_research.domain.debug_driving import StartRequest
+    from deerflow_deep_research.runtime.debug_driver import DebugRunDriver
+    from deerflow_deep_research.runtime.node_context_store import (
+        NodeContextRecorder,
+        NodeContextStore,
+    )
+
+    adapter = self._adapter
+    if adapter is None or self._node_context_holder is None:
+        return
+    executor = getattr(self._transport, "_graph_executor", None)
+    if executor is None:
+        return
+    driver = DebugRunDriver(
+        lifecycle=adapter._bundle_lifecycle,
+        executor=executor,
+        envelope=adapter._envelope,
+        scope=(adapter._envelope.effective_user_id, adapter._envelope.outer_thread_id),
+        owner="workbench",
+        clock=_time.time,
+    )
+    opened = await driver.open_start(
+        StartRequest(
+            question=question,
+            mode="step",
+            owner="workbench",
+            command_id=f"start-{int(_time.time() * 1000)}",
+        )
+    )
+    if opened.snapshot is None:
+        self.query_one("#log", RichLog).write(Text(f"调试会话开启失败: {opened.denied}", style="red"))
+        return
+    bundle_id = opened.snapshot.bundle_id
+    self._debug_driver = driver
+    self._debug_bundle_id = bundle_id
+    bundle = await adapter._bundle_lifecycle.resolve(
+        scope=(adapter._envelope.effective_user_id, adapter._envelope.outer_thread_id),
+        bundle_id=BundleId(bundle_id),
+    )
+    if bundle is not None:
+        store = NodeContextStore(
+            bundle_root=adapter._bundle_lifecycle.private_root(bundle),
+            bundle_id=bundle_id,
+        )
+        self._node_context_holder["recorder"] = NodeContextRecorder(store)
+    self.query_one("#log", RichLog).write(Text(f"调试会话: {bundle_id[:20]}… (Start Step)", style="cyan"))
+    await self._debug_advance()
+
+
+async def _debug_advance(self) -> None:
+    """Advance one node boundary (Start Step semantics)."""
+    from deerflow_deep_research.domain.debug_driving import DebugCommand
+
+    driver = self._debug_driver
+    if driver is None or self._debug_bundle_id is None:
+        return
+    info = driver._sessions[self._debug_bundle_id]
+    session = await driver._snapshot(
+        await driver._resolve(self._debug_bundle_id),
+        mode="step",
+        pause_requested=False,
+        lease=info["lease"].snapshot(),
+        stop_policy=info["stop_policy"],
+    )
+    result = await driver.execute(
+        DebugCommand(
+            kind="advance_one",
+            bundle_id=self._debug_bundle_id,
+            command_id=f"advance-{int(time.time() * 1000)}",
+            expected_cursor=session.cursor.token(),
+        )
+    )
+    await self._render_debug_result(result)
+
+
+async def _debug_command(self, value: str) -> None:
+    """Map composer input to the debug session's current posture."""
+    from deerflow_deep_research.domain.debug_driving import DebugCommand
+
+    driver = self._debug_driver
+    if driver is None or self._debug_bundle_id is None:
+        return
+    info = driver._sessions[self._debug_bundle_id]
+    session = await driver._snapshot(
+        await driver._resolve(self._debug_bundle_id),
+        mode="step",
+        pause_requested=False,
+        lease=info["lease"].snapshot(),
+        stop_policy=info["stop_policy"],
+    )
+    kind: str
+    answer_text = None
+    if value.startswith("/detach"):
+        kind = "detach"
+    elif value.startswith("/context"):
+        await self._debug_render_context()
+        return
+    elif session.posture == "awaiting_hitl":
+        kind = "answer"
+        answer_text = value
+    else:
+        kind = "advance_one"
+    result = await driver.execute(
+        DebugCommand(
+            kind=kind,  # type: ignore[arg-type]
+            bundle_id=self._debug_bundle_id,
+            command_id=f"{kind}-{int(time.time() * 1000)}",
+            expected_cursor=session.cursor.token(),
+            answer_text=answer_text,
+        )
+    )
+    await self._render_debug_result(result)
+
+
+async def _debug_render_context(self) -> None:
+    """Render the captured node-context page (bounded) into the log panel."""
+    from deerflow_deep_research.domain.bundle import BundleId
+    from deerflow_deep_research.runtime.node_context_store import NodeContextStore
+
+    adapter = self._adapter
+    if adapter is None or self._debug_bundle_id is None:
+        return
+    bundle = await adapter._bundle_lifecycle.resolve(
+        scope=(adapter._envelope.effective_user_id, adapter._envelope.outer_thread_id),
+        bundle_id=BundleId(self._debug_bundle_id),
+    )
+    if bundle is None:
+        return
+    store = NodeContextStore(
+        bundle_root=adapter._bundle_lifecycle.private_root(bundle),
+        bundle_id=self._debug_bundle_id,
+    )
+    page = store.page()
+    log = self.query_one("#log", RichLog)
+    if page.total == 0:
+        log.write(Text("Node Context: 尚无已捕获的调用上下文", style="yellow"))
+        return
+    for summary in page.summaries:
+        view = store.read(f"{summary.attempt_id}/{summary.node_agent_ordinal:04d}")
+        if view is None:
+            continue
+        log.write(
+            Text(
+                f"⌨ {summary.node}#{summary.node_agent_ordinal} "
+                f"[{view.coverage_initial_context}] model={view.activity.model_calls if view.activity else '?'}",
+                style="cyan",
+            )
+        )
+        log.write(Text(f"  Objective: {view.snapshot.request_objective[:120]}", style="dim"))
+
+
+async def _render_debug_result(self, result) -> None:
+    """Render one DebugSessionUpdate into the panels (bounded safe facts)."""
+    from deerflow_deep_research.domain.debug_driving import DebugSessionUpdate
+
+    assert isinstance(result, DebugSessionUpdate)
+    log = self.query_one("#log", RichLog)
+    if result.denied is not None:
+        log.write(Text(f"命令被拒: {result.denied}", style="red"))
+        return
+    snapshot = result.snapshot
+    if snapshot is None:
+        return
+    cursor = snapshot.cursor
+    if result.committed_node:
+        log.write(Text(f"✓ {result.committed_node} 提交（帧 {cursor.frame_sequence}）", style="cyan"))
+    line = f"姿态: {snapshot.posture} · 下一节点: {cursor.next_nodes or '—'}"
+    if snapshot.pending_request_id:
+        line += " · 等待输入（直接输入回答）"
+    if snapshot.pause_requested:
+        line += " · 暂停已请求"
+    self._render_inspect((line,))
+
+
+DeepResearchDemoTUI._debug_start = _debug_start
+DeepResearchDemoTUI._debug_advance = _debug_advance
+DeepResearchDemoTUI._debug_command = _debug_command
+DeepResearchDemoTUI._debug_render_context = _debug_render_context
+DeepResearchDemoTUI._render_debug_result = _render_debug_result

@@ -747,17 +747,38 @@ def build_demo_node_agent_bridge(
     return RuntimeNodeAgentBridge(envelope=envelope, policy=policy, tools_resolver=resolver, **kwargs)
 
 
-def build_fixture_demo_recipe(*, work_unit_store_factory: Any) -> ResearchGraphRecipe:
+def build_fixture_demo_recipe(
+    *,
+    work_unit_store_factory: Any,
+    node_context_recorder_holder: dict[str, Any] | None = None,
+) -> ResearchGraphRecipe:
     """Load the deterministic fixture catalog for a fixture demo composition root.
 
     The caller must have enabled ``src_fake`` for its child process.  Keeping this
     import local prevents real demo paths from discovering fixture source.
+    ``node_context_recorder_holder`` optionally carries the local-debugger
+    context recorder; the workbench sets it after the session bundle exists and
+    every bridge built afterwards records into it (RED-014).
 
     @impl DPL-003
+    @impl RED-014
     """
     from deerflow_deep_research_fixtures import build_fixture_recipe
 
-    return build_fixture_recipe(work_unit_store_factory=work_unit_store_factory)
+    bridge_factory: Any = build_demo_node_agent_bridge
+    if node_context_recorder_holder is not None:
+
+        def bridge_factory(**kwargs: Any) -> Any:
+            bridge = build_demo_node_agent_bridge(**kwargs)
+            recorder = node_context_recorder_holder.get("recorder")
+            if recorder is not None:
+                bridge.node_context_recorder = recorder
+            return bridge
+
+    return build_fixture_recipe(
+        work_unit_store_factory=work_unit_store_factory,
+        node_agent_bridge_factory=bridge_factory,
+    )
 
 
 def build_real_demo_recipe(*, work_unit_store_factory: Any) -> ResearchGraphRecipe:
@@ -771,7 +792,12 @@ def build_real_demo_recipe(*, work_unit_store_factory: Any) -> ResearchGraphReci
     )
 
 
-def build_demo_runtime(*, mode: Literal["real", "fixture_graph"], adapter: DemoAdapter) -> DemoRuntime:
+def build_demo_runtime(
+    *,
+    mode: Literal["real", "fixture_graph"],
+    adapter: DemoAdapter,
+    node_context_recorder_holder: dict[str, Any] | None = None,
+) -> DemoRuntime:
     """Compose one fixed graph-backed demo runtime without caller recipe authority."""
 
     if mode == "real":
@@ -779,7 +805,10 @@ def build_demo_runtime(*, mode: Literal["real", "fixture_graph"], adapter: DemoA
             raise RuntimeError("demo_real_profile_required")
         recipe = build_real_demo_recipe(work_unit_store_factory=adapter.create_work_unit_store)
     elif mode == "fixture_graph":
-        recipe = build_fixture_demo_recipe(work_unit_store_factory=adapter.create_work_unit_store)
+        recipe = build_fixture_demo_recipe(
+            work_unit_store_factory=adapter.create_work_unit_store,
+            node_context_recorder_holder=node_context_recorder_holder,
+        )
     else:
         raise ValueError("demo_runtime_mode_invalid")
     return DemoRuntime(
