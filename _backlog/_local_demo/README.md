@@ -9,16 +9,28 @@
 > **自动化原则：因为问题固定，HITL1/HITL2 的答案也是确定的，系统自动回答，不需要人工输入。**
 > **001~004 全部走全自动（CLI 轴）。** 真机交互/人工 HITL 专项留给未来的 010 等 runbook，不在 001~004 内。
 >
-> **TUI 轴分三格：010 = 自动 TUI（同一例子可全跑，真人零操作，✅ 已落地，
-> 入口 `make demo-tui-real-auto` / `RUN-010.command`）、020 = 手动 TUI（与 010
-> 完全同一例子，真人操作 HITL1，入口 `make demo-tui-embedded-smoke` /
-> `RUN-020.command`）、030 = **调试工作台**（节点边界 step/continue，经
-> `DebugRunDriver` 逐帧推进，入口 `run/tui-workflow-debugger.sh --fixture`）。**
-> 拆分规则记在本文 §[TUI 轴线：010 与 020 的分割](#tui-010-020)，别忘。
+> **TUI 轴分三格（三种人的角色，互补不是替代）：**
 >
-> **通用命名轴（从 01x/02x 起）：`01x` = 自动简化跑法、`02x` = 手动跑法，都从
-> `.command` 启动；相同 `x` = 测试内容尽量相同，唯一差别是交互点：`01x` 自动补、
-> `02x` 由真人补。** 例如 010/020 同一例子，区别只在 HITL1 是否自动化。
+> - **010 = 自动 TUI**（观察者：同一例子可全跑，真人零操作，✅ 已落地，
+>   入口 `make demo-tui-real-auto` / `RUN-010.command`）
+> - **020 = 手动 TUI**（操作者：与 010 同一例子，真人操作 HITL1，
+>   入口 `make demo-tui-embedded-smoke` / `RUN-020.command`）
+> - **030/031 = 调试工作台**（拆解者：节点边界 step/continue + `/context`
+>   查看 Node Context + `/detach` 干净退出。
+>   入口 `run/tui-workflow-debugger.sh --fixture`（030）或 `--embedded`（031）。
+>
+>   030/031 **不是 010/020 的替代品**——它走 `DebugRunDriver` 逐边界推进，
+>   不走 shared experience 的 start/resume 路径。01x 告诉你"能跑完"，
+>   02x 告诉你"交互对不对"，03x 告诉你"每一层到底发生了什么"。发现 bug 后：
+>   Step 定位 → `/context` 看 captured prompt/tools → `/detach` → IDE 改代码 →
+>   回来 New Run 重跑验证。详见本文 §03x（调试跑法）章节。
+>
+> 拆分规则记在本文 §[TUI 轴线：010 / 020 / 03x 的分割](#tui-010-020)，别忘。
+>
+> **通用命名轴：`01x` = 自动简化跑法、`02x` = 手动跑法、`03x` = 调试跑法。**
+> `01x`/`02x` 从 `.command` 启动；相同 `x` = 测试内容尽量相同，唯一差别是交互点：
+> `01x` 自动补、`02x` 由真人补。`03x` 从 `run/tui-workflow-debugger.sh` 启动，
+> 不看 `.command`（调试工作台有自己的 launcher）。
 >
 > 原则：先跑 001，能过再 002，再 003，最后 004。一步一步来，每一步都能暴露不同层面的 bug。
 >
@@ -32,12 +44,12 @@
 | 004 | [`runbook-004-hard-real-auto.md`](runbook-004-hard-real-auto.md) | 花（多） | 同 003 的 `.env` 三变量 + 网络 | 最难：真机全自动跑**默认意图**（不声明 minimal），固定比较题压多 topic 链路，专门用来找茬 | `Compare China and US EV battery market in 2024.` |
 | 010 | [`runbook-010-tui-auto.md`](runbook-010-tui-auto.md) + `RUN-010.command` | 花（中） | 同 003 的 `.env` 三变量 + `make install`（含 demo-tui extra）+ 网络（**真人零操作**） | **同一例子的 TUI 自动全跑**——真人只看不动手，hitl1/hitl2 全自动（scripted 默认产品路径），验证"TUI 一层真实图能自主到终态"。入口 `make demo-tui-real-auto`（BUG-061 → change `add-demo-tui-auto-entry`，2026-08-25 归档） | 同 003：`What is one bounded fact about China's EV battery market in 2024?` |
 | 020 | [`runbook-020-tui-manual.md`](runbook-020-tui-manual.md) + `RUN-020.command` | 花（中） | 同 003 的 `.env` 三变量 + `make install`（含 demo-tui extra）+ 网络 + **真人坐镇** | 手动 TUI：**与 010 同一例子**，真人 HITL1 交互——**启动后先进侦察模式**（看环境/闲聊，不触发研究），点「Start Deep Research」或说触发语才启动；hitl1 里有快捷修订按钮/输入回显/修订确认，修订 profile proposal 并显式确认（semantic intake 真模型分类你的自由文本）；HITL2 是自主 continuation 不需要人。启动器不再提供 Stage A 选择（010 已覆盖通路）。language CHOICE 不在本 run（条件性 B2，前置 BUG-060） | 同 003：`What is one bounded fact about China's EV battery market in 2024?` |
-| **030** | [`runbook-030-debugger.md`](runbook-030-debugger.md) | 无 | **调试工作台**——节点边界 step/continue、`/context` 查看捕获的节点上下文、`/detach` 干净退出。与 010/020 的区别：030 走 `DebugRunDriver` 逐边界推进，能看到每一帧 timeline 和 Node Context coverage strip | 同上（或自定义问题） |
-| **031** | [`runbook-031-debugger-embedded.md`](runbook-031-debugger-embedded.md) | 花（中） | 同 003 的 `.env` 三变量 + 网络 | **调试工作台（embedded 真实图）**——与 030 相同的逐边界推进，但跑在真实模型上；wave0 等 LLM-bearing node 会捕获 Node Context Snapshot（/context 可看 exact initial prompt、enforced tools/budget） | 同 003：`What is one bounded fact about China EV battery market in 2024?` |
+| **030** | [`runbook-030-debugger.md`](runbook-030-debugger.md) | 无 | **调试工作台（fixture 零凭证）**——用 `DebugRunDriver` 逐边界推进 fixture 图：每次 Enter 恰好提交一个逻辑节点；`/context` 查看 Node Context（fixture 模式下 deterministic node 无 LLM 调用所以为空，属预期）；`/detach` 干净退出不触发 cancel。**与 010/020 的本质区别**：010/020 走 shared experience 的 start/resume 路径；030 走独立 `DebugRunDriver`，每帧来自 checkpoint + journal，不含推断。用途：定位"哪一层出了问题"，修复后 New Bundle 重跑验证。详见 §03x 章节 | 自定义问题 |
+| **031** | [`runbook-031-debugger-embedded.md`](runbook-031-debugger-embedded.md) | 花（中） | 同 003 的 `.env` 三变量 + 网络 | **调试工作台（embedded 真实图）**——与 030 相同的逐边界推进，但跑在**真实模型和 Tavily**上。wave0 等 LLM-bearing node 在 `agent.ainvoke` 前捕获 **Node Context Snapshot**（exact initial prompt、runtime MD bytes、enforced tool names/budget、mount roots），`/context` 可逐步查看。raw provider histories 标 `NOT RETAINED`。**用途**：调试真实图的 prompt/tool/budget 问题——看模型"到底收到了什么指令、允许用什么工具" | 自定义问题 |
 
 > 📐 手册命名规则固定为 `runbook-00X-难度-用途.md`，以后按这个补。
 
-## TUI 轴线：010 与 020 的分割（记忆点，别忘） {#tui-010-020}
+## TUI 轴线：010 / 020 / 03x 的分割（记忆点，别忘） {#tui-010-020}
 
 > **原意**：TUI 拆成两个 runbook——**010 = 可自动全跑**（同一个固定例子的 TUI 形态，
 > 真人零操作，TUI 把真实研究自主全跑完）；**020 = 同一例子但手动跑**（真人坐 TUI
@@ -76,6 +88,27 @@
    自动、`02x` 手动、同 `x` 同例子）。
 3. **harness 变更纪律**：凡动 `deep_research_harness/` 的入口/行为，先登记
    `_backlog/bugs/`（如 BUG-061），修复走独立 openspec change。
+
+### 030/031（调试工作台）与 010/020 的关系
+
+> **03x 不是 01x/02x 的替代品，是第三种使用场景。** 010/020 走
+> `ResearchRunExperience` 的 start/resume 路径——"把研究跑完"。
+> 030/031 走 `DebugRunDriver` 的逐边界推进——"看清楚每一层到底发生了什么"。
+>
+> | | 010/020（演示/验收） | 030/031（调试/研发） |
+> |---|---|---|
+> | 目标 | 跑到终态，验证产品链路 | 定位 bug 在哪层（prompt? tool? budget? gate?） |
+> | 停止点 | HITL 等人或终态 | **任何节点边界**（operator 说了算） |
+> | 可见性 | 研究结果（report） | **每帧 timeline + /context（captured prompt/tools/budget）** |
+> | 修复后 | 创建新 Bundle 全速重跑 | Detach → 改代码 → New Bundle 重跑 → Step 验证 |
+> | 驱动层 | `ResearchRunExperience` | `DebugRunDriver`（独立，不复用 ContinueRun） |
+>
+> **03x 的三种典型用法**：
+>
+> 1. **单步走**：每次 Enter 一个节点，看每帧的 route、changed fields、duration
+> 2. **Continue 到 breakpoint**：`/break after wave1` 穿过已验证区域，在问题节点前停住
+> 3. **/context 看模型输入**：wave0 跑完后打开 `/context`，看模型收到的
+>    exact system prompt、允许的工具列表、budget 上限——不用翻源码猜
 
 > 红线照旧：010 自动跑 ends-to-end 成功或明确失败类别才算数，能调出 TUI 不算 PASS；
 > 撞茬按 `_backlog/bugs/` 流程，修复走独立 openspec change。
