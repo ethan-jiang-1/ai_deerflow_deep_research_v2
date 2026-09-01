@@ -18,30 +18,9 @@
 
 ## 活跃列表
 
-| Plan | 类型 | 下一步 |
-|------|------|--------|
-| [tui-workflow-debugger-progressive-plan.md](tui-workflow-debugger-progressive-plan.md) | 递进执行计划 | Local workflow debugger（当前唯一活跃 plan）：历史 C1/C2 已归档；下一步由当前 plan 的前置 authority gate 决定；并行线含 B1 第 3 跑收尾 |
+（当前无活跃 plan——TUI workflow debugger 战役已收口，见 `_done/_closed_plans/tui-workflow-debugger/`）
 
-**Next available plan ID: CLS-058**（移入 `_closed_plans/` 时分配）
-
-**当前 plan 的 supporting 文档（活跃，与 plan 同层存放，随 plan 演进）**：
-
-| 文档 | 角色 |
-|------|------|
-| [tui-step-debugger-grounding-review.md](tui-step-debugger-grounding-review.md) | 前置证据底稿（2026-08-31 dated snapshot：纠错、E4 结果、被拒方案）；证据内容冻结，propose 前重验 dated facts |
-| [tui-workflow-debugger-target-ux.md](tui-workflow-debugger-target-ux.md) | 受控目标体验与验收地图（C0-C4b 后的 operator UX、负路径、traceability）；不声称当前能力 |
-
-## 冻结存档（`_archive/`，只读，未关闭）
-
-> 位置即状态：`_archive/` = 冻结的历史稿（不再更新，旧相对链接随层级失效属预期）。
-> 未关闭 ≠ 完成；战役收口后按上面步骤整组迁入 `_done/_closed_plans/`。
-
-| Plan | 是什么 | 冻结日期 |
-|------|--------|----------|
-| [_archive/tui-interactive-campaign-digested.md](_archive/tui-interactive-campaign-digested.md) | 020 战役计划 v5——**已消化（DIGESTED）**，历史 provenance；§10 已被当前 progressive plan 取代 | 2026-08-31 |
-| [_archive/tui-interactive-campaign-progress-digested.md](_archive/tui-interactive-campaign-progress-digested.md) | 战役进度账本（Phase 0–8 全记录）——**已消化（DIGESTED）**，已退役快照 | 2026-08-31 |
-| [_archive/tui-interactive-campaign-review-digested.md](_archive/tui-interactive-campaign-review-digested.md) | 独立审阅——**已消化（DIGESTED）**，被 campaign v4 消化 | 2026-08-31 |
-| [_archive/tui_feedback_56.md](_archive/tui_feedback_56.md) | 计划一致性审阅反馈——**已消化（DIGESTED）**，结论全部回填当前 plan 与 supporting 文档，仅作 provenance | 2026-09-01 |
+**Next available plan ID: CLS-059**（移入 `_closed_plans/` 时分配）
 
 ## 已归档（移至 `_done/_closed_plans/`）
 
@@ -77,6 +56,9 @@
 | low-scale-real-auto-runs.md | CLS-046 | 2026-08-18 |
 | test-regression-speedup.md | CLS-053 | 2026-08-22 |
 | doc-gate-docs-layer-and-fresh-agent-narrative.md | CLS-057 | 2026-08-31 |
+| tui-workflow-debugger-progressive-plan.md | CLS-058 | 2026-09-02 |
+| tui-workflow-debugger-target-ux.md | CLS-058 | 2026-09-02 |
+| tui-step-debugger-grounding-review.md | CLS-058 | 2026-09-02 |
 | openspec-product-boundary-portability.md | CLS-054 | 2026-08-17 |
 
 ---

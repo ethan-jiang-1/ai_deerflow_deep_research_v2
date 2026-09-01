@@ -4,7 +4,7 @@
 > 日期: 2026-08-31
 > 当前执行权威: [`tui-workflow-debugger-progressive-plan.md`](tui-workflow-debugger-progressive-plan.md)
 > 作用: 给没有历史上下文的实现者解释当前 plan 的事实来源、纠错理由和边界选择。
-> 状态: 活跃 supporting 文档；证据内容冻结（dated facts 在 propose 前重验），不追写新结论。
+> 状态: 已收口（2026-09-02）— Cpre/C0/C3/C4a/C4b 全部归档后本文件转为 provenance。
 
 > **冻结后路由说明（2026-09-01）**：当前实施还必须阅读
 > [`tui-workflow-debugger-target-ux.md`](tui-workflow-debugger-target-ux.md)。本文正文保留

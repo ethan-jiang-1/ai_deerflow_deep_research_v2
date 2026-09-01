@@ -6,7 +6,7 @@
 > 当前决策与执行权威: [`tui-workflow-debugger-progressive-plan.md`](tui-workflow-debugger-progressive-plan.md)
 > 前置技术证据: [`tui-step-debugger-grounding-review.md`](tui-step-debugger-grounding-review.md)，冻结到 2026-08-31
 > UX 专项依据: 本文 §8-§12 与当前 plan 中 2026-09-01 后的 Node Context、Files、launcher 决策
-> 状态: 本文描述目标，不声称当前 TUI 已具备这些能力；实施冲突时以当前 plan、主 specs 和代码为准。
+> 状态: 已收口（2026-09-02）— 目标体验经 C0/C3/C4a/C4b 归档落地；E5 三尺寸 Pilot 调参为唯一尾差。
 
 ## 文档控制
 

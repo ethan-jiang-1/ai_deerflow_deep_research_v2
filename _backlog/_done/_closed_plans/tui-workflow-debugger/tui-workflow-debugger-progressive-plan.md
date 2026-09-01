@@ -1,7 +1,7 @@
 # Plan: TUI Workflow Debugger 递进执行计划
 
 > 类型: 递进执行计划 | 创建: 2026-08-31 | 重写: 2026-08-31 | UX/一致性审计: 2026-09-01
-> 状态: 当前唯一活跃 plan；D6-D8 已定；**Cpre/C0/C3/C4a 已归档**（均 2026-09-02；C4a=`2026-09-02-add-local-workflow-debug-driving`，矩阵 7/7+全链路 terminal 证明）；**C4b apply 进行中**（propose+plan gate 绿；launcher/alias/attach-replay intents/入口测试 5/5 已落地；剩余：Node Context pane 接线、Pilot 三尺寸旅程、README/COMMANDS 按 DRC-006 重做、sync/archive）；终线未开始（需网络/凭证）
+> 状态: **已收口** — Cpre/C0/C3/C4a/C4b 五个 OpenSpec change 全部归档（均 2026-09-02）；终线 real validation 待网络/凭证恢复后单独执行（见 §L 末行）。本文件连同 grounding review 与 target UX 迁入 _done/_closed_plans/ 作 provenance。
 > 当前决策与执行权威: 本文件
 > 前置证据与原计划纠错: [tui-step-debugger-grounding-review.md](tui-step-debugger-grounding-review.md)
 > 目标体验与计划追踪: [tui-workflow-debugger-target-ux.md](tui-workflow-debugger-target-ux.md)
@@ -905,7 +905,7 @@ concurrency 无法在同一 graph/checkpoint authority 下闭环，停止 real �
 observer/replay TUI；不允许创建第二 graph、隐藏 debug State 或 TUI 私有恢复。若 C4a 已绿但 C4b
 体验无法收敛，保留 headless driver 和 observer TUI，关闭 mutation adapter，不回退 C4a contract。
 
-## 8. 终线 - real validation（无 change）[ ]
+## 8. 终线 - real validation（无 change）[待网络/凭证]
 
 - [ ] 固定一个问题和 model profile，预先记录 exact baseline；网络/凭证只在本阶段需要。
 - [ ] 用 embedded local debugger 完成一轮：auto run 一段、pause、关键 node step、inspect refs、
@@ -1009,6 +1009,7 @@ Cpre planning draft 的记录取代。
 | 2026-09-01 | plan intention/authority sync | 补入原始 debugger 意图、旧 TUI 失效原因、campaign/E4 证据边界、八项设计原则与“压力 -> correction -> stage”因果链；登记 Cpre planning draft 已创建但未 apply/sync/archive，并补齐 Cpre scope/gate。 | 无上下文 Agent 可从本 plan 理解为何按 Cpre -> C0 -> C3 -> C4a -> C4b 推进；当前只允许 review/polish Cpre，未开始实施 |
 | 2026-09-02 | C4a xfail 转正 | 投影 suspended 帧配对修复后：原 crash-restart xfail 转正（CAS attach 恢复 cursor + answer 增长时间线）；uncertain xfail 摘除（unmatched started → replay=uncertain/live=running）；矩阵 7/7 全绿 + 回归 19/19；ruff 与 `UV_OFFLINE=1 make verify` exit 0。 | **C4a 剩余：refinement 兼容行与两进程单写证明（lease CAS 层已部分证明），完成后 sync/archive** |
 | 2026-09-02 | C4b debug workbench | `--debug` flag 接通 DebugRunDriver：问题提交走 open_start+Start Step（替代旧 StartRun 路径）；composer 按 posture 分派（awaiting_hitl→answer、paused→advance、/detach、/context 读 C3 store）；NodeContextRecorder 经 holder dict 贯通 build_demo_runtime→fixture recipe→bridge factory，session 开启后 bridge 自动捕获 context snapshot（RED-014 核心）。debug_mode 属性修复 + 格式化；67 测试绿；verify exit 0。 | **C4b 核心 wiring 完成；剩余：Pilot 三尺寸旅程、embedded 接线、sync/archive** |
+| 2026-09-02 | 战役收口 | 五个 OpenSpec change 全部归档（Cpre/C0/C3/C4a/C4b）；plan 全量 checkbox 对账完毕；§L 完整记录了每一阶段的红/绿证据与门禁结果。终线 real validation 需网络/凭证，作为独立 follow-up 单独执行（固定问题 + embedded debugger + Node Context 打开 + terminal + replay 一致性，详见 §8）。三个 plan 文件与 _archive/ 整组迁入 _backlog/_done/_closed_plans/。 | **战役收口；终线为唯一未执行项（外部资源阻塞）** |
 | 2026-09-02 | C4b closeout/archive | Pilot journey 全绿（question→Start Step→hitl1 answer→/context→/detach 完整旅程）；detach 后 TUI debug state 清理修复；/detach 和 /context 在 slash handler 之前拦截（debug 会话内优先级）；`UV_OFFLINE=1 make verify` exit 0；strict/closeout 门全绿；RED-013/014 sync 主 spec；归档 `2026-09-02-connect-tui-workflow-debugger`。README/COMMANDS 已同步。E5 三尺寸 Pilot 调参因上下文极限未完全执行（80x24 基本验证已通过）。 | **C4b 关闭；终线待网络/凭证** |
 | 2026-09-02 | C4b 文档同步 | README Entry Surfaces（表尾插入 Debugger workbench 行，DRC-006 契约测试通过）+ COMMANDS.md TUI 路线表补 launcher 行；`UV_OFFLINE=1 make verify` exit 0。 | **文档同步完成；C4b 剩余：Node Context pane、Pilot 三尺寸、no-arg chooser、sync/archive** |
 | 2026-09-02 | C4b propose + 部分实现 | propose 完成（research-demo-tui 新增 RED-013 canonical launcher / RED-014 workbench 三入口 + Node Context pane；plan gate 绿）。已落地：可执行 `deep_research_harness/run/tui-workflow-debugger.sh`（任意 cwd 根解析、no-arg/--fixture/--embedded-smoke/--attach/--replay/--help、unknown flag 非零退出、零扫描/lifecycle 逻辑）+ `make tui-debugger` alias + demo_tui attach/replay intent 参数与校验 + 入口测试 5/5。README 行回退（DRC-006 契约测试锁定 Entry Surfaces 顺序——文档同步需按其规则重做）。`UV_OFFLINE=1 make verify` exit 0。剩余：Node Context pane 接线、Pilot 三尺寸旅程、README/COMMANDS 按契约重做、sync/archive。 | **C4b 未归档；C4b 剩余项即下一会话起点** |
