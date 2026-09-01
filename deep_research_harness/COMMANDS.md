@@ -34,6 +34,7 @@
 | TUI fixture（零凭证预演） | `make demo-tui-fixture` | — | 无 | — |
 | 嵌入式真实图校准（CLI 裸入口） | `make demo-real-embedded-smoke` / `demo-real-scripted` | — | 三要素 | local-operations.md |
 | Gateway 观察路线（CLI/TUI） | 先 `make profile-dev PROFILE=demo`，再 `make demo-real PROFILE=demo` 或 `make demo-tui PROFILE=demo` | — | profile 体系 | local-operations.md |
+| 调试工作台（节点边界 step/continue + 节点上下文检查） | `./run/tui-workflow-debugger.sh`（或 `make tui-debugger`）；`--fixture` 零凭证、`--attach <id>`/`--replay <id>` 经 lifecycle 校验 | — | 无（fixture） | — |
 
 soft-bundle 辅助动词：`inspect` / `phases` / `status` / `verify`（对同一 `$ROOT`）。
 

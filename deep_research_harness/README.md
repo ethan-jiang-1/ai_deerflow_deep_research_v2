@@ -23,6 +23,7 @@ not provider success, evidence acceptance, or report quality.
 | Demo TUI visualizer | Contributor/operator | Visualize shared lifecycle results through Gateway, embedded smoke, or fixture-graph mode | `make demo-tui PROFILE=<name>` uses the public Gateway; `make demo-tui-fixture` is a fixed fixture graph | Not a current Primary User TUI |
 | Fixture-graph demonstrations | Contributor/maintainer | Zero-credential deterministic fixture-graph proof; see [local operations](docs/local-operations.md) and [testing and evaluation](docs/testing-and-evaluation.md) | `make demo`, `make demo-scripted`, and `make demo-tui-fixture` execute a fixed fixture recipe and graph executor | Not a product result or a mode selector |
 | Configured-fixture local workbench | Local operator | Inspect bounded Run Bundle projections; see [local operations](docs/local-operations.md) | `make session-workbench` uses the configured fixture demo profile | Not a generic product UI or recovery client |
+| Debugger workbench | Contributor/operator | Step/continue the real graph at node boundaries, inspect captured node context and bounded workspace, attach/replay exact bundles | `run/tui-workflow-debugger.sh` (or `make tui-debugger`); `--fixture` zero-credential, `--attach <id>`/`--replay <id>` lifecycle-validated | Local operator debugger; not a current Primary User TUI |
 
 ## Reading Map
 
