@@ -9,10 +9,11 @@
 > **自动化原则：因为问题固定，HITL1/HITL2 的答案也是确定的，系统自动回答，不需要人工输入。**
 > **001~004 全部走全自动（CLI 轴）。** 真机交互/人工 HITL 专项留给未来的 010 等 runbook，不在 001~004 内。
 >
-> **TUI 轴分两格：010 = 自动 TUI（同一例子可全跑，真人零操作，✅ 已落地，
+> **TUI 轴分三格：010 = 自动 TUI（同一例子可全跑，真人零操作，✅ 已落地，
 > 入口 `make demo-tui-real-auto` / `RUN-010.command`）、020 = 手动 TUI（与 010
 > 完全同一例子，真人操作 HITL1，入口 `make demo-tui-embedded-smoke` /
-> `RUN-020.command`）。**
+> `RUN-020.command`）、030 = **调试工作台**（节点边界 step/continue，经
+> `DebugRunDriver` 逐帧推进，入口 `run/tui-workflow-debugger.sh --fixture`）。**
 > 拆分规则记在本文 §[TUI 轴线：010 与 020 的分割](#tui-010-020)，别忘。
 >
 > **通用命名轴（从 01x/02x 起）：`01x` = 自动简化跑法、`02x` = 手动跑法，都从
@@ -31,6 +32,7 @@
 | 004 | [`runbook-004-hard-real-auto.md`](runbook-004-hard-real-auto.md) | 花（多） | 同 003 的 `.env` 三变量 + 网络 | 最难：真机全自动跑**默认意图**（不声明 minimal），固定比较题压多 topic 链路，专门用来找茬 | `Compare China and US EV battery market in 2024.` |
 | 010 | [`runbook-010-tui-auto.md`](runbook-010-tui-auto.md) + `RUN-010.command` | 花（中） | 同 003 的 `.env` 三变量 + `make install`（含 demo-tui extra）+ 网络（**真人零操作**） | **同一例子的 TUI 自动全跑**——真人只看不动手，hitl1/hitl2 全自动（scripted 默认产品路径），验证"TUI 一层真实图能自主到终态"。入口 `make demo-tui-real-auto`（BUG-061 → change `add-demo-tui-auto-entry`，2026-08-25 归档） | 同 003：`What is one bounded fact about China's EV battery market in 2024?` |
 | 020 | [`runbook-020-tui-manual.md`](runbook-020-tui-manual.md) + `RUN-020.command` | 花（中） | 同 003 的 `.env` 三变量 + `make install`（含 demo-tui extra）+ 网络 + **真人坐镇** | 手动 TUI：**与 010 同一例子**，真人 HITL1 交互——**启动后先进侦察模式**（看环境/闲聊，不触发研究），点「Start Deep Research」或说触发语才启动；hitl1 里有快捷修订按钮/输入回显/修订确认，修订 profile proposal 并显式确认（semantic intake 真模型分类你的自由文本）；HITL2 是自主 continuation 不需要人。启动器不再提供 Stage A 选择（010 已覆盖通路）。language CHOICE 不在本 run（条件性 B2，前置 BUG-060） | 同 003：`What is one bounded fact about China's EV battery market in 2024?` |
+| **030** | [`runbook-030-debugger.md`](runbook-030-debugger.md) | 无 | **调试工作台**——节点边界 step/continue、`/context` 查看捕获的节点上下文、`/detach` 干净退出。与 010/020 的区别：030 走 `DebugRunDriver` 逐边界推进，能看到每一帧 timeline 和 Node Context coverage strip | 同上（或自定义问题） |
 
 > 📐 手册命名规则固定为 `runbook-00X-难度-用途.md`，以后按这个补。
 
