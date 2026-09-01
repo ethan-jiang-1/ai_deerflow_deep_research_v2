@@ -1,7 +1,7 @@
 # Plan: TUI Workflow Debugger 递进执行计划
 
 > 类型: 递进执行计划 | 创建: 2026-08-31 | 重写: 2026-08-31 | UX/一致性审计: 2026-09-01
-> 状态: 当前唯一活跃 plan；D6-D8 已定；Cpre/C0/C3 已归档（均 2026-09-02）；**C4a apply 进行中**（propose+契约+lease/ledger 绿；DebugRunDriver 主体待实现，交接通路已记录于 §L 末行）；C4b/终线未开始
+> 状态: 当前唯一活跃 plan；D6-D8 已定；**Cpre/C0/C3/C4a 已归档**（均 2026-09-02；C4a=`2026-09-02-add-local-workflow-debug-driving`，矩阵 7/7+全链路 terminal 证明）；**C4b apply 进行中**（propose+plan gate 绿；launcher/alias/attach-replay intents/入口测试 5/5 已落地；剩余：Node Context pane 接线、Pilot 三尺寸旅程、README/COMMANDS 按 DRC-006 重做、sync/archive）；终线未开始（需网络/凭证）
 > 当前决策与执行权威: 本文件
 > 前置证据与原计划纠错: [tui-step-debugger-grounding-review.md](tui-step-debugger-grounding-review.md)
 > 目标体验与计划追踪: [tui-workflow-debugger-target-ux.md](tui-workflow-debugger-target-ux.md)
