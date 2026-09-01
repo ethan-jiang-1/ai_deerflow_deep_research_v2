@@ -38,7 +38,7 @@ import demo_tui  # noqa: E402, I001
     "update",
     [
         pytest.param(run_updates.awaiting_hitl1(), id="hitl1"),
-        pytest.param(run_updates.awaiting_hitl2(), id="hitl2"),
+        pytest.param(run_updates.awaiting_hitl1_language_choice(), id="hitl1-choice"),
         pytest.param(run_updates.completed(), id="terminal"),
         pytest.param(run_updates.auto_profile_terminal(), id="terminal-auto-profile"),
         pytest.param(run_updates.provider_fault(), id="fault"),
@@ -73,16 +73,23 @@ def test_tui_pipeline_tracker_renders_presentation_only_trace_steps() -> None:
 
 
 def test_standalone_adapters_render_safe_invalid_choice_feedback_without_wire_data() -> None:
-    update = run_updates.awaiting_invalid_hitl2_choice()
+    """Invalid-choice feedback is proved on the current HITL1 language CHOICE surface.
+
+    HITL2 is an autonomous graph phase and fabricates no pending choice, so the
+    typed-choice retry projection is exercised with the advertised zh/en
+    options instead of retired HITL2 route labels.
+    """
+    update = run_updates.awaiting_invalid_language_choice()
 
     cli = "\n".join(demo_real.render_run_update(update))
     tui = demo_tui.render_run_update(update)
 
-    assert "上一次选择无效；请只输入上方显示的选项 ID，例如 proceed。" in cli
-    assert "The last choice was invalid. Enter an advertised option ID, for example proceed." in tui.detail
+    assert "上一次选择无效；请只输入上方显示的选项 ID，例如 zh。" in cli
+    assert "The last choice was invalid. Enter an advertised option ID, for example zh." in tui.detail
     assert tui.placeholder == "Choose an advertised option ID"
-    assert tui.options == ("proceed", "rerun", "repair", "revise_view", "stop")
+    assert tui.options == ("zh", "en")
     for rendered in (cli, tui.detail):
+        assert "proceed" not in rendered
         assert "proceed: secret=displayed-consequence" not in rendered
         assert "human_input" not in rendered
         assert "traceback" not in rendered.lower()

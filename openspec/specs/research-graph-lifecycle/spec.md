@@ -218,11 +218,21 @@ session record, or an external checkpoint cannot resume, replace, or recover it.
 `resume` receives no refinement text; a run-level adjustment uses the distinct `refine`
 action. (`REG-003`)
 
+HITL2 SHALL continue from its validated predecessor without creating a pending human
+request, accepting an `AcceptedHumanResponse`, or advertising an internal route label
+as a user option. Its internal real or fixture route remains graph-owned and does not
+create a second interrupt/resume surface.
+
 #### Scenario: Only Bundle-local pending State authorizes resume
 - **WHEN** a trusted HumanMessage matches a retained external interrupt but the selected
   Bundle is unavailable or its Bundle-local State has no matching pending interaction
 - **THEN** the lifecycle returns its bounded unavailable/invalid-transition outcome and
   does not invoke a graph node
+
+#### Scenario: HITL2 does not create a second response boundary
+- **WHEN** a real or fixture graph reaches HITL2 through a valid predecessor
+- **THEN** the graph follows its owned route without creating a pending request,
+  accepting a HumanMessage response, or advertising that route as a user choice
 
 ### Requirement: Lifecycle actions enforce typed and idempotent transitions
 
@@ -595,8 +605,9 @@ The lifecycle wire contract SHALL support a HITL1 `CHOICE` request only for an e
 supported-language selection whose option identifiers and values are a closed language
 set. A matching `OPTION` response SHALL include the current request id and one
 advertised option id; trusted lifecycle validation SHALL reject stale, forged, missing,
-or non-language options before HITL1 executes. Existing HITL2 choice identifiers and
-responses SHALL remain wire-compatible and distinct from HITL1 language options.
+or non-language options before HITL1 executes. The lifecycle SHALL NOT advertise
+internal HITL2 route identifiers as a current `CHOICE` request or accept one as a
+language response to HITL1.
 
 The HITL1 language option SHALL not be a generic action id, visible-control alias, or
 free-text phrase-to-action mapping. The selected option is an input candidate only;
@@ -613,6 +624,12 @@ requests and retained version-1 interrupts SHALL remain readable.
 - **WHEN** a language option from an earlier HITL1 request is submitted after a new
   correlated request is pending
 - **THEN** lifecycle rejects the response and leaves the checkpoint unchanged
+
+#### Scenario: Internal HITL2 route is not an HITL1 language answer
+- **WHEN** a caller submits an internal HITL2 route identifier such as `proceed`
+  against a current HITL1 language-choice request
+- **THEN** lifecycle rejects it before HITL1 executes and does not turn it into a
+  graph route or a second pending interaction
 
 ### Requirement: Deep Research graph lifecycle persists only through the selected Run Bundle
 

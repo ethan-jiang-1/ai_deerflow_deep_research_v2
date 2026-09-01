@@ -172,43 +172,13 @@ def awaiting_complete_typed_hitl1() -> AwaitingInput:
     )
 
 
-def awaiting_hitl2() -> AwaitingInput:
-    pending = PendingInputProjection(
-        request_id="drh-decision",
-        pending_phase="hitl2",
-        generation=1,
-        mode="choice",
-    )
-    return AwaitingInput(
-        snapshot=RunSnapshot(
-            bundle_id=BUNDLE_ID,
-            durability="same_process",
-            lifecycle_phase="wave2_synthesis",
-            completed_trace=("bootstrap", "hitl1", "wave2_synthesis"),
-            pending_input=pending,
-        ),
-        prompt=PromptView(
-            phase="hitl2",
-            request_id=pending.request_id,
-            mode="choice",
-            heading="Choose the next step",
-            goal="Review the current research plan.",
-            body_lines=("Choose one graph-owned option.",),
-            options=(
-                PromptOption(id="proceed", label="Continue", consequence="Continue with the current plan."),
-                PromptOption(id="rerun", label="Rerun", consequence="Start a new research generation."),
-                PromptOption(id="repair", label="Repair", consequence="Collect missing evidence."),
-                PromptOption(id="revise_view", label="Revise", consequence="Revisit synthesis."),
-                PromptOption(id="stop", label="Stop", consequence="End this research run."),
-            ),
-        ),
-        trace_delta=("wave2_synthesis",),
-    )
+def awaiting_invalid_language_choice() -> AwaitingInput:
+    """Return the safe shared retry view for an invalid HITL-1 language choice.
 
-
-def awaiting_invalid_hitl2_choice() -> AwaitingInput:
-    """Return the safe shared retry view without any lifecycle wire data."""
-    update = awaiting_hitl2()
+    HITL2 is an autonomous graph phase and fabricates no pending choice, so the
+    only current CHOICE rejection surface is the HITL1 language selection.
+    """
+    update = awaiting_hitl1_language_choice()
     return update.model_copy(
         update={
             "prompt": update.prompt.model_copy(update={"rejection_category": "choice_input_invalid"}),

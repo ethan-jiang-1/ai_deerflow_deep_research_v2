@@ -195,25 +195,36 @@ async def test_tui_fixture_route_completes_through_shared_experience(
 
 
 @pytest.mark.asyncio
-async def test_tui_forwards_unadvertised_choice_to_graph_owned_validation(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_tui_holds_unadvertised_text_on_choice_prompts(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A CHOICE prompt accepts only an exact advertised option id from the composer.
+
+    HITL2 is an autonomous phase and fabricates no pending choice; the current
+    typed CHOICE surface is the HITL1 language selection. Any other text is not
+    dispatched as a text-kind answer and leaves the prompt awaiting a real
+    selection.
+    """
     _install_scripted(
         monkeypatch,
         report=_ready_report(),
-        updates=[run_updates.awaiting_hitl2(), run_updates.provider_fault()],
+        updates=[run_updates.awaiting_hitl1_language_choice()],
     )
     app = DeepResearchDemoTUI(mode="fixture")
     async with app.run_test() as pilot:
         await _wait_for(app, pilot, demo_tui.Ready)
         await pilot.press("enter")
         await _wait_for(app, pilot, AwaitingInput)
+        awaiting = app.last_update
         await _type_composer(app, pilot, "not-an-advertised-choice")
         await pilot.press("enter")
-        await _wait_for(app, pilot, Fault)
+        await pilot.pause()
+
+        assert app.last_update is awaiting
+        assert app.last_update.prompt.mode == "choice"
+        assert app.last_update.prompt.rejection_category is None
 
     intents = _ScriptedExperience.instances[0].intents
+    assert len(intents) == 1
     assert isinstance(intents[0], StartRun)
-    assert isinstance(intents[1], AnswerRun)
-    assert intents[1].value == "not-an-advertised-choice"
 
 
 @pytest.mark.asyncio

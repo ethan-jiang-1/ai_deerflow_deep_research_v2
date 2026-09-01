@@ -172,7 +172,11 @@ async def test_cli_follows_only_shared_awaiting_updates_and_preserves_graph_owne
     _install_experience(
         monkeypatch,
         report=_ready_report(),
-        updates=[run_updates.awaiting_hitl1(), run_updates.awaiting_hitl2(), run_updates.completed()],
+        updates=[
+            run_updates.awaiting_hitl1(),
+            run_updates.awaiting_hitl1_language_choice(),
+            run_updates.completed(),
+        ],
     )
     answers = iter(("profile answer", "not-an-advertised-choice"))
     monkeypatch.setattr("builtins.input", lambda _prompt: next(answers))
@@ -186,7 +190,7 @@ async def test_cli_follows_only_shared_awaiting_updates_and_preserves_graph_owne
     assert intents[2].value == "not-an-advertised-choice"
     output = capsys.readouterr().out
     assert "Confirm research scope" in output
-    assert "rerun:" in output
+    assert "zh:" in output
     assert "研究流程已完成" in output
     assert _Adapter.created[0].closed is True
 

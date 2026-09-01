@@ -539,12 +539,12 @@ WSN-011: wave2-synthesis-node — The wave2 output contract includes a concrete 
 WSN-012: wave2-synthesis-node — Provider-transient timeouts (typed provider-timeout origins) retry within the existing model-call policy envelope before any degradation or terminal disposition, and fall back to unchanged budget-class handling when retries end
 
 # rerun-node
-REN-001: rerun-node — Rerun scope is deterministically parsed from HITL2 decision payload producing a typed RerunPlan with scope, reason, target topics, target findings, and retained topics, defaulting to full scope when metadata is absent
+REN-001: rerun-node — Rerun scope is deterministically parsed from the internal graph/control `hitl2_rerun_payload` checkpoint input (never a human HITL2 decision) producing a typed RerunPlan with scope, reason, target topics, target findings, and retained topics, defaulting to full scope when metadata is absent
 REN-002: rerun-node — Generation increment is monotonic with generation decrease rejected by reducer; old submission ledger and raw evidence artifacts remain append-only with no deletion or modification of accepted SubmissionRecords
 REN-003: rerun-node — Derived projections (synthesis ref, decision brief ref, report refs) are invalidated by clearing checkpoint refs without deleting sandbox files; raw evidence and submission ledger entries are never removed
 REN-004: rerun-node — Scoped WorkSpecs are materialized via the existing work-unit controller for topics and findings within the rerun scope; topics outside scope retain accepted evidence without new WorkSpecs
 REN-005: rerun-node — Back edges are a closed set determined by rerun scope: full and topic scope route to topic_planning; finding scope with stale sources routes to wave0; finding scope with deep-evidence-only routes to wave1; generation ceiling exhaustion routes to exhausted
-REN-006: rerun-node — New generation must re-pass all affected wave gates and HITL2; gate attempt and repair budget state is reset for affected phases; old HITL2 proceed decision is not inherited
+REN-006: rerun-node — New generation must re-pass all affected wave gates and HITL2; gate attempt and repair budget state is reset for affected phases; the new generation's HITL2 is validated and routed autonomously by the graph without inheriting a cached human decision, creating a pending input, or re-suspending for a user choice
 REN-007: rerun-node — Real rerun integrates into the all-real and explicitly composed mixed graph requiring real hitl2 with unchanged topology; fixture rerun preserves deterministic test/demo behavior; real back edges expand allowed route values without breaking existing edges
 REN-008: rerun-node — An admitted Run direction uses the existing pure full-rerun compiler and capacity policy to reach topic planning without becoming a HITL2 decision or a second route authority
 

@@ -23,7 +23,9 @@ question or presenting an inspect command.
 
 After preflight, the CLI SHALL choose or confirm a non-blank research question and
 then answer each `AwaitingInput` update until a `Terminal` or `Fault` update is
-returned. Supplying `--question` SHALL bypass only question entry and visibly confirm
+returned. Current graph-produced `AwaitingInput` updates belong to HITL1 and MAY repeat
+for its bounded follow-up flow; a verified HITL2 visit SHALL not create another CLI
+prompt. Supplying `--question` SHALL bypass only question entry and visibly confirm
 a bounded control-character-safe representation while preserving the original value
 for start. Blank `--question` SHALL fail before graph construction. `--scripted`
 SHALL remain a credentialed, non-interactive real route that uses the graph's
@@ -62,8 +64,13 @@ artifact, raw control JSON, pending phase, or graph response correlation. (`REC-
 - **THEN** it reads no stdin, safely confirms that explicit question, and uses it as the initial start message rather than silently replacing it with the scripted default
 
 #### Scenario: Graph-owned HITL requests may repeat
-- **WHEN** a HITL-1 response yields a follow-up request or a HITL-2 decision routes through rerun/repair and later returns another HITL request
-- **THEN** the CLI renders that returned request through `RunUpdate` and does not assume a fixed number of resumes or prompts
+- **WHEN** an HITL1 response yields a bounded follow-up request
+- **THEN** the CLI renders that returned request through `RunUpdate` and does not assume a fixed number of HITL1 resumes or prompts
+
+#### Scenario: Autonomous HITL2 adds no CLI answer round
+- **WHEN** the verified run trace advances through HITL2 after Wave2 passes
+- **THEN** the CLI may render that progress but reads no additional answer and displays
+  no internal route menu
 
 ### Requirement: Real CLI renders shared truthful run updates and failures
 
@@ -71,9 +78,10 @@ The real CLI SHALL render only `RunUpdate` values from `ResearchRunExperience`.
 Before an unresolved dispatch it MAY show the shared `Working` action and elapsed
 local time. It SHALL render completed phase progress only from a verified returned
 trace delta, including repeat visits, and SHALL never infer a phase from action,
-input mode, option count, or a local fixed sequence. A pending prompt SHALL display
-its shared semantic HITL-1/HITL-2 guidance, graph-owned choices, and validation
-feedback.
+input mode, option count, or a local fixed sequence. A pending HITL1 prompt SHALL
+display its shared semantic guidance, advertised typed inputs/controls, and validation
+feedback. A verified HITL2 trace visit without pending input SHALL render only as
+autonomous progress and SHALL NOT expose graph routes as user choices.
 
 For every terminal or fault outcome the CLI SHALL show what happened, the known
 phase when available, the safe category/reason level, concrete next action,
@@ -106,6 +114,10 @@ explicit shared `Cancel` result may be displayed only after the graph confirms i
 #### Scenario: Local interruption does not claim durable cancellation
 - **WHEN** the user presses Ctrl-C while the CLI is awaiting a lifecycle action
 - **THEN** it closes local resources and exits as an interrupted local process without issuing a graph `Cancel` or claiming the research was durably cancelled
+
+#### Scenario: Internal HITL2 route is not rendered as a choice
+- **WHEN** a shared update reports an autonomous HITL2 visit with no pending request
+- **THEN** the CLI renders no prompt, route options, or Answer action for that visit
 
 ### Requirement: Real CLI exposes bounded standalone diagnostics and durability
 

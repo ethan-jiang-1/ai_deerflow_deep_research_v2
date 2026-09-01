@@ -112,6 +112,25 @@ baseline; after sync, the same bounded scan must return no current-human-HITL2 c
 Alternative considered: rewrite archived changes. This was rejected because archives
 must retain provenance and are not current authority.
 
+### D5. Five-capability keep/retire matrix (task 1.1 evidence)
+
+The cutover is bounded by this explicit per-capability keep/retire matrix. Every
+delta hunk must be traceable to a "Retire" cell; every "Keep" cell constrains the
+sync from deleting still-true requirements.
+
+| Capability | Keep (still true, must survive sync) | Retire (stale current-human-HITL2 claims) |
+| --- | --- | --- |
+| `research-graph-lifecycle` (REG-001..023) | HITL1 graph-owned interrupt + one correlated `AcceptedHumanResponse` resume; Bundle-local pending State as durable authority; HITL1 CHOICE/OPTION language contract incl. stale/option rejection; text HITL1 requests; retained version-1 interrupts readable; internal HITL2 routes/topology as graph-owned facts | `Existing HITL2 choice identifiers` readability promise as current wire surface; any HITL2 pending request/response/second resume claim |
+| `research-run-experience` (RER-001..014) | non-network preflight; HITL-1 versioned brief decode; honest working/waiting states; `SCRIPTED_REAL_WORKFLOW` production-shaped first-interaction evidence incl. phase-lag guard; redaction/fault coverage | `HITL-2 presentation SHALL render ...` promise; second HITL2 suspension/Answer scenario; synthetic HITL2 prompt as production-shaped evidence |
+| `rerun-node` (REN-001..008) | `hitl2_rerun_payload` parsing incl. default-to-full; generation increment; gate/repair-budget reset; route determination | `user chooses rerun at HITL2`; `must re-suspend at HITL2 for a new user decision`; cached-human-decision inheritance |
+| `research-demo-tui` (RED-001..011) | no local lifecycle inference; typed pending consumption from `ResearchRunExperience`; broker-backed inspection; CHOICE prompt option submission + composer exact-match rule; TEXT free-text intake | retained `HITL-1 or HITL-2 session` projection promise; HITL2 route labels as advertised options; HITL2 answer-session presentation |
+| `research-cli-onboarding` (REC-001..008) | preflight-before-question journey; `--question`/`--scripted` semantics; shared `RunUpdate`-only rendering; repeated HITL1 follow-up rounds; truthful failure rendering | `semantic HITL-1/HITL-2 guidance` phrasing; HITL2 choice prompt / second resume assumption |
+
+Dormant decoder exclusions (not touched by any delta): `Hitl2Decision` enum and
+persisted values, `phase="hitl2"` type-boundary negative decoder tests whose names
+claim no current producer, and any broad decoder branch kept for wire compatibility.
+These remain implementation surface; no delta may delete or advertise them.
+
 ## Risks / Trade-offs
 
 - **[Risk] A broad cleanup deletes valid internal HITL2 topology.** -> Delta specs and

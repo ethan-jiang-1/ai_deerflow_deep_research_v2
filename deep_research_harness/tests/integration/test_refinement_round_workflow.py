@@ -21,7 +21,6 @@ import pytest
 from deerflow_deep_research.domain.bundle import RunBundleRef
 from deerflow_deep_research.domain.lifecycle import (
     AcceptedHumanResponse,
-    Hitl2Decision,
     HumanInputMode,
     HumanInputOption,
     HumanInputRequest,
@@ -31,6 +30,7 @@ from deerflow_deep_research.domain.lifecycle import (
     PendingResearchInterrupt,
     RefinementOperation,
     ResponseKind,
+    SupportedLanguageOption,
 )
 from deerflow_deep_research.domain.state import PhaseStatus
 from deerflow_deep_research.runtime.bundle_control import BundleControl
@@ -449,8 +449,12 @@ async def test_terminal_projection_race_preserves_one_direction_token_and_contin
 
 
 @pytest.mark.asyncio
-async def test_active_hitl2_subject_survives_independent_direction_admission(tmp_path: Path) -> None:
-    """DRH-005: an independent direction cannot consume a current HITL2 choice."""
+async def test_active_hitl1_choice_subject_survives_independent_direction_admission(tmp_path: Path) -> None:
+    """DRH-005: an independent direction cannot consume a current correlated subject.
+
+    The current typed CHOICE producer is the HITL1 language selection; HITL2 is an
+    autonomous phase and fabricates no pending choice.
+    """
 
     lifecycle = BundleLifecycle(workspace_host_path=tmp_path)
     bundle = await lifecycle.start(
@@ -460,32 +464,33 @@ async def test_active_hitl2_subject_survives_independent_direction_admission(tmp
     )
     pending = PendingResearchInterrupt(
         request=HumanInputRequest(
-            request_id="hitl2-choice",
+            request_id="hitl1-language-choice",
             mode=HumanInputMode.CHOICE,
-            title="Choose a research decision",
-            context="Choose the next graph decision.",
+            title="Choose the report language",
+            context="Choose the output language for this research run.",
             options=tuple(
-                HumanInputOption(id=decision, label=decision.value, value=decision) for decision in Hitl2Decision
+                HumanInputOption(id=language, label=language.value, value=language)
+                for language in SupportedLanguageOption
             ),
         ),
-        suspension_cursor="hitl2-suspension",
-        phase="hitl2",
+        suspension_cursor="hitl1-suspension",
+        phase="hitl1",
         generation=0,
     )
     suspended = await lifecycle.sync_graph_progress(
         bundle=bundle,
         values={
-            "phase": "hitl2",
+            "phase": "bootstrap",
             "phase_status": PhaseStatus.WAITING.value,
             "terminal_status": None,
             "generation": 0,
-            "execution_trace": ("wave2_synthesis",),
+            "execution_trace": ("bootstrap",),
         },
         pending=pending,
     )
 
     operation = RefinementOperation.from_text(
-        operation_key="hitl2-direction",
+        operation_key="independent-direction",
         text="Prioritize primary regulatory sources.",
     )
     admitted = await lifecycle.admit_refinement(
@@ -500,7 +505,7 @@ async def test_active_hitl2_subject_survives_independent_direction_admission(tmp
     assert admitted.state.pending_request_id == pending.request.request_id
     assert admitted.state.pending_cursor == pending.suspension_cursor
     assert admitted.state.pending_request_mode is HumanInputMode.CHOICE
-    assert admitted.state.waiting_for == "hitl2"
+    assert admitted.state.waiting_for == "hitl1"
     assert admitted.state.generation == pending.generation
     assert admitted.state.admitted_refinement == operation
     assert admitted.state.current_refinement is None

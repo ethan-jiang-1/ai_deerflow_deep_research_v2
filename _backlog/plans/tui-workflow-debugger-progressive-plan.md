@@ -1,7 +1,7 @@
 # Plan: TUI Workflow Debugger 递进执行计划
 
 > 类型: 递进执行计划 | 创建: 2026-08-31 | 重写: 2026-08-31 | UX/一致性审计: 2026-09-01
-> 状态: 当前唯一活跃 plan；D6-D8 已定；Cpre planning draft 已创建，仍在 plan/review，尚未 apply/sync/archive；C0/C3/C4a/C4b 尚未创建
+> 状态: 当前唯一活跃 plan；D6-D8 已定；Cpre 已 apply/sync/archive（2026-09-02，`2026-09-02-reconcile-hitl2-autonomous-contracts`）；C0 已解除禁止、尚未 propose；C3/C4a/C4b 尚未创建
 > 当前决策与执行权威: 本文件
 > 前置证据与原计划纠错: [tui-step-debugger-grounding-review.md](tui-step-debugger-grounding-review.md)
 > 目标体验与计划追踪: [tui-workflow-debugger-target-ux.md](tui-workflow-debugger-target-ux.md)
@@ -531,7 +531,7 @@ authority 的 overlapping active change。
 
 | 顺序 | change slug | 唯一载荷 | 当前状态 | 前置 |
 | --- | --- | --- | --- | --- |
-| Cpre | `reconcile-hitl2-autonomous-contracts` | 原子收敛 autonomous HITL2 的主 specs、registry、walkthrough 与受影响 fixtures/tests；零 runtime/topology 变更 | planning draft 已创建；待 review，禁止 apply/sync/archive | 本 plan 当前有效 |
+| Cpre | `reconcile-hitl2-autonomous-contracts` | 原子收敛 autonomous HITL2 的主 specs、registry、walkthrough 与受影响 fixtures/tests；零 runtime/topology 变更 | 已归档（2026-09-02）；五 specs/registry/walkthrough/fixtures 原子同步，plan/closeout 门全绿 | 已完成 |
 | C0 | `repair-run-observation-truth` | suspended Journal truth + fail-closed exact live correlation | 尚未创建 | Cpre 归档 |
 | C3 | `add-local-workflow-debug-observation` | runtime TraceFrame/projector + required node-agent-context capture/inspect + bounded workspace reader + replay/live presentation | 尚未创建 | C0 归档 |
 | C4a | `add-local-workflow-debug-driving` | DebugRunDriver + control lease + 全部 headless drive/recovery contracts | 尚未创建 | C3 归档 |
@@ -546,29 +546,24 @@ headless authority 与 presentation adapter 两个独立 cut，不增加新的�
 
 ### 4.1 Cpre 当前状态、范围与出口
 
-Cpre 已在 `openspec/changes/reconcile-hitl2-autonomous-contracts/` 形成 proposal/design/tasks 与五份
-delta spec 的 **planning draft**，并通过 plan-phase 与 strict planning validation。它是本计划中
-HITL2 authority 纠错的具体化，不是计划外工作；但它尚未 apply、sync 或 archive，因此没有改变
-main specs、runtime、tests 或当前产品行为。本轮只更新本计划，不执行 Cpre。
+Cpre 已于 2026-09-02 完成 apply、delta sync 与 archive
+（`openspec/changes/archive/2026-09-02-reconcile-hitl2-autonomous-contracts/`）。
+其出口条件全部满足并留有证据（见该归档 `evidence.md`）：五份 main specs、`REN-001`/`REN-006`
+registry 摘要、lifecycle walkthrough §4 与受影响 fixtures/tests 原子同步；HITL1 typed-choice
+与 autonomous HITL2 的 deterministic 证据经真实测试面跑通（最低 seam 35 passed、集成 86
+passed、契约 36 passed）；diff 无 runtime/public API/checkpoint schema/topology/dependency/
+`deerflow/` 变更；`UV_OFFLINE=1 make verify`、plan/closeout 门、strict validation 全绿。
+顺带修复的干净树 closeout 门回归登记为 BUG-067（零契约面变更，不属于 Cpre 载荷）。
 
 Cpre 的唯一目标是让所有 current authority 一致表达：HITL1 是当前唯一 human pending-input
 producer；real HITL2 校验 predecessor 后自主产生内部 graph route，不创建第二个 human prompt、
 Answer/Resume 或 retained HITL2 session。它必须保留仍有效的 HITL2 internal routes、rerun/readiness
 control facts、topology 和宽泛 decoder compatibility，不把“删除错误的人机投影”扩大为 runtime rewrite。
 
-Cpre 只有在以下条件全部成立后才能归档并放行 C0：
-
-- 五份受影响 main specs、现有 registry 摘要、lifecycle walkthrough 与直接相关 fixtures/tests 原子
-  同步，现行人工 HITL2 叙事无遗漏；archive provenance 不改写。
-- autonomous HITL2 与 HITL1 typed choice 的最低责任测试提供 deterministic evidence；不能只靠文档
-  搜索或 TUI 截图证明。
-- diff 不包含 runtime、public API、checkpoint schema、graph topology、dependency 或 `deerflow/`
-  变更；若审阅发现需要这些变化，停止并回本 plan 重新定界。
-- apply/closeout gates 全绿，delta sync 到 main specs，change archive，并在 §L 记录真实结果。
-
-在此之前只允许 review/polish Cpre planning artifacts；禁止开始 C0 proposal，更不能提前实现 C0/C3/
-C4a/C4b。Cpre 的详细 apply checklist 位于该 active change，但 scope、顺序和放行条件仍由本 plan
-约束；active change 不得反向扩张本计划。
+Cpre 归档放行 C0：propose C0 前须重新运行 `openspec list --json` 核对无 overlapping active
+change，并按 §10 重验 dated evidence（`RunEvent` suspended 拒绝须先用当前代码重现并记录到
+change evidence）。Cpre 的详细 apply checklist 已随归档保留，scope、顺序和放行条件仍由本 plan
+约束。
 
 每个 change 在 `openspec propose` 前必须建立一张可审阅的 source mapping，并放入 proposal/design/tasks
 之一（具体载体由当期 OpenSpec 模板决定）：
@@ -1012,3 +1007,4 @@ Cpre planning draft 的记录取代。
 | 2026-09-01 | node-context UX audit | 将研发调试所需的 exact initial node-agent context 从 optional attribution 提升为 C3 gate：`agent.ainvoke`/首次 provider call 前捕获 runtime MD/initial messages/request/policy/mount refs，live/replay 同构；分开 node-agent invocation 与内部 provider calls，后者只保留 bounded safe facts 并标 raw history NOT_RETAINED；分开 captured context、current workspace 与 non-runtime `workflow.md`，补 source drift、legacy、capture-failure 和 secret/host-path 反例。 | TUI 能解释 node 声明过的输入/enforcement/activity/outcome 上下文且不冒充未保留历史；package source/Gateway 权限不扩张 |
 | 2026-09-01 | cross-document consistency audit | 系统复核 current plan、target UX、grounding review 与三份 campaign 历史；建立文档 authority/read-order、OpenSpec source mapping 与 drift 回流规则；C4a 纳入 target UX 必读 gate；冻结材料增加 supersession/retirement 路由。 | 当前执行任务只来自本 plan；UX 承诺可追踪到 C0/C3/C4a/C4b；旧 §10/Phase 8 不再形成第二计划 |
 | 2026-09-01 | plan intention/authority sync | 补入原始 debugger 意图、旧 TUI 失效原因、campaign/E4 证据边界、八项设计原则与“压力 -> correction -> stage”因果链；登记 Cpre planning draft 已创建但未 apply/sync/archive，并补齐 Cpre scope/gate。 | 无上下文 Agent 可从本 plan 理解为何按 Cpre -> C0 -> C3 -> C4a -> C4b 推进；当前只允许 review/polish Cpre，未开始实施 |
+| 2026-09-02 | Cpre apply/archive | 静默自主执行 Cpre 全链：polish（workflow-control 引用修正 + design §D5 五能力 keep/retire matrix）→ 15 个 delta hunk 原子 sync 五主 specs → REN-001/REN-006 registry 摘要 → walkthrough §4 autonomous HITL2 重写 → 合成 HITL2 prompt fixtures 删除/迁移（`awaiting_hitl2`/`awaiting_invalid_hitl2_choice` 移除，invalid-choice 证据迁至 HITL1 language CHOICE；refinement DRH-005 测试迁至有效 HITL1 pending subject；TUI composer CHOICE exact-match-only 收窄）→ 122 处 specs HITL2 审计 0 违规 → 1.2 红线 baseline 全部清除（4.1 扫描 exit 1）。红/绿证据：adapters 红期 1 failed（"proceed" 硬编码示例）→ 迁移后 adapters 36 / 集成 86 / 最低 seam 35 全绿；`UV_OFFLINE=1 make verify` exit 0；strict validation + plan/closeout 门全绿；diff 无 src/deerflow 变更。干净树 closeout 门存量回归（commit 3965640 遗留）登记 BUG-067 并以零契约面修复关闭（README prose token ×2 + `check_project_architecture.py` 补 `@impl PRS-022`）。归档为 `2026-09-02-reconcile-hitl2-autonomous-contracts`。 | **Cpre 关闭；C0 解禁。下一步 = propose C0 前重跑 `openspec list` 与 §10 dated evidence 重验（`RunEvent` suspended 拒绝重现）** |

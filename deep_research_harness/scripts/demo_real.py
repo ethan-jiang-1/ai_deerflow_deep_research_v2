@@ -274,7 +274,8 @@ def render_run_update(update: object) -> tuple[str, ...]:
         if prompt.missing_fields:
             lines.append(f"  仍需补充: {', '.join(prompt.missing_fields)}")
         if prompt.rejection_category == "choice_input_invalid":
-            lines.append("  上一次选择无效；请只输入上方显示的选项 ID，例如 proceed。")
+            example = prompt.options[0].id if prompt.options else "advertised"
+            lines.append(f"  上一次选择无效；请只输入上方显示的选项 ID，例如 {example}。")
         elif prompt.rejection_category:
             lines.append("  上一次输入未识别；请使用可用值或完整 JSON。")
         if prompt.accepted_rounds_remaining:

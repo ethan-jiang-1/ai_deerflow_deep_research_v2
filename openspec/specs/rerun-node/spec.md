@@ -9,6 +9,10 @@ Plan bounded generation reruns while preserving accepted evidence authority and 
 
 The rerun node SHALL read the `hitl2_rerun_payload` field from checkpoint state. When the field is a dict with a valid `scope` key, the node SHALL extract a typed `RerunScope`. Valid scope values SHALL be `full` (redo all topics from planning), `topic` (redo named topics from source intake), and `finding` (redo specific findings — gap re-search or stale source intake). The scope extraction SHALL be a pure input-parsing step that does not depend on generation having been incremented. If `hitl2_rerun_payload` is `None`, absent, or contains an invalid/missing `scope` key, the node SHALL default to `full` scope. The final `RerunPlan` (assembled after generation increment and route determination) SHALL contain the `RerunScope`, the new generation, the parent generation, and the determined route.
 
+When present, `hitl2_rerun_payload` SHALL be treated only as internal graph/control
+input to the rerun compiler. It SHALL NOT be advertised as a human HITL2 decision,
+reconstructed from a human response, or used as authority for a pending interaction.
+
 #### Scenario: Full rerun from payload with explicit scope
 - **WHEN** `hitl2_rerun_payload` is `{"scope": "full", "reason": "rethink methodology"}`
 - **THEN** a `RerunScope` is produced with `scope=FULL`, `target_topic_ids=()`, `retain_topic_ids=()`, and `reason="rethink methodology"`
@@ -107,7 +111,7 @@ The rerun node SHALL route to a closed set of graph edges determined by scope: `
 
 ### Requirement: New generation must re-pass affected wave gates and HITL2
 
-The rerun node SHALL reset `gate_attempts_by_phase` and `repair_budget_by_phase` for all phases affected by the rerun scope. The old generation's HITL2 `proceed` decision SHALL NOT be inherited. Affected wave gates SHALL re-evaluate from scratch against the new generation's evidence.
+The rerun node SHALL reset `gate_attempts_by_phase` and `repair_budget_by_phase` for all phases affected by the rerun scope. Affected wave gates SHALL re-evaluate from scratch against the new generation's evidence. When that flow reaches HITL2, HITL2 SHALL validate the new generation's predecessor and select its graph-owned route autonomously; it SHALL NOT inherit a cached human decision, create a pending input, or re-suspend for a new user choice.
 
 #### Scenario: Gate state is reset for affected phases
 - **WHEN** scope is `FULL` and generation 0 had gate attempts `{"wave0": 2, "wave1": 3}`
@@ -118,8 +122,9 @@ The rerun node SHALL reset `gate_attempts_by_phase` and `repair_budget_by_phase`
 - **THEN** `gate_attempts_by_phase` for phases affecting topic B is reset; phases unrelated to the rerun scope retain their attempts for diagnostic traceability
 
 #### Scenario: Old HITL2 proceed is not inherited
-- **WHEN** generation 0 had `hitl2_decision = "proceed"` and the user chooses rerun at HITL2
-- **THEN** generation 1 starts with no cached HITL2 decision and must re-suspend at HITL2 for a new user decision
+- **WHEN** a rerun generation re-passes its affected Wave2 path and reaches HITL2
+- **THEN** HITL2 validates that generation and follows its graph-owned route without
+  reading a cached human decision or creating a new pending request
 
 ### Requirement: Mixed-graph integration with unchanged topology
 

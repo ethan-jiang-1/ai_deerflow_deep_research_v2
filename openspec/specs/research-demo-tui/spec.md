@@ -124,8 +124,11 @@ lifecycle result and never treat retained demo output as a recoverable session.
 
 ### Requirement: TUI owns no independent lifecycle state inference
 
-The TUI SHALL not decide whether a pending request is HITL-1 or HITL-2 from action,
-mode, option count, trace, or local stage state. It SHALL not construct a human
+The TUI SHALL consume a pending request's typed phase and subject from
+`ResearchRunExperience` rather than deciding them from action, mode, option count,
+trace, or local stage state. The current graph-owned pending human-input producer is
+HITL1. A verified HITL2 trace visit without a pending request SHALL be rendered only as
+autonomous progress and SHALL NOT become a prompt. The TUI SHALL not construct a human
 response envelope or lifecycle call id itself. It may retain visual focus and widget
 state, but its lifecycle state and next action SHALL come exclusively from
 `ResearchRunExperience`. (`RED-003`)
@@ -133,6 +136,11 @@ state, but its lifecycle state and next action SHALL come exclusively from
 #### Scenario: Phase lag cannot produce different TUI behavior
 - **WHEN** the shared Module receives a suspended result with committed `bootstrap` and pending HITL-1
 - **THEN** the TUI shows the same scope prompt as the CLI and does not classify it from the fact that the preceding action was start
+
+#### Scenario: HITL2 progress is not a pending prompt
+- **WHEN** a shared update contains a verified HITL2 trace visit and no pending input
+- **THEN** the TUI may show that phase as progress but offers no Answer control, route
+  options, or inferred resume action
 
 ### Requirement: TUI makes safe failure and cancellation status visible
 
@@ -154,17 +162,25 @@ SHALL render unavailable or denied operations without raw scope, path, provider,
 checkpoint data. It SHALL not select or reconstruct a recipe for a stored session; the
 profile-owned broker determines whether the session is compatible. It retains the safe
 legacy inspect reference and may offer only broker-backed discover/open/status/cancel or
-resume controls; it keeps the expected opaque request id in its safe view model and passes
-raw answer text only to the broker. (`RED-005`)
+resume controls; when a current HITL1 request is pending, it keeps the expected opaque
+request id in its safe view model and passes raw answer text only to the broker. A
+session at or after HITL2 with no typed pending request SHALL NOT be presented as an
+HITL2 answer session. (`RED-005`)
 
 #### Scenario: TUI shows the same paused-run reference as CLI
-- **WHEN** the shared run experience projects a retained HITL-1 or HITL-2 session
+- **WHEN** the shared run experience projects a retained HITL-1 session
 - **THEN** the TUI presents the same reference and inspectability truth as the CLI without decoding a lifecycle `Command`
 
 #### Scenario: TUI shows an unavailable operation without a recovery claim
 - **WHEN** the broker denies or cannot resolve a selected session
 - **THEN** the TUI renders only the bounded unavailable state and does not offer a
   fabricated resume path
+
+#### Scenario: HITL2 phase does not fabricate an answer session
+- **WHEN** an inspected run has reached HITL2 but its typed Bundle-local State has no
+  pending human request
+- **THEN** the TUI exposes only the broker's legal status/continuation projection and
+  does not create an HITL2 prompt, expected request id, or answer submission
 
 ### Requirement: Demo TUI consumes shared typed intake actions and safe run updates
 
@@ -214,9 +230,9 @@ for the prompt's current request. It SHALL NOT submit a text-kind answer for a
 prompt whose shared contract requires an option, and SHALL NOT invent an option
 id, construct a response envelope, or admit the answer itself — legality remains
 with the shared run experience. Ordinary TEXT-mode HITL1 prompts SHALL keep
-forwarding free text unchanged for semantic intake, and non-language CHOICE
-prompts SHALL keep forwarding composer text to the shared graph-owned
-validation unchanged. (`RED-009`)
+forwarding free text unchanged for semantic intake. The TUI SHALL NOT synthesize a
+CHOICE prompt from HITL2 route labels or treat those labels as advertised user options.
+(`RED-009`)
 
 #### Scenario: User selects an advertised language option
 - **WHEN** a HITL1 CHOICE prompt advertises language options and the user selects one
@@ -235,6 +251,10 @@ validation unchanged. (`RED-009`)
 - **WHEN** the current HITL1 prompt is TEXT mode and the user submits free text
 - **THEN** the demo TUI forwards it unchanged as the shared text answer for
   semantic intake, exactly as before this requirement
+
+#### Scenario: Internal HITL2 routes never become TUI options
+- **WHEN** an autonomous HITL2 visit selects or records an internal graph route
+- **THEN** the TUI renders no CHOICE prompt and submits no option answer for that route
 
 ### Requirement: Demo TUI provides an explicit zero-human-input auto entry
 

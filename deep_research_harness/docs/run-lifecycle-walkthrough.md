@@ -49,13 +49,16 @@ The **evidence ledger** inside the bundle is the accepted-evidence authority; th
 waves propose, validators/ledger/gate dispose. `wave0`/`wave1` can route `repair` to
 themselves inside a bounded budget; `exhausted` anywhere routes to blocked.
 
-## 4. The evidence loop and the second human stop
+## 4. The evidence loop and autonomous HITL2
 
 If synthesis lacks support, `wave2_synthesis` routes `evidence_needed` to
 `targeted_evidence`, which fetches for named gaps and returns (`next`) — the only
-cycle between two nodes. When synthesis passes, `hitl2` stops for the user: revise
-the view, repair evidence, trigger `rerun` (a new **Refinement Round** over the same
-bundle, replanning by depth), `proceed`, `stop`, or `cancel`.
+cycle between two nodes. When synthesis passes, `hitl2` validates the Wave2-pass
+predecessor and continues autonomously — it creates no pending request, second
+Answer, or route menu. Its internal route labels (`proceed` on the real path, with
+rerun-style routes exercised by fixtures) stay graph-owned controls: a new
+**Refinement Round** over the same bundle is admitted at a terminal boundary by
+`refine`, never chosen by a user at `hitl2`.
 
 ## 5. Readiness and delivery
 

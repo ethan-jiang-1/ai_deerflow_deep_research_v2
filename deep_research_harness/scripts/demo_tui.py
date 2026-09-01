@@ -731,7 +731,8 @@ def render_run_update(
         if prompt.missing_fields:
             details.append("Missing: " + ", ".join(prompt.missing_fields))
         if prompt.rejection_category == "choice_input_invalid":
-            details.append("The last choice was invalid. Enter an advertised option ID, for example proceed.")
+            example = prompt.options[0].id if prompt.options else "advertised"
+            details.append(f"The last choice was invalid. Enter an advertised option ID, for example {example}.")
         elif prompt.rejection_category:
             details.append("未识别上次输入。")
             if last_typed:
@@ -1274,11 +1275,11 @@ class DeepResearchDemoTUI(App[None]):
             self._dispatch(StartRun(question=value))
         elif isinstance(self.last_update, AwaitingInput):
             prompt = self.last_update.prompt
-            if prompt.mode == "choice" and prompt.phase == "hitl1":
-                # The shared contract requires a typed OPTION here; an exact
-                # match of one advertised option id is the only legal composer
-                # entry, and any other text dispatches nothing.
-                if value in self._advertised_language_options():
+            if prompt.mode == "choice":
+                # The shared contract requires a typed OPTION for every CHOICE
+                # prompt; an exact match of one advertised option id is the only
+                # legal composer entry, and any other text dispatches nothing.
+                if prompt.phase == "hitl1" and value in self._advertised_language_options():
                     self._dispatch(AnswerRun(value=value, response_kind="option", option_id=value))
                 return
             self._dispatch(AnswerRun(value=value))
