@@ -186,6 +186,67 @@ TUI、同一个 `ResearchRunExperience`），差异只在 02x 交互层做加法
 inspect 手段（看 workspace 结构 / 查 bundle / 拿日志），runbook 里写明
 "用户怎么 inspect"。**没有 inspect 手段的 02x 不算合格体验。**
 
+## 03x（调试跑法）：第三种人的角色
+
+> **根源一句话：01x 人只看、02x 人操作、03x 人拆解——03x 的核心不是"跑完"
+> 而是"看清楚每一层出了什么问题"。** 它用的不是 shared experience 的
+> start/resume 全自动/手动路径，而是 `DebugRunDriver` 的逐边界推进。
+
+### 03x 与 01x/02x 的本质区别
+
+| 维度 | 01x（自动） | 02x（手动） | **03x（调试）** |
+|------|-----------|-----------|---------------|
+| 人的角色 | 观察者 | 操作者 | **拆解者**：暂停→检查→定位→修复→重跑 |
+| 推进粒度 | 整段自动 | 交互点粒度 | **节点边界**（每次恰好一个逻辑节点） |
+| 停止策略 | 跑到终态 | HITL 等人 | **任何边界可停**（step / breakpoint / pause） |
+| Node Context | 不需要 | 不需要 | **必须**：`/context` 查看 exact initial prompt + enforced tools/budget |
+| 恢复模型 | N/A | N/A | **detach 后 attach 恢复到同一 boundary**（不推进） |
+| 修复循环 | 无（跑完拉倒） | 无（跑完就行） | **Detach → 改代码/prompt → 新 Bundle 重跑** |
+| 驱动层 | shared experience（start/resume） | shared experience（start/resume） | **DebugRunDriver**（独立 driver，不复用 ContinueRun） |
+
+### 03x 的体感底线（2026-09-02 定）
+
+1. **每帧可信**：timeline 上的每一帧来自 checkpoint（commit authority）+
+   journal（causal facts），不含推断——"在跑"和"已完成"必须分开显示。
+2. **/context 必须诚实**：INITIAL CAPTURED / RUNTIME ENFORCED / ACTIVITY
+   BOUNDED / OUTCOME OBSERVED | UNAVAILABLE / FILES CURRENT 五层各有
+   明确标注；fixture 模式下无 LLM 调用，`/context` 为空属预期。
+3. **Detach ≠ Cancel**：`/detach` 释放控制权但不推进、不取消；`Cancel`
+   走 lifecycle cancel 语义（终态，不可恢复）。
+4. **exact Bundle + cursor**：所有命令携带 expected_cursor，重复提交被
+   typed denial 拒绝（at-most-once），不做 latest-scan 猜测。
+
+### 03x 系列已有编号
+
+| 编号 | 入口 | 模式 | Node Context |
+|------|------|------|--------------|
+| 030 | `./run/tui-workflow-debugger.sh --fixture` | fixture（零凭证） | `/context` 为空属预期 |
+| 031 | `./run/tui-workflow-debugger.sh --embedded` | embedded（真实模型） | `/context` 显示 captured snapshot |
+
+### 03x 与 01x/02x 的关系
+
+**互补，不是替代。** 01x 告诉你"能不能跑完"；02x 告诉你"交互对不对"；
+03x 告诉你"每一层到底发生了什么"。发现 bug 后的修复循环：
+
+```
+030/031 Step 定位 → /context 看 captured prompt/tools → Detach
+→ 在 IDE 里修改代码/prompt/capability → 回来 New Run 用相同问题重跑验证
+```
+
+这个循环与 01x/02x 的"全速跑到终态"是不同的使用场景——**030/031 是研发
+工具，010/020 是验收工具。**
+
+### 以后新增 03x 跑法时照此办理
+
+- 必须提供 `/context`（Node Context）和 `/detach`；
+- 推进粒度必须是节点边界（不是模型调用内部）；
+- 必须支持 `--attach`/`--replay`（恢复到 durable checkpoint 且不自动推进）；
+- 不需要流式（03x 每步都是明确的等待边界，不需要 streaming）；
+- README 表加行时"Explicit non-goal"栏写 `Local operator debugger; not a
+  current Primary User TUI`。
+
+---
+
 ## 每天固定怎么跑
 
 1. 打开 [`runbook-001-easiest-fixture-graph.md`](runbook-001-easiest-fixture-graph.md)
