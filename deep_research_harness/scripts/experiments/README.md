@@ -15,4 +15,4 @@
 
 | 脚本 | 回答的问题 | 状态 |
 | --- | --- | --- |
-| `tui_trace.py` | bundle 的逐超步 checkpoint 能否回放成 per-node 卡片流（TUI 步进轴 E1–E3） | ✅ 结论已落 `_backlog/plans/tui_step_progressive_plan.md`；C3 `add-tui-trace-observation` apply 时固化为交付物，届时删除本稿 |
+| `tui_trace.py` | bundle 的逐超步 checkpoint 能否回放成 per-node 卡片流（TUI 步进轴 E1–E3） | ✅ 结论已落 `_backlog/plans/tui-workflow-debugger-progressive-plan.md`；C3 `add-local-workflow-debug-observation` apply 时固化为交付物，届时删除本稿 |

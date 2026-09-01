@@ -2,12 +2,12 @@
 
 > **已消化并冻结（DIGESTED，2026-09-01）**：本审阅的全部结论已回填当前 plan 与 supporting
 > 文档（见下面前置链接），迁入 `archive/` 仅作审阅 provenance，不再更新，也不作为执行权威。
-> 任何实施先读 [`../tui_step_progressive_plan.md`](../tui_step_progressive_plan.md)。
+> 任何实施先读 [`../tui-workflow-debugger-progressive-plan.md`](../tui-workflow-debugger-progressive-plan.md)。
 
 > 日期: 2026-09-01
 > 对象: 不了解前序讨论、准备继续 OpenSpec 推进的设计/实施者
 > 结论状态: 已回填当前 plan 与 supporting 文档；本文是完整审阅反馈，不是执行权威
-> 当前唯一执行权威: [../tui_step_progressive_plan.md](../tui_step_progressive_plan.md)
+> 当前唯一执行权威: [../tui-workflow-debugger-progressive-plan.md](../tui-workflow-debugger-progressive-plan.md)
 > 目标体验: [../tui-workflow-debugger-target-ux.md](../tui-workflow-debugger-target-ux.md)
 
 ## 1. 结论
@@ -35,7 +35,7 @@ C0 observation truth
 
 | 文档 | 角色 | 使用规则 |
 | --- | --- | --- |
-| [当前 plan](../tui_step_progressive_plan.md) | 唯一活跃决策与执行权威 | OpenSpec 阶段、task、owner、gate、no-go 只从这里取 |
+| [当前 plan](../tui-workflow-debugger-progressive-plan.md) | 唯一活跃决策与执行权威 | OpenSpec 阶段、task、owner、gate、no-go 只从这里取 |
 | [target UX](../tui-workflow-debugger-target-ux.md) | 受控目标体验和验收地图 | 说明最终体验；不声称当前能力，不单独产生 implementation task |
 | [grounding review](../tui-step-debugger-grounding-review.md) | 冻结到 2026-08-31 的前置证据 | 解释原方案为什么不能直接实施；dated facts 在 propose 前重验 |
 | `tui-interactive-campaign*-digested.md` | 冻结历史 provenance（已消化） | 只能了解战役来源；不得复制 unchecked task、类名或接口建议 |

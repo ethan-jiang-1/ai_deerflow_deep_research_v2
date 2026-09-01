@@ -2,7 +2,7 @@
 
 > **已消化（DIGESTED）· 已被取代 / 冻结历史（2026-09-01）**：本文件完整正文只保留 010/020 战役 provenance，
 > 不再是当前 TUI workflow debugger 的计划、任务或接口来源。D6-D8 已由
-> [`../tui_step_progressive_plan.md`](../tui_step_progressive_plan.md) 定案；目标体验见
+> [`../tui-workflow-debugger-progressive-plan.md`](../tui-workflow-debugger-progressive-plan.md) 定案；目标体验见
 > [`../tui-workflow-debugger-target-ux.md`](../tui-workflow-debugger-target-ux.md)。§10 的“待拍板”、
 > 零契约原型、`BundleGraphExecutor.step_run`、复用 `ContinueRun`、泛化
 > `input_summary/output_delta`、单独 compile 变体和 generic node-delta capability 归因均已失效，

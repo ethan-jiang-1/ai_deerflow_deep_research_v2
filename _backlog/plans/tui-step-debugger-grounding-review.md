@@ -2,7 +2,7 @@
 
 > 类型: 设计审阅与证据底稿（内容为 2026-08-31 dated snapshot）
 > 日期: 2026-08-31
-> 当前执行权威: [`tui_step_progressive_plan.md`](tui_step_progressive_plan.md)
+> 当前执行权威: [`tui-workflow-debugger-progressive-plan.md`](tui-workflow-debugger-progressive-plan.md)
 > 作用: 给没有历史上下文的实现者解释当前 plan 的事实来源、纠错理由和边界选择。
 > 状态: 活跃 supporting 文档；证据内容冻结（dated facts 在 propose 前重验），不追写新结论。
 
@@ -46,8 +46,8 @@ C4b TUI command adapter -> real validation`。C3 拥有观察 contract 和只读
 
 审阅了以下范围：
 
-- `_backlog/plans/tui_step_progressive_plan.md`
-- `_backlog/plans/archive/tui-interactive-campaign*-digested.md`
+- `_backlog/plans/tui-workflow-debugger-progressive-plan.md`
+- `_backlog/plans/_archive/tui-interactive-campaign*-digested.md`
 - `deep_research_harness/scripts/demo_tui.py`
 - `deep_research_harness/scripts/experiments/tui_trace.py`
 - `deep_research_harness/src/deerflow_deep_research/{domain,runtime,graph,agents}` 中与 run、
@@ -487,7 +487,7 @@ breakpoint，应单独定义 owner 和 schema，不能写入 ResearchState。
 
 没有上下文的实现者按以下顺序工作：
 
-1. 先完整阅读当前 [`tui_step_progressive_plan.md`](tui_step_progressive_plan.md)，只把它当
+1. 先完整阅读当前 [`tui-workflow-debugger-progressive-plan.md`](tui-workflow-debugger-progressive-plan.md)，只把它当
    当前决策和执行权威。
 2. 在 propose C0/C3/C4a/C4b 前完整阅读本文对应章节，核对证据仍与代码一致。
 3. 阅读当前主 specs，而不是从归档战役或 lifecycle walkthrough 推导执行语义。

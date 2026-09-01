@@ -1,7 +1,7 @@
 # Plans — plan/分析文档索引
 
 > 最后更新: 2026-09-01 | `_backlog/plans/` — 活跃 plan 在此（顶层），冻结未关闭的历史在
-> [`archive/`](archive/)，完成的普通 plan 移入 [`../_done/_closed_plans/`](../_done/_closed_plans/)。
+> [`_archive/`](_archive/)，完成的普通 plan 移入 [`../_done/_closed_plans/`](../_done/_closed_plans/)。
 >
 > **plan 没有编号，文件名即标识。完成后文件名不变，位置即状态。**
 
@@ -20,7 +20,7 @@
 
 | Plan | 类型 | 下一步 |
 |------|------|--------|
-| [tui_step_progressive_plan.md](tui_step_progressive_plan.md) | 递进执行计划 | Local workflow debugger（当前唯一活跃 plan）：历史 C1/C2 已归档；下一步只可 propose C0 observation truth，之后 C3 trace/context/workspace observation -> C4a headless driving -> C4b TUI adapter -> real validation；并行线含 B1 第 3 跑收尾 |
+| [tui-workflow-debugger-progressive-plan.md](tui-workflow-debugger-progressive-plan.md) | 递进执行计划 | Local workflow debugger（当前唯一活跃 plan）：历史 C1/C2 已归档；下一步由当前 plan 的前置 authority gate 决定；并行线含 B1 第 3 跑收尾 |
 
 **Next available plan ID: CLS-058**（移入 `_closed_plans/` 时分配）
 
@@ -31,17 +31,17 @@
 | [tui-step-debugger-grounding-review.md](tui-step-debugger-grounding-review.md) | 前置证据底稿（2026-08-31 dated snapshot：纠错、E4 结果、被拒方案）；证据内容冻结，propose 前重验 dated facts |
 | [tui-workflow-debugger-target-ux.md](tui-workflow-debugger-target-ux.md) | 受控目标体验与验收地图（C0-C4b 后的 operator UX、负路径、traceability）；不声称当前能力 |
 
-## 冻结存档（`archive/`，只读，未关闭）
+## 冻结存档（`_archive/`，只读，未关闭）
 
-> 位置即状态：`archive/` = 冻结的历史稿（不再更新，旧相对链接随层级失效属预期）。
+> 位置即状态：`_archive/` = 冻结的历史稿（不再更新，旧相对链接随层级失效属预期）。
 > 未关闭 ≠ 完成；战役收口后按上面步骤整组迁入 `_done/_closed_plans/`。
 
 | Plan | 是什么 | 冻结日期 |
 |------|--------|----------|
-| [archive/tui-interactive-campaign-digested.md](archive/tui-interactive-campaign-digested.md) | 020 战役计划 v5——**已消化（DIGESTED）**，历史 provenance；§10 已被当前 progressive plan 取代 | 2026-08-31 |
-| [archive/tui-interactive-campaign-progress-digested.md](archive/tui-interactive-campaign-progress-digested.md) | 战役进度账本（Phase 0–8 全记录）——**已消化（DIGESTED）**，已退役快照 | 2026-08-31 |
-| [archive/tui-interactive-campaign-review-digested.md](archive/tui-interactive-campaign-review-digested.md) | 独立审阅——**已消化（DIGESTED）**，被 campaign v4 消化 | 2026-08-31 |
-| [archive/tui_feedback_56.md](archive/tui_feedback_56.md) | 计划一致性审阅反馈——**已消化（DIGESTED）**，结论全部回填当前 plan 与 supporting 文档，仅作 provenance | 2026-09-01 |
+| [_archive/tui-interactive-campaign-digested.md](_archive/tui-interactive-campaign-digested.md) | 020 战役计划 v5——**已消化（DIGESTED）**，历史 provenance；§10 已被当前 progressive plan 取代 | 2026-08-31 |
+| [_archive/tui-interactive-campaign-progress-digested.md](_archive/tui-interactive-campaign-progress-digested.md) | 战役进度账本（Phase 0–8 全记录）——**已消化（DIGESTED）**，已退役快照 | 2026-08-31 |
+| [_archive/tui-interactive-campaign-review-digested.md](_archive/tui-interactive-campaign-review-digested.md) | 独立审阅——**已消化（DIGESTED）**，被 campaign v4 消化 | 2026-08-31 |
+| [_archive/tui_feedback_56.md](_archive/tui_feedback_56.md) | 计划一致性审阅反馈——**已消化（DIGESTED）**，结论全部回填当前 plan 与 supporting 文档，仅作 provenance | 2026-09-01 |
 
 ## 已归档（移至 `_done/_closed_plans/`）
 

@@ -1,8 +1,8 @@
 # Handoff: Mode 020 TUI 真人交互战役（= 原 010 手动 TUI）+ change `fix-demo-tui-choice-option`
 
 > 生成: 2026-08-21 | 用途: 战役进行中新会话 pick up 后继续（Stage A/B1 跑次 / 茬处置 / 收口）
-> 位置: 本文件在 `_backlog/_local_demo/`；设计文档在 `_backlog/plans/archive/tui-interactive-campaign-digested.md`（v5，已消化）；
-> 进度追踪在 `_backlog/plans/archive/tui-interactive-campaign-progress-digested.md`；实施载体已归档 `openspec/changes/archive/2026-08-21-fix-demo-tui-choice-option/`
+> 位置: 本文件在 `_backlog/_local_demo/`；设计文档在 `_backlog/plans/_archive/tui-interactive-campaign-digested.md`（v5，已消化）；
+> 进度追踪在 `_backlog/plans/_archive/tui-interactive-campaign-progress-digested.md`；实施载体已归档 `openspec/changes/archive/2026-08-21-fix-demo-tui-choice-option/`
 >
 > **状态: 🟡 进行中**。已完成：Stage 0 校准（review 全消化）→ Stage A fixture
 > smoke（6 bundle 全 completed）→ 两个 change 闭环（`fix-demo-tui-choice-option`

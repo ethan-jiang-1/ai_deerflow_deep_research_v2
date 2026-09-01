@@ -2,7 +2,7 @@
 
 > **已消化（DIGESTED）· 已退役的进度快照（2026-09-01）**：本文件不再是“唯一活文件”，也不再接受勾项或
 > append-only 更新。当前唯一执行账本是
-> [`../tui_step_progressive_plan.md`](../tui_step_progressive_plan.md)，目标体验见
+> [`../tui-workflow-debugger-progressive-plan.md`](../tui-workflow-debugger-progressive-plan.md)，目标体验见
 > [`../tui-workflow-debugger-target-ux.md`](../tui-workflow-debugger-target-ux.md)。原 Phase 8 已被
 > `C0 -> C3 -> C4a -> C4b -> real validation` 取代，所有未勾任务均为历史快照，禁止执行或
 > 导入 OpenSpec proposal。B1/B2/Gateway observer 等未完遗留已镜像到当前 plan 的“并行线”，

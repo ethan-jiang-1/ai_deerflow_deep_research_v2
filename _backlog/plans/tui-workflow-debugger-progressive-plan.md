@@ -1,21 +1,22 @@
-# TUI Workflow Debugger 递进执行计划
+# Plan: TUI Workflow Debugger 递进执行计划
 
 > 类型: 递进执行计划 | 创建: 2026-08-31 | 重写: 2026-08-31 | UX/一致性审计: 2026-09-01
-> 状态: 当前唯一活跃 plan；D6-D8 已定，尚未创建 C0/C3/C4a/C4b OpenSpec change
+> 状态: 当前唯一活跃 plan；D6-D8 已定，尚未创建 Cpre/C0/C3/C4a/C4b OpenSpec change
 > 当前决策与执行权威: 本文件
 > 前置证据与原计划纠错: [tui-step-debugger-grounding-review.md](tui-step-debugger-grounding-review.md)
 > 目标体验与计划追踪: [tui-workflow-debugger-target-ux.md](tui-workflow-debugger-target-ux.md)
-> 历史材料: `archive/tui-interactive-campaign*-digested.md` 只作 provenance，不再定义当前 TUI debugger
+> 历史材料: `_archive/tui-interactive-campaign*-digested.md` 只作 provenance，不再定义当前 TUI debugger
 > 编号说明: 历史 C1 `close-provider-timeout-budget-handback` 与 C2 `add-suspended-run-recovery` 已归档；
-> C0 是本次审阅新增的纠错闸门，不是漏掉 C1/C2，也不表示它们无效。
-> 当前用法: 严格按 `C0 -> C3 -> C4a -> C4b -> real validation` 推进；每个 change 归档且 gate 全绿后才进入下一阶段。
+> Cpre/C0 是后续审阅新增的纠错闸门，不是漏掉 C1/C2，也不表示它们无效。
+> 当前用法: 严格按 `Cpre -> C0 -> C3 -> C4a -> C4b -> real validation` 推进；每个 change 归档且 gate 全绿后才进入下一阶段。
 
-任何人 propose、review 或 apply C0/C3/C4a/C4b 前，必须完整阅读本文件；当工作涉及原计划纠错、
+任何人 propose、review 或 apply Cpre/C0/C3/C4a/C4b 前，必须完整阅读本文件；当工作涉及原计划纠错、
 Journal/Bundle/checkpoint 权威、E4 实验、被拒方案或延后项时，还必须完整阅读 grounding review。
 进入 C3、C4a、C4b 或 real validation 前，还必须完整走读 target UX 中的主旅程、文件边界、负路径和
 traceability matrix。
-supporting 文档与本文件冲突时，以本文件为当前决策权威；主 specs 和应用 runtime/domain 代码是
-当前已实现事实权威。事实推翻计划时必须先回写本文件，不能由 proposal 或 adapter 私自选边。
+supporting 文档与本文件冲突时，以本文件为当前决策权威。主 specs 和应用 runtime/domain 代码共同
+约束当前已实现事实；二者或多个主 specs 彼此冲突时，必须先通过 Cpre 或新的 corrective change
+明确 owner、目标 contract 和同步范围，不能由 proposal、adapter 或单份旧 spec 私自选边。
 
 ## 文档控制与解释顺序
 
@@ -24,11 +25,11 @@ supporting 文档与本文件冲突时，以本文件为当前决策权威；主
 | 本文件 | 唯一活跃 plan | 阶段顺序、owner、contract 边界、gate、no-go、OpenSpec 任务来源 | 覆盖已经归档的 OpenSpec 历史或把目标体验冒充当前能力 |
 | [target UX](tui-workflow-debugger-target-ux.md) | 受控的目标体验与验收地图 | 完成后的 operator 旅程、负路径、可见状态及 plan 追踪 | 新增 runtime authority、改变阶段顺序或直接充当 implementation backlog |
 | [grounding review](tui-step-debugger-grounding-review.md) | 冻结到 2026-08-31 的前置证据 | 解释旧方案为何失效、记录 dated evidence 和被拒方案 | 覆盖 2026-09-01 后的 Node Context/Files/launcher 决策或继续追加实施结论 |
-| `archive/tui-interactive-campaign*-digested.md` | 冻结历史 provenance（已消化） | 解释 010/020 战役来源和旧决策形成过程 | 提供当前 debugger task、interface、阶段状态或验收权威 |
+| `_archive/tui-interactive-campaign*-digested.md` | 冻结历史 provenance（已消化） | 解释 010/020 战役来源和旧决策形成过程 | 提供当前 debugger task、interface、阶段状态或验收权威 |
 | 主 specs + `deep_research_harness/` 代码 | 当前已实现事实 | 说明已经存在的 contract 与行为 | 不经 OpenSpec 自动改变本 plan 的目标或未来 ownership |
 
 无上下文执行者按“本 plan -> 当前阶段对应 grounding -> target UX 对应旅程/负路径 -> 主 specs 与
-应用代码 -> 当期 OpenSpec change”阅读。archive 路径本身不赋予文档权威；不得从三份 campaign
+应用代码 -> 当期 OpenSpec change”阅读。`_archive/` 路径本身不赋予文档权威；不得从三份 campaign
 历史中复制 unchecked task、类名或接口建议进入 proposal。
 
 ## 0. 执行摘要与已定决策
@@ -47,23 +48,25 @@ Textual，headless tests 仍能通过相同 interface 可信地 trace、step、r
 | 决策 | 结论 | 含义 |
 | --- | --- | --- |
 | D6 形态 | **通过** | 一个真实 graph + runtime-owned debug driving；放弃每 Node 独立 CLI |
-| D7 顺序 | **修订后通过** | 已归档 C1/C2 不重开；当前链为 C0 truth -> C3 observation -> C4a headless driving -> C4b TUI adapter |
+| D7 顺序 | **修订后通过** | 已归档 C1/C2 不重开；当前链为 Cpre authority -> C0 truth -> C3 observation -> C4a headless driving -> C4b TUI adapter |
 | D8 定位 | **通过并收窄** | 本地 operator workflow debugger；不是 Primary User product UI，不给 reflected public tool 扩权 |
 
 ### 0.3 关键纠错
 
-1. `suspended` outcome 当前被真实 `RunEvent` 拒绝，C0 必须先修复；fake-recorder 绿测不足以
+1. owning `hitl2-node` spec 与当前代码规定 real HITL2 autonomous，但四份依赖主 specs 仍要求人工
+   HITL2；Cpre 必须先原子收敛这组 authority，不能只修 walkthrough 或由 TUI 选边。
+2. `suspended` outcome 当前被真实 `RunEvent` 拒绝，C0 必须先修复；fake-recorder 绿测不足以
    证明 Journal truth。
-2. live trace 必须从 admission/attach 起绑定 exact `bundle_id`；没有 exact handle 时 fail closed，
+3. live trace 必须从 admission/attach 起绑定 exact `bundle_id`；没有 exact handle 时 fail closed，
    不回退 latest-active 扫描。
-3. 现有 `ContinueRun` 只表示 orphan natural resume，保持不变；debugger continue 使用独立
+4. 现有 `ContinueRun` 只表示 orphan natural resume，保持不变；debugger continue 使用独立
    local `DebugCommand`。
-4. checkpoint `created_at` 相邻差不能叫 node duration；duration 由 wrapper 对实际 invocation
+5. checkpoint `created_at` 相邻差不能叫 node duration；duration 由 wrapper 对实际 invocation
    显式测量。
-5. C3 只做 observation capture/projection 与只读 trace/context/workspace inspection；它可以在正式
+6. C3 只做 observation capture/projection 与只读 trace/context/workspace inspection；它可以在正式
    invocation seam 写 Bundle-private debugger snapshot，但不启动、推进或恢复 graph。`run`、`step`、
    `continue`、`pause`、`answer`、`attach` 的 runtime 驱动属于 C4a，Textual mutation-command 接线属于 C4b。
-6. 同一 compiled graph 可逐次使用 `interrupt_after`，fixture E4 已证明 step -> HITL -> run
+7. 同一 compiled graph 可逐次使用 `interrupt_after`，fixture E4 已证明 step -> HITL -> run
    核心路径；正式不变量是同一 recipe/compile path/checkpoint thread，不维护 step 专用拓扑。
 
 ## 1. 目标体验与操作语义
@@ -102,7 +105,7 @@ captured context 合并，也不能通过 package/repository 任意路径读取�
 
 | 操作 | 精确定义 | 停止条件 / 约束 |
 | --- | --- | --- |
-| `start` | 创建 exact debug session 和 Bundle；返回 verified handle 后，按 Start Step 或 Start Run 策略开始 | 不靠 workspace 扫描认领 Bundle；首个 running row 前已显示 exact id |
+| `start` | 以稳定 `start_request_id` 创建或重放 exact debug session/Bundle admission；返回 verified handle 后，按 Start Step 或 Start Run 策略开始 | same-id/same-fingerprint 返回同一 handle；same-id/different-fingerprint conflict；不靠 workspace 扫描，首个 running row 前已显示 exact id |
 | `step` | 调用当前顶层 logical node 一次 | completed/suspended/failed boundary；不执行第二个顶层 node |
 | `continue` | 从当前 boundary 按 stop policy 连续推进 | 指定 node 提交后的 breakpoint、HITL、failure、terminal 或 pause request |
 | `run` | 新 run 的自动挡，或无自定义 breakpoint 的连续推进 | 仍逐 boundary commit/emit，可请求 pause |
@@ -279,14 +282,25 @@ immutable hash 时可验证两者；没有时只并列显示，不承诺整棵 w
 
 工作名 `DebugRunDriver` 同样不锁死最终类名；contract models 归 domain，graph/lifecycle driving
 implementation 归 runtime。它可以在 `BundleGraphExecutor` 背后或相邻 module 实现，但必须提供
-独立于现有 `ContinueRun` 的 debug interface。外部 interface 保持为两类动作：
+独立于现有 `ContinueRun` 的 debug interface。外部 interface 保持为三个小动作：
 
 ```text
-open(start | attach) -> DebugSessionSnapshot
+open_start(DebugStartRequest) -> DebugSessionSnapshot
+open_attach(DebugAttachRequest) -> DebugSessionSnapshot
 execute(DebugCommand) -> DebugSessionUpdate
 ```
 
-mutation command 必须携带 exact bundle、`expected_cursor` 和 `command_id`。implementation 隐藏
+`DebugStartRequest` 在 Bundle 出现前携带 adapter 在 WORKBENCH -> BINDING 转换时创建的稳定
+`start_request_id`，以及 composition、validated question 和 initial Step/Run mode 的 immutable
+fingerprint。same-id/same-fingerprint 的并发或重放返回同一 exact handle；same-id/different-fingerprint
+返回 typed conflict。若相同 scope 已有不同 start request 的 active Bundle，则复用现有 lifecycle
+admission 返回 typed active-bundle denial，不创建第二个 Bundle。实现应复用或扩展现有
+`start_message_id + start_request_digest + scope_exclusion` 语义，不再造平行 Bundle authority。
+
+adapter 在一次 BINDING 期间复用同一 `start_request_id`，重复按钮/命令只 coalesce 或重放该请求；
+拿到 handle 后，再用稳定 `command_id + expected_cursor` 提交首次 `advance_one` 或 `drive_until`。
+因此“创建一个 Bundle”和“最多推进一次 bootstrap”是两层幂等，任何一层都不能借另一层的 key
+冒充已经闭合。其余 mutation command 必须携带 exact bundle、`expected_cursor` 和 `command_id`。implementation 隐藏
 graph compile/config、per-boundary `execution_exclusion`、checkpoint reopen、interrupt handling、
 stop policy、duplicate detection 和 stale-cursor denial。
 

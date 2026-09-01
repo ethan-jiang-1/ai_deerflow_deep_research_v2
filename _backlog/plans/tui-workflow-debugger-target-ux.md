@@ -3,7 +3,7 @@
 > 类型: 受控的目标体验、主旅程与计划追踪
 > 日期: 2026-09-01
 > 目标状态: C0、C3、C4a、C4b 全部归档后的 local contributor/operator experience
-> 当前决策与执行权威: [`tui_step_progressive_plan.md`](tui_step_progressive_plan.md)
+> 当前决策与执行权威: [`tui-workflow-debugger-progressive-plan.md`](tui-workflow-debugger-progressive-plan.md)
 > 前置技术证据: [`tui-step-debugger-grounding-review.md`](tui-step-debugger-grounding-review.md)，冻结到 2026-08-31
 > UX 专项依据: 本文 §8-§12 与当前 plan 中 2026-09-01 后的 Node Context、Files、launcher 决策
 > 状态: 本文描述目标，不声称当前 TUI 已具备这些能力；实施冲突时以当前 plan、主 specs 和代码为准。
@@ -475,26 +475,26 @@ root；屏幕只显示 sandbox-visible virtual path，不泄露它们对应的 h
 
 这一区分来自当前代码和主 spec，而不是 UI 自创概念：
 
-- [`agents/prompts.py`](../../../deep_research_harness/src/deerflow_deep_research/agents/prompts.py) 只从 package
+- [`agents/prompts.py`](../../deep_research_harness/src/deerflow_deep_research/agents/prompts.py) 只从 package
   resource 加载 base `resources/node_agent/runtime_policy.md`；
-- [`agents/capabilities.py`](../../../deep_research_harness/src/deerflow_deep_research/agents/capabilities.py) 按
+- [`agents/capabilities.py`](../../deep_research_harness/src/deerflow_deep_research/agents/capabilities.py) 按
   validated `NodeAgentCapabilityRef` 加载 exact `capabilities/*.md`；
-- [`node_cognitive_control_program.py`](../../../deep_research_harness/src/deerflow_deep_research/agents/node_cognitive_control_program.py)
+- [`node_cognitive_control_program.py`](../../deep_research_harness/src/deerflow_deep_research/agents/node_cognitive_control_program.py)
   是正式 initial system policy/human message renderer，runtime bridge 也使用它；
-- [`runtime/node_agent_bridge.py`](../../../deep_research_harness/src/deerflow_deep_research/runtime/node_agent_bridge.py)
+- [`runtime/node_agent_bridge.py`](../../deep_research_harness/src/deerflow_deep_research/runtime/node_agent_bridge.py)
   为每次 `run_agent` 调用构造 fresh agent，以一份 rendered system policy 和 initial human message
   seed child state，再调用 `agent.ainvoke`；该 agent 内部可发生多次 model/tool loop；
-- [`domain/context.py`](../../../deep_research_harness/src/deerflow_deep_research/domain/context.py) 已定义
+- [`domain/context.py`](../../deep_research_harness/src/deerflow_deep_research/domain/context.py) 已定义
   objective/output/capability/artifact refs 与 virtual workspace/attempt roots，
-  [`agents/policies.py`](../../../deep_research_harness/src/deerflow_deep_research/agents/policies.py) 已定义实际
+  [`agents/policies.py`](../../deep_research_harness/src/deerflow_deep_research/agents/policies.py) 已定义实际
   tool、budget、read/write roots；
-- [`agents/middleware.py`](../../../deep_research_harness/src/deerflow_deep_research/agents/middleware.py) 已在运行中维护
+- [`agents/middleware.py`](../../deep_research_harness/src/deerflow_deep_research/agents/middleware.py) 已在运行中维护
   `model_calls`/`tool_calls` bounded counters，但当前 bridge 尚未把它们持久成可 replay 的
   node-agent-context activity facts；
-- [`runtime_adapter.py`](../../../deep_research_harness/src/deerflow_deep_research/runtime/runtime_adapter.py) 区分
+- [`runtime_adapter.py`](../../deep_research_harness/src/deerflow_deep_research/runtime/runtime_adapter.py) 区分
   host paths 与 `/mnt/user-data/workspace|uploads|outputs` virtual roots，host paths 不应进入 UI；
-- [`node-agent-reader-interface`](../../../openspec/specs/node-agent-reader-interface/spec.md) 明确规定
-  `workflow.md` 是 non-runtime reader projection；[`deployment-configuration`](../../../openspec/specs/deployment-configuration/spec.md)
+- [`node-agent-reader-interface`](../../openspec/specs/node-agent-reader-interface/spec.md) 明确规定
+  `workflow.md` 是 non-runtime reader projection；[`deployment-configuration`](../../openspec/specs/deployment-configuration/spec.md)
   明确禁止把 host package source mount 进 research sandbox。
 
 当前 bridge 只在内存中 render 后构造 fresh agent 并调用 `agent.ainvoke`，尚未持久化
