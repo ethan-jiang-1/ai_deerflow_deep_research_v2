@@ -55,7 +55,7 @@ def _make_driver(tmp_path: Path, *, owner: str, clock=None, lease_ttl: float = 3
 
     async def create(_envelope, *, bundle, **_kwargs):
         return WorkUnitStore(
-            workspace_host_path=tmp_path,
+            workspace_host_path=tmp_path / "demo-runs",
             bundle=bundle,
             clock=lambda: datetime.now(UTC),
             monotonic=time.monotonic,
@@ -353,3 +353,67 @@ async def test_boundary_crash_restart_restores_cursor_without_advancing(tmp_path
     assert answered.snapshot is not None
     assert answered.snapshot.cursor.frame_sequence > pre_death_frames
     assert answered.committed_node == "hitl1"
+
+
+@pytest.mark.asyncio
+async def test_drive_until_stops_at_hitl_then_runs_to_terminal(tmp_path: Path) -> None:
+    """Start Run stops at the formal HITL request; the answer drives to terminal."""
+    driver, lifecycle = _make_driver(tmp_path, owner="op-1")
+    opened = await driver.open_start(
+        StartRequest(question="Compare storage", mode="run", owner="op-1", command_id="start-00000001")
+    )
+    bundle_id = opened.snapshot.bundle_id
+    cursor = opened.snapshot.cursor.token()
+
+    driven = await driver.execute(
+        DebugCommand(
+            kind="drive_until",
+            bundle_id=bundle_id,
+            command_id="drive-00000001",
+            expected_cursor=cursor,
+        )
+    )
+    assert driven.snapshot is not None
+    assert driven.snapshot.posture == "awaiting_hitl"
+
+    answered = await driver.execute(
+        DebugCommand(
+            kind="answer",
+            bundle_id=bundle_id,
+            command_id="answer-00000002",
+            expected_cursor=driven.snapshot.cursor.token(),
+            answer_text="Use the default profile.",
+        )
+    )
+    assert answered.snapshot is not None
+
+    driven2 = await driver.execute(
+        DebugCommand(
+            kind="drive_until",
+            bundle_id=bundle_id,
+            command_id="drive-00000003",
+            expected_cursor=answered.snapshot.cursor.token(),
+            breakpoint=StopPolicy(stop_on_hitl=False, stop_on_terminal=True),
+        )
+    )
+    assert driven2.snapshot is not None
+    assert driven2.snapshot.posture == "terminal"
+    assert driven2.snapshot.cursor.frame_sequence >= 9
+
+    journal = (
+        await __import__("deerflow_deep_research.runtime.run_observation", fromlist=["RunObservationStore"])
+        .RunObservationStore(
+            bundle_root=lifecycle.private_root(
+                await lifecycle.resolve(
+                    scope=("debug-user", "debug-thread"),
+                    bundle_id=__import__("deerflow_deep_research.domain.bundle", fromlist=["BundleId"]).BundleId(
+                        bundle_id
+                    ),
+                )
+            ),
+            bundle_id=bundle_id,
+        )
+        .inspect(bundle_id=bundle_id)
+    )
+    completed = [event for event in journal.events if event.category.value == "node" and event.outcome == "completed"]
+    assert len(completed) >= 9

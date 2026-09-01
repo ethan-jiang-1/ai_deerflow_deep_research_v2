@@ -32,7 +32,6 @@ from deerflow_deep_research.domain.lifecycle import (
     ImplementationMode,
     ResponseKind,
 )
-from deerflow_deep_research.domain.state import PhaseStatus
 from deerflow_deep_research.runtime.debug_driving import ControlLease, DebugCommandLedger
 from deerflow_deep_research.runtime.human_input import pending_from_snapshot
 
@@ -332,15 +331,7 @@ class DebugRunDriver:
                 pending = pending_from_snapshot(post)
                 await self._lifecycle.sync_graph_progress(
                     bundle=bundle,
-                    values={
-                        "phase": post_values.get("phase", "bootstrap"),
-                        "phase_status": (
-                            PhaseStatus.WAITING.value if pending is not None else PhaseStatus.IN_PROGRESS.value
-                        ),
-                        "terminal_status": post_values.get("terminal_status"),
-                        "generation": post_values.get("generation", 0),
-                        "execution_trace": tuple(post_values.get("execution_trace") or ()),
-                    },
+                    values=dict(post_values),
                     pending=pending,
                 )
                 committed = post_values.get("execution_trace") or ()
