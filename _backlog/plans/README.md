@@ -31,9 +31,10 @@
 
 | Plan | 是什么 | 冻结日期 |
 |------|--------|----------|
-| [archive/tui-interactive-campaign.md](archive/tui-interactive-campaign.md) | 020 战役计划 v5（历史 provenance；§10 已被当前 progressive plan 取代） | 2026-08-31 |
-| [archive/tui-interactive-campaign-progress.md](archive/tui-interactive-campaign-progress.md) | 战役进度账本（Phase 0–8 全记录） | 2026-08-31 |
-| [archive/tui-interactive-campaign-review.md](archive/tui-interactive-campaign-review.md) | 独立审阅（已被 v4 消化） | 2026-08-31 |
+| [archive/tui-interactive-campaign-digested.md](archive/tui-interactive-campaign-digested.md) | 020 战役计划 v5——**已消化（DIGESTED）**，历史 provenance；§10 已被当前 progressive plan 取代 | 2026-08-31 |
+| [archive/tui-interactive-campaign-progress-digested.md](archive/tui-interactive-campaign-progress-digested.md) | 战役进度账本（Phase 0–8 全记录）——**已消化（DIGESTED）**，已退役快照 | 2026-08-31 |
+| [archive/tui-interactive-campaign-review-digested.md](archive/tui-interactive-campaign-review-digested.md) | 独立审阅——**已消化（DIGESTED）**，被 campaign v4 消化 | 2026-08-31 |
+| [archive/tui_feedback_56.md](archive/tui_feedback_56.md) | 计划一致性审阅反馈——**已消化（DIGESTED）**，结论全部回填当前 plan 与 supporting 文档，仅作 provenance | 2026-09-01 |
 | [archive/tui-step-debugger-grounding-review.md](archive/tui-step-debugger-grounding-review.md) | 当前 debugger plan 的冻结证据底稿、纠错、E4 结果与被拒方案；不是执行权威 | 2026-08-31 |
 | [archive/tui-workflow-debugger-target-ux.md](archive/tui-workflow-debugger-target-ux.md) | C0-C4b 落地后的完整 operator UX：Run Bundle、captured node-agent context、bounded inner activity、runtime MD/mounted workspace、负路径与 plan traceability；不是当前能力声明 | 2026-09-01 |
 

@@ -1,16 +1,25 @@
 # Plan: TUI 交互战役（v5——v4 消化版 + 步进观察轴提案）
 
+> **已消化（DIGESTED）· 已被取代 / 冻结历史（2026-09-01）**：本文件完整正文只保留 010/020 战役 provenance，
+> 不再是当前 TUI workflow debugger 的计划、任务或接口来源。D6-D8 已由
+> [`../tui_step_progressive_plan.md`](../tui_step_progressive_plan.md) 定案；目标体验见
+> [`tui-workflow-debugger-target-ux.md`](tui-workflow-debugger-target-ux.md)。§10 的“待拍板”、
+> 零契约原型、`BundleGraphExecutor.step_run`、复用 `ContinueRun`、泛化
+> `input_summary/output_delta`、单独 compile 变体和 generic node-delta capability 归因均已失效，
+> 禁止据此 propose 或实施。当前链唯一为 `C0 -> C3 -> C4a -> C4b -> real validation`；
+> B1 等手动战役遗留只按当前 plan 的“并行线”处理。以下历史正文不再更新。
+
 > ⚠️ **编号更新（2026-08-21）**：本战役的"手动交互"主线按新命名轴
 > **010/020 拆分**后成为 **020**（runbook-020-tui-manual.md，入口
 > `make demo-tui-embedded-smoke`）；**010 = 自动 TUI 孪生**（runbook-010-tui-auto.md，
 > 入口 `make demo-tui-real-auto`，BUG-061）。本文件描述的 010 即现在的 020 内容。
 >
-> 生成: 2026-08-20 | 更新: 2026-08-31 | 状态: **v5——v4 基础上新增 §10 步进观察轴
+> 生成: 2026-08-20 | 更新: 2026-08-31 | 历史状态（截至 2026-08-31）: **v5——v4 基础上新增 §10 步进观察轴
 > （提案，待拍板 D6–D8）；Stage 0/A 与 change 双闭环已执行（BUG-060
 > `fix-demo-tui-choice-option`、BUG-061 `add-demo-tui-auto-entry`）；战役主体
 > Stage B1 未跑（待第 3 跑收尾，照旧执行，不受 §10 影响）**
 > 前置: 001-004 战役完结（全 CLI、全自动）；本战役换轴——**HITL1 真人交互与 TUI 观察性**。
-> v4 变更: 全量消化 `tui-interactive-campaign-review.md`（另一 agent 的独立审阅）——
+> v4 变更: 全量消化 `tui-interactive-campaign-review-digested.md`（另一 agent 的独立审阅）——
 > 其事实主张已逐条回到当前代码核验，**全部成立**；修复 v3 的内部矛盾，
 > 范围收窄为 B1 主线，CHOICE 移出 PASS 范围。
 > v5 变更: 消化 2026-08-31 讨论——TUI 第一性体验从「陪跑整个 run + 等 interrupt」
@@ -251,7 +260,7 @@ ordinal、最终 `request/profile.json`、终态 State、report/citation artifac
    阶梯表）→ Stage A fixture smoke（6 bundle 全 completed）→ BUG-060 change
    （`fix-demo-tui-choice-option`，归档）→ 010/020 拆分双轨落地 → BUG-061
    change（`add-demo-tui-auto-entry`，归档）。进度见
-   `tui-interactive-campaign-progress.md`（Phase 0/1/3/4 完成）。
+   `tui-interactive-campaign-progress-digested.md`（Phase 0/1/3/4 完成）。
 2. **Stage B1（战役主体）**：`make demo-tui-embedded-smoke`，真人 HITL1 交互
    （固定问题 + 条件式修订 → 四步证据链 → exact bundle 验收，runbook-020 §3），
    agent 侧证据收集 + bug 流程随行。
@@ -260,7 +269,7 @@ ordinal、最终 `request/profile.json`、终态 State、report/citation artifac
 4. **§10 步进观察轴（提案）**：D6–D8 拍板 → 第 0 步零契约 trace projector 原型
    （fixture 验证体验）→ 视体验立 openspec change；与 B1 收尾并行不互斥。
 
-## 10. 步进观察轴（v5 新增，提案待拍板 D6–D8）
+## 10. 步进观察轴（v5 历史提案；现已被取代，禁止执行）
 
 > 触发: 2026-08-31 用户启发——"TUI 直接跑整个 langgraph 工作流是半黑箱；能否每个
 > NODE 支持一步步调用，输入输出 schema 化存储，TUI 串起来做 trace/debug"。

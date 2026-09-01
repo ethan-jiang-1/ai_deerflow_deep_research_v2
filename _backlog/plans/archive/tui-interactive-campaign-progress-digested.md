@@ -1,15 +1,23 @@
 # 020 TUI 交互战役（= 原 010 手动 TUI）· OpenSpec 落地进度计划
 
+> **已消化（DIGESTED）· 已退役的进度快照（2026-09-01）**：本文件不再是“唯一活文件”，也不再接受勾项或
+> append-only 更新。当前唯一执行账本是
+> [`../tui_step_progressive_plan.md`](../tui_step_progressive_plan.md)，目标体验见
+> [`tui-workflow-debugger-target-ux.md`](tui-workflow-debugger-target-ux.md)。原 Phase 8 已被
+> `C0 -> C3 -> C4a -> C4b -> real validation` 取代，所有未勾任务均为历史快照，禁止执行或
+> 导入 OpenSpec proposal。B1/B2/Gateway observer 等未完遗留已镜像到当前 plan 的“并行线”，
+> 后续状态只在那里记录。以下正文保留当时事实，不再更新。
+
 > ⚠️ **编号更新（2026-08-21）**：按 01x/02x 命名轴，本战役是 **020 手动 TUI**
 > （runbook-020-tui-manual.md）；**010 = 自动 TUI 孪生**（runbook-010-tui-auto.md，
 > BUG-061，入口 `make demo-tui-real-auto`）。下文"010"均指本战役的 020 内容。
 >
-> 生成: 2026-08-21 | 最近同步: 2026-08-31 | 状态: **进行中——Phase 0/1/3/4 完成；
+> 生成: 2026-08-21 | 最近同步: 2026-08-31 | 历史状态（截至 2026-08-31）: **进行中——Phase 0/1/3/4 完成；
 > B1 两跑撞出的 BUG-062/063/064 已由 C1/C2 修复归档；环境复验全绿、
 > exact-bundle 基线重建 =7；待第 3 跑真人实跑；08-31 新增 Phase 8（步进观察轴提案，
-> 设计权威 = campaign v5 §10）待拍板**
-> 用途: 以最少 openspec change 落地 [`tui-interactive-campaign.md`](tui-interactive-campaign.md)（v4）
-> 与 [`../bugs/BUG-060-demo-tui-choice-option-unprojected.md`](../bugs/BUG-060-demo-tui-choice-option-unprojected.md)，
+> 当时设计权威 = campaign v5 §10）当时待拍板**
+> 用途: 以最少 openspec change 落地 [`tui-interactive-campaign-digested.md`](tui-interactive-campaign-digested.md)（v4）
+> 与 [`../../_done/_fixed_bugs/BUG-060-demo-tui-choice-option-unprojected.md`](../../_done/_fixed_bugs/BUG-060-demo-tui-choice-option-unprojected.md)，
 > 并全程 track 战役进展。
 >
 > **怎么用本文件**：完成一项就勾一项；每个 Phase 收尾在 §4 进展记录表加一行；
@@ -21,9 +29,9 @@
 > change」的结论修订为「2 个 change」，并已于 2026-08-25 全部闭环归档
 > （BUG-060 `fix-demo-tui-choice-option`、BUG-061 `add-demo-tui-auto-entry`）。
 >
-> **三文件分工（2026-08-30 定盘）**：本文件 = **战役核心推进账本**（唯一活文件：
-> 勾项 + §4 append-only 记录）；[`tui-interactive-campaign.md`](tui-interactive-campaign.md)
-> = 计划 v4（战略权威，仅大决策点更新）；[`tui-interactive-campaign-review.md`](tui-interactive-campaign-review.md)
+> **历史三文件分工（2026-08-30 当时定盘；现由顶部退役声明取代）**：本文件 = **战役核心推进账本**（唯一活文件：
+> 勾项 + §4 append-only 记录）；[`tui-interactive-campaign-digested.md`](tui-interactive-campaign-digested.md)
+> = 计划 v4（战略权威，仅大决策点更新）；[`tui-interactive-campaign-review-digested.md`](tui-interactive-campaign-review-digested.md)
 > = 已被 v4 全量消化的独立审阅（历史产物，**冻结**，不再更新）。
 
 ## 1. 落地策略：从「1 个预规划 change」到「2 个」（08-25 修订）
@@ -176,7 +184,10 @@
 - [ ] handoff-020 收口删除（004 先例）
 - [ ] 本文件终检：全部 Phase 状态落定，§4 记录完整，标记 **完成**
 
-### Phase 8 — 步进观察轴（提案，待拍板 D6–D8）⬜ 未开始
+### Phase 8 — 步进观察轴（历史未开始；现已退役，禁止执行）
+
+> **退役提示**：D6-D8 已在当前 plan 定案；本节任务未执行且永不在本文件勾选。
+> 其中接口与顺序建议已被 C0/C3/C4a/C4b 的正式 gate 取代。
 
 > 2026-08-31 新增（用户启发 + 图观察面分割盘点）。设计权威在 campaign v5 §10，
 > 本 Phase 只记进度——三文件分工不变，无双套路文件

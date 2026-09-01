@@ -1,20 +1,35 @@
 # TUI Workflow Debugger 递进执行计划
 
-> 类型: 递进执行计划 | 创建: 2026-08-31 | 重写: 2026-08-31 | UX 更新: 2026-09-01
+> 类型: 递进执行计划 | 创建: 2026-08-31 | 重写: 2026-08-31 | UX/一致性审计: 2026-09-01
 > 状态: 当前唯一活跃 plan；D6-D8 已定，尚未创建 C0/C3/C4a/C4b OpenSpec change
 > 当前决策与执行权威: 本文件
-> 完整证据与纠错理由: [archive/tui-step-debugger-grounding-review.md](archive/tui-step-debugger-grounding-review.md)
+> 前置证据与原计划纠错: [archive/tui-step-debugger-grounding-review.md](archive/tui-step-debugger-grounding-review.md)
 > 目标体验与计划追踪: [archive/tui-workflow-debugger-target-ux.md](archive/tui-workflow-debugger-target-ux.md)
-> 历史材料: `archive/tui-interactive-campaign*.md` 只作 provenance，不再定义当前 TUI debugger
+> 历史材料: `archive/tui-interactive-campaign*-digested.md` 只作 provenance，不再定义当前 TUI debugger
 > 编号说明: 历史 C1 `close-provider-timeout-budget-handback` 与 C2 `add-suspended-run-recovery` 已归档；
 > C0 是本次审阅新增的纠错闸门，不是漏掉 C1/C2，也不表示它们无效。
 > 当前用法: 严格按 `C0 -> C3 -> C4a -> C4b -> real validation` 推进；每个 change 归档且 gate 全绿后才进入下一阶段。
 
 任何人 propose、review 或 apply C0/C3/C4a/C4b 前，必须完整阅读本文件；当工作涉及原计划纠错、
 Journal/Bundle/checkpoint 权威、E4 实验、被拒方案或延后项时，还必须完整阅读 grounding review。
-进入 C3、C4b 或 real validation 前，还必须完整走读 target UX 中的主旅程、文件边界、负路径和
+进入 C3、C4a、C4b 或 real validation 前，还必须完整走读 target UX 中的主旅程、文件边界、负路径和
 traceability matrix。
-两者冲突时以本文件为当前决策权威，以主 specs 和 runtime/domain 代码为执行事实权威。
+supporting 文档与本文件冲突时，以本文件为当前决策权威；主 specs 和应用 runtime/domain 代码是
+当前已实现事实权威。事实推翻计划时必须先回写本文件，不能由 proposal 或 adapter 私自选边。
+
+## 文档控制与解释顺序
+
+| 文档 | 当前角色 | 可以决定什么 | 不可以决定什么 |
+| --- | --- | --- | --- |
+| 本文件 | 唯一活跃 plan | 阶段顺序、owner、contract 边界、gate、no-go、OpenSpec 任务来源 | 覆盖已经归档的 OpenSpec 历史或把目标体验冒充当前能力 |
+| [target UX](archive/tui-workflow-debugger-target-ux.md) | 受控的目标体验与验收地图 | 完成后的 operator 旅程、负路径、可见状态及 plan 追踪 | 新增 runtime authority、改变阶段顺序或直接充当 implementation backlog |
+| [grounding review](archive/tui-step-debugger-grounding-review.md) | 冻结到 2026-08-31 的前置证据 | 解释旧方案为何失效、记录 dated evidence 和被拒方案 | 覆盖 2026-09-01 后的 Node Context/Files/launcher 决策或继续追加实施结论 |
+| `archive/tui-interactive-campaign*-digested.md` | 冻结历史 provenance（已消化） | 解释 010/020 战役来源和旧决策形成过程 | 提供当前 debugger task、interface、阶段状态或验收权威 |
+| 主 specs + `deep_research_harness/` 代码 | 当前已实现事实 | 说明已经存在的 contract 与行为 | 不经 OpenSpec 自动改变本 plan 的目标或未来 ownership |
+
+无上下文执行者按“本 plan -> 当前阶段对应 grounding -> target UX 对应旅程/负路径 -> 主 specs 与
+应用代码 -> 当期 OpenSpec change”阅读。archive 路径本身不赋予文档权威；不得从三份 campaign
+历史中复制 unchecked task、类名或接口建议进入 proposal。
 
 ## 0. 执行摘要与已定决策
 
@@ -407,6 +422,20 @@ propose 时登记新 requirement ID，并核对当前没有会修改同一 autho
 `add-suspended-run-recovery` 已归档。C0 是本次审阅插入的前置修复，不表示回改历史 C2；它通过
 新的 corrective change 前进，并保留 C2 的 orphan recovery 行为。C4a/C4b 是同一 driving 阶段的
 headless authority 与 presentation adapter 两个独立 cut，不增加新的轴编号。
+
+每个 change 在 `openspec propose` 前必须建立一张可审阅的 source mapping，并放入 proposal/design/tasks
+之一（具体载体由当期 OpenSpec 模板决定）：
+
+- 每个 proposal task 映射到本文件中同阶段的 exact task、acceptance 或 no-go；不得从 campaign
+  历史直接导入 task。
+- C3/C4a/C4b 逐项映射 target UX 的相关主旅程、负路径、traceability row 和验收剧本；C0 也要
+  映射其中依赖 observation truth/exact identity 的条目。
+- 对 grounding review 中引用的 dated code/spec 事实重新核验；若已漂移，在本文件 §L 记录新证据，
+  不把冻结审阅当成永真前提。
+- proposal 若发现 plan task 与 target UX 无法双向对应，或需要新增 owner、persisted surface、权限、
+  graph 变体、远端控制能力，立即停止 propose，先同步修订本文件与 target UX。
+- 已归档 change 与后来发现冲突时，保留归档不可变，通过本文件登记 corrective change；不得静默
+  改写 archive、target UX 或 UI 文案来掩盖 contract 漂移。
 
 统一门规则：
 
@@ -801,14 +830,17 @@ observer/replay TUI；不允许创建第二 graph、隐藏 debug State 或 TUI �
 
 接手者创建任何 change 前逐项确认：
 
-- [ ] 完整阅读本 plan 与 grounding review，并检查 git 中是否已有 overlapping active change。
+- [ ] 完整阅读本 plan；按当前阶段阅读 grounding review；进入 C3/C4a/C4b/real validation 时完整
+  阅读 target UX，并检查 git 中是否已有 overlapping active change。
 - [ ] 重新运行该阶段的最小反证，确认 dated evidence 未因代码变化失效。
-- [ ] 在 proposal/design/tasks/spec 中逐项映射本阶段 tasks、negative paths、acceptance 和 no-go。
+- [ ] 在 proposal/design/tasks/spec 中建立 source mapping，逐项映射本阶段 tasks、target UX
+  journey/negative paths/traceability、acceptance 和 no-go；确认没有从 campaign 历史导入任务。
 - [ ] 明确 surface：persisted RunEvent、versioned TraceFrame/NodeContextSnapshot、local
   NodeContextPage/NodeContextView/NodeSourceView、local OperatorWorkspaceReader、local DebugCommand，分别给出兼容策略。
 - [ ] tests 穿过正式 module interface；fake-only 或 UI snapshot-only 不能证明 runtime contract。
 - [ ] 保持 `deerflow/` submodule 只读；实现只发生在 `deep_research_harness/` 与对应 specs/tests。
-- [ ] change 归档后更新本文件 checklist 与 §L；未归档前不开始下一阶段。
+- [ ] change 归档后更新本文件 checklist 与 §L，并复核 target UX traceability；不追写冻结历史文档，
+  未归档前不开始下一阶段。
 
 ## L. 进展记录（append-only）
 
@@ -824,3 +856,4 @@ observer/replay TUI；不允许创建第二 graph、隐藏 debug State 或 TUI �
 | 2026-08-31 | plan final audit | 澄清 C1/C2 已归档、C0 是新增纠错闸门；区分 debug control lease 与 per-invocation execution exclusion，并补入 long-node fencing 与 takeover 的双条件。 | 执行顺序不变；消除编号歧义和 TTL 并发漏洞 |
 | 2026-09-01 | target UX audit | 新增从 executable `.sh` launcher、Bundle chooser、Start Step、HITL、breakpoint、run/pause、failure、detach/attach 到新 Bundle 全速复验的目标体验稿；补齐 `OperatorWorkspaceReader`、首屏三入口、start 首步、composer routing、detach/cancel 和 terminal iteration 验收。 | 目标体验逐项映射 C0/C3/C4a/C4b；无超出现有 authority 的隐含承诺 |
 | 2026-09-01 | node-context UX audit | 将研发调试所需的 exact initial node-agent context 从 optional attribution 提升为 C3 gate：`agent.ainvoke`/首次 provider call 前捕获 runtime MD/initial messages/request/policy/mount refs，live/replay 同构；分开 node-agent invocation 与内部 provider calls，后者只保留 bounded safe facts 并标 raw history NOT_RETAINED；分开 captured context、current workspace 与 non-runtime `workflow.md`，补 source drift、legacy、capture-failure 和 secret/host-path 反例。 | TUI 能解释 node 声明过的输入/enforcement/activity/outcome 上下文且不冒充未保留历史；package source/Gateway 权限不扩张 |
+| 2026-09-01 | cross-document consistency audit | 系统复核 current plan、target UX、grounding review 与三份 campaign 历史；建立文档 authority/read-order、OpenSpec source mapping 与 drift 回流规则；C4a 纳入 target UX 必读 gate；冻结材料增加 supersession/retirement 路由。 | 当前执行任务只来自本 plan；UX 承诺可追踪到 C0/C3/C4a/C4b；旧 §10/Phase 8 不再形成第二计划 |

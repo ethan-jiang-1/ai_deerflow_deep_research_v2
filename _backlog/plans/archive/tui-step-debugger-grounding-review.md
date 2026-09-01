@@ -6,6 +6,15 @@
 > 作用: 给没有历史上下文的实现者解释当前 plan 的事实来源、纠错理由和边界选择。
 > 状态: 冻结。新的实施结论进入当前 plan 的进展记录或对应 OpenSpec change，本文不追写。
 
+> **冻结后路由说明（2026-09-01）**：当前实施还必须阅读
+> [`tui-workflow-debugger-target-ux.md`](tui-workflow-debugger-target-ux.md)。本文正文保留
+> 2026-08-31 的证据状态，不覆盖随后形成的 UX 专项决策。尤其是 §5.7 和 §11 将 capability
+> attribution 视为 optional/deferred 的结论，已在一个明确范围内被取代：C3 现在必须在
+> `RuntimeNodeAgentBridge.run_agent` 的初始执行 seam 捕获 exact `NodeContextSnapshot`，其中包括
+> 当次 capability/runtime MD、initial messages、request、enforced policy 和 mount refs。每次内部
+> provider call 的完整 raw message history 与无限 L4 retention 仍不在 v1；不得把这项取代扩大成
+> raw history capture。当前 plan 决定实施，target UX 决定目标体验与验收，本文只提供前置证据。
+
 ## 1. 审阅结论
 
 需要建设的是一个本地 contributor/operator workflow debugger，而不是继续扩张一个展示型
@@ -38,7 +47,7 @@ C4b TUI command adapter -> real validation`。C3 拥有观察 contract 和只读
 审阅了以下范围：
 
 - `_backlog/plans/tui_step_progressive_plan.md`
-- `_backlog/plans/archive/tui-interactive-campaign*.md`
+- `_backlog/plans/archive/tui-interactive-campaign*-digested.md`
 - `deep_research_harness/scripts/demo_tui.py`
 - `deep_research_harness/scripts/experiments/tui_trace.py`
 - `deep_research_harness/src/deerflow_deep_research/{domain,runtime,graph,agents}` 中与 run、

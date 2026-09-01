@@ -1,7 +1,13 @@
 # TUI 交互战役计划审阅
 
+> **已消化（DIGESTED）· 冻结历史（2026-09-01）**：本审阅已被 campaign v4 消化，只解释 2026-08-20 的 010/020
+> HITL1 战役纠错，不是当前 workflow debugger 的 proposal 输入或技术现状。当前实施先读
+> [`../tui_step_progressive_plan.md`](../tui_step_progressive_plan.md)，目标体验读
+> [`tui-workflow-debugger-target-ux.md`](tui-workflow-debugger-target-ux.md)，前置 debugger 证据读
+> [`tui-step-debugger-grounding-review.md`](tui-step-debugger-grounding-review.md)。以下正文保持冻结。
+
 > 类型: 审阅 / 分析 | 更新: 2026-08-20
-> 审阅对象: [`tui-interactive-campaign.md`](tui-interactive-campaign.md)
+> 审阅对象: [`tui-interactive-campaign-digested.md`](tui-interactive-campaign-digested.md)
 > 结论: 010 的 HITL1 真人交互主线值得执行，但当前计划、runbook 与 launcher
 > 对真实 HITL2、语言 CHOICE、证据归因和本次 Bundle 绑定存在事实偏差；在真实
 > API 战役前应先校正。
@@ -205,7 +211,7 @@ Stage B1 只有同时满足以下条件才算通过：
 
 ## 7. 落地关联
 
-- 文档校正目标：`tui-interactive-campaign.md`、
+- 文档校正目标：`tui-interactive-campaign-digested.md`、
   `_backlog/_local_demo/runbook-010-tui-interactive.md`、
   `RUN-010-TUI.command`、`_backlog/plans/README.md`。
 - code bug 候选：Demo TUI CHOICE 输入未投影为当前 typed `AnswerRun` OPTION。
