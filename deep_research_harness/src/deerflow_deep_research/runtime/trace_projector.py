@@ -164,6 +164,22 @@ class RunTraceProjector:
                         terminal=(str(values["terminal_status"]) if values.get("terminal_status") else None),
                     )
                 )
+            if pending_here:
+                # The same checkpoint is the human-interrupt pause point for the
+                # next node: it projects its own suspended boundary card.
+                commits.append(
+                    _Commit(
+                        kind="suspended",
+                        checkpoint_id=str(checkpoint_tuple.config["configurable"]["checkpoint_id"]),
+                        node="",
+                        changed=(),
+                        route=None,
+                        generation=(
+                            values["generation"] if isinstance(values.get("generation"), int) else None
+                        ),
+                        terminal=None,
+                    )
+                )
             prev_values = values
             prev_trace = trace
         store = RunObservationStore(

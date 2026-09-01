@@ -116,9 +116,10 @@ async def test_start_step_admission_and_double_start_busy(tmp_path: Path) -> Non
     result = await driver.execute(advance)
     assert result.snapshot is not None
     assert result.committed_node == "bootstrap"
-    # One advance commits exactly one boundary (bootstrap); hitl1 has not run
-    # yet, so the timeline holds exactly one committed frame.
-    assert result.snapshot.cursor.frame_sequence == 1
+    # One advance commits exactly one boundary (bootstrap). The paused hitl1
+    # projects its own suspended card but is not a committed advance.
+    assert result.committed_node == "bootstrap"
+    assert result.snapshot.cursor.frame_sequence == 2
     assert opened.snapshot.cursor.frame_sequence == 0
 
 
