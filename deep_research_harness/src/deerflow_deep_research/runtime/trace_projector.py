@@ -174,9 +174,7 @@ class RunTraceProjector:
                         node="",
                         changed=(),
                         route=None,
-                        generation=(
-                            values["generation"] if isinstance(values.get("generation"), int) else None
-                        ),
+                        generation=(values["generation"] if isinstance(values.get("generation"), int) else None),
                         terminal=None,
                     )
                 )
