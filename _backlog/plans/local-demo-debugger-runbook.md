@@ -32,12 +32,17 @@ alias，以及 `--debug` 节点边界步进 + `--attach`/`--replay` exact-bundle
 - `/detach` 干净退出（不触发 cancel）
 - README 表补 030 行
 
-### 2. 更新 `_local_demo/README.md`
+### 2. 更新 `_local_demo/README.md`  ✅
 
-- 主表加 030 行（类型=调试工作台、入口=launcher、零凭证）
+- 主表加 030 行（调试工作台 fixture）+ 031 行（调试工作台 embedded）
 - TUI 轴线段落补第三格：`030 = 调试工作台（节点边界 step/continue，经 DebugRunDriver）`
-- 跟 010/020 的区别说明：010/020 走的是 shared experience 的 start/resume 全自动或手动
-  路径；030 走的是 DebugRunDriver 的逐边界推进，能看到每一帧 timeline 和 Node Context
+- runbook-031：embedded 真实图调试旅程（`--embedded`，需 `.env` + 网络）
+
+### 2.5 embedded recorder 接线  ✅
+
+- `build_real_demo_recipe` 增加 `node_agent_bridge_factory` 可选覆盖
+- `build_demo_runtime(mode="real")` threads `node_context_recorder_holder`
+- `NodeContextRecorder` 经 holder 注入 real 模式的 bridge，与 fixture 相同模式
 
 ### 3. handoff-020 处置
 
