@@ -3,8 +3,8 @@
 > **已消化（DIGESTED）· 冻结历史（2026-09-01）**：本审阅已被 campaign v4 消化，只解释 2026-08-20 的 010/020
 > HITL1 战役纠错，不是当前 workflow debugger 的 proposal 输入或技术现状。当前实施先读
 > [`../tui_step_progressive_plan.md`](../tui_step_progressive_plan.md)，目标体验读
-> [`tui-workflow-debugger-target-ux.md`](tui-workflow-debugger-target-ux.md)，前置 debugger 证据读
-> [`tui-step-debugger-grounding-review.md`](tui-step-debugger-grounding-review.md)。以下正文保持冻结。
+> [`../tui-workflow-debugger-target-ux.md`](../tui-workflow-debugger-target-ux.md)，前置 debugger 证据读
+> [`../tui-step-debugger-grounding-review.md`](../tui-step-debugger-grounding-review.md)。以下正文保持冻结。
 
 > 类型: 审阅 / 分析 | 更新: 2026-08-20
 > 审阅对象: [`tui-interactive-campaign-digested.md`](tui-interactive-campaign-digested.md)

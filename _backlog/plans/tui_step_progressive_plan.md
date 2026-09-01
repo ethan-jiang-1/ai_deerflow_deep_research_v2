@@ -3,8 +3,8 @@
 > 类型: 递进执行计划 | 创建: 2026-08-31 | 重写: 2026-08-31 | UX/一致性审计: 2026-09-01
 > 状态: 当前唯一活跃 plan；D6-D8 已定，尚未创建 C0/C3/C4a/C4b OpenSpec change
 > 当前决策与执行权威: 本文件
-> 前置证据与原计划纠错: [archive/tui-step-debugger-grounding-review.md](archive/tui-step-debugger-grounding-review.md)
-> 目标体验与计划追踪: [archive/tui-workflow-debugger-target-ux.md](archive/tui-workflow-debugger-target-ux.md)
+> 前置证据与原计划纠错: [tui-step-debugger-grounding-review.md](tui-step-debugger-grounding-review.md)
+> 目标体验与计划追踪: [tui-workflow-debugger-target-ux.md](tui-workflow-debugger-target-ux.md)
 > 历史材料: `archive/tui-interactive-campaign*-digested.md` 只作 provenance，不再定义当前 TUI debugger
 > 编号说明: 历史 C1 `close-provider-timeout-budget-handback` 与 C2 `add-suspended-run-recovery` 已归档；
 > C0 是本次审阅新增的纠错闸门，不是漏掉 C1/C2，也不表示它们无效。
@@ -22,8 +22,8 @@ supporting 文档与本文件冲突时，以本文件为当前决策权威；主
 | 文档 | 当前角色 | 可以决定什么 | 不可以决定什么 |
 | --- | --- | --- | --- |
 | 本文件 | 唯一活跃 plan | 阶段顺序、owner、contract 边界、gate、no-go、OpenSpec 任务来源 | 覆盖已经归档的 OpenSpec 历史或把目标体验冒充当前能力 |
-| [target UX](archive/tui-workflow-debugger-target-ux.md) | 受控的目标体验与验收地图 | 完成后的 operator 旅程、负路径、可见状态及 plan 追踪 | 新增 runtime authority、改变阶段顺序或直接充当 implementation backlog |
-| [grounding review](archive/tui-step-debugger-grounding-review.md) | 冻结到 2026-08-31 的前置证据 | 解释旧方案为何失效、记录 dated evidence 和被拒方案 | 覆盖 2026-09-01 后的 Node Context/Files/launcher 决策或继续追加实施结论 |
+| [target UX](tui-workflow-debugger-target-ux.md) | 受控的目标体验与验收地图 | 完成后的 operator 旅程、负路径、可见状态及 plan 追踪 | 新增 runtime authority、改变阶段顺序或直接充当 implementation backlog |
+| [grounding review](tui-step-debugger-grounding-review.md) | 冻结到 2026-08-31 的前置证据 | 解释旧方案为何失效、记录 dated evidence 和被拒方案 | 覆盖 2026-09-01 后的 Node Context/Files/launcher 决策或继续追加实施结论 |
 | `archive/tui-interactive-campaign*-digested.md` | 冻结历史 provenance（已消化） | 解释 010/020 战役来源和旧决策形成过程 | 提供当前 debugger task、interface、阶段状态或验收权威 |
 | 主 specs + `deep_research_harness/` 代码 | 当前已实现事实 | 说明已经存在的 contract 与行为 | 不经 OpenSpec 自动改变本 plan 的目标或未来 ownership |
 
@@ -796,7 +796,7 @@ observer/replay TUI；不允许创建第二 graph、隐藏 debug State 或 TUI �
 ## 9. Dated grounding 与实验状态
 
 完整证据、代码位置、最小实验过程和被拒方案见
-[grounding review](archive/tui-step-debugger-grounding-review.md)。本节只保留会直接影响执行顺序的
+[grounding review](tui-step-debugger-grounding-review.md)。本节只保留会直接影响执行顺序的
 当前状态；本地 Bundle 数量是 2026-08-31 样本，不是 contract。
 
 | # | 已证明 | 尚未证明 / 纠正 | 所属 gate |

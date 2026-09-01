@@ -24,6 +24,13 @@
 
 **Next available plan ID: CLS-058**（移入 `_closed_plans/` 时分配）
 
+**当前 plan 的 supporting 文档（活跃，与 plan 同层存放，随 plan 演进）**：
+
+| 文档 | 角色 |
+|------|------|
+| [tui-step-debugger-grounding-review.md](tui-step-debugger-grounding-review.md) | 前置证据底稿（2026-08-31 dated snapshot：纠错、E4 结果、被拒方案）；证据内容冻结，propose 前重验 dated facts |
+| [tui-workflow-debugger-target-ux.md](tui-workflow-debugger-target-ux.md) | 受控目标体验与验收地图（C0-C4b 后的 operator UX、负路径、traceability）；不声称当前能力 |
+
 ## 冻结存档（`archive/`，只读，未关闭）
 
 > 位置即状态：`archive/` = 冻结的历史稿（不再更新，旧相对链接随层级失效属预期）。
@@ -35,8 +42,6 @@
 | [archive/tui-interactive-campaign-progress-digested.md](archive/tui-interactive-campaign-progress-digested.md) | 战役进度账本（Phase 0–8 全记录）——**已消化（DIGESTED）**，已退役快照 | 2026-08-31 |
 | [archive/tui-interactive-campaign-review-digested.md](archive/tui-interactive-campaign-review-digested.md) | 独立审阅——**已消化（DIGESTED）**，被 campaign v4 消化 | 2026-08-31 |
 | [archive/tui_feedback_56.md](archive/tui_feedback_56.md) | 计划一致性审阅反馈——**已消化（DIGESTED）**，结论全部回填当前 plan 与 supporting 文档，仅作 provenance | 2026-09-01 |
-| [archive/tui-step-debugger-grounding-review.md](archive/tui-step-debugger-grounding-review.md) | 当前 debugger plan 的冻结证据底稿、纠错、E4 结果与被拒方案；不是执行权威 | 2026-08-31 |
-| [archive/tui-workflow-debugger-target-ux.md](archive/tui-workflow-debugger-target-ux.md) | C0-C4b 落地后的完整 operator UX：Run Bundle、captured node-agent context、bounded inner activity、runtime MD/mounted workspace、负路径与 plan traceability；不是当前能力声明 | 2026-09-01 |
 
 ## 已归档（移至 `_done/_closed_plans/`）
 

@@ -1,10 +1,10 @@
 # TUI Workflow Debugger Grounding Review
 
-> 类型: 冻结的设计审阅与证据底稿
+> 类型: 设计审阅与证据底稿（内容为 2026-08-31 dated snapshot）
 > 日期: 2026-08-31
-> 当前执行权威: [`../tui_step_progressive_plan.md`](../tui_step_progressive_plan.md)
+> 当前执行权威: [`tui_step_progressive_plan.md`](tui_step_progressive_plan.md)
 > 作用: 给没有历史上下文的实现者解释当前 plan 的事实来源、纠错理由和边界选择。
-> 状态: 冻结。新的实施结论进入当前 plan 的进展记录或对应 OpenSpec change，本文不追写。
+> 状态: 活跃 supporting 文档；证据内容冻结（dated facts 在 propose 前重验），不追写新结论。
 
 > **冻结后路由说明（2026-09-01）**：当前实施还必须阅读
 > [`tui-workflow-debugger-target-ux.md`](tui-workflow-debugger-target-ux.md)。本文正文保留
@@ -487,7 +487,7 @@ breakpoint，应单独定义 owner 和 schema，不能写入 ResearchState。
 
 没有上下文的实现者按以下顺序工作：
 
-1. 先完整阅读当前 [`../tui_step_progressive_plan.md`](../tui_step_progressive_plan.md)，只把它当
+1. 先完整阅读当前 [`tui_step_progressive_plan.md`](tui_step_progressive_plan.md)，只把它当
    当前决策和执行权威。
 2. 在 propose C0/C3/C4a/C4b 前完整阅读本文对应章节，核对证据仍与代码一致。
 3. 阅读当前主 specs，而不是从归档战役或 lifecycle walkthrough 推导执行语义。

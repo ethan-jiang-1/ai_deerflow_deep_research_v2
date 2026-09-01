@@ -3,14 +3,14 @@
 > 类型: 受控的目标体验、主旅程与计划追踪
 > 日期: 2026-09-01
 > 目标状态: C0、C3、C4a、C4b 全部归档后的 local contributor/operator experience
-> 当前决策与执行权威: [`../tui_step_progressive_plan.md`](../tui_step_progressive_plan.md)
+> 当前决策与执行权威: [`tui_step_progressive_plan.md`](tui_step_progressive_plan.md)
 > 前置技术证据: [`tui-step-debugger-grounding-review.md`](tui-step-debugger-grounding-review.md)，冻结到 2026-08-31
 > UX 专项依据: 本文 §8-§12 与当前 plan 中 2026-09-01 后的 Node Context、Files、launcher 决策
 > 状态: 本文描述目标，不声称当前 TUI 已具备这些能力；实施冲突时以当前 plan、主 specs 和代码为准。
 
 ## 文档控制
 
-本文虽然位于 `archive/`，但角色是当前 plan 的受控 supporting baseline，不是历史 campaign，也不是
+本文与当前 plan 同层存放，是当前 plan 的受控 supporting baseline，不是历史 campaign，也不是
 独立 backlog。它只能说明“完成后应该怎样体验、怎样验收”，不能自行增加 runtime owner、persisted
 schema、权限或阶段。
 
