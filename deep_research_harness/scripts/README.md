@@ -22,8 +22,8 @@
 
 ## 规则
 
-1. **常态脚本**改动若涉及 Makefile / `openspec/governance/required-paths.toml` /
-   契约测试引用，须同步全部引用面（`grep -rn "scripts/<name>" Makefile docs/ tests/`）。
+1. **常态脚本**改动若涉及 Makefile / `required-paths.toml`（仓库根 OpenSpec 治理
+   目录）/ 契约测试引用，须同步全部引用面（`grep -rn "scripts/<name>" Makefile docs/ tests/`）。
 2. **实验脚本**放 `experiments/`，不进 verify 门；毕业（转正）或删除，不长期滞留。
 3. 目录布局不受 `project-structure` 结构注册表枚举（其只管 src/tests/fixtures 分层），
    但 `required-paths.toml` 枚举了其中若干文件路径——移动它们必须同步该文件。

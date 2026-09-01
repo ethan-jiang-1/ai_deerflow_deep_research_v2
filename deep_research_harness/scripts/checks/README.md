@@ -20,7 +20,7 @@
 ## 移动/改名须知
 
 1. 同步 `Makefile`（校验车道目标）；
-2. 同步 `openspec/governance/required-paths.toml`（枚举了本族部分路径）；
+2. 同步 `required-paths.toml`（仓库根 OpenSpec 治理目录；枚举了本族部分路径）；
 3. 同步以 `from scripts.checks.<name> import …` 引用本族的**契约/单元测试**
    （2026-08-31 起 `scripts/` 以 namespace package 形式被 import，路径即模块路径）；
 4. 同步 `docs/testing-and-evaluation.md`；
