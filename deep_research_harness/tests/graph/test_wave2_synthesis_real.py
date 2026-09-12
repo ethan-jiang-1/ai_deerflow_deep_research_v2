@@ -60,7 +60,7 @@ from deerflow_deep_research.graph.nodes.wave2_synthesis.prompts import (
     parse_synthesis_output,
 )
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
-from deerflow_deep_research.runtime.work_unit_storage import WorkUnitStoreError
+from deerflow_deep_research.runtime.work_unit_storage_probe import WorkUnitStoreError
 from deerflow_deep_research.runtime.work_unit_store import WorkUnitStore
 from tests.assets.provider_shapes import load_provider_shape_cases, thaw_provider_shape_payload
 

@@ -10,7 +10,7 @@ from deerflow.sandbox.local.local_sandbox import LocalSandbox, PathMapping
 from deerflow_deep_research.domain.bundle import BundleId, RunBundleRef, bundle_host_relative_root
 from deerflow_deep_research.domain.state import BundleLocalState
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
-from deerflow_deep_research.runtime.work_unit_storage import (
+from deerflow_deep_research.runtime.work_unit_storage_probe import (
     check_prelaunch_work_unit_storage,
     classify_work_unit_storage,
     probe_posix_primitives,
@@ -93,7 +93,7 @@ def test_prelaunch_probe_uses_existing_base_and_cleans(tmp_path: Path) -> None:
 
 
 def test_prelaunch_probe_uses_one_exact_token_family(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    import deerflow_deep_research.runtime.work_unit_storage as storage
+    import deerflow_deep_research.runtime.work_unit_storage_probe as storage
 
     token = "a" * 32
     captured: list[tuple[str, str, str]] = []
@@ -114,7 +114,7 @@ def test_prelaunch_probe_uses_one_exact_token_family(tmp_path: Path, monkeypatch
 
 
 def test_probe_cleanup_failure_is_distinct(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    import deerflow_deep_research.runtime.work_unit_storage as storage
+    import deerflow_deep_research.runtime.work_unit_storage_probe as storage
 
     monkeypatch.setattr(storage, "_unlink_if_present", lambda *_args: (_ for _ in ()).throw(OSError("cleanup")))
     result = storage.check_prelaunch_work_unit_storage(
@@ -225,7 +225,7 @@ async def test_runtime_verifier_rejects_mount_and_provider_contradictions(tmp_pa
 
 @pytest.mark.asyncio
 async def test_runtime_verifier_uses_to_thread_for_sandbox_io(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    import deerflow_deep_research.runtime.work_unit_storage as storage
+    import deerflow_deep_research.runtime.work_unit_storage_probe as storage
 
     _publish_bundle(tmp_path)
     sandbox = FakeSandbox(tmp_path)

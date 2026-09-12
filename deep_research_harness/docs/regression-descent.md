@@ -7,7 +7,7 @@ misleading.
 
 | Discovery | Risk family | Stable seam | Disposition | Deterministic selector | Provider-only rationale |
 | --- | --- | --- | --- | --- | --- |
-| LIVE-20260717-01 | mounted-workspace-cleanup | runtime-store | deterministic-regression | tests/unit/test_work_unit_storage.py::test_runtime_verifier_cleanup_is_idempotent_with_real_local_sandbox | n/a |
+| LIVE-20260717-01 | mounted-workspace-cleanup | runtime-store | deterministic-regression | tests/unit/test_work_unit_storage_probe.py::test_runtime_verifier_cleanup_is_idempotent_with_real_local_sandbox | n/a |
 | LIVE-20260717-02 | model-construction | runtime-bridge | deterministic-regression | tests/unit/test_live_evaluation.py::test_live_model_config_constructs_with_one_retry_authority | n/a |
 | LIVE-20260717-03 | canary-precondition | node-contract | deterministic-regression | tests/unit/test_live_evaluation.py::test_live_canary_setup_payloads_satisfy_real_node_parsers | n/a |
 | LIVE-20260717-04 | structured-output-contract | node-capability | deterministic-regression | tests/graph/test_wave0_worker.py::test_build_wave0_worker_prompt_carries_topic_constraints | n/a |

@@ -23,7 +23,7 @@ from deerflow_deep_research.runtime.startup_snapshot import (
     normalize_gateway_workers,
     parse_startup_fingerprint,
 )
-from deerflow_deep_research.runtime.work_unit_storage import check_prelaunch_work_unit_storage
+from deerflow_deep_research.runtime.work_unit_storage_probe import check_prelaunch_work_unit_storage
 
 EntryStatus = Literal["ready", "not_ready", "unknown"]
 

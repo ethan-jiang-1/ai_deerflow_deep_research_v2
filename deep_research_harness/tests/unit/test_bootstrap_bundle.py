@@ -26,7 +26,7 @@ from deerflow_deep_research.runtime.bootstrap_bundle import (
     BootstrapBundleStore,
 )
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle, BundleLifecycleError
-from deerflow_deep_research.runtime.work_unit_storage import WorkUnitStorageCheck, WorkUnitStoreError
+from deerflow_deep_research.runtime.work_unit_storage_probe import WorkUnitStorageCheck, WorkUnitStoreError
 
 BUNDLE = RunBundleRef(bundle_id=BundleId("b_" + "A" * 43), scope_bucket="s_" + "B" * 43)
 _STALE_BUNDLE_ID = BundleId("b_" + "Z" * 43)

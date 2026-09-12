@@ -634,7 +634,7 @@ EVIDENCE_CLAIMS = (
     ),
     _correctness_claim(
         "live-discovery-workspace-cleanup",
-        "tests/unit/test_work_unit_storage.py::test_runtime_verifier_cleanup_is_idempotent_with_real_local_sandbox",
+        "tests/unit/test_work_unit_storage_probe.py::test_runtime_verifier_cleanup_is_idempotent_with_real_local_sandbox",
         StableSeam.RUNTIME_INTEGRATION,
         requirement_ids=("EVH-006", "EVH-010"),
         discovery_ids=("LIVE-20260717-01",),

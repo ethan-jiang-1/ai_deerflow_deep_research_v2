@@ -25,7 +25,7 @@ from deerflow_deep_research.domain.bundle import RunBundleRef, new_bundle_id
 from deerflow_deep_research.domain.lifecycle import WorkUnitStorageReason
 from deerflow_deep_research.domain.state import BundleLocalState
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle, scope_bucket
-from deerflow_deep_research.runtime.work_unit_storage import WorkUnitStoreError
+from deerflow_deep_research.runtime.work_unit_storage_probe import WorkUnitStoreError
 from deerflow_deep_research.runtime.work_unit_store import WorkUnitStore
 
 

@@ -67,7 +67,7 @@ async def test_filesystem_fault_leaves_no_partial_authoritative_profile(tmp_path
     )
 
     async def ready(*_args: object, **_kwargs: object):
-        from deerflow_deep_research.runtime.work_unit_storage import WorkUnitStorageCheck
+        from deerflow_deep_research.runtime.work_unit_storage_probe import WorkUnitStorageCheck
 
         return WorkUnitStorageCheck("ready", "local_thread_mount")
 

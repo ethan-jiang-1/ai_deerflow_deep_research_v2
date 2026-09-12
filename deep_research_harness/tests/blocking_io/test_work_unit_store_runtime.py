@@ -15,7 +15,7 @@ from deerflow_deep_research.domain.bundle import BundleId, RunBundleRef, bundle_
 from deerflow_deep_research.domain.state import BundleLocalState
 from deerflow_deep_research.domain.work_units import CandidateResult, compute_candidate_hash, compute_work_spec_hash
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
-from deerflow_deep_research.runtime.work_unit_storage import WorkUnitStorageCheck
+from deerflow_deep_research.runtime.work_unit_storage_probe import WorkUnitStorageCheck
 from deerflow_deep_research.runtime.work_unit_store import CommitDisposition, WorkUnitStore
 
 BUNDLE = RunBundleRef(bundle_id=BundleId("b_" + "A" * 43), scope_bucket="s_" + "A" * 43)

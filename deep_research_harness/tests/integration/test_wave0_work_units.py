@@ -66,7 +66,7 @@ from deerflow_deep_research.graph.nodes.wave0.subgraph import run_wave0_work_uni
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
 from deerflow_deep_research.runtime.projection import RuntimeWorkUnitDependencyResolver
 from deerflow_deep_research.runtime.run_observation import RunObservationRecorder, RunObservationStore
-from deerflow_deep_research.runtime.work_unit_storage import WorkUnitStoreError
+from deerflow_deep_research.runtime.work_unit_storage_probe import WorkUnitStoreError
 from deerflow_deep_research.runtime.work_unit_store import WorkUnitStore
 from tests.scenarios.assertions import assert_scenario
 from tests.scenarios.observation import (

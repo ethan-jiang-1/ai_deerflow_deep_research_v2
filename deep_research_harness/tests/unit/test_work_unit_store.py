@@ -41,7 +41,7 @@ from deerflow_deep_research.domain.work_units import (
     parse_submission_ledger,
 )
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
-from deerflow_deep_research.runtime.work_unit_storage import WorkUnitStorageCheck, WorkUnitStoreError
+from deerflow_deep_research.runtime.work_unit_storage_probe import WorkUnitStorageCheck, WorkUnitStoreError
 from deerflow_deep_research.runtime.work_unit_store import (
     CommitDisposition,
     WorkUnitStore,

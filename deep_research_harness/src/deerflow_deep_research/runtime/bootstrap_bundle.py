@@ -34,7 +34,7 @@ from deerflow_deep_research.domain.bundle import (
 from deerflow_deep_research.domain.lifecycle import WorkUnitStorageReason
 from deerflow_deep_research.domain.state import BundleLocalState
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycleError, BundleStateStore
-from deerflow_deep_research.runtime.work_unit_storage import (
+from deerflow_deep_research.runtime.work_unit_storage_probe import (
     WorkUnitStorageCheck,
     WorkUnitStoreError,
     verify_runtime_work_unit_storage,

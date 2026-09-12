@@ -17,7 +17,7 @@ from deerflow_deep_research.domain.state import BundleLocalState
 from deerflow_deep_research.runtime import request_bundle as request_bundle_module
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
 from deerflow_deep_research.runtime.request_bundle import RequestBundleStore
-from deerflow_deep_research.runtime.work_unit_storage import WorkUnitStorageCheck
+from deerflow_deep_research.runtime.work_unit_storage_probe import WorkUnitStorageCheck
 
 BUNDLE = RunBundleRef(bundle_id=BundleId("b_" + "A" * 43), scope_bucket="s_" + "B" * 43)
 

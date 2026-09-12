@@ -302,7 +302,7 @@ async def _demo_storage_verifier(
     """
     del envelope, bundle, provider
 
-    from deerflow_deep_research.runtime.work_unit_storage import WorkUnitStorageCheck
+    from deerflow_deep_research.runtime.work_unit_storage_probe import WorkUnitStorageCheck
 
     return WorkUnitStorageCheck("ready", "local_thread_mount")
 

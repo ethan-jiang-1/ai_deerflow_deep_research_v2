@@ -22,7 +22,7 @@ from deerflow_deep_research.domain.bundle import BundleId, RunBundleRef, run_bun
 from deerflow_deep_research.domain.state import BUNDLE_STATE_SCHEMA_VERSION, BundleLocalState
 from deerflow_deep_research.runtime.bootstrap_bundle import BootstrapBundleStore
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle, BundleLifecycleError
-from deerflow_deep_research.runtime.work_unit_storage import WorkUnitStorageCheck
+from deerflow_deep_research.runtime.work_unit_storage_probe import WorkUnitStorageCheck
 
 BUNDLE = RunBundleRef(bundle_id=BundleId("b_" + "A" * 43), scope_bucket="s_" + "B" * 43)
 

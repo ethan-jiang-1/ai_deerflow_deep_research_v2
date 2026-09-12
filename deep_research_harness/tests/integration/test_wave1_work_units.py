@@ -74,7 +74,7 @@ from deerflow_deep_research.graph.nodes.wave1.review import (
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
 from deerflow_deep_research.runtime.projection import RuntimeWorkUnitDependencyResolver
 from deerflow_deep_research.runtime.run_observation import RunObservationRecorder, RunObservationStore
-from deerflow_deep_research.runtime.work_unit_storage import WorkUnitStoreError
+from deerflow_deep_research.runtime.work_unit_storage_probe import WorkUnitStoreError
 from deerflow_deep_research.runtime.work_unit_store import WorkUnitStore
 from tests.assets.provider_shapes import load_provider_shape_cases, thaw_provider_shape_payload
 from tests.fixtures.live_seeds import build_live_seed_bundle

@@ -683,7 +683,7 @@ async def test_hitl1_case_uses_the_real_node_factory_bridge_and_parser_with_fake
     selected_bundle = SelectedBundleContext(bundle=bundle)
 
     async def ready(*_args: object, **_kwargs: object):
-        from deerflow_deep_research.runtime.work_unit_storage import WorkUnitStorageCheck
+        from deerflow_deep_research.runtime.work_unit_storage_probe import WorkUnitStorageCheck
 
         return WorkUnitStorageCheck("ready", "local_thread_mount")
 

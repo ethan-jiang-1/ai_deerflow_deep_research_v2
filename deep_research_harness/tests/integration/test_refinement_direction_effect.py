@@ -27,7 +27,7 @@ from deerflow_deep_research.runtime.bundle_graph import BundleGraphExecutor
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
 from deerflow_deep_research.runtime.node_agent_bridge import RuntimeNodeAgentBridge
 from deerflow_deep_research.runtime.request_bundle import RequestBundleStore
-from deerflow_deep_research.runtime.work_unit_storage import WorkUnitStorageCheck
+from deerflow_deep_research.runtime.work_unit_storage_probe import WorkUnitStorageCheck
 from deerflow_deep_research.runtime.work_unit_store import WorkUnitStore
 from tests.fixtures.fake_models import CapturingChatModel, ai_message
 from tests.fixtures.recipes import mixed_recipe
