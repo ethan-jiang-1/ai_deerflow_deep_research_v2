@@ -5,7 +5,7 @@
 > 操作细节的权威是各 runbook 与 [`docs/local-operations.md`](docs/local-operations.md)；
 > 那里变了这里必须同一 PR 跟着改。
 >
-> 最后核对: 2026-08-30（对应当日 Makefile 形态）| 阶梯语义: [`docs/runbooks/README.md`](docs/runbooks/README.md)
+> 最后核对: 2026-09-12（对应当日 Makefile 形态）| 阶梯语义: [`docs/runbooks/README.md`](docs/runbooks/README.md)
 
 ## 0. 环境准备（一次）
 
@@ -73,5 +73,5 @@ soft-bundle 辅助动词：`inspect` / `phases` / `status` / `verify`（对同�
 | --- | --- |
 | 跑挂了 / 形状怪 | 对应 runbook 的"撞上问题怎么办"节（如 runbook-020 §6） |
 | 疑似产品 bug | `_backlog/bugs/`（登记流程见其 README） |
-| TUI 卡死/断网死亡 | 目前无恢复入口（BUG-064，活跃）；bundle 侧证据仍在盘上 |
+| TUI 卡死/断网死亡 | 用 `--attach <id>` 从 durable checkpoint 恢复（BUG-064 已修，`add-suspended-run-recovery`；`--replay` 只读）；见 [runbook-030](docs/runbooks/runbook-030-debugger.md) |
 | 命令行为与本页不符 | 以 `Makefile` 为准，并修本页 |

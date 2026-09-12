@@ -1,6 +1,6 @@
 # Plans — plan/分析文档索引
 
-> 最后更新: 2026-09-01 | `_backlog/plans/` — 活跃 plan 在此（顶层），冻结未关闭的历史在
+> 最后更新: 2026-09-12 | `_backlog/plans/` — 活跃 plan 在此（顶层），冻结未关闭的历史在
 > [`_archive/`](_archive/)，完成的普通 plan 移入 [`../_done/_closed_plans/`](../_done/_closed_plans/)。
 >
 > **plan 没有编号，文件名即标识。完成后文件名不变，位置即状态。**
@@ -20,7 +20,7 @@
 
 （当前无活跃 plan——TUI workflow debugger 战役已收口，见 `_done/_closed_plans/tui-workflow-debugger/`）
 
-**Next available plan ID: CLS-059**（移入 `_closed_plans/` 时分配）
+**Next available plan ID: CLS-060**（移入 `_closed_plans/` 时分配）
 
 ## 已归档（移至 `_done/_closed_plans/`）
 
@@ -59,6 +59,7 @@
 | tui-workflow-debugger-progressive-plan.md | CLS-058 | 2026-09-02 |
 | tui-workflow-debugger-target-ux.md | CLS-058 | 2026-09-02 |
 | tui-step-debugger-grounding-review.md | CLS-058 | 2026-09-02 |
+| local-demo-debugger-runbook.md | CLS-059 | 2026-09-12 |
 | openspec-product-boundary-portability.md | CLS-054 | 2026-08-17 |
 
 ---

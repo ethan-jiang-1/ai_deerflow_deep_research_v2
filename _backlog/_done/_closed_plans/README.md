@@ -1,6 +1,6 @@
 # Closed Plans Index — 已完成 plan 归档
 
- > 最后更新: 2026-08-31 | `_backlog/_done/_closed_plans/` — 已完成 plan 的归档目录。
+ > 最后更新: 2026-09-12 | `_backlog/_done/_closed_plans/` — 已完成 plan 的归档目录。
 > 接收来自 [`../../plans/`](../../plans/) 的 plan。`_` 前缀 = coding agent 默认忽略。
 >
 > **plan 完成后文件名不变，位置即状态。** 移入时分配 `CLS-NNN` 序号（Closed），按完成时间递增。
@@ -78,5 +78,7 @@ plan 完成后从 `_backlog/plans/` 通过 `git mv` 移入本目录：
 | CLS-055 | 2026-08-25 | [project-structure-manifest-split.md](project-structure-manifest-split.md) | 拆分 `project-structure.toml`（契约 ~67 行）+ 清单按 owner 折叠（`required-paths.toml`，346 行，257 条路径），总量 -73%；由 `split-project-structure-manifest` change 实现并归档，checker 对 (path, kind, owner) 集合逐字等价 |
 | CLS-056 | 2026-08-25 | [agent-legibility-feedback-hardening.md](agent-legibility-feedback-hardening.md) | 借用 DSH「三问 + 六缺口」体检本仓，只关真实缺口：`dev-harness-legibility-gate`（PRS-020，commit 70f6528）落地文档层门禁 `check_doc_hygiene.py` + 负例控制 + ADR 发现层；G4 查证为 `54886b8` 误删的回归，撤销 relabel，改由 `restore-agents-structure-locator`（PRS-021，commit 754f32a）完整恢复生成 locator；G2 指针与 plans README 索引 todo 走账本 |
 | CLS-057 | 2026-08-31 | [doc-gate-docs-layer-and-fresh-agent-narrative.md](doc-gate-docs-layer-and-fresh-agent-narrative.md) | CLS-056 两收尾：doc gate 扩到 docs/ 层 + 范围完整性守卫（change `2026-08-31-doc-gate-docs-layer` 归档，PRS-020 MODIFIED）；`docs/run-lifecycle-walkthrough.md` 叙事层落地（DONE-003） |
+| CLS-058 | 2026-09-02 | [tui-workflow-debugger/](tui-workflow-debugger/tui-workflow-debugger-progressive-plan.md) | TUI workflow debugger 战役收口：`run/tui-workflow-debugger.sh` launcher + `make tui-debugger`、节点边界 step/continue workbench、Node Context pane、`--attach`/`--replay` exact-bundle intent；三个 plan 全部落地（progressive / target-ux / grounding-review）。补登：文件已移入但此前漏登记索引 |
+| CLS-059 | 2026-09-12 | [local-demo-debugger-runbook.md](local-demo-debugger-runbook.md) | 补齐调试工作台 runbook-030/031（fixture 零凭证 + embedded）与 embedded recorder 接线；`_local_demo` 活手册迁出后内容当日完成，本次按 ritual 关账登记 |
 
-**Next available plan ID: CLS-058**
+**Next available plan ID: CLS-060**

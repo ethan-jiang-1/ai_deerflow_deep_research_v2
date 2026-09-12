@@ -21,6 +21,5 @@ authority, or coding-agent guide.
 - [Live evaluation baseline](live-evaluation-baseline-2026-07-17.md),
   [release attestation](release-attestation-2026-07-17.json), and
   [regression descent](regression-descent.md) preserve specific evaluation evidence.
-- For a code or governance change, start with [`../AGENTS.md`](../AGENTS.md) and the
-  the application coding boundary in [`../AGENTS.md`](../AGENTS.md),
-  not this operational documentation set.
+- For a code or governance change, start with the application coding boundary in
+  [`../AGENTS.md`](../AGENTS.md), not this operational documentation set.

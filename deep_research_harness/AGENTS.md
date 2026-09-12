@@ -90,6 +90,9 @@ cognition is not causal. Do not invent a capability, prompt, or repair loop.
 - Keep current facts in owning code, typed contracts, tests, checkpoints, ledgers, or
   content authorities. A guide, summary, or diagnostic is not a second authority.
 - Keep blocking I/O off the async event loop.
+- Explore with `rg` (it honors `.gitignore`); avoid `find` / `grep -r` from this
+  directory, which descend into the generated, ignored trees
+  (`.deep-research-demo-runs/`, `.reports/`, `evals/runs/`, `.venv/`).
 - Keep application tests and build commands independently runnable from this directory.
 - Do not add nested `AGENTS.md` files or copy this guide into `CLAUDE.md`.
 

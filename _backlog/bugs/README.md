@@ -19,10 +19,7 @@
 
 **Next available bug ID: BUG-068**
 
-
 ---
-
-
 
 新建 bug 文件 `BUG-<NNN>-<slug>.md`，`<NNN>` 取 `_done/_fixed_bugs/README.md` 的 Next available ID：
 
