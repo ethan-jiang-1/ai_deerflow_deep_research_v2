@@ -4,17 +4,17 @@
 
 ## Nodes
 
-- `bootstrap`
-- `hitl1`
-- `topic_planning`
-- `wave0`
-- `wave1`
-- `wave2_synthesis`
-- `targeted_evidence`
-- `hitl2`
-- `rerun`
-- `readiness`
-- `final_delivery`
+- `bootstrap` — Bind trusted bootstrap input to the research lifecycle
+- `hitl1` — Turn a human request into an approved research profile
+- `topic_planning` — Decompose a confirmed profile into a research-plan candidate
+- `wave0` — Acquire authoritative-source evidence for assigned work
+- `wave1` — Extract source-grounded evidence and bounded repair candidates
+- `wave2_synthesis` — Synthesize accepted evidence into findings and research gaps
+- `targeted_evidence` — Resolve a gate-projected evidence gap
+- `hitl2` — Resolve a conditional research decision before delivery
+- `rerun` — Apply a validated rerun scope to research control
+- `readiness` — Judge per-question evidence sufficiency and answerability
+- `final_delivery` — Compose and communicate a report from accepted research state
 
 ## Terminals
 

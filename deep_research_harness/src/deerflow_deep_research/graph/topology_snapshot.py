@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from deerflow_deep_research.domain.identifiers import LOGICAL_NODE_SUMMARIES, LogicalPhase
 from deerflow_deep_research.graph.topology import LOGICAL_NODES, NORMALIZED_EDGES, TERMINALS
 
 
@@ -16,7 +17,7 @@ def render_topology_snapshot() -> str:
         "",
         "## Nodes",
         "",
-        *(f"- `{name}`" for name in LOGICAL_NODES),
+        *(f"- `{name}` — {LOGICAL_NODE_SUMMARIES[LogicalPhase(name)]}" for name in LOGICAL_NODES),
         "",
         "## Terminals",
         "",
