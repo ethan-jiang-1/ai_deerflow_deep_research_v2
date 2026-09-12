@@ -239,7 +239,7 @@ a reviewed later change promotes a stable baseline.
 
 The accepted 2026-07-17 full-real proof survives cleanup of gitignored raw reports as
 the minimal redacted committed attestation in
-[`release-attestation-2026-07-17.json`](release-attestation-2026-07-17.json). It proves
+[`release-attestation-2026-07-17.json`](evidence/release-attestation-2026-07-17.json). It proves
 one isolated accepted run, not a current release result, provider distribution, or a
 general quality threshold.
 

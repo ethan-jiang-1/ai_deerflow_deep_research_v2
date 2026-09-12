@@ -9,8 +9,9 @@ import json
 from pathlib import Path
 
 DOCS_ROOT = Path(__file__).resolve().parents[2] / "docs"
-BASELINE = DOCS_ROOT / "live-evaluation-baseline-2026-07-17.md"
-ATTESTATION = DOCS_ROOT / "release-attestation-2026-07-17.json"
+EVIDENCE_ROOT = DOCS_ROOT / "evidence"
+BASELINE = EVIDENCE_ROOT / "live-evaluation-baseline-2026-07-17.md"
+ATTESTATION = EVIDENCE_ROOT / "release-attestation-2026-07-17.json"
 REGRESSION_DESCENT = DOCS_ROOT / "regression-descent.md"
 RETIRED_PARITY_REPORT_STEM = "d" + "pt" + "-invariant-parity-release-report-"
 

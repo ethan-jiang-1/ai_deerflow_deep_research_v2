@@ -22,7 +22,7 @@ from tests.assets.release_attestation import (
     validate_release_attestation,
 )
 
-ATTESTATION = Path("docs/release-attestation-2026-07-17.json")
+ATTESTATION = Path("docs/evidence/release-attestation-2026-07-17.json")
 _V1_INVARIANTS = (
     "accepted_evidence_present",
     "checkpoint_isolated",

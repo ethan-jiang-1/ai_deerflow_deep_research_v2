@@ -25,7 +25,8 @@ Four mechanical doc-layer rules plus one backlog navigation rule:
 
 A docs-layer document is a Markdown document under ``deep_research_harness/docs/``
 — the top-level ``docs/*.md`` documents, the ``docs/runbooks/*.md`` operator
-runbooks, and the ``docs/adr/*.md`` decision records. Non-Markdown files under
+runbooks, the ``docs/evidence/*.md`` frozen evaluation evidence, and the
+``docs/adr/*.md`` decision records. Non-Markdown files under
 that tree are out of scope. The scope is an explicit enumeration: adding a docs
 document without registering it here turns rule 4 red on the next run.
 
@@ -68,12 +69,15 @@ DOC_LAYER_DOCS: tuple[str, ...] = (
     "deep_research_harness/docs/README.md",
     "deep_research_harness/docs/cognitive-evaluation-suite.md",
     "deep_research_harness/docs/deep-research-topology.md",
-    "deep_research_harness/docs/live-evaluation-baseline-2026-07-17.md",
     "deep_research_harness/docs/local-operations.md",
     "deep_research_harness/docs/regression-descent.md",
     "deep_research_harness/docs/run-lifecycle-walkthrough.md",
     "deep_research_harness/docs/runtime-architecture.md",
     "deep_research_harness/docs/testing-and-evaluation.md",
+    # docs/evidence/ frozen point-in-time evaluation evidence (never edited to
+    # track current behavior; cited as historical proof). release-attestation-2026-07-17.json
+    # shares this tree but is non-markdown and therefore outside the checker scope.
+    "deep_research_harness/docs/evidence/live-evaluation-baseline-2026-07-17.md",
     # docs/runbooks/ operator runbooks and their index.
     "deep_research_harness/docs/runbooks/README.md",
     "deep_research_harness/docs/runbooks/runbook-001-easiest-fixture-graph.md",

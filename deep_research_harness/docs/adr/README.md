@@ -11,7 +11,7 @@
 | 0002 | Deep Research 有三个入口（专用 TUI 服务 Primary User、CLI 服务运维/调试、API 服务集成），但必须共享同一研究结果与恢复语义。 | current |
 | 0003 | 模型、网络服务、凭据等研究服务配置由 Deployment Owner 拥有，研究旅程不要求用户解读 `.env`/提供商名/内部诊断。 | current |
 | 0004 | 例行模型/搜索/网络/进程中断是系统恢复工作，用有界超时/重试/可恢复状态重启，触及安全/成本/证据/可用性上限才交回用户。 | current |
-| 0005 | 每次新研究开始前 TUI 展示系统提议的方案并请用户接受或调整（轻量确认），而非技术设置屏。 | current |
+| 0005 | 每次新研究开始前，系统先展示拟定方案并请用户接受或调整（轻量确认），而非技术设置屏。 | current |
 | 0006 | 研究意外停止时 TUI 分三层披露：默认 plain-language 结果+下一步、按需安全解释、可复制的脱敏 Support Handoff。 | current |
 | 0007 | Durable Research Session 曾是跨重启生命周期权威，现由 ADR-0028 的 Run Bundle 模型取代。 | superseded（被 0028 取代） |
 | 0008 | 首个生产范围是单本地用户的 Local-First 部署，先跑通 Run Bundle/恢复/Handoff 再谈多用户/共享/跨设备/远程。 | current |
