@@ -444,11 +444,11 @@ def build_research_graph(
         "rerun",
         _route,
         {
-            "next": "topic_planning",  # fake backward compat (unchanged)
-            "topic_planning": "topic_planning",  # real FULL
+            "next": "topic_planning",  # legacy route alias, retained for all composition
+            "topic_planning": "topic_planning",  # real FULL rerun
             "wave0": "wave0",  # real TOPIC / FINDING (stale sources)
             "wave1": "wave1",  # real FINDING (deep evidence only)
-            "exhausted": END,  # both fake and real
+            "exhausted": END,  # legacy alias and real rerun
         },
     )
     builder.add_conditional_edges(

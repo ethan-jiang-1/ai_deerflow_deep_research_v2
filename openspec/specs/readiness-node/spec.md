@@ -52,7 +52,7 @@ must-answer questions, accepted submission references, and ledger-validated synt
 evidence read through that declared controller. The critic SHALL return exactly one
 typed verdict for every supplied question: `ready_substantive`,
 `ready_insufficient_judgment`, or `blocked_repair_required`. It SHALL receive no raw
-checkpoint, runtime authority, writable path, tool, or route instruction. Full-fake
+checkpoint, runtime authority, writable path, tool, or route instruction. Fixture
 readiness SHALL remain fixture-controlled. (`REA-002`)
 
 #### Scenario: Complete candidate is admitted
@@ -72,7 +72,7 @@ readiness SHALL remain fixture-controlled. (`REA-002`)
   accepted ledger references, and does not expose arbitrary sandbox content
 
 #### Scenario: Full-fake readiness remains fixture-controlled
-- **WHEN** the full-fake graph reaches readiness
+- **WHEN** the fixture graph reaches readiness
 - **THEN** it does not invoke the critic and retains its declared fixture route
 
 ### Requirement: Report plan materializer produces immutable projection
@@ -307,7 +307,7 @@ The graph wrapper and direct real factory SHALL fail with
 `work_unit_capability_missing` before model invocation when the declared controller is
 absent. The runtime dependency resolver SHALL construct and select a readiness-specific
 zero-tool bridge/policy for readiness rather than supplying an upstream node's bridge.
-Full-fake readiness SHALL remain unchanged (fixture gate provides route). Topology SHALL
+Fixture readiness SHALL remain unchanged (fixture gate provides route). Topology SHALL
 be unchanged. (`REA-007`)
 
 #### Scenario: Real readiness requires real hitl2
@@ -326,7 +326,7 @@ be unchanged. (`REA-007`)
   the HITL1, topic-planning, or Wave2 synthesis bridge
 
 #### Scenario: Full-fake readiness unchanged
-- **WHEN** the full-fake graph reaches the readiness node
+- **WHEN** the fixture graph reaches the readiness node
 - **THEN** it returns a no-op update with the fixture gate providing the route
 
 #### Scenario: Real readiness coexists with fake final_delivery

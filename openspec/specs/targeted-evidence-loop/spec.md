@@ -97,7 +97,7 @@ The convergence gate SHALL track round count per phase and SHALL enforce a maxim
 - **THEN** the gap is marked deferred and does not consume further budget
 
 ### Requirement: Mixed-graph integration requires full real chain
-Real targeted evidence loop SHALL require full real chain through wave2_synthesis. Full-fake targeted_evidence SHALL remain deterministic. Topology SHALL be unchanged.
+Real targeted evidence loop SHALL require full real chain through wave2_synthesis. Fixture targeted_evidence SHALL remain deterministic. Topology SHALL be unchanged.
 
 #### Scenario: Full real chain compiles
 - **WHEN** recipe selects targeted_evidence=real with full chain through wave2_synthesis

@@ -8,8 +8,10 @@ Real Wave0 source-intake node behavior — per-topic WorkSpec materialization fr
 planner registry via the work-unit controller, a bounded web worker agent with an
 untrusted-data discipline, a real `wave0.source-intake` result contract with
 canonicalized/verified sources, deterministic submit validation, a real source-floor gate
-with degraded capture, and mixed-graph integration preserving full-fake behavior.
+with degraded capture, and mixed-graph integration preserving fixture behavior.
+
 ## Requirements
+
 ### Requirement: Real Wave0 materializes per-topic source-intake work from the planner registry
 
 The real Wave0 controller SHALL read the planner-owned `topic_registry`/
@@ -118,7 +120,7 @@ require `bootstrap=real`, `hitl1=real`, and `topic_planning=real`, because the
 worker consumes the real topic registry. Selecting `wave0=real` without the real
 topic chain SHALL fail closed before graph invocation. The Wave0 topology SHALL be
 unchanged (`repair`/`pass`/`exhausted`); the real gate writes the route via the
-gate kernel. The full-fake Wave0 fixture path SHALL remain deterministic and
+gate kernel. The fixture Wave0 path SHALL remain deterministic and
 SHALL NOT construct the node-agent bridge. The lifecycle result SHALL remain
 `implementation_mode=mixed` for this recipe composition.
 
@@ -131,7 +133,7 @@ SHALL NOT construct the node-agent bridge. The lifecycle result SHALL remain
 - **THEN** Wave0 keeps its `repair`/`pass`/`exhausted` routes, the gate writes the route via the gate kernel, and no top-level edge changes
 
 #### Scenario: Full-fake Wave0 remains the deterministic fixture path
-- **WHEN** the full-fake graph reaches Wave0
+- **WHEN** the fixture graph reaches Wave0
 - **THEN** it runs the fixture work-unit path without constructing the node-agent bridge and the topology snapshot is unchanged
 
 ### Requirement: Real Wave0 maps trusted worker boundaries into diagnosis-only failures

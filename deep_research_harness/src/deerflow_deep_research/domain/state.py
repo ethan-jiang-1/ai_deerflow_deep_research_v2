@@ -39,7 +39,7 @@ from deerflow_deep_research.domain.human_interaction import InteractionFeedback
 from deerflow_deep_research.domain.identifiers import BUNDLE_ID_RE, CONTENT_HASH_RE, SANDBOX_PATH_RE
 from deerflow_deep_research.domain.lifecycle import (
     MAX_CONTROL_RESULT_CHARS,
-    MAX_FAKE_RERUN_GENERATIONS,
+    MAX_RERUN_GENERATIONS,
     MAX_START_REQUEST_CHARS,
     AcceptedHumanResponse,
     BranchResult,
@@ -201,7 +201,7 @@ class BundleLocalState:
             raise ValueError("schema_unsupported")
         if not isinstance(self.implementation_mode, ImplementationMode):
             object.__setattr__(self, "implementation_mode", ImplementationMode(self.implementation_mode))
-        if not isinstance(self.generation, int) or not 0 <= self.generation <= MAX_FAKE_RERUN_GENERATIONS:
+        if not isinstance(self.generation, int) or not 0 <= self.generation <= MAX_RERUN_GENERATIONS:
             raise ValueError("generation_invalid")
         if not isinstance(self.revision, int) or self.revision < 0:
             raise ValueError("state_revision_invalid")
@@ -257,7 +257,7 @@ class BundleLocalState:
                 )
             except (TypeError, ValueError) as exc:
                 raise ValueError("admitted_refinement_invalid") from exc
-        if not isinstance(self.refinement_round, int) or not 0 <= self.refinement_round <= MAX_FAKE_RERUN_GENERATIONS:
+        if not isinstance(self.refinement_round, int) or not 0 <= self.refinement_round <= MAX_RERUN_GENERATIONS:
             raise ValueError("refinement_round_invalid")
         if self.current_refinement is not None and not isinstance(self.current_refinement, CurrentRefinement):
             try:
@@ -274,7 +274,7 @@ class BundleLocalState:
             if self.current_refinement.generation != self.generation:
                 raise ValueError("current_refinement_generation_mismatch")
         if not isinstance(self.refinement_replay_receipts, tuple) or (
-            len(self.refinement_replay_receipts) > MAX_FAKE_RERUN_GENERATIONS
+            len(self.refinement_replay_receipts) > MAX_RERUN_GENERATIONS
         ):
             raise ValueError("refinement_replay_receipts_invalid")
         receipts: list[RefinementReplayReceipt] = []
@@ -559,7 +559,7 @@ def _policy_receipt_capacity(policy: object) -> int:
     capacity = getattr(policy, "max_rerun_generations", None)
     if not callable(allows) or not isinstance(capacity, int) or capacity < 1:
         raise TypeError("full_rerun_policy_required")
-    if capacity > MAX_FAKE_RERUN_GENERATIONS:
+    if capacity > MAX_RERUN_GENERATIONS:
         raise ValueError("public_generation_ceiling_exceeded")
     return capacity
 

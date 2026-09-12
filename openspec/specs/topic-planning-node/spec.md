@@ -13,7 +13,9 @@ integrates into the mixed graph off real bootstrap and real HITL1 with one expli
 `exhausted` route, while reading profile constraints from checkpoint short fields
 only (never `request/profile.json`), declaring no capability, and writing no sandbox
 file.
+
 ## Requirements
+
 ### Requirement: Real topic planning generates a validated structured topic plan from the confirmed profile
 
 The real topic planning node SHALL call `capabilities.run_agent()` exactly once per
@@ -183,7 +185,7 @@ SHALL fail closed before graph invocation. The normalized topology SHALL add exa
 `topic_planning --exhausted--> blocked/END` and keep the existing
 `topic_planning --next--> wave0` and inbound edges unchanged. topic_planning SHALL
 remain a non-gated controller node that writes its own route labels and SHALL NOT
-import LangGraph or interrupt. The full-fake topic planning path and every other
+import LangGraph or interrupt. The fixture topic planning path and every other
 fake phase SHALL remain unchanged, and the lifecycle result SHALL report
 `implementation_mode=mixed` for a mixed recipe.
 
@@ -196,7 +198,7 @@ fake phase SHALL remain unchanged, and the lifecycle result SHALL report
 - **THEN** the builder carries a conditional edge `topic_planning -> {next: wave0, exhausted: END}`, topology validation recognizes `exhausted` as terminal `blocked`, and no other topic_planning edge changes
 
 #### Scenario: Full-fake topic planning remains unchanged
-- **WHEN** the full-fake graph reaches topic planning
+- **WHEN** the fixture graph reaches topic planning
 - **THEN** fake topic planning routes `next` without calling a model, writing topic state, or taking the real `exhausted` route, and the topology snapshot is unchanged
 
 #### Scenario: The mixed graph completes through real topic planning

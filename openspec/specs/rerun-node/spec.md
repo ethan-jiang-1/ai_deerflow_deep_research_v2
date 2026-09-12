@@ -4,7 +4,9 @@
 
 ## Purpose
 Plan bounded generation reruns while preserving accepted evidence authority and resetting only affected projections.
+
 ## Requirements
+
 ### Requirement: Rerun scope is parsed from the `hitl2_rerun_payload` checkpoint field
 
 The rerun node SHALL read the `hitl2_rerun_payload` field from checkpoint state. When the field is a dict with a valid `scope` key, the node SHALL extract a typed `RerunScope`. Valid scope values SHALL be `full` (redo all topics from planning), `topic` (redo named topics from source intake), and `finding` (redo specific findings — gap re-search or stale source intake). The scope extraction SHALL be a pure input-parsing step that does not depend on generation having been incremented. If `hitl2_rerun_payload` is `None`, absent, or contains an invalid/missing `scope` key, the node SHALL default to `full` scope. The final `RerunPlan` (assembled after generation increment and route determination) SHALL contain the `RerunScope`, the new generation, the parent generation, and the determined route.
@@ -128,14 +130,14 @@ The rerun node SHALL reset `gate_attempts_by_phase` and `repair_budget_by_phase`
 
 ### Requirement: Mixed-graph integration with unchanged topology
 
-Real rerun SHALL require `hitl2=real` (which transitively requires the full chain through wave0, wave1, wave2_synthesis, and targeted_evidence). Selecting `rerun=real` without `hitl2=real` SHALL fail before graph invocation. The full-fake rerun SHALL remain unchanged, preserving the existing `generation <= MAX_FAKE_RERUN_GENERATIONS` ceiling check and the `{"next": "topic_planning", "exhausted": END}` edge set. Topology SHALL be unchanged — only the allowed route values expand to include `wave0` and `wave1`.
+Real rerun SHALL require `hitl2=real` (which transitively requires the full chain through wave0, wave1, wave2_synthesis, and targeted_evidence). Selecting `rerun=real` without `hitl2=real` SHALL fail before graph invocation. The fixture rerun SHALL remain unchanged, preserving the existing `generation <= MAX_RERUN_GENERATIONS` ceiling check and the `{"next": "topic_planning", "exhausted": END}` edge set. Topology SHALL be unchanged — only the allowed route values expand to include `wave0` and `wave1`.
 
 #### Scenario: Real rerun requires real hitl2
 - **WHEN** a recipe selects `rerun=real` without `hitl2=real`
 - **THEN** recipe construction fails with a typed dependency error
 
 #### Scenario: Full-fake rerun remains unchanged
-- **WHEN** the full-fake graph reaches the rerun node at generation 1
+- **WHEN** the fixture graph reaches the rerun node at generation 1
 - **THEN** it bumps generation to 2 and routes `next` → `topic_planning` with no scope, no invalidation, and no WorkSpec creation
 
 #### Scenario: Real rerun back edges coexist with fake-compat edge keys

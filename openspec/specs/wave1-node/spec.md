@@ -7,7 +7,6 @@ Deep per-topic evidence extraction with new-source floor, structured claims, cri
 
 ## Requirements
 
-
 ### Requirement: Wave1 planner materializes per-topic evidence WorkSpecs
 
 The Wave1 planner SHALL read profile constraints and Wave0 accepted submission
@@ -173,7 +172,7 @@ Critic prose or verdict value SHALL not select a route. The route map SHALL rema
 
 Real Wave1 SHALL require `bootstrap=real`, `hitl1=real`, `topic_planning=real`,
 `wave0=real`, and `targeted_evidence=real`. Selecting `wave1=real` without the full
-chain SHALL fail before graph invocation. Topology is unchanged. Full-fake Wave1
+chain SHALL fail before graph invocation. Topology is unchanged. Fixture Wave1
 remains deterministic and does not construct the node-agent bridge.
 
 #### Scenario: Wave1 requires full real chain
@@ -181,7 +180,7 @@ remains deterministic and does not construct the node-agent bridge.
 - **THEN** recipe construction fails with a typed dependency error
 
 #### Scenario: Full-fake Wave1 remains unchanged
-- **WHEN** the full-fake graph reaches Wave1
+- **WHEN** the fixture graph reaches Wave1
 - **THEN** it runs the fixture work-unit path without constructing the node-agent bridge
 
 ### Requirement: Wave1 retains classified invocation causes through work-unit failure

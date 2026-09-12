@@ -6,7 +6,9 @@
 
 Defines the permanent design/admission charter, bounded contributor context, and
 human/AI-facing information-map rules for the downstream Deep Research product.
+
 ## Requirements
+
 ### Requirement: A canonical Deep Research Change Guidance route is discoverable
 
 The project SHALL maintain `openspec/change-guidance/README.md` as the sole local
@@ -131,12 +133,12 @@ Before its Reading Map, the Harness README SHALL publish one `## Entry Surfaces`
 with `Surface`, `Primary reader/user`, `Purpose`, `Actual composition`, and `Explicit
 non-goal` columns. It SHALL let a reader distinguish the dedicated-Agent plus reflected
 `deep_research` tool product route; the standalone operator CLI; the demo-TUI
-visualizer; the zero-credential full-fake demonstrations; deterministic fixture-graph
+visualizer; the zero-credential fixture-graph demonstrations; deterministic fixture-graph
 verification; and the configured-fixture local workbench. The table SHALL identify the
 operator CLI as a local operator surface, not a versioned product CLI; the demo TUI as
-a visualizer, not a current primary-user TUI; full fake as presentation rather than
-fixture-graph verification; and the local workbench as only the configured fixture
-profile surface.
+a visualizer, not a current primary-user TUI; the fixture-graph demonstration as
+presentation rather than research verification; and the local workbench as only the
+configured fixture profile surface.
 It SHALL direct exact local commands to `docs/local-operations.md`, composition and
 authority questions to `docs/runtime-architecture.md`, and verification questions to
 `docs/testing-and-evaluation.md`, without copying their detail into the README.
@@ -174,9 +176,9 @@ impose word-count quotas or claim that a line budget proves prose quality. (`DRC
   document's detail
 
 #### Scenario: Demo and verification routes are not conflated
-- **WHEN** a reader compares the Harness README's full-fake, fixture-graph, demo-TUI,
+- **WHEN** a reader compares the Harness README's fixture-graph, demo-TUI,
   and workbench entries
-- **THEN** it does not mistake full fake for fixture-graph verification, the demo TUI
+- **THEN** it does not mistake a fixture-graph demonstration for research verification, the demo TUI
   for a current primary-user TUI, or the configured fixture workbench for a general
   product surface
 

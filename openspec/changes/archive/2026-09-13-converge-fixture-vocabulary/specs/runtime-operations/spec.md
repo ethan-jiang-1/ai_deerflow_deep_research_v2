@@ -1,11 +1,11 @@
-# runtime-operations Specification
-
 > req: RUO-001, RUO-002, RUO-003, RUO-004
 
-## Purpose
-Harden non-interactive execution and recovery without changing topology or fixture behavior.
+## RENAMED Requirements
 
-## Requirements
+- FROM: `### Requirement: Cross-cutting changes do not alter topology or full-fake`
+- TO: `### Requirement: Cross-cutting changes do not alter topology or fixture behavior`
+
+## MODIFIED Requirements
 
 ### Requirement: Non-interactive mode requires policy
 
@@ -76,63 +76,6 @@ policy-shaped context value.
 - **WHEN** the runtime does not mark a lifecycle invocation non-interactive
 - **THEN** the invocation follows the existing interactive path and a policy-shaped
   context value does not create non-interactive graph behavior
-
-### Requirement: HITL nodes auto-respond under non-interactive policy
-
-HITL1 SHALL consume `auto_profile` only from the selected Bundle's checkpointed
-non-interactive policy. When enabled, HITL1 SHALL skip `interrupt()` and write its
-existing degraded default profile only after applying the same deterministic comparison
-and language admission rules as the interactive path. A required comparison pair SHALL
-be present only when the local intake seed found an explicit valid pair in the original
-request, and the accepted output language SHALL be locally supported rather than
-defaulted. The resulting degraded profile SHALL retain those typed facts and append a
-bounded audit entry to the existing execution trace.
-
-When that policy is enabled but a supported comparison lacks an explicit valid pair, or
-the request language requires a human `zh`/`en` choice, HITL1 SHALL NOT issue an
-interrupt, write a profile artifact, write final profile fields, or fabricate a pair or
-language. It SHALL take the existing terminal `GATE_BLOCKED` path. HITL2 SHALL consume
-`auto_proceed` only from that same checkpointed policy. When enabled, it SHALL choose
-the existing `proceed` route instead of its ordinary autonomous route recommendation
-and append a bounded audit entry to the existing execution trace. When policy is absent,
-both nodes SHALL retain their ordinary behavior.
-
-#### Scenario: HITL1 auto-profile generates default profile
-- **WHEN** the checkpointed `non_interactive_policy.auto_profile` is `true`, the local
-  intake seed has supported language evidence, and it either does not require comparison
-  subjects or contains an explicit valid pair
-- **THEN** HITL1 writes the permitted degraded default profile with the typed intake
-  facts, records its bounded audit entry, and routes to `accepted`
-
-#### Scenario: Non-interactive generic comparison cannot acquire a default pair
-- **WHEN** the checkpointed `non_interactive_policy.auto_profile` is `true` and a
-  supported comparison request lacks an explicit valid pair
-- **THEN** HITL1 blocks with `GATE_BLOCKED`, writes neither `profile.json` nor final
-  profile fields, and does not fabricate a comparison pair
-
-#### Scenario: Non-interactive unsupported language cannot acquire a default
-- **WHEN** the checkpointed `non_interactive_policy.auto_profile` is `true` and the
-  request language would require the interactive supported-language choice
-- **THEN** HITL1 blocks with `GATE_BLOCKED` and writes neither `profile.json` nor final
-  profile fields
-
-#### Scenario: HITL2 auto-proceed routes to proceed
-- **WHEN** the checkpointed `non_interactive_policy.auto_proceed` is `true`
-- **THEN** HITL2 selects `proceed` and records its bounded audit entry without creating
-  a user decision or a second route authority
-
-#### Scenario: HITL nodes invoke interrupt normally when policy absent
-- **WHEN** `non_interactive_policy` is absent from checkpointed graph state
-- **THEN** HITL1 retains its ordinary interrupt behavior and HITL2 retains its ordinary
-  autonomous route selection
-
-### Requirement: Orphan attempts detected on recovery
-
-On crash recovery, work attempts in `running` status whose owning work_spec generation is lower than the current graph generation SHALL be detected as orphaned and transitioned to `failed` with orphan reason.
-
-#### Scenario: Orphan attempt from prior generation is cleaned up
-- **WHEN** recovery detects a running attempt with generation 0 while the current graph generation is 1
-- **THEN** the attempt is transitioned to `failed` with orphan reason
 
 ### Requirement: Cross-cutting changes do not alter topology or fixture behavior
 

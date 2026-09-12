@@ -37,7 +37,7 @@ class TestMaxRerunGenerationsPolicy:
             ),
             capabilities=object(),
         )
-        # Default should be 2 (from MAX_FAKE_RERUN_GENERATIONS)
+        # Default should be 2 (from MAX_RERUN_GENERATIONS)
         assert deps.max_rerun_generations == 2
 
     def test_node_build_dependencies_custom_value(self) -> None:

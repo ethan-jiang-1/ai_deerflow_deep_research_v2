@@ -49,6 +49,13 @@ Deep Research Runs. It remains when an individual Run Bundle is deleted, owns no
 durable Run state, and is distinct from the generic DeerFlow Harness.
 _Avoid_: DeerFlow Harness, Run Bundle, Research State
 
+**Fixture Composition**:
+The explicit implementation recipe of one graph: every node is a fixture adapter
+(`fixture`), every node is the real factory (`all_real`), or the two are mixed
+(`mixed`). It labels implementation composition only — not provider success,
+evidence acceptance, or report quality.
+_Avoid_: full-fake, full fake, fake graph, all-fake recipe
+
 **Deep Research Run**:
 One isolated execution of a research request by the Deep Research Harness. Its
 durable state and materials belong to exactly one Run Bundle; one conversation has at

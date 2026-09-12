@@ -9,7 +9,6 @@ asking users to operate internal graph control flow.
 
 ## Requirements
 
-
 ### Requirement: Credential-free CLI onboarding is paste-safe and does not outsource graph control
 
 `deep_research_harness/README.md` SHALL provide the existing repository-root quick
@@ -38,10 +37,10 @@ checkpoint, path, or fake-run registry that can authorize a real Deep Research R
 
 The credential-free CLI SHALL remain paste-safe, non-product, and unable to grant
 fixture authority to a real Run. Its documented execution route SHALL be the fixed
-fixture graph and its bounded Bundle lifecycle projection, not a full-fake/no-graph
+fixture graph and its bounded Bundle lifecycle projection, not a no-graph
 simulation. (`FCO-001`, `FCO-002`)
 
 #### Scenario: Documented credential-free onboarding names graph proof
 - **WHEN** a user follows the README's credential-free CLI sequence
 - **THEN** it names the canonical Harness path and fixture-graph execution without a
-  full-fake command, lifecycle, or real-control claim
+  no-graph command, lifecycle, or real-control claim

@@ -15,6 +15,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 CONTEXT_PATH = REPO_ROOT / "deep_research_harness" / "CONTEXT.md"
 
 _GLOSSARY_RECORDS = (
+    "Fixture Composition",
     "Run Bundle",
     "Evaluation Run Workspace",
     "Evaluation Run Bundle",

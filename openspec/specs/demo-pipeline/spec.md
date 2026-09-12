@@ -7,7 +7,9 @@
 Provide a standalone, bounded Deep Research demo pipeline with truthful lifecycle
 progress, fixture-graph and all-real recipes, local real-demo web tools, and separate CLI/TUI
 entry points without changing graph topology, `backend/`, or `frontend/`.
+
 ## Requirements
+
 ### Requirement: Shared demo core provides infrastructure, lifecycle transport, and prerequisite checks
 
 The agent project SHALL provide
@@ -294,7 +296,7 @@ directory or fallback, and no `backend/` or `frontend/` file is changed.
 #### Scenario: Credential-free commands are fixture-graph routes
 - **WHEN** an operator reads the fixture-graph command help or the README entry map
 - **THEN** it identifies the route as fixture-graph verification and names no
-  full-fake/no-graph lifecycle or command alias
+  no-graph lifecycle or command alias
 
 ### Requirement: Command boundary selects a comprehensible project environment
 
@@ -536,10 +538,10 @@ completed research without fixture-graph final-delivery evidence. (`DPL-001`,
 - **THEN** it returns a bounded startup failure before a Bundle State write, graph
   dispatch, or completed-research presentation
 
-### Requirement: Full-fake demo compatibility is retired rather than reclassified
+### Requirement: No-graph demo compatibility is retired rather than reclassified
 
 The supported demo command map and documentation SHALL identify credential-free
-execution as fixture-graph proof and SHALL not retain a full-fake/no-graph lifecycle,
+execution as fixture-graph proof and SHALL not retain a no-graph lifecycle,
 simulator, command alias, or a distinct completed-presentation contract. The fixed
 all-real route and explicit fixture/mixed test composition remain separate and no
 caller receives recipe, executor, checkpoint, graph-route, or mode selection
@@ -549,7 +551,7 @@ authority. (`DPL-003`, `DPL-005`, `DPL-008`)
 - **WHEN** an operator inspects supported demo help, Make targets, or README command
   guidance
 - **THEN** every zero-credential execution route is described as fixture-graph proof
-  and no route names or invokes a full-fake/no-graph lifecycle
+  and no route names or invokes a no-graph lifecycle
 
 ### Requirement: All-real standalone demos isolate fresh process runs
 
@@ -640,4 +642,3 @@ retention policy (DPL-007) remains unchanged. (`DPL-014`)
 - **THEN** the bounded archive-retention behavior (DPL-007) is unchanged by this
   requirement, and its interaction with resumable bundles remains a recorded
   known interaction outside this cleanup surface
-

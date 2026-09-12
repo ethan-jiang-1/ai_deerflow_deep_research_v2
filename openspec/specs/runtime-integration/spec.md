@@ -4,7 +4,9 @@
 
 ## Purpose
 The reflected Deep Research control tool, trusted runtime adaptation, isolated checkpoint namespaces, GraphHost lifecycle, and infrastructure-probe persistence.
+
 ## Requirements
+
 ### Requirement: One reflected control tool exposes an infrastructure probe
 
 DeerFlow SHALL continue to resolve
@@ -303,7 +305,7 @@ turn a provider or checkpoint reopen into Run recovery. (`RUI-006`)
 #### Scenario: Policy admission does not compose graph work
 - **WHEN** a trusted canonical non-interactive `start` supplies a complete closed policy but the
   lifecycle has no trusted-composed `BundleGraphExecutor`
-- **THEN** dispatch retains the existing uncomposed fallback/full-fake lifecycle and
+- **THEN** dispatch retains the existing uncomposed fallback/fixture lifecycle and
   does not create graph state or select a graph executor
 
 #### Scenario: Later context cannot replace checkpointed policy

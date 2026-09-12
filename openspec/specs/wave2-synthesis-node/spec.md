@@ -222,7 +222,7 @@ closed. (`WSN-004`)
   existing incident semantics
 
 ### Requirement: Mixed-graph integration
-Real wave2_synthesis SHALL require full real chain through wave1. Full-fake path unchanged.
+Real wave2_synthesis SHALL require full real chain through wave1. Fixture path unchanged.
 
 #### Scenario: Full real chain compiles
 - **WHEN** recipe selects wave2_synthesis=real with full chain

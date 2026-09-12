@@ -17,7 +17,7 @@ from deerflow_deep_research.domain.bundle import RunBundleRef, run_bundle_root
 from deerflow_deep_research.domain.context import GraphContextView, SelectedBundleContext
 from deerflow_deep_research.domain.invocation import GraphInvocationContext, WorkUnitControllerDependencies
 from deerflow_deep_research.domain.lifecycle import (
-    MAX_FAKE_RERUN_GENERATIONS,
+    MAX_RERUN_GENERATIONS,
     AcceptedHumanResponse,
     CurrentRoundDirection,
     Durability,
@@ -89,7 +89,7 @@ class BundleGraphExecutor:
     ) -> None:
         self._recipe = recipe or ResearchGraphRecipe.all_real()
         self._full_rerun_policy = full_rerun_policy or FullRerunPolicy()
-        if self._full_rerun_policy.max_rerun_generations > MAX_FAKE_RERUN_GENERATIONS:
+        if self._full_rerun_policy.max_rerun_generations > MAX_RERUN_GENERATIONS:
             raise ValueError("public_generation_ceiling_exceeded")
 
     @property

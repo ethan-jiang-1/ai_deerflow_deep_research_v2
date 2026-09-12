@@ -9,6 +9,7 @@ its schema/version marker, pure binding validation, deterministic failure/recove
 research-scoped establishment that preserves start/resume/status/cancel lifecycle invariants. It
 performs no research model call; identity derivation and start/idempotency/conflict semantics
 remain owned by the lifecycle handler (REG-004).
+
 ## Requirements
 
 ### Requirement: Harness publishes a Run Bundle before Bootstrap establishes contained content
@@ -114,7 +115,7 @@ produces no final research report.
 
 #### Scenario: Full-fake map is unchanged
 - **WHEN** the implementation map selects `fake` for every phase
-- **THEN** the fake bootstrap is selected and the full-fake lifecycle end-to-end path is unchanged
+- **THEN** the fake bootstrap is selected and the fixture lifecycle end-to-end path is unchanged
 
 #### Scenario: Mixed end-to-end reports mixed
 - **WHEN** the mixed graph runs end-to-end through bootstrap and the remaining fake phases

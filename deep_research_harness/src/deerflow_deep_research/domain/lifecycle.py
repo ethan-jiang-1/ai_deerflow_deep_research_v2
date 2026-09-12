@@ -23,7 +23,7 @@ from deerflow_deep_research.domain.run_experience import PendingInputProjection,
 MAX_START_REQUEST_CHARS = 16_384
 MAX_REFINEMENT_CHARS = 4_096
 MAX_CONTROL_RESULT_CHARS = 4_096
-MAX_FAKE_RERUN_GENERATIONS = 2
+MAX_RERUN_GENERATIONS = 2
 
 
 class LifecycleAction(StrEnum):
@@ -281,7 +281,7 @@ class BundleRefinementProjection(FrozenContract):
     """Redacted direction disposition derived only from Bundle-local State."""
 
     disposition: BundleRefinementDisposition
-    current_round: int | None = Field(default=None, ge=1, le=MAX_FAKE_RERUN_GENERATIONS)
+    current_round: int | None = Field(default=None, ge=1, le=MAX_RERUN_GENERATIONS)
 
     @model_validator(mode="after")
     def validate_current_round(self) -> BundleRefinementProjection:
@@ -320,9 +320,9 @@ def refinement_round_token(
         raise ValueError("refinement_operation_key_invalid")
     if not isinstance(text_digest, str) or len(text_digest) != 64:
         raise ValueError("refinement_digest_invalid")
-    if not isinstance(round, int) or not 1 <= round <= MAX_FAKE_RERUN_GENERATIONS:
+    if not isinstance(round, int) or not 1 <= round <= MAX_RERUN_GENERATIONS:
         raise ValueError("refinement_round_invalid")
-    if not isinstance(generation, int) or not 1 <= generation <= MAX_FAKE_RERUN_GENERATIONS:
+    if not isinstance(generation, int) or not 1 <= generation <= MAX_RERUN_GENERATIONS:
         raise ValueError("generation_invalid")
     payload = json.dumps(
         ("deep-research/refinement-round/v1", bundle_id, operation_key, text_digest, round, generation),
@@ -360,8 +360,8 @@ class RefinementOperation(RefinementInput):
 class CurrentRefinement(RefinementOperation):
     """One committed current-round direction retained as assignment data."""
 
-    round: int = Field(ge=1, le=MAX_FAKE_RERUN_GENERATIONS)
-    generation: int = Field(ge=1, le=MAX_FAKE_RERUN_GENERATIONS)
+    round: int = Field(ge=1, le=MAX_RERUN_GENERATIONS)
+    generation: int = Field(ge=1, le=MAX_RERUN_GENERATIONS)
     round_token: str = Field(min_length=46, max_length=46, pattern=r"^rt_[A-Za-z0-9_-]{43}$")
 
     @classmethod
@@ -394,8 +394,8 @@ class RefinementReplayReceipt(FrozenContract):
 
     operation_key: str = Field(min_length=1, max_length=256)
     text_digest: str = Field(pattern=r"^[a-f0-9]{64}$")
-    round: int = Field(ge=1, le=MAX_FAKE_RERUN_GENERATIONS)
-    generation: int = Field(ge=1, le=MAX_FAKE_RERUN_GENERATIONS)
+    round: int = Field(ge=1, le=MAX_RERUN_GENERATIONS)
+    generation: int = Field(ge=1, le=MAX_RERUN_GENERATIONS)
 
     @classmethod
     def from_current(cls, current: CurrentRefinement) -> RefinementReplayReceipt:
@@ -456,7 +456,7 @@ class PendingResearchInterrupt(FrozenContract):
     request: HumanInputRequest
     suspension_cursor: str = Field(min_length=1, max_length=256)
     phase: Literal["hitl1", "hitl2"]
-    generation: int = Field(ge=0, le=MAX_FAKE_RERUN_GENERATIONS)
+    generation: int = Field(ge=0, le=MAX_RERUN_GENERATIONS)
 
     @model_validator(mode="after")
     def interaction_belongs_to_hitl1(self) -> PendingResearchInterrupt:
@@ -654,7 +654,7 @@ __all__ = [
     "LegalNextAction",
     "LogicalPhase",
     "MAX_CONTROL_RESULT_CHARS",
-    "MAX_FAKE_RERUN_GENERATIONS",
+    "MAX_RERUN_GENERATIONS",
     "MAX_REFINEMENT_CHARS",
     "MAX_START_REQUEST_CHARS",
     "ReadinessVerdict",

@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any
 
-from deerflow_deep_research.domain.lifecycle import MAX_FAKE_RERUN_GENERATIONS
+from deerflow_deep_research.domain.lifecycle import MAX_RERUN_GENERATIONS
 
 from .contracts import CurrentRoundDirection, RerunPlan, RerunScope, RerunSource, RunRefinementSource
 
@@ -26,7 +26,7 @@ _VALID_SCOPES = frozenset({"full", "topic", "finding"})
 class FullRerunPolicy:
     """Trusted composition input for the full-rerun generation ceiling."""
 
-    max_rerun_generations: int = MAX_FAKE_RERUN_GENERATIONS
+    max_rerun_generations: int = MAX_RERUN_GENERATIONS
 
     def __post_init__(self) -> None:
         if not isinstance(self.max_rerun_generations, int) or self.max_rerun_generations < 1:
