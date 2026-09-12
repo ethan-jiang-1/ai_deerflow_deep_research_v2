@@ -444,7 +444,7 @@ REG-022: research-graph-lifecycle — Bundle graph checkpoints cross one explici
 REG-023: research-graph-lifecycle — A suspended bundle without a pending human request projects RESUME as its legal next action and resumes from its durable checkpoint under the execution exclusion lease without any fabricated human response, while pending-input and terminal contracts are unchanged
 
 # fixture-source-isolation
-FSI-001: fixture-source-isolation — Deterministic fixture implementations live in deep_research_harness/src_fake/deerflow_deep_research_fixtures, a separate non-production package that production source, wheel, editable runtime, and Docker paths never import or include
+FSI-001: fixture-source-isolation — Deterministic fixture implementations live in deep_research_harness/src_fixtures/deerflow_deep_research_fixtures, a separate non-production package that production source, wheel, editable runtime, and Docker paths never import or include
 FSI-002: fixture-source-isolation — Tests and credential-free demos explicitly compose a complete fixture adapter and gate catalog through the generic injection seam while production assembly never discovers or substitutes fixture adapters
 FSI-003: fixture-source-isolation — Fixture source remains physically separate under the canonical Harness root and cannot become production or Bundle-discovery authority
 

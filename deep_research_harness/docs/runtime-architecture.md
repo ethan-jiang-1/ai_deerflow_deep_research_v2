@@ -14,7 +14,7 @@ runtime and does not import this package. The generated
 semantic edges.
 
 Production node packages expose real factories only. Deterministic fixture adapters live
-in the separate non-production `src_fake/deerflow_deep_research_fixtures/` package and
+in the separate non-production `src_fixtures/deerflow_deep_research_fixtures/` package and
 are excluded from the production wheel, reflected runtime, and Docker source mount. The
 reflected `deep_research` host constructs the all-real recipe and never imports or
 discovers fixture source.
@@ -131,9 +131,9 @@ routes are documented in [local operations](local-operations.md).
 
 Production source lives under `deep_research_harness/src/deerflow_deep_research/`,
 fixture source lives under
-`deep_research_harness/src_fake/deerflow_deep_research_fixtures/`, and tests live under
+`deep_research_harness/src_fixtures/deerflow_deep_research_fixtures/`, and tests live under
 `deep_research_harness/tests/`. Only test processes and fixture demo child commands add
-`src_fake` to their import path. See [`../AGENTS.md`](../AGENTS.md) for ownership
+`src_fixtures` to their import path. See [`../AGENTS.md`](../AGENTS.md) for ownership
 boundaries, the stable node-package shape, development order, and the current structure
 contract.
 

@@ -5,6 +5,7 @@
 ## Purpose
 
 Provide deterministic workflow conformance, live behavioral evaluation, full-real release acceptance, and mechanical regression traceability for Deep Research.
+
 ## Requirements
 
 ### Requirement: Eval corpus framework supports replay-based testing
@@ -97,7 +98,7 @@ claims without executing their process bodies as part of the rapid gate.
 diagnostics that are not active supported-contract evidence. A dedicated CI workflow
 SHALL run the periodic target when a pull request or `master` push changes the declared
 entry-environment dependency surface: `deep_research_harness/Makefile`,
-`pyproject.toml`, `uv.lock`, `run/**`, `scripts/**`, `src/**`, `src_fake/**`,
+`pyproject.toml`, `uv.lock`, `run/**`, `scripts/**`, `src/**`, `src_fixtures/**`,
 `tests/scenarios_periodic/**`, or the periodic workflow definition. It SHALL also run
 daily and by manual dispatch; its result SHALL be visible as a distinct CI job, without
 claiming repository branch-protection configuration. The periodic target SHALL write a

@@ -8,7 +8,7 @@
 "harness" 在这里的三层含义：
 
 1. **运行底座，不持有持久 run 状态。** 持久真相在 Run Bundle 里；删掉 Bundle，Harness 照常工作，那次 run 永久不可用且不会被重建。
-2. **explicit composition（显式组成）。** 每张图都有一份显式 recipe——公开 host 固定 `all_real`，零凭据 demo / 测试用 `fixture`，混合用 `mixed`；生产节点只暴露真实工厂，确定性 fixture 适配器隔离在被排除于产物与运行时的 `src_fake/` 包里。同一张图因此能在零凭据下被驱动。
+2. **explicit composition（显式组成）。** 每张图都有一份显式 recipe——公开 host 固定 `all_real`，零凭据 demo / 测试用 `fixture`，混合用 `mixed`；生产节点只暴露真实工厂，确定性 fixture 适配器隔离在被排除于产物与运行时的 `src_fixtures/` 包里。同一张图因此能在零凭据下被驱动。
 3. **模型提议、代码裁决。** LLM 节点只提出候选；候选、证据、路由由确定性边界（validator / ledger / gate / graph）准入。
 
 DeerFlow 是宿主运行时，**不 import 本包**；它通过反射出的 `deep_research` 工具与公开 controller skill 触达本 Harness。

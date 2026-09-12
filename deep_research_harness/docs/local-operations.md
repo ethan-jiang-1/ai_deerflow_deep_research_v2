@@ -142,7 +142,7 @@ not isolated by a profile.
 
 `make demo`, `make demo-scripted`, and `make demo-tui-fixture` are zero-credential fixture-graph
 routes: no Gateway, config, model credentials, or network are needed. Their Make targets
-add `src_fake` only to the selected child process. The production package and reflected
+add `src_fixtures` only to the selected child process. The production package and reflected
 runtime neither import nor discover that package. These routes execute the fixed fixture recipe;
 they are deterministic composition proof, not product research results.
 

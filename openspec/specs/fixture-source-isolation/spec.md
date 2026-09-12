@@ -8,12 +8,11 @@ package while preserving explicit, reproducible fixture recipes for tests and lo
 
 ## Requirements
 
-
 ### Requirement: Fixture implementation source is physically and package-wise separate
 
 The project SHALL keep production Deep Research source exclusively beneath
 `deep_research_harness/src/deerflow_deep_research/`. Deterministic fixture
-implementations SHALL live beneath `deep_research_harness/src_fake/` in the distinct
+implementations SHALL live beneath `deep_research_harness/src_fixtures/` in the distinct
 top-level Python package `deerflow_deep_research_fixtures`; that package SHALL not
 shadow, extend, or share the production package name. The production distribution,
 editable installation used by the reflected runtime, and Docker source mount SHALL
@@ -80,7 +79,7 @@ SHALL fail before graph compilation and SHALL not select a fallback adapter.
 ### Requirement: Fixture source remains separate under the canonical Harness root
 
 Deterministic fixture implementations SHALL live only beneath
-`deep_research_harness/src_fake/deerflow_deep_research_fixtures/`, distinct from
+`deep_research_harness/src_fixtures/deerflow_deep_research_fixtures/`, distinct from
 production source at `deep_research_harness/src/deerflow_deep_research/`. Production
 wheels, editable runtime, Docker mounts, and Deep Research Bundle discovery SHALL not
 import, include, or treat fixture paths/Bundles as production Run authority. (`FSI-003`)

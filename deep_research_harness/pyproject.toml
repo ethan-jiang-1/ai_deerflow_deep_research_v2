@@ -52,7 +52,7 @@ packages = ["src/deerflow_deep_research"]
 addopts = "-ra"
 asyncio_mode = "auto"
 testpaths = ["tests"]
-pythonpath = [".", "src_fake"]
+pythonpath = [".", "src_fixtures"]
 markers = [
     "periodic: maintained deterministic scenario with intentionally low execution frequency",
     "workflow: temporally ordered real lifecycle, bridge-driven agent loop, or worker submit/gate workflow with external adapters replaced",

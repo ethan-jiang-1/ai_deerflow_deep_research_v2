@@ -5,6 +5,7 @@
 
 ## Purpose
 The canonical downstream package structure, mechanically enforced import directions and node surface, and archive-durable architecture governance.
+
 ## Requirements
 
 ### Requirement: Deep Research Change Guidance, product context, and closeout evidence occupy canonical OpenSpec paths
@@ -151,7 +152,7 @@ compatibility directory, symlink, alias, or second production source tree SHALL 
 rejected.
 
 The one permitted non-production source root SHALL be
-`deep_research_harness/src_fake/deerflow_deep_research_fixtures/`. It SHALL be a
+`deep_research_harness/src_fixtures/deerflow_deep_research_fixtures/`. It SHALL be a
 distinct fixture package, may mirror the logical-node organization needed for
 deterministic adapters alongside its package-level catalog, scenario, routing, and gate
 modules, and SHALL not be included in the production distribution, Gateway editable
@@ -219,7 +220,7 @@ module.
 - **THEN** the resolver and tests remain under `deep_research_harness/`, profile data is only under `profiles/`, and no upstream-owned root, `backend/`, or `frontend/` path is changed
 
 #### Scenario: Registered fixture root is accepted without becoming production source
-- **WHEN** the folder contract finds the registered `src_fake` fixture package
+- **WHEN** the folder contract finds the registered `src_fixtures` fixture package
 - **THEN** it accepts its distinct package name and mirrored fixture layout while confirming that production build and deployment paths exclude it
 
 #### Scenario: Unregistered second production source tree is rejected
@@ -403,6 +404,7 @@ old paths when they do not navigate to or validate the current checkout. (`PRS-0
 - **WHEN** the architecture checker validates the active main spec and generated locator
 - **THEN** both identify `deep_research_harness/` as the downstream root and no active
   structural authority names `deerflow_research/`
+
 ### Requirement: Run-experience contracts use the canonical domain and runtime ownership layers
 
 The existing run-experience domain and runtime contracts SHALL remain under
@@ -554,7 +556,7 @@ direction, and introduce no `backend/` or `frontend/` path. (`PRS-016`)
 The complete tracked downstream Deep Research project SHALL live under
 `deep_research_harness/`. Its production source SHALL remain
 `deep_research_harness/src/deerflow_deep_research/`, its fixture source SHALL remain
-`deep_research_harness/src_fake/deerflow_deep_research_fixtures/`, and its tests SHALL
+`deep_research_harness/src_fixtures/deerflow_deep_research_fixtures/`, and its tests SHALL
 remain under `deep_research_harness/tests/`. The distribution
 `deerflow-deep-research`, Python import `deerflow_deep_research`, ownership layers,
 and public `deep_research` tool SHALL remain unchanged. The structure registry,
@@ -635,7 +637,7 @@ The operator-only scripted-real debug surface SHALL live at the registered canon
 paths: the launcher and its composition at
 `deep_research_harness/scripts/debug_scripted_real_workflow.py`, the non-production
 scenario data modules beneath
-`deep_research_harness/src_fake/deerflow_deep_research_fixtures/scripted_real/`, and
+`deep_research_harness/src_fixtures/deerflow_deep_research_fixtures/scripted_real/`, and
 its deterministic contract evidence beneath `deep_research_harness/tests/`. The
 fixture scenario modules SHALL import only the standard library and the existing
 registered production contracts, never the production runtime composition authority;

@@ -19,7 +19,7 @@ from deerflow_deep_research.domain.wave1 import Wave1OpenQuestionRef
 from deerflow_deep_research.domain.work_units import AttemptStatus
 from deerflow_deep_research.runtime.checkpoint import build_deep_research_checkpoint_serde
 
-FIXTURE_SOURCE = Path(__file__).resolve().parents[2] / "src_fake"
+FIXTURE_SOURCE = Path(__file__).resolve().parents[2] / "src_fixtures"
 BUNDLE = RunBundleRef(
     bundle_id=BundleId("b_" + "A" * 43),
     scope_bucket="s_" + "B" * 43,

@@ -23,7 +23,7 @@ Three properties make this a harness rather than a plain application:
   implementation composition, not provider success, evidence acceptance, or report
   quality. Production node packages expose real factories only; deterministic fixture
   adapters live in the separate non-production
-  `src_fake/deerflow_deep_research_fixtures/` package, excluded from the production wheel
+  `src_fixtures/deerflow_deep_research_fixtures/` package, excluded from the production wheel
   and reflected runtime. The same graph can therefore be exercised with zero credentials.
 - **Models propose, code disposes.** Candidate work, evidence, and routes are admitted
   only by deterministic owners: validators, the evidence ledger, gates, and the graph.

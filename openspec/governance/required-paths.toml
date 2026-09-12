@@ -45,8 +45,8 @@ files = [
   "deep_research_harness/src/deerflow_deep_research/runtime/startup_snapshot.py",
   "deep_research_harness/src/deerflow_deep_research/runtime/work_unit_storage_probe.py",
   "deep_research_harness/src/deerflow_deep_research/runtime/work_unit_store.py",
-  "deep_research_harness/src_fake/deerflow_deep_research_fixtures/__init__.py",
-  "deep_research_harness/src_fake/deerflow_deep_research_fixtures/catalog.py",
+  "deep_research_harness/src_fixtures/deerflow_deep_research_fixtures/__init__.py",
+  "deep_research_harness/src_fixtures/deerflow_deep_research_fixtures/catalog.py",
   "deep_research_harness/tests/contract/test_soft_bundle_cli.py",
   "deep_research_harness/uv.lock",
 ]
@@ -64,7 +64,7 @@ directories = [
   "deep_research_harness/src/deerflow_deep_research/graph",
   "deep_research_harness/src/deerflow_deep_research/resources",
   "deep_research_harness/src/deerflow_deep_research/runtime",
-  "deep_research_harness/src_fake/deerflow_deep_research_fixtures",
+  "deep_research_harness/src_fixtures/deerflow_deep_research_fixtures",
   "deep_research_harness/tests/contract",
   "deep_research_harness/tests/fixtures",
   "deep_research_harness/tests/graph",
@@ -331,13 +331,13 @@ files = [
 [paths.PRS-019]
 files = [
   "deep_research_harness/scripts/debug_scripted_real_workflow.py",
-  "deep_research_harness/src_fake/deerflow_deep_research_fixtures/scripted_real/__init__.py",
-  "deep_research_harness/src_fake/deerflow_deep_research_fixtures/scripted_real/baseline.py",
+  "deep_research_harness/src_fixtures/deerflow_deep_research_fixtures/scripted_real/__init__.py",
+  "deep_research_harness/src_fixtures/deerflow_deep_research_fixtures/scripted_real/baseline.py",
   "deep_research_harness/tests/contract/test_scripted_real_debug_command.py",
   "deep_research_harness/tests/integration/test_scripted_real_workflow_debug.py",
 ]
 directories = [
-  "deep_research_harness/src_fake/deerflow_deep_research_fixtures/scripted_real",
+  "deep_research_harness/src_fixtures/deerflow_deep_research_fixtures/scripted_real",
 ]
 
 [paths.PRS-020]

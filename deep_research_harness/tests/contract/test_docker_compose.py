@@ -80,8 +80,8 @@ def test_override_keeps_canonical_mount_target_and_gateway_pythonpath_together()
 
 def test_override_excludes_fixture_source_from_mount_and_launch_path() -> None:
     gateway = _load(OVERRIDE)["services"]["gateway"]
-    assert all("src_fake" not in volume for volume in gateway["volumes"])
-    assert "src_fake" not in _gateway_command({"services": {"gateway": gateway}})
+    assert all("src_fixtures" not in volume for volume in gateway["volumes"])
+    assert "src_fixtures" not in _gateway_command({"services": {"gateway": gateway}})
 
 
 def test_override_preserves_upstream_uvicorn_invocation() -> None:

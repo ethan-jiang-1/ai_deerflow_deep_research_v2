@@ -17,7 +17,7 @@ EXPECTED_PATHS = (
     '      - "deep_research_harness/run/**"',
     '      - "deep_research_harness/scripts/**"',
     '      - "deep_research_harness/src/**"',
-    '      - "deep_research_harness/src_fake/**"',
+    '      - "deep_research_harness/src_fixtures/**"',
     '      - "deep_research_harness/tests/scenarios_periodic/**"',
     '      - ".github/workflows/agent-entry-environment-regression.yml"',
 )

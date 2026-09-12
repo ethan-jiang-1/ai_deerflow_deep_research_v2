@@ -114,7 +114,7 @@ architecture checker.
 Exact inventory: the structure registry declared by the owning `project-structure` spec.
 
 - Source root: `deep_research_harness/src/deerflow_deep_research/`
-- Fixture source root: `deep_research_harness/src_fake/deerflow_deep_research_fixtures/`
+- Fixture source root: `deep_research_harness/src_fixtures/deerflow_deep_research_fixtures/`
 - Test root: `deep_research_harness/tests/`
 - Ownership layers: `runtime`, `domain`, `engine`, `agents`, `graph`
 - Node grammar: `deep_research_harness/src/deerflow_deep_research/graph/nodes/` packages export `NODE_SPEC`; see the registry for files

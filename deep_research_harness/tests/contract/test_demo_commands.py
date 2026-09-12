@@ -13,8 +13,8 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 AGENT_ROOT = REPO_ROOT / "deep_research_harness"
 MAKEFILE = AGENT_ROOT / "Makefile"
 REAL_RESEARCH_LAUNCHER = AGENT_ROOT / "run" / "real-research.sh"
-FIXTURE_PYTHONPATH = "PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH}"
-DRY_RUN_FIXTURE_PYTHONPATH = "PYTHONPATH=src_fake${PYTHONPATH:+:$PYTHONPATH}"
+FIXTURE_PYTHONPATH = "PYTHONPATH=src_fixtures$${PYTHONPATH:+:$$PYTHONPATH}"
+DRY_RUN_FIXTURE_PYTHONPATH = "PYTHONPATH=src_fixtures${PYTHONPATH:+:$PYTHONPATH}"
 
 
 def _target_body(makefile: str, target: str) -> str:
@@ -138,7 +138,7 @@ def test_make_commands_scope_fixture_source_to_fixture_children() -> None:
     }
     for target, script in real_targets.items():
         command = _dry_run_command(target, script)
-        assert "src_fake" not in command
+        assert "src_fixtures" not in command
         assert "PYTHONDONTWRITEBYTECODE=1 env -u VIRTUAL_ENV UV_NO_CACHE=1 uv run --locked --no-sync" in command
 
 

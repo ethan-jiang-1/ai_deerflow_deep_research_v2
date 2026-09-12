@@ -65,15 +65,15 @@ verify: lock-check lint test-assets test-fast test-integration test-workflow
 # Fixed fixture-graph lifecycle demo. Zero API, no Gateway, config.yaml,
 # model credentials, network access, or TUI installation needed.
 demo: entry-preflight
-	PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) --extra operations python scripts/demo.py $(DEMO_ARGS)
+	PYTHONPATH=src_fixtures$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) --extra operations python scripts/demo.py $(DEMO_ARGS)
 
 # Non-interactive equivalent used by CI and quick smoke checks.
 demo-scripted: entry-preflight
-	PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) --extra operations python scripts/demo.py --scripted $(DEMO_ARGS)
+	PYTHONPATH=src_fixtures$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) --extra operations python scripts/demo.py --scripted $(DEMO_ARGS)
 
 # Explicit deterministic graph-composition verification.
 demo-fixture-graph: entry-preflight
-	PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) --extra operations python scripts/demo_fixture_graph.py $(DEMO_ARGS)
+	PYTHONPATH=src_fixtures$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) --extra operations python scripts/demo_fixture_graph.py $(DEMO_ARGS)
 
 # Default real CLI: selected local Gateway observer. The launched profile owns provider credentials.
 demo-real: entry-preflight
@@ -103,7 +103,7 @@ demo-tui-embedded-smoke: entry-preflight
 
 # Credential-free Textual fixture-graph route using the same lifecycle presentation shell.
 demo-tui-fixture: entry-preflight
-	PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) --extra operations --extra demo-tui python scripts/demo_tui.py --fixture $(DEMO_ARGS)
+	PYTHONPATH=src_fixtures$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) --extra operations --extra demo-tui python scripts/demo_tui.py --fixture $(DEMO_ARGS)
 
 # 010 auto TUI: embedded real graph that answers HITL1/HITL2 by graph-owned
 # policy (scripted start, default product path). The human watches and never
@@ -112,34 +112,34 @@ demo-tui-real-auto: entry-preflight
 	$(ENTRY_RUN) $(LOCAL_ENV_ARG) --extra operations --extra demo-real --extra demo-tui python scripts/demo_tui.py --embedded-smoke --auto $(DEMO_ARGS)
 
 demo-sessions: entry-preflight
-	PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) --extra operations python scripts/demo_sessions.py $(DEMO_ARGS)
+	PYTHONPATH=src_fixtures$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) --extra operations python scripts/demo_sessions.py $(DEMO_ARGS)
 
 # Operator-only soft bundle CLI. It is a stateless root handle over existing demo
 # and session entry points; never a product lifecycle surface.
 soft-bundle: entry-preflight
-	PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) python scripts/soft_bundle.py $(DEMO_ARGS)
+	PYTHONPATH=src_fixtures$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) python scripts/soft_bundle.py $(DEMO_ARGS)
 
 # Read-only demo workspace inventory (bundles, lifecycle status, sizes; operator
 # view, not a lifecycle authority; DPL-014).
 demo-workspace-report: entry-preflight
-	PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) python scripts/soft_bundle.py workspace-report
+	PYTHONPATH=src_fixtures$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) python scripts/soft_bundle.py workspace-report
 
 # Guarded demo workspace cleanup: dry-run by default; CONFIRM=1 deletes only
 # terminal bundles (never non-terminal/resumable ones); `DEMO_ARGS="--logs"`
 # also cleans the logs subtree under the same confirmation gate.
 demo-clean: entry-preflight
-	PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) python scripts/soft_bundle.py workspace-clean $(DEMO_ARGS)
+	PYTHONPATH=src_fixtures$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) python scripts/soft_bundle.py workspace-clean $(DEMO_ARGS)
 
 # Fixed-profile local operator surface. It is not Gateway, Web, upstream Terminal
 # Workbench, or a generic recovery client, and accepts no profile/path authority.
 session-workbench: entry-preflight
-	PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) --extra operations --extra demo-tui python scripts/session_workbench.py $(DEMO_ARGS)
+	PYTHONPATH=src_fixtures$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) --extra operations --extra demo-tui python scripts/session_workbench.py $(DEMO_ARGS)
 
 # Operator-only scripted-real workflow debug: real production adapters, gates,
 # ledger, and persistence with a scripted model and scripted web tools. Zero
 # .env, zero network, zero credentials, under 10 seconds. Not a demo-real mode.
 debug-scripted-real-workflow: entry-preflight
-	PYTHONPATH=src_fake$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) --extra operations python scripts/debug_scripted_real_workflow.py $(DEMO_ARGS)
+	PYTHONPATH=src_fixtures$${PYTHONPATH:+:$$PYTHONPATH} $(ENTRY_RUN) --extra operations python scripts/debug_scripted_real_workflow.py $(DEMO_ARGS)
 
 lock-check:
 	uv lock --check

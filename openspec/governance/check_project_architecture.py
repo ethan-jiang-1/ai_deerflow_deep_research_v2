@@ -229,9 +229,9 @@ def load_manifest(root: Path) -> StructureManifest:
             raise ContractViolation("manifest.schema", "fixture root must use the registered distinct package name")
         if fixture_root == source_root:
             raise ContractViolation("manifest.schema", "fixture root must differ from production source root")
-        expected_fixture_root = source_root.parent.parent / "src_fake" / fixture_package
+        expected_fixture_root = source_root.parent.parent / "src_fixtures" / fixture_package
         if fixture_root != expected_fixture_root:
-            raise ContractViolation("manifest.schema", "fixture root must use the registered src_fake location")
+            raise ContractViolation("manifest.schema", "fixture root must use the registered src_fixtures location")
 
         fixture_imports = _expect_mapping(fixture_imports_raw, "fixture_imports")
         fixture_production_contracts = _expect_string_list(

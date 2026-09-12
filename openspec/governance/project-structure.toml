@@ -13,7 +13,7 @@ end_marker = "<!-- END GENERATED: PROJECT-STRUCTURE -->"
 
 [package]
 source_root = "deep_research_harness/src/deerflow_deep_research"
-fixture_root = "deep_research_harness/src_fake/deerflow_deep_research_fixtures"
+fixture_root = "deep_research_harness/src_fixtures/deerflow_deep_research_fixtures"
 fixture_package = "deerflow_deep_research_fixtures"
 test_root = "deep_research_harness/tests"
 ownership_layers = ["runtime", "domain", "engine", "agents", "graph"]

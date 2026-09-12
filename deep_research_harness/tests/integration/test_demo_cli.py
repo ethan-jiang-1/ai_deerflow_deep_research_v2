@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 
 AGENT_ROOT = Path(__file__).resolve().parents[2]
-FIXTURE_SOURCE = AGENT_ROOT / "src_fake"
+FIXTURE_SOURCE = AGENT_ROOT / "src_fixtures"
 
 
 def _fixture_environment() -> dict[str, str]:

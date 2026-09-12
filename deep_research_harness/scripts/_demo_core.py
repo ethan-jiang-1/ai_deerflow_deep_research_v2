@@ -754,7 +754,7 @@ def build_fixture_demo_recipe(
 ) -> ResearchGraphRecipe:
     """Load the deterministic fixture catalog for a fixture demo composition root.
 
-    The caller must have enabled ``src_fake`` for its child process.  Keeping this
+    The caller must have enabled ``src_fixtures`` for its child process.  Keeping this
     import local prevents real demo paths from discovering fixture source.
     ``node_context_recorder_holder`` optionally carries the local-debugger
     context recorder; the workbench sets it after the session bundle exists and
