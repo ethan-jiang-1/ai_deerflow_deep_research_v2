@@ -1,6 +1,6 @@
 # _done — 已完成/暂停的归档记录
 
-> 最后更新: 2026-09-12（关闭逗留 plan，CLS-059；补登 CLS-058） | `_backlog/_done/` — 已完成内容与明确暂停项的归档根目录。
+> 最后更新: 2026-09-12（关闭逗留 plan CLS-059；补登 CLS-058；登记 5 条漏网 follow-up） | `_backlog/_done/` — 已完成内容与明确暂停项的归档根目录。
 > **`_done/` = 归档工作件，coding agent 默认忽略，除非显式点名要读**（`_` 前缀的两类语义见 [`../README.md`](../README.md)）。
 >
 > 状态总览和查阅指南在本文件。活跃工作的 PENDING 表、依赖链、执行顺序 → 见 [`../todos/README.md`](../todos/README.md)。
@@ -34,7 +34,7 @@ _done/
 | 归档目录 | 数量 | 重启方式 |
 |---------|------|---------|
 | `_suspended_bugs/` | 0 | 确认修复后移回活跃 bug 流程 |
-| `_suspended_plans/` | 6 | — |
+| `_suspended_plans/` | 12 | — |
 
 _Closed plan count follows the indexed CLS records; each future move increments the count and Next ID together._
 
