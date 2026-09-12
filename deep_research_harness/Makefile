@@ -158,7 +158,7 @@ test:
 test-fast:
 	mkdir -p .reports
 	uv run $(PYTEST) $(PYTEST_XDIST) \
-		tests/assets tests/contract tests/domain tests/engine tests/unit tests/graph tests/eval \
+		tests/contract tests/domain tests/engine tests/unit tests/graph tests/eval \
 		-m "not (requires_llm or release_e2e or periodic or workflow)" \
 		--durations=20 --junitxml=.reports/test-fast.xml
 

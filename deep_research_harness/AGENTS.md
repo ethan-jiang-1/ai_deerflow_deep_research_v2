@@ -83,6 +83,7 @@ cognition is not causal. Do not invent a capability, prompt, or repair loop.
 | Local commands and profiles | [`docs/local-operations.md`](docs/local-operations.md) |
 | Local demo ladder / operator runbooks (001–004 / 010 / 020 / 030 / 031) | [`docs/runbooks/README.md`](docs/runbooks/README.md) |
 | Testing and evaluation | [`docs/testing-and-evaluation.md`](docs/testing-and-evaluation.md) |
+| Test-owned evidence/inventory support library (not tests) | [`tests/assets/README.md`](tests/assets/README.md) |
 | Commands and targets | [`Makefile`](Makefile) |
 
 ## Boundaries

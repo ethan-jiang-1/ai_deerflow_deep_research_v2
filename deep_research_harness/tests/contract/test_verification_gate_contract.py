@@ -28,7 +28,7 @@ def test_makefile_exposes_exact_non_mutating_verify_composition() -> None:
     assert ("verify: lock-check lint test-assets test-fast test-integration test-workflow") in text
     assert not re.search(r"^verify:\n\t", text, re.MULTILINE)
     assert "test-entry-environment-regression" not in re.search(r"^verify:.*$", text, re.MULTILINE).group(0)
-    assert ("\t\ttests/assets tests/contract tests/domain tests/engine tests/unit tests/graph tests/eval \\\n") in text
+    assert ("\t\ttests/contract tests/domain tests/engine tests/unit tests/graph tests/eval \\\n") in text
     assert "--durations=20 --junitxml=.reports/test-fast.xml" in text
     assert "PYTEST := python -m pytest" in text
     # Gate lanes default to parallel (-n 4; L2 parallel-safety review complete,

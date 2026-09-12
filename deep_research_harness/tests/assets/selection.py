@@ -5,7 +5,6 @@
 
 DETERMINISTIC_EXCLUDE = "requires_llm or release_e2e or periodic"
 FAST_PATHS = (
-    "tests/assets",
     "tests/contract",
     "tests/domain",
     "tests/engine",

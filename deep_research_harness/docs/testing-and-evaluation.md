@@ -23,7 +23,7 @@ pytest targets run plain `uv run pytest` without `--extra` flags.
 | Format and lint | `make format`, `make lint` |
 | Complete deterministic gate | `UV_OFFLINE=1 make verify` |
 | Pytest-only union of deterministic selections | `make test` |
-| Fast asset/contract/domain/engine/unit/graph/evaluation selection | `make test-fast` |
+| Fast contract/domain/engine/unit/graph/evaluation selection | `make test-fast` |
 | HITL profile parsing and lifecycle slice | `make test-intake` |
 | Retained-summary/event-journal slice | `make test-retained-observation` |
 | Ledger and work-unit controller slice | `make test-work-unit` |
@@ -49,7 +49,7 @@ Top-level test directories under `deep_research_harness/tests/`:
 | `unit/` | Deterministic unit-style contracts for a single module or seam. Not import-isolated: some files reuse scenario/asset helpers. |
 | `domain/`, `engine/`, `graph/` | Deterministic contracts for the named layer (domain models, engine gates/kernels, graph composition/routing). |
 | `contract/` | Cross-cutting governance and meta contracts (lane selection, verification gate, structure, evidence, documentation integrity). |
-| `assets/` | Test-owned data plus validators (incidents, evidence claims, node conformance, lane expressions); not pytest fixtures. |
+| `assets/` | Test-owned support library: data plus validators (incidents, evidence claims, node conformance, lane expressions) imported by tests and `make test-assets`; contains no collected test and no pytest fixtures. |
 | `fixtures/` | Shared **helper modules** (scenario recipes, scripted tools, fake models); despite the name it contains no `@pytest.fixture` declarations. |
 | `scenarios/` | Reusable scenario manifests (stable id, risk, entrypoint, expected outcome). |
 | `scenarios_periodic/` | Scheduled periodic workflow evidence, excluded from the fast/integration lanes. |
