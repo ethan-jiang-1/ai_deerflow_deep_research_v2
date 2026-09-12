@@ -53,7 +53,6 @@ BACKLOG_ROOT = Path("_backlog")
 BACKLOG_UNDERSCORE_DIRS: tuple[str, ...] = (
     "_done",
     "_learning",
-    "_local_demo",
     "_reference",
 )
 ENTRY_DOCS: tuple[str, ...] = (

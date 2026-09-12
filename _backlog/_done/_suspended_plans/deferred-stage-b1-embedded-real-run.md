@@ -1,7 +1,7 @@
 # TODO: Stage B1 embedded real TUI run (Mode 020)
 
 > 状态: 暂停（外部阻塞） | 优先级: 中 | 更新: 2026-09-12
-> 上游: `_backlog/_local_demo/handoff-020-tui-manual.md` | 下游: 无
+> 上游: `_backlog/_done/_closed_plans/tui-workflow-debugger/handoff-020-tui-manual.md` | 下游: 无
 
 ## Why
 
@@ -34,4 +34,5 @@ BUG-060、`add-demo-tui-auto-entry` 修 BUG-061）已归档；B1 三次尝试全
 
 无（暂停）。重启条件：网络恢复且用户授权重跑；参考
 [`runbook-020`](../../../deep_research_harness/docs/runbooks/runbook-020-tui-manual.md)
-与 `_local_demo/handoff-020-tui-manual.md`。
+与战役归档 [`handoff-020`](../_closed_plans/tui-workflow-debugger/handoff-020-tui-manual.md)
+（同目录含 `verify_b1_pass.py` 机械判据脚本）。
