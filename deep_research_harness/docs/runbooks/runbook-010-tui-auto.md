@@ -30,7 +30,7 @@ non_goals:
 > **一键启动**：Finder 双击仓库根的 **`RUN-010.command`**（或终端里
 > `bash RUN-010.command`）——起 TUI、自动提交固定问题、自动跑完，你只看。
 >
-> **010 是什么**：`_backlog/_local_demo` 前四格（001-004）是 CLI 全自动；
+> **010 是什么**：`docs/runbooks/` 前四格（001-004）是 CLI 全自动；
 > 010 是 **TUI 一层的自动全跑**——入口 `make demo-tui-real-auto`
 > （= `demo_tui.py --embedded-smoke --auto`）起本地全真实图（真实模型 +
 > 真实 Tavily），preflight 通过后自动派发

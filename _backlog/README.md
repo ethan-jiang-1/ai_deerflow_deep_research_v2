@@ -5,7 +5,15 @@
 >
 > **本文件是 `_backlog` 的规矩手册。** 搬迁流程在下面定死，今后大家都遵循这里头定的规矩。
 >
-> **命名约定：`_` 前缀目录 = 已结束的目录。** `_done/`、`_fixed_bugs/`、`_learning/`、`_reference/`、`_suspended_*` 等 `_` 开头的子目录代表已归档、已完成、长期留存或明确暂停——**coding agent 默认忽略，除非显式点名要读**。活跃工作件在无前缀目录（`bugs/`、`todos/`、`plans/`）。2026-08-18 起 `learning/` 更名 `_learning/`（长期留存 retro 归入 `_` 前缀，不再是无前缀的"活跃"目录）。
+> **命名约定：`_` 前缀 = "不在活跃工作件队列里"，分两个诚实类别，别混：**
+>
+> 1. **归档工作件**（会关闭；coding agent 默认忽略，除非点名）：`_done/`
+>    （含 `_fixed_bugs/`、`_done_todos/`、`_closed_plans/`、`_suspended_bugs/`、`_suspended_plans/`）。
+> 2. **留存参考 / 证据**（不参与工作件搬迁；agent 按任务按需读，**不**默认忽略）：
+>    `_learning/`（复盘 retro）、`_reference/`（外部系统分析）、`_local_demo/`
+>    （本地 demo 战役的冻结证据；活 runbook 已迁至 `deep_research_harness/docs/runbooks/`）。
+>
+> 活跃工作件在无前缀目录（`bugs/`、`todos/`、`plans/`）。**`_` 只表示"不在活跃队列"，不表示"禁止读"**——读不读由任务决定。`check_doc_hygiene.py` 校验：磁盘上任何 `_` 目录必须在此声明，且每个声明名必须出现在本文件中。
 
 ## 这个仓库是什么
 
@@ -17,18 +25,21 @@
 _backlog/
 ├── README.md                          # 本文件（规矩手册 + 索引）
 │
-├── _done/                             # ✅ 已完成/已归档
+├── _done/                             # ✅ 归档工作件（会关闭；默认忽略）
 │   ├── README.md                      #   状态总览、快速查阅指南
 │   ├── _fixed_bugs/                   #   已修复 Bug（编号权威源）
 │   ├── _done_todos/                   #   已完成 TODO（DONE-NNN）
 │   ├── _closed_plans/                 #   已完成 Plan（CLS-NNN）
-│   └── _suspended_bugs/                #   悬挂 Bug（暂未确认修复）
+│   ├── _suspended_bugs/               #   悬挂 Bug（暂未确认修复）
+│   └── _suspended_plans/              #   明确暂停、保留重启条件
 │
 ├── bugs/                              # 🐛 活跃 bug → 修完移入 _done/_fixed_bugs/
 ├── todos/                            # 📋 活跃 todo → 做完移入 _done/_done_todos/
 ├── plans/                            # 📐 活跃 plan → 完成移入 _done/_closed_plans/
-├── _reference/                       # 📚 外部系统分析资料（消化后产出 plan）
-└── _learning/                        # 📖 apply/研究复盘 retro（长期留存，只增不删）
+│
+├── _learning/                        # 📖 留存：apply/研究复盘 retro（只增不删，agent 按需读）
+├── _reference/                       # 📚 留存：外部系统分析资料（消化后产出 plan）
+└── _local_demo/                      # 🗄 留存：本地 demo 战役冻结证据（活 runbook 在 docs/runbooks/）
 ```
 
 ---

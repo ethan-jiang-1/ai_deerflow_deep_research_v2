@@ -1,18 +1,38 @@
 # DeerFlow Deep Research Harness
 
-This independent Python project contains the downstream Deep Research Harness for
-DeerFlow 2.1. The Harness creates and controls independently deletable Run Bundles;
-each Bundle's local Research State, evidence, and content are the durable record for
-one continuing Deep Research run. Its controller is a nested Python `StateGraph`, and
-bounded agent loops execute inside graph nodes. DeerFlow remains the host runtime and
-does not import this package.
+This independent Python project is the downstream **Deep Research Harness** for DeerFlow
+2.1. It is a *runtime harness*, not a single question-to-report pipeline: it is the stable
+execution and control environment that creates, drives, and disposes of research runs.
 
-Production node packages expose real factories only. Deterministic fixture adapters live in
-the separate `src_fake/deerflow_deep_research_fixtures/` package, which is excluded from the
-production wheel and reflected runtime. Every graph receives an explicit recipe: the public
-host is fixed to `all_real`, an explicitly composed fixture demo or test recipe reports
-`fixture`, and an explicitly composed test mix reports `mixed`. These labels identify implementation composition,
-not provider success, evidence acceptance, or report quality.
+The Harness owns the lifecycle boundary for one continuing research run and gives each run
+an independently deletable **Run Bundle** — the durable record of that run's Research
+State, evidence, content, and Run Event Journal. The Harness itself owns no durable run
+state: delete a Bundle and the Harness keeps working, while that run becomes permanently
+unavailable and is never recreated. Its controller is a nested Python `StateGraph`, and
+bounded agent loops execute inside graph nodes as two-part programs: a Node Cognitive
+Control Program (what a model may think and propose) behind a Deterministic Control
+Boundary (what code admits and routes). DeerFlow remains the host runtime and does not
+import this package; the reflected `deep_research` tool and the public controller skill
+are how DeerFlow reaches the Harness.
+
+Three properties make this a harness rather than a plain application:
+
+- **Explicit composition.** Every graph receives an explicit recipe: the public host is
+  fixed to `all_real`, an explicitly composed fixture demo or test recipe reports
+  `fixture`, and an explicitly composed test mix reports `mixed`. These labels identify
+  implementation composition, not provider success, evidence acceptance, or report
+  quality. Production node packages expose real factories only; deterministic fixture
+  adapters live in the separate non-production
+  `src_fake/deerflow_deep_research_fixtures/` package, excluded from the production wheel
+  and reflected runtime. The same graph can therefore be exercised with zero credentials.
+- **Models propose, code disposes.** Candidate work, evidence, and routes are admitted
+  only by deterministic owners: validators, the evidence ledger, gates, and the graph.
+- **Disposable runs, inspectable bundles.** Run Discovery reads Bundle directories only;
+  no registry, cache, or diagnostic can establish, authorize, or recover a run.
+
+See [runtime architecture](docs/runtime-architecture.md) and the
+[run lifecycle walkthrough](docs/run-lifecycle-walkthrough.md) for authority boundaries
+and the end-to-end vocabulary.
 
 ## Entry Surfaces
 
@@ -36,6 +56,7 @@ specification, implementation, and test seam selected by its focus gate.
 | Choose one human-facing reference | [Documentation index](docs/README.md) |
 | Understand Harness, Run Bundle, graph, evidence, sandbox, or public-control boundaries | [Runtime architecture](docs/runtime-architecture.md) |
 | Run profiles, demos, diagnostics, retained observations, workflow outcomes, or the workbench | [Local operations](docs/local-operations.md) |
+| Run the local demo ladder end to end (001–004 / 010 / 020 / 030 / 031) | [Local runbooks](docs/runbooks/README.md) |
 | Select and interpret deterministic, workflow-outcome, live, or release testing | [Testing and evaluation](docs/testing-and-evaluation.md) |
 | Run or interpret a manually selected Cognitive Evaluation case | [Cognitive Evaluation Suite](docs/cognitive-evaluation-suite.md) |
 | Inspect the generated graph topology | [Logical topology](docs/deep-research-topology.md) |

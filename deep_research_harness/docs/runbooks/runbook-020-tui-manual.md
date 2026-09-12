@@ -32,7 +32,7 @@ non_goals:
 > `bash RUN-020.command`）——直接进真实交互、显示应答脚本提示卡、在眼前
 > 的终端窗口起 TUI，退出后按 exact-bundle 绑定规则展示证据位置。
 >
-> **020 是什么**：`_backlog/_local_demo` 前四格全是 CLI 全自动；020 换轴——
+> **020 是什么**：`docs/runbooks/` 前四格全是 CLI 全自动；020 换轴——
 > **真人坐在 TUI 里做 HITL1 决策**。入口 `make demo-tui-embedded-smoke`
 > 起本地全真实图（真实模型 + 真实 Tavily），问题由 composer 输入，hitl1
 > 提 profile proposal、你用自由文本修订（真实模型 semantic intake 分类你的

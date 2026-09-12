@@ -81,6 +81,7 @@ cognition is not causal. Do not invent a capability, prompt, or repair loop.
 | Product use, setup, demo, or operator journey | [`README.md`](README.md) |
 | Runtime and authority boundaries | [`docs/runtime-architecture.md`](docs/runtime-architecture.md) |
 | Local commands and profiles | [`docs/local-operations.md`](docs/local-operations.md) |
+| Local demo ladder / operator runbooks (001–004 / 010 / 020 / 030 / 031) | [`docs/runbooks/README.md`](docs/runbooks/README.md) |
 | Testing and evaluation | [`docs/testing-and-evaluation.md`](docs/testing-and-evaluation.md) |
 | Commands and targets | [`Makefile`](Makefile) |
 

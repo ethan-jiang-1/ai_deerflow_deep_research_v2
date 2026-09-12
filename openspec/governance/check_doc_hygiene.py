@@ -3,7 +3,7 @@
 
 @impl PRS-020
 
-Four mechanically checkable doc-layer rules:
+Four mechanical doc-layer rules plus one backlog navigation rule:
 
 1. ADR index <-> directory consistency: every ``NNNN-*.md`` in
    ``deep_research_harness/docs/adr/`` (excluding ``README.md``) is listed in the
@@ -17,12 +17,17 @@ Four mechanically checkable doc-layer rules:
    ``deep_research_harness/docs/`` is registered in ``DOC_LAYER_DOCS``, so coverage
    cannot silently shrink when new documents are added. Registered but absent
    documents are reported by rules 2 and 3 instead.
+5. Backlog ``_`` convention: every ``_``-prefixed directory that exists under
+   ``_backlog/`` is declared in ``BACKLOG_UNDERSCORE_DIRS``, every declared
+   directory exists, and each declared name is documented in ``_backlog/README.md``.
+   This keeps the ``_`` prefix meaning "retained collection, not the active work
+   queue" instead of drifting back into "actively edited but hidden".
 
 A docs-layer document is a Markdown document under ``deep_research_harness/docs/``
-— the top-level ``docs/*.md`` documents and the ``docs/adr/*.md`` decision
-records. Non-Markdown files under that tree are out of scope. The scope is an
-explicit enumeration: adding a docs document without registering it here turns
-rule 4 red on the next run.
+— the top-level ``docs/*.md`` documents, the ``docs/runbooks/*.md`` operator
+runbooks, and the ``docs/adr/*.md`` decision records. Non-Markdown files under
+that tree are out of scope. The scope is an explicit enumeration: adding a docs
+document without registering it here turns rule 4 red on the next run.
 
 This checker is self-contained and standalone: it is NOT aggregated into
 ``check_project_gate.py`` (PRS-009 owns the six-component closeout) and is NOT
@@ -40,12 +45,24 @@ from pathlib import Path
 ADR_DIR = Path("deep_research_harness/docs/adr")
 DOCS_TREE = Path("deep_research_harness/docs")
 ADR_INDEX = ADR_DIR / "README.md"
+BACKLOG_ROOT = Path("_backlog")
+# `_`-prefixed backlog directories. Each is a retained collection (archived
+# work-items or long-lived reference/evidence), never the active work queue.
+# The checker requires this list, the filesystem, and the backlog README to
+# agree, so a living area cannot hide behind the `_` prefix.
+BACKLOG_UNDERSCORE_DIRS: tuple[str, ...] = (
+    "_done",
+    "_learning",
+    "_local_demo",
+    "_reference",
+)
 ENTRY_DOCS: tuple[str, ...] = (
     "AGENTS.md",
     "deep_research_harness/AGENTS.md",
     "deep_research_harness/CLAUDE.md",
     "deep_research_harness/README.md",
     "deep_research_harness/docs/README.md",
+    "_backlog/README.md",
     "openspec/README.md",
 )
 DOC_LAYER_DOCS: tuple[str, ...] = (
@@ -59,6 +76,16 @@ DOC_LAYER_DOCS: tuple[str, ...] = (
     "deep_research_harness/docs/run-lifecycle-walkthrough.md",
     "deep_research_harness/docs/runtime-architecture.md",
     "deep_research_harness/docs/testing-and-evaluation.md",
+    # docs/runbooks/ operator runbooks and their index.
+    "deep_research_harness/docs/runbooks/README.md",
+    "deep_research_harness/docs/runbooks/runbook-001-easiest-fixture-graph.md",
+    "deep_research_harness/docs/runbooks/runbook-002-easy-scripted-real.md",
+    "deep_research_harness/docs/runbooks/runbook-003-medium-real-auto.md",
+    "deep_research_harness/docs/runbooks/runbook-004-hard-real-auto.md",
+    "deep_research_harness/docs/runbooks/runbook-010-tui-auto.md",
+    "deep_research_harness/docs/runbooks/runbook-020-tui-manual.md",
+    "deep_research_harness/docs/runbooks/runbook-030-debugger.md",
+    "deep_research_harness/docs/runbooks/runbook-031-debugger-embedded.md",
     # docs/adr/ decision records and their index.
     "deep_research_harness/docs/adr/0001-real-smoke-test-completes-a-bounded-research-outcome.md",
     "deep_research_harness/docs/adr/0002-tui-is-the-primary-user-interface.md",
@@ -192,12 +219,47 @@ def _rule_docs_scope(root: Path) -> list[str]:
     return problems
 
 
+def _rule_backlog_underscore(root: Path) -> list[str]:
+    """Retained `_`-prefixed backlog directories must be declared and documented.
+
+    A `_` prefix means "retained collection, not the active work queue". Every
+    `_`-prefixed directory that exists must be declared in
+    ``BACKLOG_UNDERSCORE_DIRS``, every declared directory must exist, and each
+    declared name must appear in ``_backlog/README.md`` so the machine list and
+    the human index cannot drift apart.
+    """
+    backlog = root / BACKLOG_ROOT
+    if not backlog.is_dir():
+        return []
+    problems: list[str] = []
+    declared = set(BACKLOG_UNDERSCORE_DIRS)
+    present = {
+        path.name
+        for path in backlog.iterdir()
+        if path.is_dir() and path.name.startswith("_")
+    }
+    for name in sorted(present - declared):
+        problems.append(f"undeclared _-prefixed backlog directory: {name}")
+    for name in BACKLOG_UNDERSCORE_DIRS:
+        if name not in present:
+            problems.append(f"declared backlog directory missing on disk: {name}")
+    readme = backlog / "README.md"
+    if readme.is_file():
+        text, _ = _read_utf8(readme)
+        if text is not None:
+            for name in BACKLOG_UNDERSCORE_DIRS:
+                if name not in text:
+                    problems.append(f"backlog README does not document retained directory: {name}")
+    return problems
+
+
 def violations(root: Path) -> list[str]:
     found: list[str] = []
     found.extend(_rule_adr_index(root))
     found.extend(_rule_links(root))
     found.extend(_rule_encoding_newline(root))
     found.extend(_rule_docs_scope(root))
+    found.extend(_rule_backlog_underscore(root))
     return found
 
 
@@ -227,6 +289,16 @@ def _self_test() -> list[str]:
             ADR_INDEX.as_posix(),
             "# ADR Index\n\n| 编号 | 一句话 | 生命周期 |\n|---|---|---|\n" + index_rows,
         )
+
+        # Backlog fixture: every declared `_` directory exists and is named in
+        # the backlog README, so the clean fixture satisfies the backlog rule.
+        backlog = base / BACKLOG_ROOT
+        backlog_readme_body = "# T\n\n[self](README.md)\n" + "".join(
+            f"- {name}\n" for name in BACKLOG_UNDERSCORE_DIRS
+        )
+        write_doc((BACKLOG_ROOT / "README.md").as_posix(), backlog_readme_body)
+        for name in BACKLOG_UNDERSCORE_DIRS:
+            (backlog / name).mkdir(parents=True, exist_ok=True)
 
         if violations(base):
             errors.append("self-test: clean fixture must have zero violations")
@@ -278,6 +350,19 @@ def _self_test() -> list[str]:
         write_doc("deep_research_harness/docs/zz-unregistered.md", "# extra\n")
         if not any("zz-unregistered.md" in v for v in _rule_docs_scope(base)):
             errors.append("self-test: unregistered docs-layer markdown not detected")
+
+        # Rule 5 negative: undeclared `_`-prefixed backlog directory.
+        (backlog / "_zz-undeclared").mkdir(parents=True, exist_ok=True)
+        if not any("_zz-undeclared" in v for v in _rule_backlog_underscore(base)):
+            errors.append("self-test: undeclared backlog directory not detected")
+
+        # Rule 5 negative: declared directory absent from the backlog README.
+        write_doc((BACKLOG_ROOT / "README.md").as_posix(), "# T\n\n[self](README.md)\n")
+        if not any(
+            "does not document retained directory" in v
+            for v in _rule_backlog_underscore(base)
+        ):
+            errors.append("self-test: undocumented backlog directory not detected")
 
     return errors
 

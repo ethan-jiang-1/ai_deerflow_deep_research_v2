@@ -1,7 +1,7 @@
 # _done — 已完成/暂停的归档记录
 
 > 最后更新: 2026-08-31（demo-workspace-cleanup 关账，DONE-004） | `_backlog/_done/` — 已完成内容与明确暂停项的归档根目录。
-> **`_` 前缀 = coding agent 默认忽略，除非显式点名要读。**
+> **`_done/` = 归档工作件，coding agent 默认忽略，除非显式点名要读**（`_` 前缀的两类语义见 [`../README.md`](../README.md)）。
 >
 > 状态总览和查阅指南在本文件。活跃工作的 PENDING 表、依赖链、执行顺序 → 见 [`../todos/README.md`](../todos/README.md)。
 

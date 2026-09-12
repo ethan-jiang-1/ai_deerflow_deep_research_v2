@@ -2,6 +2,10 @@
 
 > 类型: 文档补齐 | 创建: 2026-09-02
 > 背景: TUI workflow debugger 战役收口后，`_local_demo/` 尚未反映新的调试工作台入口
+>
+> **迁移注（2026-09）**：本 plan 完成后，`_local_demo/` 的活 runbook 已迁至
+> `deep_research_harness/docs/runbooks/`（`_local_demo/` 现只留冻结战役证据）。
+> 下文对 `_local_demo/` 路径的引用均为当时的推敲记录，按新位置理解。
 
 ## 背景 / 现状
 

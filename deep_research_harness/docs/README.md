@@ -1,6 +1,8 @@
 # Deep Research Documentation
 
-This index routes human readers to one focused reference after the product entry page
+This index routes human readers to one focused reference for the **Deep Research
+Harness** — a runtime harness on DeerFlow that manages independently deletable Run
+Bundles, not a single question-to-report pipeline. It starts after the product entry page
 in [`../README.md`](../README.md). It is not a second product overview, runtime
 authority, or coding-agent guide.
 
@@ -10,6 +12,7 @@ authority, or coding-agent guide.
 | How do I run profiles, demos, diagnostics, retained sessions, and the local workbench? | [Local operations](local-operations.md) |
 | How are deterministic, live, and release tests selected and interpreted? | [Testing and evaluation](testing-and-evaluation.md) |
 | How do I prepare, run, and review a manually selected cognitive case? | [Cognitive Evaluation Suite](cognitive-evaluation-suite.md) |
+| How do I run the local demo ladder end to end (001–004 / 010 / 020 / 030 / 031)? | [Local runbooks](runbooks/README.md) |
 
 ## Related References
 

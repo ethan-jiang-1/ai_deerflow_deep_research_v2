@@ -5,7 +5,7 @@
 > 操作细节的权威是各 runbook 与 [`docs/local-operations.md`](docs/local-operations.md)；
 > 那里变了这里必须同一 PR 跟着改。
 >
-> 最后核对: 2026-08-30（对应当日 Makefile 形态）| 阶梯语义: [`_backlog/_local_demo/README.md`](../_backlog/_local_demo/README.md)
+> 最后核对: 2026-08-30（对应当日 Makefile 形态）| 阶梯语义: [`docs/runbooks/README.md`](docs/runbooks/README.md)
 
 ## 0. 环境准备（一次）
 
@@ -25,16 +25,16 @@
 
 | 想跑什么 | 命令 | 双击入口 | 凭证 | 详细操作单 |
 | --- | --- | --- | --- | --- |
-| 001 图通路 smoke（假数据） | `make soft-bundle DEMO_ARGS="create --name 001-demo --mode 001"` → `… run $ROOT --mode 001` | — | 无 | runbook-001 |
-| 002 scripted 真实链路 | 同上，`--mode 002` | — | 无 | runbook-002 |
-| 003 真实图全自动（minimal 意图） | 同上，`--mode 003` | — | 三要素+网络 | runbook-003 |
-| 004 真实图全自动（默认意图，找茬用） | 同上，`--mode 004` | — | 三要素+网络 | runbook-004 |
-| 010 TUI 自动全跑（真人零操作） | `make demo-tui-real-auto` | `RUN-010.command` | 三要素+网络 | runbook-010 |
-| **020 TUI 手动（真人 HITL1）** | `make demo-tui-embedded-smoke` | `RUN-020.command` | 三要素+网络+真人 | runbook-020 |
+| 001 图通路 smoke（假数据） | `make soft-bundle DEMO_ARGS="create --name 001-demo --mode 001"` → `… run $ROOT --mode 001` | — | 无 | [runbook-001](docs/runbooks/runbook-001-easiest-fixture-graph.md) |
+| 002 scripted 真实链路 | 同上，`--mode 002` | — | 无 | [runbook-002](docs/runbooks/runbook-002-easy-scripted-real.md) |
+| 003 真实图全自动（minimal 意图） | 同上，`--mode 003` | — | 三要素+网络 | [runbook-003](docs/runbooks/runbook-003-medium-real-auto.md) |
+| 004 真实图全自动（默认意图，找茬用） | 同上，`--mode 004` | — | 三要素+网络 | [runbook-004](docs/runbooks/runbook-004-hard-real-auto.md) |
+| 010 TUI 自动全跑（真人零操作） | `make demo-tui-real-auto` | `RUN-010.command` | 三要素+网络 | [runbook-010](docs/runbooks/runbook-010-tui-auto.md) |
+| **020 TUI 手动（真人 HITL1）** | `make demo-tui-embedded-smoke` | `RUN-020.command` | 三要素+网络+真人 | [runbook-020](docs/runbooks/runbook-020-tui-manual.md) |
 | TUI fixture（零凭证预演） | `make demo-tui-fixture` | — | 无 | — |
 | 嵌入式真实图校准（CLI 裸入口） | `make demo-real-embedded-smoke` / `demo-real-scripted` | — | 三要素 | local-operations.md |
 | Gateway 观察路线（CLI/TUI） | 先 `make profile-dev PROFILE=demo`，再 `make demo-real PROFILE=demo` 或 `make demo-tui PROFILE=demo` | — | profile 体系 | local-operations.md |
-| 调试工作台（节点边界 step/continue + 节点上下文检查） | `./run/tui-workflow-debugger.sh`（或 `make tui-debugger`）；`--fixture` 零凭证、`--attach <id>`/`--replay <id>` 经 lifecycle 校验 | — | 无（fixture） | — |
+| 调试工作台（节点边界 step/continue + 节点上下文检查） | `./run/tui-workflow-debugger.sh`（或 `make tui-debugger`）；`--fixture` 零凭证、`--attach <id>`/`--replay <id>` 经 lifecycle 校验 | — | 无（fixture） | [runbook-030](docs/runbooks/runbook-030-debugger.md) / [runbook-031](docs/runbooks/runbook-031-debugger-embedded.md) |
 
 soft-bundle 辅助动词：`inspect` / `phases` / `status` / `verify`（对同一 `$ROOT`）。
 
