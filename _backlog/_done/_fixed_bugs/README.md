@@ -85,8 +85,9 @@ bug 修完后从 `_backlog/bugs/` 通过 `git mv` 移入本目录：
 | BUG-065 | 2026-08-31 | wheel 排除契约测试全树冷缓存并行首跑一次性假红——`uv build` timeout 60s 在满载下不够（负例控制坐实失败通路），提至 300s |
 | BUG-066 | 2026-08-31 | 架构治理检查器干净树即红——`.gitignore` `.uv-cache/` 未同步进 manifest `[ignored_paths]`（sync-structure-registry-ignore-entries） |
 | BUG-067 | 2026-09-02 | 治理 closeout 门干净树即红——scripts 重组在两份 README 留下字面 `openspec/` token（依赖方向字面扫描误报）+ PRS-022 无 `@impl` evidence docstring（随 Cpre closeout 解阻修复，零契约面变更） |
+| BUG-068 | 2026-09-12 | 归档的两条调试 requirement 缺少确定性证据，closeout 门在干净树即红——LDD-005 的 topology guard 无测试，LDO-008 漏标 `@impl`（repair-debug-requirement-evidence） |
 
-**Next available bug ID: BUG-068**
+**Next available bug ID: BUG-069**
 
 ---
 

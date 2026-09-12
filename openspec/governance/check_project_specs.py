@@ -22,6 +22,11 @@
 #      的 > req: 行
 #   6. titleEmbeddedId       — Requirement 标题（### Requirement: ...）内嵌 requirement ID
 #
+# zero-delta opt-out（对齐原生 OpenSpec schema）：行为不变的纯重构/tooling/docs 可在
+# `.openspec.yaml` 设 `skip_specs: true`，此时无 delta spec 合法。标记只有在元数据是
+# 合法扁平映射、声明已知 schema、且 skip_specs 为布尔 true 时才被认可；否则 fail closed。
+# 这不适用于"无标记却零 delta"的 change——那仍然 fail closed。
+#
 # 与原 .mjs 的一处有意改进（面向长期）: 当 openspec/specs/ 下尚无任何 spec.md 时，
 # 原脚本 exit 1（视为错误）。本仓库从空起步，这里改为 exit 0 + 明确提示——"没有 spec
 # 就没有可违反的结构"，避免第一个 change 落地前 `check` 无谓失败。有了 spec 后行为一致。
@@ -41,6 +46,8 @@ ID_SCAN_RE = re.compile(r"[A-Z]{3}-\d{3}")
 REQUIREMENT_TITLE_RE = re.compile(r"^###\s+Requirement:\s+(.+)$", re.IGNORECASE)
 ID_IN_TEXT_RE = re.compile(r"[A-Z]{3}-\d{3}")
 ARCHIVE_PLACEHOLDER_PURPOSE_RE = re.compile(r"^TBD\s*-\s*created by archiving", re.IGNORECASE)
+METADATA_LINE_RE = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)\s*:\s*([^#]*?)\s*(?:#.*)?$")
+KNOWN_SCHEMAS = frozenset({"spec-driven"})
 ACTIVE_TERMINOLOGY_RULES = {
     "numberedChange": re.compile(r"\bchange[- ]?\d+\b", re.IGNORECASE),
     "skeleton": re.compile(r"\bskeleton(?:_state| state)?\b", re.IGNORECASE),
@@ -96,6 +103,50 @@ def _delta_spec_files(change_dir: Path) -> list[Path]:
     return collected
 
 
+def _skip_specs_marker(change_dir: Path) -> tuple[bool, str | None]:
+    """Read the native zero-delta opt-out marker from `.openspec.yaml`.
+
+    Returns ``(honored, invalid_reason)``. The marker is honored only when the
+    metadata is a flat top-level mapping that declares a known schema and sets
+    ``skip_specs`` to boolean ``true``. A missing key is simply "not marked"
+    ``(False, None)``; a present-but-untrustworthy marker is unhonorable and
+    fails closed, mirroring native OpenSpec. This intentionally parses only the
+    flat scalar metadata this repository writes, and rejects nesting rather than
+    guessing.
+    """
+    metadata = change_dir / ".openspec.yaml"
+    if not metadata.is_file():
+        return False, None
+    try:
+        text = metadata.read_text(encoding="utf-8")
+    except (OSError, UnicodeError):
+        return False, "change metadata is unreadable"
+    fields: dict[str, str] = {}
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if line[:1].isspace():
+            return False, "change metadata is not a flat mapping"
+        match = METADATA_LINE_RE.match(stripped)
+        if not match:
+            return False, "change metadata is not a flat mapping"
+        key, value = match.group(1), match.group(2).strip()
+        if key in fields:
+            return False, f"change metadata repeats key '{key}'"
+        fields[key] = value
+    if fields.get("schema") not in KNOWN_SCHEMAS:
+        return False, "change metadata does not declare a known schema"
+    if "skip_specs" not in fields:
+        return False, None
+    value = fields["skip_specs"]
+    if value == "true":
+        return True, None
+    if value == "false":
+        return False, None
+    return False, "skip_specs is not a boolean"
+
+
 def _delta_header_ids(content: str) -> set[str]:
     """Requirement IDs declared on `> req:` lines before the first `##` heading."""
     declared: set[str] = set()
@@ -130,7 +181,9 @@ def validate_selected_change_delta_specs(root: Path, change_name: str) -> tuple[
     Returns (violations, exit_code). Missing or non-active change fails
     closed, and an existing active change with NO delta spec files (or no
     specs/ directory at all) fails closed with `selectedChangeEmpty` — an
-    empty scan must not be reported as a pass.
+    empty scan must not be reported as a pass. A valid `skip_specs: true`
+    zero-delta opt-out is the one exception; an unhonorable marker still fails
+    closed with `selectedChangeSkipSpecsInvalid`.
 
     @impl EVH-005
     @impl PRS-009
@@ -144,6 +197,18 @@ def validate_selected_change_delta_specs(root: Path, change_name: str) -> tuple[
         )
     delta_files = _delta_spec_files(change_dir)
     if not delta_files:
+        honored, invalid = _skip_specs_marker(change_dir)
+        if honored:
+            return [], 0
+        if invalid:
+            return (
+                [{"file": str(change_dir / ".openspec.yaml"), "check": "selectedChangeSkipSpecsInvalid",
+                  "detail": (
+                      f"active change {change_name} has no delta spec files and its "
+                      f"skip_specs marker is unhonorable: {invalid}"
+                  ), "line": None}],
+                1,
+            )
         return (
             [{"file": str(change_dir / "specs"), "check": "selectedChangeEmpty",
               "detail": f"active change {change_name} has no delta spec files (empty scan fails closed)", "line": None}],
@@ -309,6 +374,7 @@ def main() -> int:
             labels = {
                 "selectedChangeMissing": "Selected active change missing",
                 "selectedChangeEmpty": "Selected change has no delta spec files",
+                "selectedChangeSkipSpecsInvalid": "Selected change skip_specs marker is unhonorable",
                 "missingDeltaReqHeader": "Missing > req: header in delta spec",
                 "titleEmbeddedId": "Requirement title embeds a requirement ID",
             }

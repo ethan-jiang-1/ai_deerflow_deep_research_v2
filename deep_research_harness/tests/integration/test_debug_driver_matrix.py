@@ -4,6 +4,7 @@
 @impl LDD-002
 @impl LDD-003
 @impl LDD-004
+@impl LDD-005
 """
 
 from __future__ import annotations
@@ -12,6 +13,7 @@ import secrets
 import time
 from datetime import UTC, datetime
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -24,7 +26,7 @@ from deerflow_deep_research.domain.debug_driving import (
 from deerflow_deep_research.domain.lifecycle import ImplementationMode
 from deerflow_deep_research.runtime.bundle_graph import BundleGraphExecutor
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
-from deerflow_deep_research.runtime.debug_driver import DebugRunDriver
+from deerflow_deep_research.runtime.debug_driver import DebugDriverError, DebugRunDriver
 from deerflow_deep_research.runtime.runtime_adapter import TrustedRuntimeEnvelope
 from deerflow_deep_research.runtime.work_unit_store import WorkUnitStore
 from tests.fixtures.recipes import fixture_recipe
@@ -417,3 +419,39 @@ async def test_drive_until_stops_at_hitl_then_runs_to_terminal(tmp_path: Path) -
     )
     completed = [event for event in journal.events if event.category.value == "node" and event.outcome == "completed"]
     assert len(completed) >= 9
+
+
+@pytest.mark.asyncio
+async def test_topology_guard_fails_closed_on_multi_visit_superstep(tmp_path: Path) -> None:
+    """A superstep projecting two logical visits is refused with a typed failure.
+
+    @impl LDD-005
+    """
+    driver, _lifecycle = _make_driver(tmp_path, owner="op-guard")
+    opened = await driver.open_start(
+        StartRequest(question="Compare storage", mode="step", owner="op-guard", command_id="start-00000001")
+    )
+    assert opened.snapshot is not None
+    bundle_id = opened.snapshot.bundle_id
+    token = opened.snapshot.cursor.token()
+
+    class _MultiVisitGraph:
+        async def aget_state(self, _config):
+            return SimpleNamespace(values={}, next=("bootstrap", "hitl1"))
+
+    class _MultiVisitBuilder:
+        def compile(self, **_kwargs):
+            return _MultiVisitGraph()
+
+    object.__setattr__(driver._executor._recipe, "builder", _MultiVisitBuilder())
+
+    with pytest.raises(DebugDriverError) as excinfo:
+        await driver.execute(
+            DebugCommand(
+                kind="advance_one",
+                bundle_id=bundle_id,
+                command_id="advance-00000001",
+                expected_cursor=token,
+            )
+        )
+    assert str(excinfo.value) == "topology_guard_multi_visit"

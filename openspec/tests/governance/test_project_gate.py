@@ -152,6 +152,55 @@ class SpecsSelectedChangeModeTest(unittest.TestCase):
             self.assertEqual(result.returncode, 1)
             self.assertIn("has no delta spec files", result.stderr)
 
+    def test_delta_less_change_with_skip_specs_true_passes(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = _make_repo(Path(td))
+            change_dir = root / "openspec" / "changes" / "refactor"
+            change_dir.mkdir(parents=True)
+            (change_dir / ".openspec.yaml").write_text(
+                "schema: spec-driven\nskip_specs: true\ncreated: 2026-09-12\n",
+                encoding="utf-8",
+            )
+            result = _run(sys.executable, SPECS_CHECKER, root, "--change", "refactor")
+            self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_delta_less_change_with_skip_specs_false_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = _make_repo(Path(td))
+            change_dir = root / "openspec" / "changes" / "refactor"
+            change_dir.mkdir(parents=True)
+            (change_dir / ".openspec.yaml").write_text(
+                "schema: spec-driven\nskip_specs: false\n",
+                encoding="utf-8",
+            )
+            result = _run(sys.executable, SPECS_CHECKER, root, "--change", "refactor")
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("has no delta spec files", result.stderr)
+
+    def test_delta_less_change_with_non_boolean_skip_specs_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = _make_repo(Path(td))
+            change_dir = root / "openspec" / "changes" / "refactor"
+            change_dir.mkdir(parents=True)
+            (change_dir / ".openspec.yaml").write_text(
+                "schema: spec-driven\nskip_specs: yes\n",
+                encoding="utf-8",
+            )
+            result = _run(sys.executable, SPECS_CHECKER, root, "--change", "refactor")
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("unhonorable", result.stderr)
+            self.assertIn(".openspec.yaml", result.stderr)
+
+    def test_delta_less_change_without_known_schema_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = _make_repo(Path(td))
+            change_dir = root / "openspec" / "changes" / "refactor"
+            change_dir.mkdir(parents=True)
+            (change_dir / ".openspec.yaml").write_text("skip_specs: true\n", encoding="utf-8")
+            result = _run(sys.executable, SPECS_CHECKER, root, "--change", "refactor")
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("unhonorable", result.stderr)
+
     def test_fenced_fake_req_header_does_not_satisfy_req_trace(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = _make_repo(Path(td))

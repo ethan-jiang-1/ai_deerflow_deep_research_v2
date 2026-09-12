@@ -7,6 +7,7 @@
 @impl RER-001
 @impl RER-006
 @impl RER-007
+@impl LDO-008
 """
 
 from __future__ import annotations
@@ -372,3 +373,12 @@ def test_render_hitl1_rejection_surfaces_last_typed_and_formats() -> None:
 
     view_without = demo_tui.render_run_update(rejected)
     assert "你输入的是" not in view_without.detail
+
+
+def test_read_side_tui_trace_spike_is_retired() -> None:
+    """The former read-side spike entry point is gone; typed tests own coverage.
+
+    @impl LDO-008
+    """
+    harness_root = Path(__file__).resolve().parents[2]
+    assert not (harness_root / "scripts" / "experiments" / "tui_trace.py").exists()
