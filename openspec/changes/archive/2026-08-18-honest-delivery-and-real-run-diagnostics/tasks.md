@@ -85,7 +85,7 @@
   BUG-038 (eval digest drift) and BUG-039 (stale workflow test after spec sync);
   ledger now 39 fixed, Next ID BUG-040. Lessons — both systemic and this
   apply's own planning mistakes — recorded in
-  `_backlog/learning/2026-08-18-honest-delivery-apply.md`.
+  `_backlog/_done/_closed_plans/2026-08-18-honest-delivery-apply.md`.
 - [x] 5.3 Full offline gate via the venv, all deterministic, nothing new behind
   `requires_llm`: lint (ruff check + format on all changed files) clean;
   `check_test_assets.py` pass; fast lane 2555 passed / 3 deselected (1

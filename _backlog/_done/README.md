@@ -55,7 +55,7 @@ _Closed plan count follows the indexed CLS records; each future move increments 
 → [`_suspended_plans/`](_suspended_plans/)；其中的记录不是已完成项，只有在重新获准排期时才回到活跃目录。
 
 ### 想看复盘经验
-→ [`../_learning/`](../_learning/) — apply / 研究 retro。
+→ [`_closed_plans/2026-08-18-honest-delivery-apply.md`](_closed_plans/2026-08-18-honest-delivery-apply.md) — honest-delivery apply retro（原 `_learning/`）。
 
 ### 想看具体 TODO 的设计思路
 → `../todos/todo-*.md`，每个都含：Why、现状对齐、Current Direction、Design Questions、Non-Goals、Next Step。

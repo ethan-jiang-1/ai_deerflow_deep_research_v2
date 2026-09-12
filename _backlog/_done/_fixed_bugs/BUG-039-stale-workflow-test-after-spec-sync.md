@@ -28,5 +28,5 @@
 `route == "exhausted"`、`terminal_status == "blocked"`、
 `latest_incident["code"] == "output.structured_invalid"`、无 synthesis artifact
 （保留原有 observation/ledger 断言）。workflow 车道 35 passed。经验沉淀：
-`_backlog/_learning/2026-08-18-honest-delivery-apply.md`（spec 语义变更时 grep
+`_backlog/_done/_closed_plans/2026-08-18-honest-delivery-apply.md`（spec 语义变更时 grep
 全部标记的相关测试；归档前逐车道确认）。

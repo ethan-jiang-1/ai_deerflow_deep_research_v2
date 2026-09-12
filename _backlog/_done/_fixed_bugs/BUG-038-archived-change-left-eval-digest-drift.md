@@ -29,6 +29,6 @@ eval 的 fast 车道，漂移随归档进入主线。流程层缺口：验证条
 
 在 honest-delivery-and-real-run-diagnostics apply 内机械刷新两处 digest（沿用
 `d09bad1` 的 bump 模式，不引入新机制）；修复后 `tests/eval` 107 passed。
-经验沉淀：`_backlog/_learning/2026-08-18-honest-delivery-apply.md`
+经验沉淀：`_backlog/_done/_closed_plans/2026-08-18-honest-delivery-apply.md`
 （Next-Time Standard：触碰被钉文件同步刷新 digest；归档前全量门全绿）。
 系统性守则已在 `openspec/governance/test-evidence-policy.md`，无需新 change。
