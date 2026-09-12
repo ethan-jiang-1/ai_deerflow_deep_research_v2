@@ -155,9 +155,9 @@ SCC-001: selected-change-closeout-evidence — A caller-declared selected OpenSp
 SCC-002: selected-change-closeout-evidence — The governed closeout-evidence command can retain only task-led review-required or evidence-limited inconclusive records without task, runtime, or native archive authority
 SCC-003: selected-change-closeout-evidence — Deterministic zero-API fixtures prove valid committed-boundary records and every closed missing-boundary rejection without task or archive side effects
 
-# research-fake-cli-onboarding
-FCO-001: research-fake-cli-onboarding — Credential-free fixture-graph CLI onboarding provides paste-safe commands and never asks users to select an internal HITL2 route while clearly labelling fixture output
-FCO-002: research-fake-cli-onboarding — The credential-free fixture-graph CLI mirrors bounded Bundle lifecycle identity without creating real Run control authority
+# research-fixture-cli-onboarding
+FCO-001: research-fixture-cli-onboarding — Credential-free fixture-graph CLI onboarding provides paste-safe commands and never asks users to select an internal HITL2 route while clearly labelling fixture output
+FCO-002: research-fixture-cli-onboarding — The credential-free fixture-graph CLI mirrors bounded Bundle lifecycle identity without creating real Run control authority
 
 # deployment-configuration
 DEC-001: deployment-configuration — Deep Research source loads through project-owned local, production, and Docker launch paths
@@ -634,7 +634,7 @@ DPL-001: demo-pipeline — A shared demo core module provides DemoAdapter, synth
 DPL-002: demo-pipeline — Phase progress display reads execution_trace from DeepResearchControlResult and renders completed phases with → and suspended phases with ⏸
 DPL-003: demo-pipeline — Named fixture and all-real demo factories construct their fixed recipes and executors explicitly, without a mode selector, no-graph lifecycle, or a production fixture fallback
 DPL-004: demo-pipeline — The default real CLI uses one selected ready public Gateway profile with shared typed presentation and rejects Gateway-default --scripted; automatic policy and local model/Tavily graph composition remain explicit embedded smoke only
-DPL-005: demo-pipeline — Makefile provides fixed fixture-graph and all-real CLI/TUI demos plus demo-sessions and session-workbench with DEMO_ARGS passthrough and no full-fake/no-graph command surface
+DPL-005: demo-pipeline — Makefile provides fixed fixture-graph and all-real CLI/TUI demos plus demo-sessions and session-workbench with DEMO_ARGS passthrough and no legacy no-graph command alias
 DPL-006: demo-pipeline — Demo command targets select or clearly reject a foreign active environment before user onboarding
 DPL-007: demo-pipeline — Local demo runs retain inspectable run bundles through an explicit bounded retention policy instead of deleting all artifacts on process exit
 DPL-008: demo-pipeline — Fixture demo and fixed-profile local-session commands enable the separate fixture source root only for their own child process while real and production paths do not

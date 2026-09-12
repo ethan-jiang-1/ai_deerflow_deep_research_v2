@@ -38,6 +38,9 @@ from pathlib import Path
 
 # Delta headers 只在 openspec/changes/ 合法，不许出现在 openspec/specs/。
 DELTA_HEADER_RE = re.compile(r"^##\s+(ADDED|MODIFIED|REMOVED|RENAMED)\s+Requirements\s*$", re.IGNORECASE | re.MULTILINE)
+COMPOSITION_ALIAS_RULE = "compositionAlias"
+SCENARIO_HEADING_RE = re.compile(r"^\s*####\s+Scenario:")
+
 PURPOSE_HEADER_RE = re.compile(r"^##\s+Purpose\s*$", re.IGNORECASE | re.MULTILINE)
 REQUIREMENTS_HEADER_RE = re.compile(r"^##\s+Requirements\s*$", re.IGNORECASE | re.MULTILINE)
 REQ_TRACE_RE = re.compile(r"^> req:\s*[A-Z]{3}-\d{3}")
@@ -54,6 +57,10 @@ ACTIVE_TERMINOLOGY_RULES = {
     "phaseRoadmap": re.compile(r"\b(?:later wave|phase-roadmap|remain fake|still fake)\b", re.IGNORECASE),
     "temporaryStandalone": re.compile(r"\btemporary standalone\b", re.IGNORECASE),
     "mislabelledMode": re.compile(r"implementation_mode=full_fake[^\n]*(?:mixed|all.real)", re.IGNORECASE),
+    # The undefined `full-fake` composition alias (hyphen or space). The retired machine
+    # literal `full_fake` (underscore) is deliberately not matched, and `#### Scenario:`
+    # headings are exempt because OpenSpec preserves a scenario title as stable identity.
+    "compositionAlias": re.compile(r"\bfull[- ]fake\b", re.IGNORECASE),
 }
 
 
@@ -341,7 +348,10 @@ def active_terminology_violations(root: Path) -> list[dict[str, str]]:
         if not path.is_file():
             continue
         for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+            is_scenario_heading = SCENARIO_HEADING_RE.match(line) is not None
             for rule, pattern in ACTIVE_TERMINOLOGY_RULES.items():
+                if rule == COMPOSITION_ALIAS_RULE and is_scenario_heading:
+                    continue
                 if pattern.search(line):
                     violations.append({"file": str(path.relative_to(root)), "rule": rule, "line": str(line_number)})
     return violations

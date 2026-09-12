@@ -1,4 +1,4 @@
-# research-fake-cli-onboarding Specification
+# research-fixture-cli-onboarding Specification
 
 > req: FCO-001, FCO-002
 

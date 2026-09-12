@@ -530,7 +530,7 @@ REQUIREMENT_IMPACTS = (
     ),
     RequirementImpact(
         "FCO-001",
-        "research-fake-cli-onboarding",
+        "research-fixture-cli-onboarding",
         StableSeam.PUBLIC_ENTRY,
         "tests/contract/test_demo_commands.py::test_readme_setup_commands_are_paste_safe_in_interactive_zsh",
         "quick-start commands do not pass prose or a shell comment to Make",

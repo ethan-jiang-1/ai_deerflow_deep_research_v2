@@ -39,7 +39,7 @@ BASELINE_MISSING_MAIN_SPEC_REQUIREMENTS = {
     "project-structure": {"PRS-017"},
     "research-cli-onboarding": {"REC-008"},
     "research-demo-tui": {"RED-008"},
-    "research-fake-cli-onboarding": {"FCO-002"},
+    "research-fixture-cli-onboarding": {"FCO-002"},
     "research-graph-lifecycle": {"REG-020"},
     "research-local-session-workbench": {"RWB-008"},
     "research-run-experience": {"RER-013"},
