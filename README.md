@@ -26,6 +26,14 @@ _backlog/                 任务账本
 （grillme 技能集由全局 ~/.claude/skills、~/.agents/skills 提供）
 ```
 
+其他根目录居民（各自的权威在指向处，这里只登记存在与性质）：
+
+- `config.yaml`、`.env` — 宿主运行时配置与凭证（均 gitignored；按 DeerFlow 宿主约定从模板/环境准备，模型列表只含环境变量展开，无明文密钥）
+- `profiles/` — 已注册的本地运行 profile（权威：[`deep_research_harness/docs/local-operations.md`](deep_research_harness/docs/local-operations.md) 与 [profiles/README.md](profiles/README.md)）
+- `skills/public/` — 由 spec 物化的公共 controller skill（权威：`openspec/specs/deployment-configuration/spec.md`）
+- `RUN-010.command`、`RUN-020.command` — 本地双击启动器（gitignored，不在新 clone 中；索引见 [`deep_research_harness/COMMANDS.md`](deep_research_harness/COMMANDS.md)）
+- `CONTEXT.md`、`CONTEXT-MAP.md` — 三个 bounded context 的词汇边界（Host / Product / Governance）
+
 ## 快速开始
 
 ```bash

@@ -13,6 +13,7 @@ Current behavior, operations, and policy. Kept in sync with the code.
 | Question | Focused document |
 | --- | --- |
 | How do the downstream graph, checkpoint, evidence, sandbox, and public-control boundaries fit together? | [Runtime architecture](runtime-architecture.md) |
+| How do the 30+ runtime adapter modules group into clusters, and which owning spec backs each? | [Runtime reader index](../src/deerflow_deep_research/runtime/README.md) |
 | How does one run unfold end to end (lifecycle vocabulary in order)? | [Run lifecycle walkthrough](run-lifecycle-walkthrough.md) |
 | How do I run profiles, demos, diagnostics, retained sessions, and the local workbench? | [Local operations](local-operations.md) |
 | How are deterministic, live, and release tests selected and interpreted? | [Testing and evaluation](testing-and-evaluation.md) |

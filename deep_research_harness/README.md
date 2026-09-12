@@ -60,6 +60,7 @@ specification, implementation, and test seam selected by its focus gate.
 | Select and interpret deterministic, workflow-outcome, live, or release testing | [Testing and evaluation](docs/testing-and-evaluation.md) |
 | Run or interpret a manually selected Cognitive Evaluation case | [Cognitive Evaluation Suite](docs/cognitive-evaluation-suite.md) |
 | Inspect the generated graph topology | [Logical topology](docs/deep-research-topology.md) |
+| One-page command cheat sheet for the demo ladder and diagnostics | [COMMANDS](COMMANDS.md) |
 | Make an application code change | [`AGENTS.md`](AGENTS.md), then the owning source and narrowest test |
 | Find application architecture and layer rules | [`docs/runtime-architecture.md`](docs/runtime-architecture.md) |
 
@@ -117,28 +118,12 @@ UV_OFFLINE=1 uv run --no-sync --extra operations python -m pytest \
 
 ## Direction Controls
 
-One available Run Bundle retains at most one pending Run Refinement. A nonblank
-`refinement` submits that independent same-Run direction; `resume` remains only the
-correlated answer to the visible pending subject, and an Accepted Profile Note remains
-content accepted during Research Confirmation rather than a later lifecycle inbox. The
-pending direction takes effect only at the completed terminal boundary of the current
-round, so it never overwrites an in-flight writer or replaces a pending response.
-
-The same `refine` action also has a narrow explicit continuation form: it omits
-`refinement`, names an available terminal `bundle_id`, and can consume only the already
-pending direction in that Bundle. It never reconstructs hidden text or mutates a
-profile. Stopped, cancelled, and blocked Bundles do not restart automatically. Consumers
-must follow the typed result's legal next action: it may require `resume`, `status`, a
-selected continuation, a new text-bearing direction, or a fresh `start` when the Bundle
-has no remaining refinement capacity.
-
-The recommended ordinary-language route is the provisioned dedicated Agent. Its
-controller workflow is loaded from the committed public skill through DeerFlow's
-configured `file:read` group before a later exclusive lifecycle call. The Harness
-preflights that existing group and its public `read_file` binding but does not create,
-repair, or narrow it; the full configured group remains the operator-visible permission
-boundary. [Runtime architecture](docs/runtime-architecture.md) and [local
-operations](docs/local-operations.md) own the operational detail.
+Refinement direction submission/continuation, the `resume` correlation contract, and
+the provisioned dedicated Agent route are lifecycle contracts. The authoritative
+statement lives in [Runtime architecture](docs/runtime-architecture.md) (see
+**Public Controls** and **Ordinary Controller Loading**, which name the owning
+capability specification `deep-research-harness-run-bundles`). This page intentionally
+does not restate those rules.
 
 ## Frequent Commands
 
