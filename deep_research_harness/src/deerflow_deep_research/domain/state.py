@@ -1730,10 +1730,65 @@ def validate_research_state(values: Mapping[str, Any]) -> ResearchGraphState:
     return ResearchGraphState(**dict(values))
 
 
+class CheckpointStateBoundExceeded(ValueError):
+    """A state payload cannot be safely persisted within the hard serialized bound.
+
+    Raised before any bytes reach the Bundle-contained graph store, so the
+    checkpoint is not mutated. Carries the optional owning phase for attribution.
+
+    @impl REG-008
+    """
+
+    code = "state_too_large"
+
+    def __init__(self, *, phase: str | None = None) -> None:
+        super().__init__("state_too_large")
+        self.phase = phase
+
+
+def enforce_checkpoint_state_bound(values: Mapping[str, Any], *, phase: str | None = None) -> None:
+    """Enforce only the hard whole-state serialized bound.
+
+    Applied at every persisted graph write through the shared serde, including graphs
+    whose state is not Deep Research state (for example the generic infra probe), so it
+    must not assume any Deep Research field semantics or schema. An unserializable value
+    fails closed in the same typed way as an over-bound one, because neither can be
+    safely persisted.
+
+    @impl REG-008
+    """
+
+    try:
+        serialize_research_state(values)
+    except (TypeError, ValueError) as exc:
+        raise CheckpointStateBoundExceeded(phase=phase) from exc
+
+
+def validate_checkpoint_values(values: Mapping[str, Any], *, phase: str | None = None) -> None:
+    """Partial-tolerant admission for Deep Research live state and retained checkpoints.
+
+    Enforces the closed schema/legacy invariants when they are present and the hard
+    whole-state serialized bound, without instantiating the full frozen
+    ``ResearchGraphState`` — live channel state is deliberately partial.
+
+    @impl REG-008
+    """
+
+    if not isinstance(values, Mapping):
+        raise ValueError("checkpoint_values_invalid")
+    if "repair_counts" in values or "bundle_directory" in values:
+        raise ValueError("checkpoint_schema_legacy")
+    schema_version = values.get("schema_version")
+    if schema_version is not None and schema_version != RESEARCH_STATE_SCHEMA_VERSION:
+        raise ValueError("checkpoint_schema_unsupported")
+    enforce_checkpoint_state_bound(values, phase=phase)
+
+
 __all__ = [
     "AUTHORITY_WRITERS",
     "BUNDLE_STATE_SCHEMA_VERSION",
     "BundleLocalState",
+    "CheckpointStateBoundExceeded",
     "ContentRef",
     "RefinementAdmission",
     "FieldOwnership",
@@ -1756,6 +1811,7 @@ __all__ = [
     "admit_bundle_refinement",
     "consume_admitted_refinement",
     "consume_bundle_response",
+    "enforce_checkpoint_state_bound",
     "merge_active_attempts",
     "merge_accepted_refs",
     "merge_attempt_refs",
@@ -1771,5 +1827,6 @@ __all__ = [
     "research_state_fields",
     "serialize_research_state",
     "serialize_work_unit_block",
+    "validate_checkpoint_values",
     "validate_research_state",
 ]

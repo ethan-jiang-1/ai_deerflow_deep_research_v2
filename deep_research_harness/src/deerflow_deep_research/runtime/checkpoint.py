@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import hashlib
 from dataclasses import dataclass
-from typing import Literal
+from typing import Any, Literal
 from urllib.parse import parse_qs, urlsplit
 
 ProviderKind = Literal["memory", "sqlite", "postgres"]
@@ -109,17 +109,45 @@ def resolve_effective_provider(app_config) -> ProviderSelection:
     )
 
 
+def _enforce_serialized_checkpoint_bound(payload: bytes) -> None:
+    """Reject a serialized checkpoint or write that crosses the hard size bound.
+
+    The bound is measured on the bytes the saver would persist, which is robust for
+    every payload the shared serde sees — including framework values such as
+    ``Send`` in an agent graph — so it never misjudges a non-Deep-Research state.
+    Deep Research's canonical state measure is enforced separately at the node
+    update, read admission, and offline migration seams.
+
+    @impl REG-008
+    """
+
+    from deerflow_deep_research.domain.state import MAX_CHECKPOINT_STATE_BYTES, CheckpointStateBoundExceeded
+
+    if len(payload) > MAX_CHECKPOINT_STATE_BYTES:
+        raise CheckpointStateBoundExceeded()
+
+
 def build_deep_research_checkpoint_serde():
     """Return the smallest explicit LangGraph msgpack compatibility boundary.
 
     Deep Research checkpoints intentionally persist only these three project
     value types (``ContentRef`` including its ``AttemptStatus`` alias usage,
     and the wave1 open-question projection). All other project types remain
-    blocked in strict msgpack mode.
+    blocked in strict msgpack mode. Every write also crosses the hard
+    whole-state size bound before any bytes reach the store.
+
+    @impl REG-008
+    @impl REG-022
     """
     from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 
-    return JsonPlusSerializer(
+    class _BoundedCheckpointSerde(JsonPlusSerializer):
+        def dumps_typed(self, obj: Any) -> tuple[str, bytes]:
+            type_, payload = super().dumps_typed(obj)
+            _enforce_serialized_checkpoint_bound(payload)
+            return type_, payload
+
+    return _BoundedCheckpointSerde(
         allowed_msgpack_modules={
             ("deerflow_deep_research.domain.state", "ContentRef"),
             ("deerflow_deep_research.domain.work_units", "AttemptStatus"),

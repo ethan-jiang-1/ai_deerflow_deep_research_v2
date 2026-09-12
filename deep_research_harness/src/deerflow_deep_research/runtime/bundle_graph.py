@@ -29,7 +29,12 @@ from deerflow_deep_research.domain.lifecycle import (
     RefinementOperation,
     RunRefinementSource,
 )
-from deerflow_deep_research.domain.state import BundleLocalState, PhaseStatus
+from deerflow_deep_research.domain.run_experience import (
+    FailureCertainty,
+    RunFailureCode,
+    TerminalIncidentProjection,
+)
+from deerflow_deep_research.domain.state import BundleLocalState, CheckpointStateBoundExceeded, PhaseStatus
 from deerflow_deep_research.graph.rerun import FullRerunPolicy, compile_run_refinement_update
 from deerflow_deep_research.runtime.bootstrap_bundle import BootstrapBundleStore
 from deerflow_deep_research.runtime.bundle_lifecycle import (
@@ -335,16 +340,19 @@ class BundleGraphExecutor:
                         envelope=envelope,
                     )
                     execution_lease.ensure_live()
-                    await graph.ainvoke(
-                        self._initial_graph_state(
-                            bundle=bundle,
-                            state=state,
-                            start_message=start_message,
-                            start_input=start_input,
-                        ),
-                        config=config,
-                        context=await self._context(envelope=journal_envelope, bundle=bundle),
-                    )
+                    try:
+                        await graph.ainvoke(
+                            self._initial_graph_state(
+                                bundle=bundle,
+                                state=state,
+                                start_message=start_message,
+                                start_input=start_input,
+                            ),
+                            config=config,
+                            context=await self._context(envelope=journal_envelope, bundle=bundle),
+                        )
+                    except CheckpointStateBoundExceeded as exc:
+                        await self._raise_bound_breach(lifecycle=lifecycle, bundle=bundle, exc=exc)
                     execution_lease.ensure_live()
                     result = await self._project(
                         lifecycle=lifecycle,
@@ -433,11 +441,14 @@ class BundleGraphExecutor:
             if tuple(task.name for task in snapshot.tasks) != ("topic_planning",):
                 return False
             execution_lease.ensure_live()
-            await graph.ainvoke(
-                None,
-                config=config,
-                context=await self._context(envelope=journal_envelope, bundle=bundle),
-            )
+            try:
+                await graph.ainvoke(
+                    None,
+                    config=config,
+                    context=await self._context(envelope=journal_envelope, bundle=bundle),
+                )
+            except CheckpointStateBoundExceeded as exc:
+                await self._raise_bound_breach(lifecycle=lifecycle, bundle=bundle, exc=exc)
             execution_lease.ensure_live()
             completed = await graph.aget_state(config)
         if completed is None or not completed.values:
@@ -679,11 +690,14 @@ class BundleGraphExecutor:
                     state=state,
                     envelope=envelope,
                 )
-                await graph.ainvoke(
-                    Command(resume=response.model_dump(mode="json")),
-                    config=config,
-                    context=await self._context(envelope=journal_envelope, bundle=bundle),
-                )
+                try:
+                    await graph.ainvoke(
+                        Command(resume=response.model_dump(mode="json")),
+                        config=config,
+                        context=await self._context(envelope=journal_envelope, bundle=bundle),
+                    )
+                except CheckpointStateBoundExceeded as exc:
+                    await self._raise_bound_breach(lifecycle=lifecycle, bundle=bundle, exc=exc)
                 execution_lease.ensure_live()
                 result = await self._project(
                     lifecycle=lifecycle,
@@ -732,11 +746,14 @@ class BundleGraphExecutor:
                     state=state,
                     envelope=envelope,
                 )
-                await graph.ainvoke(
-                    None,
-                    config=config,
-                    context=await self._context(envelope=journal_envelope, bundle=bundle),
-                )
+                try:
+                    await graph.ainvoke(
+                        None,
+                        config=config,
+                        context=await self._context(envelope=journal_envelope, bundle=bundle),
+                    )
+                except CheckpointStateBoundExceeded as exc:
+                    await self._raise_bound_breach(lifecycle=lifecycle, bundle=bundle, exc=exc)
                 execution_lease.ensure_live()
                 result = await self._project(
                     lifecycle=lifecycle,
@@ -781,6 +798,38 @@ class BundleGraphExecutor:
     @staticmethod
     def _config(bundle: RunBundleRef) -> dict[str, dict[str, str]]:
         return {"configurable": {"thread_id": bundle.bundle_id.value, "checkpoint_ns": ""}}
+
+    @staticmethod
+    def _bound_breach_incident(exc: CheckpointStateBoundExceeded) -> TerminalIncidentProjection:
+        try:
+            return TerminalIncidentProjection(
+                code=RunFailureCode.CHECKPOINT_INCONSISTENT,
+                phase=exc.phase,
+                certainty=FailureCertainty.DIRECT,
+            )
+        except ValueError:
+            return TerminalIncidentProjection(
+                code=RunFailureCode.CHECKPOINT_INCONSISTENT,
+                certainty=FailureCertainty.DIRECT,
+            )
+
+    async def _raise_bound_breach(
+        self,
+        *,
+        lifecycle: BundleLifecycle,
+        bundle: RunBundleRef,
+        exc: CheckpointStateBoundExceeded,
+    ) -> None:
+        """Persist the blocked terminal, then surface a bounded lifecycle error.
+
+        The over-bound bytes were rejected before persistence, so the graph checkpoint
+        carries no terminal facts; the Bundle-local State owns the honest outcome.
+
+        @impl REG-008
+        """
+
+        await lifecycle.record_internal_block(bundle=bundle, incident=self._bound_breach_incident(exc))
+        raise BundleLifecycleError("bundle_graph_over_bound")
 
     @staticmethod
     def _initial_graph_state(

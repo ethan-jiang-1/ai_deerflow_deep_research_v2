@@ -51,13 +51,14 @@ from deerflow_deep_research.domain.lifecycle import (
 )
 from deerflow_deep_research.domain.run_experience import PendingInputProjection, TerminalIncidentProjection
 from deerflow_deep_research.domain.state import (
-    RESEARCH_STATE_SCHEMA_VERSION,
     BundleLocalState,
+    CheckpointStateBoundExceeded,
     PhaseStatus,
     RefinementAdmission,
     admit_bundle_refinement,
     consume_admitted_refinement,
     consume_bundle_response,
+    validate_checkpoint_values,
 )
 from deerflow_deep_research.graph.rerun import FullRerunPolicy
 from deerflow_deep_research.runtime.bundle_transition import (
@@ -519,6 +520,8 @@ class BundleLifecycle:
             raise
         except BundleLifecycleError:
             raise
+        except CheckpointStateBoundExceeded as exc:
+            raise BundleLifecycleError("bundle_graph_over_bound") from exc
         except (OSError, RuntimeError, ValueError) as exc:
             raise BundleLifecycleError("bundle_unavailable") from exc
 
@@ -582,6 +585,54 @@ class BundleLifecycle:
                 bundle,
                 operation="cancel",
                 outcome=ObservationOutcome.CANCELLED,
+                outer_thread_id=log_outer_thread_id,
+                outer_run_id=log_outer_run_id,
+            )
+        return state
+
+    async def record_internal_block(
+        self,
+        *,
+        bundle: RunBundleRef,
+        incident: TerminalIncidentProjection,
+        log_outer_thread_id: str | None = None,
+        log_outer_run_id: str | None = None,
+    ) -> BundleLocalState:
+        """Persist the one terminal blocked disposition for an internal invariant breach.
+
+        Used when a graph write is rejected before persistence, so the graph checkpoint
+        carries no terminal facts and the Bundle-local State owns the honest outcome.
+
+        @impl REG-008
+        """
+
+        if not isinstance(incident, TerminalIncidentProjection):
+            raise TypeError("terminal_incident_required")
+        blocked = False
+
+        def apply(state: BundleLocalState) -> BundleLocalState:
+            nonlocal blocked
+            if not state.is_active:
+                return state
+            blocked = True
+            return replace(
+                state,
+                phase_status=PhaseStatus.TERMINAL,
+                terminal_status=LifecycleStatus.BLOCKED,
+                terminal_reason=TerminalReason.INTERNAL_BLOCKED,
+                latest_incident=incident,
+                waiting_for=None,
+                pending_request_id=None,
+                pending_cursor=None,
+                pending_request_mode=None,
+            )
+
+        state = await self._mutate_state(bundle, apply)
+        if blocked:
+            _log_lifecycle(
+                bundle,
+                operation="internal_block",
+                outcome=ObservationOutcome.BLOCKED,
                 outer_thread_id=log_outer_thread_id,
                 outer_run_id=log_outer_run_id,
             )
@@ -998,8 +1049,12 @@ class BundleLifecycle:
         values = checkpoint.get("channel_values")
         if not isinstance(values, Mapping):
             raise BundleLifecycleError("bundle_graph_invalid")
-        if values.get("schema_version") != RESEARCH_STATE_SCHEMA_VERSION or "repair_counts" in values:
-            raise BundleLifecycleError("bundle_graph_legacy")
+        try:
+            validate_checkpoint_values(values)
+        except CheckpointStateBoundExceeded as exc:
+            raise BundleLifecycleError("bundle_graph_over_bound") from exc
+        except ValueError as exc:
+            raise BundleLifecycleError("bundle_graph_legacy") from exc
 
     async def commit_prepared_refinement_round(
         self,

@@ -73,6 +73,7 @@ class TerminalReason(StrEnum):
     USER_CANCELLED = "user_cancelled"
     RERUN_EXHAUSTED = "rerun_exhausted"
     GATE_BLOCKED = "gate_blocked"  # @impl REG-004 — gate fatigue/budget exhaustion
+    INTERNAL_BLOCKED = "internal_blocked"  # @impl REG-008 — internal invariant breach
 
 
 class ResultCode(StrEnum):

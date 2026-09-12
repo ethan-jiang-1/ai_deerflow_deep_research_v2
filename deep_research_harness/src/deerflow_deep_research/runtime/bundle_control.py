@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any
 
 from langchain_core.messages import HumanMessage
 
-from deerflow_deep_research.domain.bundle import BundleId
+from deerflow_deep_research.domain.bundle import BundleId, RunBundleRef
 from deerflow_deep_research.domain.identifiers import BUNDLE_ID_PATTERN  # re-exported for the tool layer
 from deerflow_deep_research.domain.lifecycle import (
     AcceptedHumanResponse,
@@ -225,7 +225,11 @@ class BundleControl:
                 tool_call_id=tool_call_id,
                 start_input=start_input,
             )
-        except (BundleLifecycleError, ValueError):
+        except BundleLifecycleError as exc:
+            if exc.code == "bundle_graph_over_bound":
+                return await self._over_bound_result(action=LifecycleAction.START, bundle=bundle)
+            return self._unavailable(action=LifecycleAction.START)
+        except ValueError:
             return self._unavailable(action=LifecycleAction.START)
 
     async def _resume(
@@ -284,6 +288,8 @@ class BundleControl:
                     state=current,
                     code=ResultCode.RESPONSE_MISMATCH,
                 ).model_dump(mode="json", exclude_none=True)
+            if exc.code == "bundle_graph_over_bound":
+                return await self._over_bound_result(action=LifecycleAction.RESUME, bundle=bundle)
             return self._unavailable(action=LifecycleAction.RESUME)
         except HumanInputError as exc:
             try:
@@ -479,6 +485,8 @@ class BundleControl:
         except BundleLifecycleError as exc:
             if exc.code == "explicit_bundle_id_required":
                 return self._unavailable(action=LifecycleAction.REFINE, code=ResultCode.EXPLICIT_BUNDLE_ID_REQUIRED)
+            if exc.code == "bundle_graph_over_bound" and bundle is not None:
+                return await self._over_bound_result(action=LifecycleAction.REFINE, bundle=bundle)
             return self._unavailable(action=LifecycleAction.REFINE)
         except ValueError:
             return self._unavailable(action=LifecycleAction.REFINE, code=ResultCode.INVALID_TRANSITION)
@@ -606,6 +614,23 @@ class BundleControl:
             value=value,
             response_kind=ResponseKind.TEXT,
         )
+
+    async def _over_bound_result(self, *, action: LifecycleAction, bundle: RunBundleRef) -> dict[str, Any]:
+        """Project a Bundle whose graph state crossed the hard checkpoint bound.
+
+        @impl REG-008
+        """
+
+        try:
+            state = await self._lifecycle.read_state(bundle)
+        except BundleLifecycleError:
+            return self._unavailable(action=action)
+        return self._lifecycle.result_for_state(
+            action=action,
+            bundle=bundle,
+            state=state,
+            code=ResultCode.CHECKPOINT_INCONSISTENT,
+        ).model_dump(mode="json", exclude_none=True)
 
     @staticmethod
     def _unavailable(

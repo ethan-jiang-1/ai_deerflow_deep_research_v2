@@ -28,7 +28,12 @@ from deerflow_deep_research.domain.lifecycle import LifecycleStatus, make_node_v
 from deerflow_deep_research.domain.node_spec import NodeCapability, NodeSpec
 from deerflow_deep_research.domain.publication import FINAL_DELIVERY_GATE_VIEW_KEY, FinalDeliveryGateView
 from deerflow_deep_research.domain.run_observation import RunEventCategory
-from deerflow_deep_research.domain.state import WORK_UNIT_GATE_PREVIEW_FIELDS, ResearchState, preview_work_unit_update
+from deerflow_deep_research.domain.state import (
+    WORK_UNIT_GATE_PREVIEW_FIELDS,
+    ResearchState,
+    preview_work_unit_update,
+    validate_checkpoint_values,
+)
 from deerflow_deep_research.domain.synthesis import WAVE2_GATE_PREVIEW_KEY, Wave2GatePreview
 from deerflow_deep_research.domain.wave1 import WAVE1_GATE_REVIEW_KEY, Wave1GateReview
 from deerflow_deep_research.domain.work_units import (
@@ -313,6 +318,9 @@ def _node_wrapper(
             if overlap:
                 raise ValueError(f"node_gate_write_conflict:{','.join(sorted(overlap))}")
             result = {**result, **gate_update}
+        # A node update that crosses the hard bound is rejected here, before the
+        # graph machinery can persist it, with the owning phase for attribution.
+        validate_checkpoint_values(result, phase=logical_name)
         return result
 
     segment = {"t0": None}
