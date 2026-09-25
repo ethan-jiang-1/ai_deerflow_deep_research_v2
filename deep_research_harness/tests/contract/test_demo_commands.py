@@ -230,9 +230,11 @@ def test_embedded_smoke_launcher_selects_a_configured_flash_model() -> None:
     assert 'cd "$project_root"' in launcher
     assert 'python scripts/demo_real.py --embedded-smoke --scripted --question "$question"' in launcher
     assert "make entry-preflight" in launcher
+    # UV_NO_CACHE=1 is the operator-entry policy (BUG-032): the launcher never
+    # installs, so it must not touch the (sandbox-unreadable) global uv cache.
     assert (
-        "env -u VIRTUAL_ENV PYTHONDONTWRITEBYTECODE=1 uv run --locked --no-sync "
-        "--env-file .env --extra operations --extra demo-real"
+        "env -u VIRTUAL_ENV PYTHONDONTWRITEBYTECODE=1 UV_NO_CACHE=${UV_NO_CACHE:-1} "
+        "uv run --locked --no-sync --env-file .env --extra operations --extra demo-real"
     ) in launcher
 
 

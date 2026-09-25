@@ -29,9 +29,17 @@ ENTRY_SETUP_MESSAGE = "Run 'make install' from deep_research_harness/."
 def _copy_harness(tmp_path: Path) -> Path:
     copied_root = tmp_path / "repo"
     copied_harness = copied_root / "deep_research_harness"
+    # symlinks=True: the warm .uv-cache is copied along (it is not in the ignore
+    # list) and uv's wheels-v5 entries are SYMLINKS into archive-v0. Following
+    # them (the default) materializes each entry as a plain directory, which uv
+    # rejects on the download path — it re-fetches the wheel and fails to rename
+    # the fresh entry over the stale directory (EISDIR). Preserving the symlink
+    # structure keeps the copied cache valid; absolute targets still resolve
+    # against the original cache, which stays read-only for this test.
     shutil.copytree(
         AGENT_ROOT,
         copied_harness,
+        symlinks=True,
         ignore=shutil.ignore_patterns(
             ".venv",
             ".env",
