@@ -93,8 +93,15 @@ CandidateBuilder = Callable[[PreparationContext], str]
 def upstream_command_contract(project_root: Path) -> UpstreamCommandContract:
     root = project_root.resolve(strict=True)
     return UpstreamCommandContract(
-        backend_sync_prefix=("uv", "sync", "--quiet", "--all-packages"),
-        frontend_install=("pnpm", "install", "--silent"),
+        backend_sync_prefix=("uv", "sync", "--locked", "--quiet", "--all-packages"),
+        # Upstream v2.1.0 resolves pnpm through scripts/pnpm.py (pnpm or
+        # Corepack fallback) instead of a bare `pnpm` on PATH; mirror it.
+        frontend_install=(
+            sys.executable,
+            str((root / "deerflow" / "scripts" / "pnpm.py").resolve()),
+            "install",
+            "--silent",
+        ),
         detect_extras_script=(root / "deerflow" / "scripts" / "detect_uv_extras.py").resolve(),
         gateway_pythonpath=".",
     )

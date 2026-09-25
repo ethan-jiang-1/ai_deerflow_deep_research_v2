@@ -70,13 +70,18 @@ def test_current_upstream_command_tokens_are_pinned() -> None:
     contract = module.upstream_command_contract(REPO_ROOT)
     serve = (DEERFLOW_ROOT / "scripts/serve.sh").read_text(encoding="utf-8")
 
-    assert contract.backend_sync_prefix == ("uv", "sync", "--quiet", "--all-packages")
-    assert contract.frontend_install == ("pnpm", "install", "--silent")
+    assert contract.backend_sync_prefix == ("uv", "sync", "--locked", "--quiet", "--all-packages")
+    assert contract.frontend_install == (
+        sys.executable,
+        str((DEERFLOW_ROOT / "scripts" / "pnpm.py").resolve()),
+        "install",
+        "--silent",
+    )
     assert contract.detect_extras_script == (DEERFLOW_ROOT / "scripts/detect_uv_extras.py").resolve()
     assert contract.gateway_pythonpath == "."
-    assert "uv sync --quiet --all-packages $UV_EXTRAS_FLAGS" in serve
-    assert "pnpm install --silent" in serve
-    assert "cd backend && PYTHONPATH=. uv run uvicorn app.gateway.app:app" in serve
+    assert "uv sync --locked --quiet --all-packages $UV_EXTRAS_FLAGS" in serve
+    assert '"$DEERFLOW_PNPM_PYTHON" "$DEERFLOW_PNPM_RUNNER" install --silent' in serve
+    assert "cd backend && PYTHONPATH=. uv run --no-sync uvicorn app.gateway.app:app" in serve
 
 
 def test_root_dotenv_and_runtime_path_defaults_match_local_gateway(project: tuple[Path, dict[str, str]]) -> None:
@@ -239,9 +244,14 @@ def test_sync_frontend_editable_install_origin_check_and_candidate_order(
         "candidate",
     ]
     assert specs[0].argv == (sys.executable, str(root / "deerflow" / "scripts" / "detect_uv_extras.py"))
-    assert specs[1].argv == ("uv", "sync", "--quiet", "--all-packages", "--extra", "postgres")
+    assert specs[1].argv == ("uv", "sync", "--locked", "--quiet", "--all-packages", "--extra", "postgres")
     assert specs[1].cwd == root / "deerflow" / "backend"
-    assert specs[2].argv == ("pnpm", "install", "--silent")
+    assert specs[2].argv == (
+        sys.executable,
+        str((root / "deerflow" / "scripts" / "pnpm.py").resolve()),
+        "install",
+        "--silent",
+    )
     assert specs[2].cwd == root / "deerflow" / "frontend"
     assert specs[3].argv == (
         "uv",

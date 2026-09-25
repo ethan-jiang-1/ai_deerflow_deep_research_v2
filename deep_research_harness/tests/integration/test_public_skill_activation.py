@@ -162,7 +162,11 @@ def _run_ordinary_turn(
     *,
     app_config: Any,
     responses: list[AIMessage],
-    recursion_limit: int = 24,
+    # DeerFlow v2.1.0 (langgraph 1.2.x + the widened middleware chain) consumes
+    # ~7 supersteps per scripted round-trip where the old pin used ~4.5, so the
+    # 3-response turn needs ~38 and the 4-response deferred turn ~40. 64 keeps
+    # a healthy margin; the transcript itself is fully asserted by the callers.
+    recursion_limit: int = 64,
     messages: list[BaseMessage] | None = None,
     thread_id: str = "ordinary-loader-thread",
     run_id: str = "ordinary-loader-run",
@@ -316,7 +320,7 @@ def test_deferred_non_slash_discovery_still_reads_committed_controller_before_li
             _tool_call("deep_research", {"action": "status"}, "read-status"),
             AIMessage(content="The lifecycle response is available."),
         ],
-        recursion_limit=26,
+        recursion_limit=64,
     )
 
     _assert_ordinary_loader_handoff(

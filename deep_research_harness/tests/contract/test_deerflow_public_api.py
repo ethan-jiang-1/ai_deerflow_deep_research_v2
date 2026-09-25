@@ -9,7 +9,7 @@ from pathlib import Path
 from deerflow.trace_context import get_current_trace_id
 from langchain.tools import ToolRuntime
 
-CURRENT_DEERFLOW_PIN = "66b9e7f21212490cf92fafac137542b9deb06615"
+CURRENT_DEERFLOW_PIN = "ceebf97fc31afbbfe2aadf7c8d82b03c3742d5d7"
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
 

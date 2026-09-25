@@ -52,7 +52,7 @@ def _gateway_command(document) -> str:
 def _upstream_uvicorn_invocation() -> str:
     """The exact upstream server launch, derived from the current base compose."""
     command = _gateway_command(_load(BASE))
-    marker = "uv run uvicorn"
+    marker = "uv run --no-sync uvicorn"
     assert marker in command, "upstream Gateway command no longer launches uvicorn via uv"
     return command[command.index(marker) :].rstrip('"')
 

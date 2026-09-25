@@ -26,12 +26,20 @@ _FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
 def _sqlite_config(db_path: str) -> object:
     return SimpleNamespace(
         checkpointer=None,
-        database=SimpleNamespace(backend="sqlite", checkpointer_sqlite_path=db_path, postgres_url=None),
+        database=SimpleNamespace(
+            backend="sqlite",
+            checkpointer_sqlite_path=db_path,
+            postgres_url=None,
+            checkpoint_channel_mode="full",
+        ),
     )
 
 
 def _memory_config() -> object:
-    return SimpleNamespace(checkpointer=None, database=SimpleNamespace(backend="memory"))
+    return SimpleNamespace(
+        checkpointer=None,
+        database=SimpleNamespace(backend="memory", checkpoint_channel_mode="full"),
+    )
 
 
 def _envelope(tmp_path: Path, app_config: object) -> TrustedRuntimeEnvelope:

@@ -37,7 +37,12 @@ async def _main() -> None:
     db_path, probe_id = sys.argv[1], sys.argv[2]
     app_config = SimpleNamespace(
         checkpointer=None,
-        database=SimpleNamespace(backend="sqlite", checkpointer_sqlite_path=db_path, postgres_url=None),
+        database=SimpleNamespace(
+            backend="sqlite",
+            checkpointer_sqlite_path=db_path,
+            postgres_url=None,
+            checkpoint_channel_mode="full",
+        ),
     )
     host = build_probe_graph_host(fingerprint_verifier=lambda _app_config: None)
     result = await host.run_action(action="infra_probe", envelope=_envelope(app_config), action_input=probe_id)

@@ -203,10 +203,11 @@ def _run_controller_turn(
     from deerflow_deep_research import tool as public_tool
 
     with patch.object(public_tool, "BundleGraphExecutor", _fixture_graph_executor):
+        # recursion_limit: the shared _run_ordinary_turn default (64) applies —
+        # DeerFlow v2.1.0 consumes ~7 supersteps per scripted round-trip.
         return _run_ordinary_turn(
             app_config=app_config,
             responses=responses,
-            recursion_limit=30 if deferred_discovery else 28,
             messages=messages,
             thread_id=thread_id,
             run_id=f"{thread_id}-run",

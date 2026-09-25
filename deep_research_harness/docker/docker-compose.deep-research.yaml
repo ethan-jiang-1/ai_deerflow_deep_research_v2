@@ -30,4 +30,4 @@ services:
   gateway:
     volumes:
       - ../../deep_research_harness/src:/app/deep_research_harness/src:ro
-    command: 'sh -c "cd backend && export PYTHONPATH=/app/deep_research_harness/src:. && export DEER_FLOW_DEEP_RESEARCH_STARTUP_FINGERPRINT=$$(uv run python -m deerflow_deep_research.runtime.startup_snapshot) && uv run uvicorn app.gateway.app:app --host 0.0.0.0 --port 8001 --workers ${GATEWAY_WORKERS:-1}"'
+    command: 'sh -c "cd backend && export PYTHONPATH=/app/deep_research_harness/src:. && export DEER_FLOW_DEEP_RESEARCH_STARTUP_FINGERPRINT=$$(uv run --no-sync python -m deerflow_deep_research.runtime.startup_snapshot) && uv run --no-sync uvicorn app.gateway.app:app --host 0.0.0.0 --port 8001 --workers ${GATEWAY_WORKERS:-1}"'
