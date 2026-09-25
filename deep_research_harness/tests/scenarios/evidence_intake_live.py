@@ -172,6 +172,31 @@ def evidence_intake_live_scenario(case: CalibrationCase) -> LiveScenario:
     )
 
 
+def _inconclusive_rubric(case: CalibrationCase) -> LiveRubricResult:
+    return LiveRubricResult(
+        case_id=case.case_id,
+        branch_id=case.branch_id,
+        criterion_ids=case.criterion_ids,
+        disposition=RubricDisposition.INCONCLUSIVE,
+        rationale="The successful invocation did not yield an admissible typed candidate for the declared rubric.",
+    )
+
+
+def _assess_candidate_or_inconclusive(case: CalibrationCase, summary: str) -> LiveRubricResult:
+    """Tolerant executor wrapper: an unparseable live candidate is INCONCLUSIVE.
+
+    A live model occasionally delivers output the production parser refuses.
+    The production node maps that to OUTPUT_STRUCTURED_INVALID degradation;
+    calibration reports it as an assessable INCONCLUSIVE candidate instead of
+    an executor failure, mirroring the other live families.
+    """
+
+    try:
+        return assess_evidence_intake_candidate(case, summary)
+    except (TypeError, ValueError):
+        return _inconclusive_rubric(case)
+
+
 def assess_evidence_intake_candidate(case: CalibrationCase, summary: str) -> LiveRubricResult:
     """Assess a parsed candidate only; parser/validator failure is not a rubric result."""
 
@@ -256,11 +281,18 @@ async def _execute_case(
         if result.finish_reason is not NodeFinishReason.SUCCESS or not tool_window_valid:
             raise ValueError("evidence_intake_live_hard_invariant_failed")
         stage = _validation_stage(case)
+        validation_codes: tuple[str, ...] = ()
         if stage is not None:
             response_shape = classify_final_response_shape(result.summary)
             try:
                 parse_evidence_intake_candidate(case, result.summary)
             except ValueError as error:
+                # A live model occasionally delivers output the production
+                # parser refuses. The validation journal records it with its
+                # canonical code (the journal contract below still sees exactly
+                # one event), and calibration reports an assessable
+                # INCONCLUSIVE candidate instead of exhausting the scenario
+                # attempts.
                 validation_codes = (_canonical_validation_code(case, error),)
                 await calibration.recorder.record(
                     category=RunEventCategory.VALIDATION,
@@ -271,19 +303,20 @@ async def _execute_case(
                     validation_codes=validation_codes,
                     response_shape=response_shape,
                 )
-                raise
-            await calibration.recorder.record(
-                category=RunEventCategory.VALIDATION,
-                phase=node_spec.logical_name,
-                work_id=case.case_id,
-                attempt_id="evidence-intake-calibration",
-                validation_stage=stage,
-                validation_codes=(),
-                response_shape=response_shape,
-            )
-            rubric = assess_evidence_intake_candidate(case, result.summary)
+                rubric = _inconclusive_rubric(case)
+            else:
+                await calibration.recorder.record(
+                    category=RunEventCategory.VALIDATION,
+                    phase=node_spec.logical_name,
+                    work_id=case.case_id,
+                    attempt_id="evidence-intake-calibration",
+                    validation_stage=stage,
+                    validation_codes=(),
+                    response_shape=response_shape,
+                )
+                rubric = _assess_candidate_or_inconclusive(case, result.summary)
         else:
-            rubric = assess_evidence_intake_candidate(case, result.summary)
+            rubric = _assess_candidate_or_inconclusive(case, result.summary)
         inspection = await calibration.journal_store.inspect(bundle_id=calibration.bundle_id)
         if (
             inspection.summary is None

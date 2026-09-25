@@ -197,17 +197,22 @@ class GraphHost:
 
     @contextlib.asynccontextmanager
     async def _saver_context(self, app_config: Any, provider: ProviderSelection) -> AsyncIterator[Any]:
+        # The canonical 64 KiB whole-state bound applies to the root namespace
+        # only; nested node-agent subgraph transcripts are scoped out by the
+        # wrapper (REG-008 + real-run conversations).
+        from deerflow_deep_research.runtime.checkpoint import RootBoundedCheckpointSaver
+
         if provider.kind == "memory":
             # Reuse one process-local saver so a second same-process action can
             # observe an earlier checkpoint; memory is not restart durable.
             if self._memory_saver is None:
                 self._memory_saver = self._memory_saver_factory()
-            yield self._memory_saver
+            yield RootBoundedCheckpointSaver(self._memory_saver)
             return
         async with self._checkpointer_factory(app_config) as saver:
             if hasattr(saver, "serde"):
                 saver.serde = build_deep_research_checkpoint_serde()
-            yield saver
+            yield RootBoundedCheckpointSaver(saver)
 
     def _namespace_lock(self, thread_key: str) -> Any:
         digest = hashlib.sha256(thread_key.encode("utf-8")).digest()

@@ -14,8 +14,13 @@ import time
 from collections.abc import Mapping
 from pathlib import Path
 
+from deerflow_deep_research.domain.context import SelectedBundleContext
 from deerflow_deep_research.domain.enums import NodeFinishReason
 from deerflow_deep_research.graph.nodes.final_delivery import NODE_SPEC as FINAL_DELIVERY_NODE_SPEC
+from deerflow_deep_research.graph.nodes.final_delivery.composer import (
+    admit_layout_candidate,
+    parse_layout_candidate,
+)
 from deerflow_deep_research.runtime.projection import project_research_scope
 from deerflow_deep_research.runtime.research import (
     RuntimeNodeDependencyResolver,
@@ -26,7 +31,7 @@ from tests.scenarios import canaries
 from tests.scenarios.final_composition_calibration import (
     FinalCompositionCalibrationCase,
     FinalCompositionDisposition,
-    assess_final_composition_candidate,
+    assess_admitted_final_composition_candidate,
     build_final_composition_request,
 )
 from tests.scenarios.live import (
@@ -121,7 +126,11 @@ async def _execute_case(
             graph_context,
             canaries._BridgeFactory(focused_node="final_delivery", tracker=tracker, web=None, scenario=scenario),
         )
-        dependencies = RuntimeNodeDependencyResolver(graph_context, capabilities).resolve(
+        dependencies = RuntimeNodeDependencyResolver(
+            graph_context,
+            capabilities,
+            selected_bundle=SelectedBundleContext(bundle=adapter.identity.bundle_ref),
+        ).resolve(
             logical_name=FINAL_DELIVERY_NODE_SPEC.logical_name,
             attempt_id="final-composition-calibration",
             policy=FINAL_DELIVERY_NODE_SPEC.policy,
@@ -132,7 +141,38 @@ async def _execute_case(
         result = await capabilities.run_agent(context=dependencies.agent_context, request=request)
         if result.finish_reason is not NodeFinishReason.SUCCESS:
             raise ValueError("final_composition_live_bridge_failed")
-        assessment = assess_final_composition_candidate(case, result.summary)
+        try:
+            candidate = admit_layout_candidate(parse_layout_candidate(result.summary), case.plan)
+        except ValueError:
+            # A live composer occasionally delivers a candidate the production
+            # parser refuses (closed admission, BUG-055). The production node
+            # maps that to OUTPUT_STRUCTURED_INVALID degradation; calibration
+            # reports it as an assessable INCONCLUSIVE candidate, not an
+            # executor failure, so one malformed delivery does not exhaust the
+            # scenario attempts.
+            return LiveAttempt(
+                outcome=LiveOutcome(
+                    route="candidate-evaluated",
+                    values={
+                        "identity": {
+                            "thread_id": adapter.identity.thread_id,
+                            "run_id": adapter.identity.run_id,
+                            "bundle_id": adapter.identity.bundle_id,
+                        }
+                    },
+                ),
+                error_code=None,
+                model_id=tracker.model_id,
+                tool_ids=(),
+                input_tokens=tracker.input_tokens or None,
+                output_tokens=tracker.output_tokens or None,
+                cost_usd=None,
+                tool_calls=0,
+                wall_time_seconds=time.monotonic() - started,
+                diagnostics="selected final-composition candidate refused by the production parser",
+                rubric_result=_rubric_result(case, FinalCompositionDisposition.INCONCLUSIVE),
+            )
+        assessment = assess_admitted_final_composition_candidate(case, candidate)
         return LiveAttempt(
             outcome=LiveOutcome(
                 route="candidate-evaluated",

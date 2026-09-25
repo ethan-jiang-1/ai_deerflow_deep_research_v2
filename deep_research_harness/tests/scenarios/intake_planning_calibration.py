@@ -80,14 +80,21 @@ _HITL1_BOUNDS = {
     "max_attempts": 1,
     "max_model_calls": 1,
     "max_tool_calls": 0,
-    "max_total_tokens": 8_192,
-    "timeout_seconds": 30,
+    # Token admission counts request UTF-8 bytes + the 4_096 output cap against
+    # this total (BUG-047 semantics). Measured projections across the live
+    # corpus run 7.4K-9.4K bytes, so 8_192 refused several branches before the
+    # network; 16_384 keeps >70% headroom while staying single-call bounded.
+    "max_total_tokens": 16_384,
+    # 30s was not enough for the highest-risk brief variants on a thinking
+    # model (observed TimeoutError at exactly the bound); 60s matches the
+    # topic-planning family and the corpus self-check grammar {30, 60}.
+    "timeout_seconds": 60,
 }
 _TOPIC_BOUNDS = {
     "max_attempts": 1,
     "max_model_calls": 1,
     "max_tool_calls": 0,
-    "max_total_tokens": 8_192,
+    "max_total_tokens": 16_384,
     "timeout_seconds": 60,
 }
 
@@ -344,7 +351,7 @@ def validate_calibration_cases(cases: tuple[CalibrationCase, ...] = CALIBRATION_
             case.max_attempts != 1
             or case.max_model_calls != 1
             or case.max_tool_calls != 0
-            or case.max_total_tokens != 8_192
+            or case.max_total_tokens != 16_384
             or case.timeout_seconds not in {30, 60}
         ):
             raise ValueError("calibration_case_bounds_invalid")

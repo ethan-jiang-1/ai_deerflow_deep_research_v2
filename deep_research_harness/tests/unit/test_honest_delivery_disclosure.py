@@ -244,3 +244,28 @@ def test_wave2_budget_handback_rides_the_gate_machinery_without_a_preview() -> N
     blocked = evaluate_gate_for_node(marker_present, "wave2_synthesis", build_wave2_real_gate_def())
     assert blocked["route"] == "exhausted"
     assert blocked["terminal_status"] == "blocked"
+
+
+def test_work_scoped_question_id_makes_cross_work_collisions_impossible() -> None:
+    """Independent workers may mint the same raw q:w1_ id; admission scopes it."""
+
+    from deerflow_deep_research.domain.wave1 import work_scoped_question_id
+
+    first = work_scoped_question_id("g0_wave1_w0003", "q:w1_pricing")
+    second = work_scoped_question_id("g0_wave1_w0007", "q:w1_pricing")
+    assert first != second
+    import hashlib
+
+    tag1 = hashlib.sha256(b"g0_wave1_w0003").hexdigest()[:8]
+    tag2 = hashlib.sha256(b"g0_wave1_w0007").hexdigest()[:8]
+    assert first == f"q:w1_{tag1}_pricing"
+    assert second == f"q:w1_{tag2}_pricing"
+
+    # Within one work the raw id is preserved verbatim (repair idempotence).
+    same_work = work_scoped_question_id("g0_wave1_w0003", "q:w1_pricing")
+    assert same_work == first
+
+    import re
+
+    assert re.fullmatch(r"q:w1_[a-zA-Z0-9_-]{1,64}", first)
+    assert re.fullmatch(r"q:w1_[a-zA-Z0-9_-]{1,64}", second)

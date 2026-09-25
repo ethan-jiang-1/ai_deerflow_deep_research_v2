@@ -255,7 +255,7 @@ def _case(
         max_attempts=1,
         max_model_calls=1,
         max_tool_calls=0,
-        max_total_tokens=8_192,
+        max_total_tokens=16_384,
         timeout_seconds=60,
     )
 
@@ -332,7 +332,7 @@ def validate_final_composition_calibration_cases(
             case.max_attempts != 1
             or case.max_model_calls != 1
             or case.max_tool_calls != 0
-            or case.max_total_tokens != 8_192
+            or case.max_total_tokens != 16_384
             or case.timeout_seconds != 60
         ):
             raise ValueError("final_composition_calibration_bounds_invalid")
@@ -377,11 +377,11 @@ def _verify_exact_rendering(
         raise ValueError("final_composition_citation_preservation_failed")
 
 
-def assess_final_composition_candidate(
+def assess_admitted_final_composition_candidate(
     case: FinalCompositionCalibrationCase,
-    summary: str,
+    candidate: FinalDeliveryLayoutCandidate,
 ) -> FinalCompositionAssessment:
-    candidate = admit_layout_candidate(parse_layout_candidate(summary), case.plan)
+    """Assess an already-admitted candidate; render/verify failures stay hard errors."""
     report, citation_map = render_final_artifacts(case.plan, candidate)
     _verify_exact_rendering(case, report, citation_map)
     disposition = (
@@ -400,6 +400,14 @@ def assess_final_composition_candidate(
     )
 
 
+def assess_final_composition_candidate(
+    case: FinalCompositionCalibrationCase,
+    summary: str,
+) -> FinalCompositionAssessment:
+    candidate = admit_layout_candidate(parse_layout_candidate(summary), case.plan)
+    return assess_admitted_final_composition_candidate(case, candidate)
+
+
 validate_final_composition_calibration_cases()
 
 __all__ = [
@@ -409,6 +417,7 @@ __all__ = [
     "FinalCompositionAssessment",
     "FinalCompositionCalibrationCase",
     "FinalCompositionDisposition",
+    "assess_admitted_final_composition_candidate",
     "assess_final_composition_candidate",
     "build_final_composition_request",
     "final_composition_case_index",

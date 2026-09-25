@@ -50,8 +50,12 @@ _CASE_RE = re.compile(
     r"|^calibrate-evidence-judgment-readiness-critic-(?:supported|insufficient|repair-required)$"
 )
 _COMMON = ("limited", "inconclusive")
-_ZERO = dict(max_attempts=1, max_model_calls=1, max_tool_calls=0, max_total_tokens=8_192, timeout_seconds=60)
-_WORKER = dict(max_attempts=1, max_model_calls=1, max_tool_calls=1, max_total_tokens=32_768, timeout_seconds=180)
+_ZERO = dict(max_attempts=1, max_model_calls=1, max_tool_calls=0, max_total_tokens=16_384, timeout_seconds=60)
+# A tool-using worker needs >=2 model calls (emit the tool call, then produce
+# the candidate from the tool result); 1 refused the second call as
+# MODEL_CALL_LIMIT. 4 matches the evidence-intake worker bounds and the
+# focused canary preconditions.
+_WORKER = dict(max_attempts=1, max_model_calls=4, max_tool_calls=1, max_total_tokens=32_768, timeout_seconds=180)
 _SUBMISSION_REF = "h_" + "J" * 43
 _EVIDENCE = (
     SynthesisEvidence(

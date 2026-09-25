@@ -6,10 +6,13 @@
 
 from __future__ import annotations
 
+import contextvars
 import hashlib
 from dataclasses import dataclass
 from typing import Any, Literal
 from urllib.parse import parse_qs, urlsplit
+
+from langgraph.checkpoint.base import BaseCheckpointSaver
 
 ProviderKind = Literal["memory", "sqlite", "postgres"]
 ProviderSource = Literal["database", "default"]
@@ -119,12 +122,174 @@ def _enforce_serialized_checkpoint_bound(payload: bytes) -> None:
     update, read admission, and offline migration seams.
 
     @impl REG-008
+
+    The bound is scoped to the canonical (root-namespace) graph state by default.
+    ``RootBoundedCheckpointSaver`` disables it for nested node-agent subgraph
+    namespaces, whose ephemeral conversation transcripts (work-unit workers,
+    synthesis composers carrying real evidence) legitimately exceed the canonical
+    whole-state bound in all-real runs while the canonical state itself stays far
+    below it.
     """
 
     from deerflow_deep_research.domain.state import MAX_CHECKPOINT_STATE_BYTES, CheckpointStateBoundExceeded
 
-    if len(payload) > MAX_CHECKPOINT_STATE_BYTES:
+    if _ROOT_NAMESPACE_BOUND.get() and len(payload) > MAX_CHECKPOINT_STATE_BYTES:
         raise CheckpointStateBoundExceeded()
+
+
+_ROOT_NAMESPACE_BOUND = contextvars.ContextVar("deep_research_root_checkpoint_bound", default=True)
+
+
+def _checkpoint_namespace(config: Any) -> str:
+    configurable = getattr(config, "configurable", None)
+    if configurable is None and isinstance(config, dict):
+        configurable = config.get("configurable")
+    if not isinstance(configurable, dict):
+        return ""
+    value = configurable.get("checkpoint_ns", "")
+    return value if isinstance(value, str) else ""
+
+
+class RootBoundedCheckpointSaver(BaseCheckpointSaver):
+    """Delegate saver that scopes the canonical size bound to the root namespace.
+
+    langgraph persists nested node-agent subgraph state (work-unit worker and
+    composer conversations, under non-empty ``checkpoint_ns`` values) through the
+    parent saver. Those transcripts grow with real evidence and model output and
+    are per-attempt ephemera, not canonical Run State; only the root-namespace
+    state is bounded by REG-008. Wrap a saver to keep the serde-level bound for
+    root writes and disable it for namespaced ones. Unwrapped savers keep the
+    original always-on behavior.
+
+    The wrapper subclasses ``BaseCheckpointSaver`` so langgraph's compile-time
+    saver type checks still pass, and delegates the whole IO surface to the
+    wrapped saver.
+    """
+
+    def __init__(self, inner: Any) -> None:
+        object.__setattr__(self, "_inner", inner)
+        # Mirror the wrapped saver's serde as a plain instance attribute; the
+        # base __init__ cannot be used because __setattr__ delegates to the
+        # inner saver, which is already initialized with the patched serde.
+        object.__setattr__(self, "serde", getattr(inner, "serde", None))
+
+    @property
+    def config_specs(self) -> list:
+        return list(getattr(object.__getattribute__(self, "_inner"), "config_specs", []))
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(object.__getattribute__(self, "_inner"), name)
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if name == "_inner":
+            object.__setattr__(self, name, value)
+        else:
+            setattr(object.__getattribute__(self, "_inner"), name, value)
+
+    async def __aenter__(self) -> RootBoundedCheckpointSaver:
+        inner_enter = getattr(object.__getattribute__(self, "_inner"), "__aenter__", None)
+        if callable(inner_enter):
+            await inner_enter()
+        return self
+
+    async def __aexit__(self, *exc_info: Any) -> Any:
+        inner_exit = getattr(object.__getattribute__(self, "_inner"), "__aexit__", None)
+        if callable(inner_exit):
+            return await inner_exit(*exc_info)
+        return None
+
+    def _scoped(self, config: Any):
+        namespace = _checkpoint_namespace(config)
+        if namespace:
+            return _ROOT_NAMESPACE_BOUND.set(False)
+        return None
+
+    async def aput(self, *args: Any, **kwargs: Any) -> Any:
+        config = args[0] if args else kwargs.get("config")
+        token = self._scoped(config)
+        try:
+            return await object.__getattribute__(self, "_inner").aput(*args, **kwargs)
+        finally:
+            if token is not None:
+                _ROOT_NAMESPACE_BOUND.reset(token)
+
+    async def aput_writes(self, *args: Any, **kwargs: Any) -> Any:
+        config = args[0] if args else kwargs.get("config")
+        token = self._scoped(config)
+        try:
+            return await object.__getattribute__(self, "_inner").aput_writes(*args, **kwargs)
+        finally:
+            if token is not None:
+                _ROOT_NAMESPACE_BOUND.reset(token)
+
+    def put(self, *args: Any, **kwargs: Any) -> Any:
+        config = args[0] if args else kwargs.get("config")
+        token = self._scoped(config)
+        try:
+            return object.__getattribute__(self, "_inner").put(*args, **kwargs)
+        finally:
+            if token is not None:
+                _ROOT_NAMESPACE_BOUND.reset(token)
+
+    def put_writes(self, *args: Any, **kwargs: Any) -> Any:
+        config = args[0] if args else kwargs.get("config")
+        token = self._scoped(config)
+        try:
+            return object.__getattribute__(self, "_inner").put_writes(*args, **kwargs)
+        finally:
+            if token is not None:
+                _ROOT_NAMESPACE_BOUND.reset(token)
+
+    async def aget_tuple(self, config: Any) -> Any:
+        return await object.__getattribute__(self, "_inner").aget_tuple(config)
+
+    def alist(self, config: Any, *args: Any, **kwargs: Any) -> Any:
+        # Transparent delegation: the inner method is an async generator, so the
+        # wrapper must return it directly for `async for` to work.
+        return object.__getattribute__(self, "_inner").alist(config, *args, **kwargs)
+
+    def get_tuple(self, config: Any) -> Any:
+        return object.__getattribute__(self, "_inner").get_tuple(config)
+
+    def list(self, config: Any, *args: Any, **kwargs: Any) -> Any:
+        return object.__getattribute__(self, "_inner").list(config, *args, **kwargs)
+
+    async def aget(self, config: Any, *args: Any, **kwargs: Any) -> Any:
+        return await object.__getattribute__(self, "_inner").aget(config, *args, **kwargs)
+
+    def get(self, config: Any, *args: Any, **kwargs: Any) -> Any:
+        return object.__getattribute__(self, "_inner").get(config, *args, **kwargs)
+
+    async def adelete_thread(self, config: Any) -> Any:
+        return await object.__getattribute__(self, "_inner").adelete_thread(config)
+
+    def delete_thread(self, config: Any) -> Any:
+        return object.__getattribute__(self, "_inner").delete_thread(config)
+
+    async def adelete_for_runs(self, config: Any, *args: Any, **kwargs: Any) -> Any:
+        return await object.__getattribute__(self, "_inner").adelete_for_runs(config, *args, **kwargs)
+
+    def delete_for_runs(self, config: Any, *args: Any, **kwargs: Any) -> Any:
+        return object.__getattribute__(self, "_inner").delete_for_runs(config, *args, **kwargs)
+
+    async def acopy_thread(self, config: Any, *args: Any, **kwargs: Any) -> Any:
+        return await object.__getattribute__(self, "_inner").acopy_thread(config, *args, **kwargs)
+
+    def copy_thread(self, config: Any, *args: Any, **kwargs: Any) -> Any:
+        return object.__getattribute__(self, "_inner").copy_thread(config, *args, **kwargs)
+
+    async def aprune(self, config: Any, *args: Any, **kwargs: Any) -> Any:
+        return await object.__getattribute__(self, "_inner").aprune(config, *args, **kwargs)
+
+    def prune(self, config: Any, *args: Any, **kwargs: Any) -> Any:
+        return object.__getattribute__(self, "_inner").prune(config, *args, **kwargs)
+
+    def aget_delta_channel_history(self, config: Any, *args: Any, **kwargs: Any) -> Any:
+        # Transparent delegation: the inner method is an async generator.
+        return object.__getattribute__(self, "_inner").aget_delta_channel_history(config, *args, **kwargs)
+
+    def get_delta_channel_history(self, config: Any, *args: Any, **kwargs: Any) -> Any:
+        return object.__getattribute__(self, "_inner").get_delta_channel_history(config, *args, **kwargs)
 
 
 def build_deep_research_checkpoint_serde():
@@ -216,5 +381,6 @@ __all__ = [
     "resolve_effective_provider",
     "validate_provider_configuration",
     "validate_probe_key_schema",
+    "RootBoundedCheckpointSaver",
     "build_deep_research_checkpoint_serde",
 ]

@@ -90,7 +90,10 @@ def test_live_canaries_declare_unique_identity_and_bounded_execution() -> None:
     for scenario in LIVE_CANARIES:
         assert scenario.preconditions["identity"] == "unique-per-invocation"
         assert 0 < scenario.preconditions["timeout_seconds"] <= 300
-        assert scenario.preconditions["max_attempts"] == 1
+        # Web-mining canaries carry one bounded retry (live Tavily variance);
+        # every other canary stays single-shot.
+        expected_attempts = 2 if "web_search" in scenario.live_requirements else 1
+        assert scenario.preconditions["max_attempts"] == expected_attempts
         assert scenario.preconditions["max_total_tokens"] == 32_768
         assert scenario.preconditions["max_model_calls"] <= 4
         assert scenario.preconditions["max_tool_calls"] <= 3
@@ -108,7 +111,7 @@ def test_live_canaries_declare_unique_identity_and_bounded_execution() -> None:
         "production-recipe",
         "full-pipeline",
     )
-    assert wave1.preconditions["max_attempts"] == 1
+    assert wave1.preconditions["max_attempts"] == 2
     assert wave1.preconditions["max_model_calls"] == 4
     assert wave1.preconditions["max_tool_calls"] == 3
     wave2 = next(scenario for scenario in LIVE_CANARIES if scenario.scenario_id == "live-wave2-synthesis")
@@ -136,7 +139,7 @@ def test_live_canaries_declare_unique_identity_and_bounded_execution() -> None:
         "production-recipe",
         "full-pipeline",
     )
-    assert targeted.preconditions["max_attempts"] == 1
+    assert targeted.preconditions["max_attempts"] == 2
     assert targeted.preconditions["max_model_calls"] == 4
     assert targeted.preconditions["max_tool_calls"] == 3
 

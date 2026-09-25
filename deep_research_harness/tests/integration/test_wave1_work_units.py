@@ -52,7 +52,12 @@ from deerflow_deep_research.domain.state import (
     merge_trace,
     preview_work_unit_update,
 )
-from deerflow_deep_research.domain.wave1 import OpenQuestionState, Wave1GateReviewRow, Wave1OpenQuestionRef
+from deerflow_deep_research.domain.wave1 import (
+    OpenQuestionState,
+    Wave1GateReviewRow,
+    Wave1OpenQuestionRef,
+    work_scoped_question_id,
+)
 from deerflow_deep_research.domain.work_units import (
     WORK_UNIT_GATE_VIEW_KEY,
     SubmissionValidationCode,
@@ -1117,7 +1122,10 @@ async def test_real_wave1_review_gate_enforces_question_floor_and_review_integri
 
     adapter_update = evaluate_gate_for_node(gate_state, "wave1", real_wave1_gate_def())
     assert adapter_update["wave1_open_questions"] == (
-        Wave1OpenQuestionRef(question_id="q:w1_more-evidence", work_id=review.rows[0].work_id),
+        Wave1OpenQuestionRef(
+            question_id=work_scoped_question_id(review.rows[0].work_id, "q:w1_more-evidence"),
+            work_id=review.rows[0].work_id,
+        ),
     )
 
     exhausted_review = Wave1GateReview(rows=(review.rows[0].model_copy(update={"distinct_new_url_count": 1}),))

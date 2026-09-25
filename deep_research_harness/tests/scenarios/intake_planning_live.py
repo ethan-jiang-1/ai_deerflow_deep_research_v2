@@ -15,6 +15,7 @@ import time
 from collections.abc import Mapping
 from pathlib import Path
 
+from deerflow_deep_research.domain.context import SelectedBundleContext
 from deerflow_deep_research.domain.enums import NodeFinishReason
 from deerflow_deep_research.graph.nodes.hitl1 import NODE_SPEC as HITL1_NODE_SPEC
 from deerflow_deep_research.graph.nodes.topic_planning import NODE_SPEC as TOPIC_PLANNING_NODE_SPEC
@@ -157,13 +158,18 @@ async def _execute_case(
     adapter = canaries._LiveAdapter(workspace / case.case_id, app_config)
     try:
         graph_context = project_research_scope(adapter.envelope, bundle=adapter.identity.bundle_ref)
+        # The bridge refuses to run without bundle attribution (the same
+        # selected_bundle contract the graph runtime supplies in production).
+        selected_bundle = SelectedBundleContext(bundle=adapter.identity.bundle_ref)
         if case.branch_id.startswith("hitl1/"):
             capabilities = _build_hitl1_capabilities(
                 adapter.envelope,
                 graph_context,
                 canaries._BridgeFactory(focused_node=None, tracker=tracker, web=None, scenario=scenario),
             )
-            dependencies = RuntimeNodeDependencyResolver(graph_context, capabilities).resolve(
+            dependencies = RuntimeNodeDependencyResolver(
+                graph_context, capabilities, selected_bundle=selected_bundle
+            ).resolve(
                 logical_name="hitl1",
                 attempt_id="calibration-hitl1",
                 policy=HITL1_NODE_SPEC.policy,
@@ -174,7 +180,9 @@ async def _execute_case(
                 graph_context,
                 canaries._BridgeFactory(focused_node=None, tracker=tracker, web=None, scenario=scenario),
             )
-            dependencies = RuntimeNodeDependencyResolver(graph_context, capabilities).resolve(
+            dependencies = RuntimeNodeDependencyResolver(
+                graph_context, capabilities, selected_bundle=selected_bundle
+            ).resolve(
                 logical_name="topic_planning",
                 attempt_id="calibration-topic-planning",
                 policy=TOPIC_PLANNING_NODE_SPEC.policy,

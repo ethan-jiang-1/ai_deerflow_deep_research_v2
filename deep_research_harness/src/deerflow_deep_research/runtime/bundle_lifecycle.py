@@ -515,7 +515,12 @@ class BundleLifecycle:
                 if hasattr(saver, "serde"):
                     saver.serde = build_deep_research_checkpoint_serde()
                 await store.read(lease=lease)
-                yield saver
+                # The canonical 64 KiB whole-state bound applies to the root
+                # namespace only; nested node-agent subgraph transcripts are
+                # scoped out by the wrapper (REG-008 + real-run conversations).
+                from deerflow_deep_research.runtime.checkpoint import RootBoundedCheckpointSaver
+
+                yield RootBoundedCheckpointSaver(saver)
         except asyncio.CancelledError:
             raise
         except BundleLifecycleError:

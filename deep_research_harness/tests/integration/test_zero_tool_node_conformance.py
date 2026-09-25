@@ -402,7 +402,8 @@ async def test_wave2_malformed_output_consumes_repair_and_leaves_no_partial_auth
     assert update["latest_incident"]["code"] == "output.structured_invalid"
 
     assert case_id == MALFORMED_OUTPUT_CASE.case_id
-    assert bridge.agents_built == 2
+    # Initial synthesis plus three bounded repair rounds.
+    assert bridge.agents_built == 4
     assert not (
         envelope.workspace_host_path / bundle_host_relative_root(selected.bundle) / "synthesis" / "findings.json"
     ).exists()

@@ -42,6 +42,7 @@ from deerflow_deep_research.domain.wave1 import (
     Wave1SourceIntakeResult,
     Wave1SourceRef,
     validate_wave1_worker_output,
+    work_scoped_question_id,
 )
 from deerflow_deep_research.domain.work_units import (
     Attempt,
@@ -334,7 +335,14 @@ async def _wave1_worker(
         sources=tuple(normalized_sources),
         source_ids=tuple(source.source_id for source in normalized_sources),
         claims=normalized_claims,
-        open_questions=output.open_questions,
+        # Independent workers author q:w1_* ids without cross-work
+        # coordination; scope every admitted id with its owning work so the
+        # synthesis pre-model guard can never see a cross-work collision
+        # (wave1_open_question_id_collision).
+        open_questions=tuple(
+            question.model_copy(update={"question_id": work_scoped_question_id(spec.work_id, question.question_id)})
+            for question in output.open_questions
+        ),
     )
     result_bytes = canonical_json_bytes(document)
     await artifact_writer.write_result(document)  # type: ignore[union-attr]

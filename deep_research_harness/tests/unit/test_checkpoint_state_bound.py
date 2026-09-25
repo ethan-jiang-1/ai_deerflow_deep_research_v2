@@ -34,7 +34,10 @@ from deerflow_deep_research.domain.state import (
     validate_checkpoint_values,
 )
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle, BundleLifecycleError
-from deerflow_deep_research.runtime.checkpoint import build_deep_research_checkpoint_serde
+from deerflow_deep_research.runtime.checkpoint import (
+    RootBoundedCheckpointSaver,
+    build_deep_research_checkpoint_serde,
+)
 
 BUNDLE_ID = "b_" + "A" * 43
 _SCOPE = ("bound-user", "bound-thread")
@@ -88,6 +91,32 @@ async def test_over_bound_single_write_is_rejected_without_persisting_a_row(tmp_
         with pytest.raises(CheckpointStateBoundExceeded):
             await saver.aput_writes(config, [("wave0", {"oversized": _OVER})], task_id="task-1")
     assert _rows(database, "writes", "task_id, idx, channel, type, value") == before
+
+
+async def test_root_bounded_saver_scopes_the_bound_to_the_root_namespace(tmp_path: Path) -> None:
+    """Nested node-agent subgraph transcripts may exceed the canonical bound.
+
+    langgraph persists work-unit worker and composer conversations under
+    non-empty checkpoint namespaces; those ephemeral transcripts carry real
+    evidence and legitimately cross the canonical whole-state bound, while the
+    canonical root state must stay bounded (REG-008).
+    """
+
+    database = tmp_path / "graph.sqlite"
+    root_config = _config(BUNDLE_ID)
+    subgraph_config = {"configurable": {"thread_id": BUNDLE_ID, "checkpoint_ns": "wave1:<w>|worker:<id>|1"}}
+    async with AsyncSqliteSaver.from_conn_string(str(database)) as saver:
+        saver.serde = build_deep_research_checkpoint_serde()
+        wrapped = RootBoundedCheckpointSaver(saver)
+        # Namespaced subgraph write of an over-bound transcript is admitted.
+        await wrapped.aput(subgraph_config, _checkpoint(_OVER), {}, {"request_text": "1"})
+        assert _rows(database, "checkpoints", "checkpoint_id, type, checkpoint")
+        # Root-namespace canonical writes keep the hard bound.
+        root_config = await wrapped.aput(root_config, _checkpoint("a normal question"), {}, {"request_text": "2"})
+        with pytest.raises(CheckpointStateBoundExceeded):
+            await wrapped.aput(root_config, _checkpoint(_OVER), {}, {"request_text": "3"})
+        with pytest.raises(CheckpointStateBoundExceeded):
+            await wrapped.aput_writes(root_config, [("wave0", {"oversized": _OVER})], task_id="task-2")
 
 
 def test_work_unit_block_bound_is_strictly_below_the_whole_state_bound() -> None:

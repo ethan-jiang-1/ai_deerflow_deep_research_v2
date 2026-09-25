@@ -85,6 +85,9 @@ def _pre_model_problem(error: ValueError) -> NodeProblem:
     )
 
 
+_MAX_SYNTHESIS_REPAIR_ROUNDS = 3
+
+
 class SynthesisValidationFailure(ValueError):
     """A typed deterministic validation failure: concrete category plus a
     bounded repair-time detail (missing/duplicated/foreign question ids).
@@ -336,31 +339,51 @@ def build_real(dependencies: NodeBuildDependencies):
                 parse_synthesis_output(result.summary), wave0_refs, evidence, open_question_ids=open_question_ids
             )
         except ValueError as initial_error:
+            # Bounded repair loop: a live model facing a wide open-question set
+            # (many Wave1 works) regularly needs more than one attempt to
+            # reproduce the coverage bookkeeping exactly; each round carries
+            # the prior candidate plus the concrete validation feedback, and
+            # every invocation still consumes the node policy's model-call
+            # budget so the sequence stays bounded.
+            candidate_summary = result.summary
             validation_category = _synthesis_validation_category(initial_error)
             repair_detail = getattr(initial_error, "detail", None)
-            repair_outcome = await _invoke_with_provider_retry(
-                lambda: dependencies.capabilities.run_agent(
-                    context=dependencies.agent_context,
-                    request=build_synthesis_repair_prompt(
-                        result.summary,
-                        evidence,
-                        validation_category=validation_category,
-                        open_questions=open_question_pairs,
-                        validation_detail=repair_detail,
+            output = None
+            final_error: BaseException = initial_error
+            for _repair_round in range(_MAX_SYNTHESIS_REPAIR_ROUNDS):
+                repair_outcome = await _invoke_with_provider_retry(
+                    lambda summary=candidate_summary, category=validation_category, detail=repair_detail: (
+                        dependencies.capabilities.run_agent(
+                            context=dependencies.agent_context,
+                            request=build_synthesis_repair_prompt(
+                                summary,
+                                evidence,
+                                validation_category=category,
+                                open_questions=open_question_pairs,
+                                validation_detail=detail,
+                            ),
+                        )
                     ),
-                ),
-                phase="wave2_synthesis",
-            )
-            if isinstance(repair_outcome, InvocationFailure):
-                if _is_budget_class(repair_outcome):
-                    return _budget_handback_update()
-                return _exhausted_update(repair_outcome.problem, state=state, dependencies=dependencies)
-            repaired = repair_outcome.result
-            try:
-                output = _validate_synthesis_semantics(
-                    parse_synthesis_output(repaired.summary), wave0_refs, evidence, open_question_ids=open_question_ids
+                    phase="wave2_synthesis",
                 )
-            except ValueError as final_error:
+                if isinstance(repair_outcome, InvocationFailure):
+                    if _is_budget_class(repair_outcome):
+                        return _budget_handback_update()
+                    return _exhausted_update(repair_outcome.problem, state=state, dependencies=dependencies)
+                candidate_summary = repair_outcome.result.summary
+                try:
+                    output = _validate_synthesis_semantics(
+                        parse_synthesis_output(candidate_summary),
+                        wave0_refs,
+                        evidence,
+                        open_question_ids=open_question_ids,
+                    )
+                    break
+                except ValueError as round_error:
+                    validation_category = _synthesis_validation_category(round_error)
+                    repair_detail = getattr(round_error, "detail", None)
+                    final_error = round_error
+            if output is None:
                 # A still-invalid repaired candidate is a bounded terminal, never
                 # an uncaught crash: route exhausted with a typed incident and
                 # the concrete semantic category (when the failure is semantic).

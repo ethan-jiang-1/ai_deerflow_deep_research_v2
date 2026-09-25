@@ -311,10 +311,12 @@ async def test_scripted_worker_traverses_real_bridge_tool_policy_artifacts_and_l
         record = records[0]
         persisted = json.loads(await store.read_canonical_bytes(record.result_ref, max_bytes=256 * 1024))
         claims = {claim["claim_id"]: claim for claim in persisted["claims"]}
+        # Admission namespaces the worker-authored id with its owning work
+        # (cross-work collision-proofing); g0_wave1_w0000 hashes to d30ccbed.
         assert persisted["open_questions"] == [
             {
                 "question": "What additional evidence would resolve uncertainty?",
-                "question_id": "q:w1_uncertain",
+                "question_id": "q:w1_d30ccbed_uncertain",
                 "state": "targeted_search",
             }
         ]

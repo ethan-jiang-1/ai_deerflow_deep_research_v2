@@ -73,7 +73,7 @@ _ZERO_TOOL_BOUNDS = {
     "max_attempts": 1,
     "max_model_calls": 1,
     "max_tool_calls": 0,
-    "max_total_tokens": 8_192,
+    "max_total_tokens": 16_384,
     "timeout_seconds": 60,
 }
 _BUNDLE_ID = "b_" + "E" * 43

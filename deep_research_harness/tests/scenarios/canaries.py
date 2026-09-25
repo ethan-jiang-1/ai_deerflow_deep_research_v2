@@ -161,7 +161,10 @@ def _canary(scenario_id: str, focused_node: str, *, require_web: bool) -> LiveSc
                 "live-hitl1-to-topic-planning": 120,
                 "live-one-topic-wave0": 210,
             }[scenario_id],
-            "max_attempts": 1,
+            # One bounded retry for the web-mining route: live Tavily variance
+            # occasionally yields a candidate the deterministic assertions
+            # reject on the first attempt.
+            "max_attempts": 2 if require_web else 1,
             "max_total_tokens": 32_768,
             "max_model_calls": 4 if require_web else 1,
             "max_tool_calls": 3 if require_web else 0,
@@ -192,7 +195,10 @@ def _focused_wave1_canary() -> LiveScenario:
                 "full-pipeline",
             ),
             "timeout_seconds": 180,
-            "max_attempts": 1,
+            # One bounded retry: these workers mine live Tavily results, whose
+            # variance occasionally yields a candidate the deterministic
+            # assertions reject on the first attempt.
+            "max_attempts": 2,
             "max_total_tokens": 32_768,
             "max_model_calls": 4,
             "max_tool_calls": 3,
@@ -254,7 +260,10 @@ def _focused_targeted_evidence_canary() -> LiveScenario:
                 "full-pipeline",
             ),
             "timeout_seconds": 180,
-            "max_attempts": 1,
+            # One bounded retry: these workers mine live Tavily results, whose
+            # variance occasionally yields a candidate the deterministic
+            # assertions reject on the first attempt.
+            "max_attempts": 2,
             "max_total_tokens": 32_768,
             "max_model_calls": 4,
             "max_tool_calls": 3,
@@ -915,8 +924,22 @@ class _FocusedCapabilities:
     async def run_agent(self, *, context, request) -> NodeExecutionResult:
         if self._focused_node is None or context.node_name == self._focused_node:
             return await self._real.run_agent(context=context, request=request)
-        summary = _BRIEF if context.node_name == "hitl1" else _PLAN
-        return NodeExecutionResult(finish_reason=NodeFinishReason.SUCCESS, summary=summary)
+        if context.node_name == "hitl1":
+            # The real hitl1 makes two kinds of zero-tool invocations: brief
+            # generation (expects a StructuredBrief) and semantic intake on a
+            # profile reply (expects a SemanticCandidate). Stub each with the
+            # shape its parser admits so the deterministic prefix resumes
+            # without a model call — a brief-shaped stub fed to the intake
+            # parser made every non-hitl1 prefix canary re-suspend at hitl1
+            # (live_prefix_missing).
+            capability_id = str(getattr(getattr(request, "capability_ref", None), "capability_id", ""))
+            if "semantic-intake" in capability_id:
+                return NodeExecutionResult(
+                    finish_reason=NodeFinishReason.SUCCESS,
+                    summary='{"intent":"accept_current_proposal"}',
+                )
+            return NodeExecutionResult(finish_reason=NodeFinishReason.SUCCESS, summary=_BRIEF)
+        return NodeExecutionResult(finish_reason=NodeFinishReason.SUCCESS, summary=_PLAN)
 
 
 class _BridgeFactory:
@@ -1370,7 +1393,17 @@ async def _execute_with_adapter(
             adapter=adapter,
             bundle_graph_executor=graph_executor,
         )
-        if not isinstance(resumed, Command):
+        if isinstance(resumed, Command):
+            control, _hitl2 = _command_payload(resumed)
+            trace = tuple(control.get("execution_trace", ()))
+        elif isinstance(resumed, dict) and resumed.get("status") == "completed":
+            # The real hitl2 owns autonomous continuation (no second human
+            # ask), so a resumed prefix run legitimately completes end to end;
+            # the execution trace carried by the completed projection still
+            # proves the focused prefix executed.
+            control = resumed
+            trace = tuple(resumed.get("execution_trace", ()))
+        else:
             code = resumed.get("code") if isinstance(resumed, dict) else type(resumed).__name__
             store = adapter.stores.get(bundle_id)
             attempt_count = (
@@ -1391,8 +1424,6 @@ async def _execute_with_adapter(
                 started_at=started_at,
                 workflow_attempts=max(attempt_count, 1),
             )
-        control, _hitl2 = _command_payload(resumed)
-        trace = tuple(control.get("execution_trace", ()))
         if focused_node not in trace:
             raise AssertionError(f"live_prefix_missing:{focused_node}")
         route = "hitl1-to-topic-planning" if focused_node == "topic_planning" else "one-topic-wave0"

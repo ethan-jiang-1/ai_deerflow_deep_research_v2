@@ -762,6 +762,10 @@ class RuntimeNodeAgentBridge:
                 certainty=FailureCertainty.UNKNOWN if admitted_provider_request else FailureCertainty.DIRECT,
             )
         except Exception:
+            # An unclassified invocation failure must leave a traceback behind;
+            # the run journal only records the category, so without this log the
+            # diagnostic reference is unactionable.
+            LOGGER.exception("agent_invocation_failed")
             return self._safe_failure(
                 context,
                 NodeFinishReason.FAILED,

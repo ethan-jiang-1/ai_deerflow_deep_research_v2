@@ -1531,7 +1531,9 @@ async def test_wave2_cognitive_program_production_scenarios_record_only_declared
     output = json.loads((execution.bundle_path / "output.json").read_text(encoding="utf-8"))
     facts = output["wave2_handoff_facts"]
     assert [fact["scenario_id"] for fact in facts] == [scenario.scenario_id for scenario in fixture.scenarios]
-    assert [fact["repair_count"] for fact in facts] == [0, 0, 0, 1, 1]
+    # The bounded synthesis repair loop now allows three rounds (was one);
+    # the final scripted scenario needs two repairs before it validates.
+    assert [fact["repair_count"] for fact in facts] == [0, 0, 0, 1, 2]
     assert all(fact["prompt_assignment_bound"] for fact in facts)
     assert all(fact["accepted_evidence_bound"] for fact in facts)
     assert all(fact["zero_tool_runtime_enforced"] for fact in facts)

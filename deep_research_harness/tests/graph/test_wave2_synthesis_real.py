@@ -651,9 +651,15 @@ async def test_real_synthesis_rejects_forged_repair_without_publishing(tmp_path:
             finish_reason=NodeFinishReason.SUCCESS,
             summary=_synthesis_json(backing_refs=("source:forged",)),
         ),
-        NodeExecutionResult(
-            finish_reason=NodeFinishReason.SUCCESS,
-            summary=_synthesis_json(backing_refs=("source:still-forged",)),
+        # The bounded repair loop allows three repair rounds; every scripted
+        # repair stays invalid so the node terminates exhausted after all of
+        # them.
+        *(
+            NodeExecutionResult(
+                finish_reason=NodeFinishReason.SUCCESS,
+                summary=_synthesis_json(backing_refs=("source:still-forged",)),
+            )
+            for _ in range(3)
         ),
     )
 
@@ -663,7 +669,7 @@ async def test_real_synthesis_rejects_forged_repair_without_publishing(tmp_path:
     assert update["terminal_status"] == "blocked"
     assert update["latest_incident"]["code"] == "output.structured_invalid"
     assert update["latest_incident"]["phase"] == "wave2_synthesis"
-    assert len(capabilities.requests) == 2
+    assert len(capabilities.requests) == 4
     assert all(request.tools_enabled is False for request in capabilities.requests)
     assert not (tmp_path / bundle_host_relative_root(BUNDLE) / "synthesis" / "findings.json").exists()
 
@@ -677,7 +683,7 @@ async def test_real_synthesis_rejects_empty_repair_when_accepted_evidence_exists
     assert update["route"] == "exhausted"
     assert update["terminal_status"] == "blocked"
     assert update["latest_incident"]["code"] == "output.structured_invalid"
-    assert len(capabilities.requests) == 2
+    assert len(capabilities.requests) == 4
     assert not (tmp_path / bundle_host_relative_root(BUNDLE) / "synthesis" / "findings.json").exists()
 
 
@@ -706,7 +712,7 @@ async def test_real_synthesis_rejects_gaps_only_repair_without_publishing(tmp_pa
     assert update["route"] == "exhausted"
     assert update["terminal_status"] == "blocked"
     assert update["latest_incident"]["code"] == "output.structured_invalid"
-    assert len(capabilities.requests) == 2
+    assert len(capabilities.requests) == 4
     assert capabilities.requests[1].tools_enabled is False
     assert capabilities.requests[0].capability_ref is not None
     assert capabilities.requests[0].capability_ref.capability_id == "wave2-evidence-synthesis"
@@ -1173,7 +1179,7 @@ async def test_still_invalid_semantic_repair_projects_concrete_validation_catego
     assert update["terminal_status"] == "blocked"
     assert update["latest_incident"]["code"] == "output.structured_invalid"
     assert update["latest_incident"]["validation_category"] == "synthesis_question_coverage_invalid"
-    assert len(capabilities.requests) == 2
+    assert len(capabilities.requests) == 4
     assert not (tmp_path / bundle_host_relative_root(BUNDLE) / "synthesis" / "findings.json").exists()
 
 

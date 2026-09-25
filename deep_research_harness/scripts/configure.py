@@ -41,6 +41,19 @@ FILE_READ_GROUP_NAME = "file:read"
 FILE_READ_TOOL_NAME = "read_file"
 SKILL_NAME = "deep-research-controller"
 AGENT_NAME = "deep-research"
+# Framework-owned runtime artifacts the upstream memory subsystem writes into
+# the default agent directory (memory store, its migration backups, and the
+# extracted facts tree); they are not app-owned and never content-compared.
+_FRAMEWORK_RUNTIME_AGENT_ARTIFACT_PATTERNS = (
+    re.compile(r"^memory\.json(?:\..*)?$"),
+    re.compile(r"^facts$"),
+)
+
+
+def _is_framework_runtime_agent_artifact(name: str) -> bool:
+    return any(pattern.fullmatch(name) for pattern in _FRAMEWORK_RUNTIME_AGENT_ARTIFACT_PATTERNS)
+
+
 AGENT_DESCRIPTION = "Graph-controlled Deep Research"
 AGENT_NAME_PATTERN = re.compile(r"^[A-Za-z0-9-]+$")
 SCRIPT_ROOT = Path(__file__).resolve().parents[1]
@@ -438,7 +451,12 @@ def _agent_plans(
     sources = (("config.yaml", config_bytes), ("SOUL.md", soul_bytes))
     if agent_dir.exists():
         actual_names = {path.name for path in agent_dir.iterdir()}
-        if actual_names != {name for name, _content in sources}:
+        # The upstream memory subsystem legitimately writes agent-scoped
+        # runtime state into the agent directory beside our owned templates;
+        # only files outside the owned pair plus these framework artifact
+        # patterns count as ownership drift.
+        allowed = {name for name, _content in sources}
+        if any(name not in allowed and not _is_framework_runtime_agent_artifact(name) for name in actual_names):
             raise ConfigureError("entry.agent_ownership_conflict", f"same-name Agent directory drifted: {AGENT_NAME}")
     plans: list[_TargetPlan] = []
     for name, source in sources:

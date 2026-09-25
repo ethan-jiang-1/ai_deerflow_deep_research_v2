@@ -33,7 +33,11 @@ async def test_live_final_composition_calibration(tmp_path, case) -> None:
     assert all(report.hard_invariants.values())
     assert report.tool_calls == 0
     assert report.tool_ids == ()
-    assert report.quality_metrics["accepted-authority-count"]["status"] == "unavailable"
+    # Candidate-only composition never accepts ledger records, so the metric
+    # layer reports INSUFFICIENT_AUTHORITY (never a literal "unavailable"
+    # status; see tests/unit/test_live_evaluation.py and
+    # tests/unit/test_intake_planning_calibration.py for the pinned semantics).
+    assert report.quality_metrics["accepted-authority-count"]["status"] == "insufficient_authority"
     assert report.rubric_result is not None
     assert report.rubric_result.case_id == case.case_id
     assert report.rubric_result.branch_id == case.branch_id

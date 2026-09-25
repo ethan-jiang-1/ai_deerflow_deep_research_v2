@@ -158,7 +158,7 @@ REPAIR_TARGETED_SCRIPT: tuple[str, ...] = (
     '"gaps": [{"gap_id": "gap:storage-cost", '
     '"description": "Which deployment context has the lower operating cost?", "priority": 1, '
     '"affected_topics": ["primary-evidence"], "search_required": true, '
-    '"source_questions": ["q:w1_more-evidence"]}], '
+    '"source_questions": ["q:w1_d30ccbed_more-evidence"]}], '
     '"summary": "One backed finding with one searchable gap."}',
     # targeted worker: one retrieval, then an honest unresolved same-gap intake.
     "TOOL_CALL:web_search",
@@ -173,7 +173,7 @@ REPAIR_TARGETED_SCRIPT: tuple[str, ...] = (
     '"gaps": [{"gap_id": "gap:storage-cost", '
     '"description": "Which deployment context has the lower operating cost?", "priority": 1, '
     '"affected_topics": ["primary-evidence"], "search_required": true, '
-    '"source_questions": ["q:w1_more-evidence"]}], '
+    '"source_questions": ["q:w1_d30ccbed_more-evidence"]}], '
     '"summary": "The searchable gap remains after one targeted round."}',
 )
 

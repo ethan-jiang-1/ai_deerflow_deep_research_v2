@@ -13,6 +13,7 @@ import time
 from collections.abc import Mapping
 from pathlib import Path
 
+from deerflow_deep_research.domain.context import SelectedBundleContext
 from deerflow_deep_research.domain.enums import NodeFinishReason
 from deerflow_deep_research.graph.nodes.readiness import NODE_SPEC as READINESS_NODE_SPEC
 from deerflow_deep_research.graph.nodes.wave1 import NODE_SPEC as WAVE1_NODE_SPEC
@@ -72,7 +73,21 @@ def evidence_judgment_live_scenario(case: CalibrationCase) -> LiveScenario:
 
 
 def assess_evidence_judgment_candidate(case: CalibrationCase, summary: str) -> LiveRubricResult:
-    candidate = parse_evidence_judgment_candidate(case, summary)
+    try:
+        candidate = parse_evidence_judgment_candidate(case, summary)
+    except (TypeError, ValueError):
+        # A live model occasionally delivers a candidate the production parser
+        # refuses (e.g. a list-valued scalar field). The production node maps
+        # that to OUTPUT_STRUCTURED_INVALID degradation; calibration reports it
+        # as an assessable INCONCLUSIVE candidate instead of an executor
+        # failure, mirroring the intake family's assess contract.
+        return LiveRubricResult(
+            case_id=case.case_id,
+            branch_id=case.branch_id,
+            criterion_ids=case.criterion_ids,
+            disposition=RubricDisposition.INCONCLUSIVE,
+            rationale="The successful invocation did not yield an admissible typed candidate for the declared rubric.",
+        )
     rendered = json.dumps(candidate.model_dump(mode="json"), ensure_ascii=True, sort_keys=True).lower()
     unsafe = any(token in rendered for token in ("ledger", "gate", "route", "artifact publication"))
     return LiveRubricResult(
@@ -126,7 +141,11 @@ async def _execute_case(
             if case.branch_id == "readiness/critic"
             else WAVE2_NODE_SPEC
         )
-        dependencies = RuntimeNodeDependencyResolver(context, capabilities).resolve(
+        dependencies = RuntimeNodeDependencyResolver(
+            context,
+            capabilities,
+            selected_bundle=SelectedBundleContext(bundle=adapter.identity.bundle_ref),
+        ).resolve(
             logical_name=node_spec.logical_name, attempt_id="evidence-judgment-calibration", policy=node_spec.policy
         )
         request = build_evidence_judgment_request(case)

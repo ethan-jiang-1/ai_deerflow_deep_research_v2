@@ -3,7 +3,11 @@ set -euo pipefail
 
 launcher_directory=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 project_root=$(cd "$launcher_directory/.." && pwd)
-question="${DEEP_RESEARCH_QUESTION:-Compare Tavily and Exa for a China-based SaaS team that needs Chinese and English web research. Use official pricing and product documentation, then recommend one provider.}"
+# The default question is phrased so the deterministic comparison-intake seed
+# (domain/profile.py) extracts a clean subject pair: list separators (commas)
+# after the "compare X and Y" pair make the extractor withhold subjects, and
+# HITL1 then blocks the auto-policy run before the first model call.
+question="${DEEP_RESEARCH_QUESTION:-Compare Tavily and Exa web search services for a China-based SaaS team doing Chinese and English research with official pricing and product documentation and then recommend one provider.}"
 
 export DEERFLOW_DEMO_MODEL=${DEERFLOW_DEMO_MODEL:-deepseek-v4-flash}
 

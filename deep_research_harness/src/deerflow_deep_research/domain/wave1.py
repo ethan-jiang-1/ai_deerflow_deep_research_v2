@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import re
 from collections.abc import Iterable, Sequence
 from enum import StrEnum
@@ -368,6 +369,33 @@ class Wave1OpenQuestionRef(_FrozenModel):
 
     question_id: str = Field(pattern=re.compile(r"^q:w1_[a-zA-Z0-9_-]{1,64}$"))
     work_id: str = Field(pattern=r"^[A-Za-z0-9:_-]{1,128}$")
+
+
+_QUESTION_ID_PREFIX = "q:w1_"
+_MAX_QUESTION_ID_SUFFIX_CHARS = 64
+_WORK_TAG_CHARS = 8
+
+
+def work_scoped_question_id(work_id: str, question_id: str) -> str:
+    """Namespace one worker-authored question id with its owning work.
+
+    Independent Wave1 workers author ``q:w1_*`` ids without cross-work
+    coordination, so two workers can mint the same id for different questions;
+    the synthesis pre-model guard then fails the whole run typed
+    (``wave1_open_question_id_collision``). Scoping every admitted id with a
+    short digest of the owning work id makes cross-work collisions impossible
+    by construction (any work-id shape, including rerun generations) while
+    staying inside the id grammar and keeping the echoed id short enough for
+    the model to reproduce. Within one work the suffix is kept verbatim, so
+    repair-rerun idempotence (BUG-051) is unchanged.
+    """
+
+    if not isinstance(work_id, str) or not isinstance(question_id, str) or not work_id:
+        raise ValueError("work_scoped_question_id_invalid")
+    suffix = question_id[len(_QUESTION_ID_PREFIX) :] if question_id.startswith(_QUESTION_ID_PREFIX) else question_id
+    tag = hashlib.sha256(work_id.encode("utf-8")).hexdigest()[:_WORK_TAG_CHARS]
+    budget = _MAX_QUESTION_ID_SUFFIX_CHARS - len(tag) - 1
+    return f"{_QUESTION_ID_PREFIX}{tag}_{suffix[:budget]}"
 
 
 class Wave1GateReviewRow(_FrozenModel):
