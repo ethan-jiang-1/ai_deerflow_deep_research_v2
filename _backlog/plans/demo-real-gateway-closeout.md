@@ -20,7 +20,15 @@
 ## 剩余 G3 验收（handoff §5 原清单）
 
 1. ✅ `UV_OFFLINE=1 make verify`（2711+327+35 全绿）
-2. ⏳ `make test-live`（进行中，目标 50/50，含 gateway_forwarding_proof）
+2. ✅ `make test-live` 分诊完毕：47/50 → 修复后 **49/50 等效**
+   - `gateway_forwarding_proof`：skip→FAIL 是 v2.1.0 表面适配缺口（HITL 挂起时工具返回
+     `Command(ToolMessage)` 而测试只认裸 dict）——已修（测试兼容两种形状），真跑通过；
+     转发实质（SSE 候选 + bundle/run 关联）首次被真正断言。
+   - `targeted-evidence-repair-highest-risk`：重跑通过（模型方差）。
+   - `wave2-synthesis-repair-normal`：两次复现均为 **TimeoutError**（真实模型延迟超
+     case 预算；校准测试直接传死 `validation_category="parser_invalid"`，与本会话
+     改动零交集）——即 handoff 48/50 基线里的那 1 个已知失败。遗留为 backlog：
+     评估该 case 的 timeout 预算是否需要走 evaluation 治理调整。
 3. ⏳ TUI 真实路线：`make demo-tui-real-auto`、`make demo-tui`（Pilot 驱动）、session-workbench
 4. ✅ 全部提交；`.agents/skills/` 未触碰
 
