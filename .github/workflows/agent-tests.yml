@@ -34,3 +34,10 @@ jobs:
       # 显式 -n 4（runner vCPU 固定 4 核，比 -n auto 可预期）；L2 并行安全 review 已完成。
       - run: UV_OFFLINE=1 make verify PYTEST_XDIST="-n 4"
       - run: UV_OFFLINE=1 make test-duration-policy
+      # 仓库治理门（closeout 含 gitlink 锁 vs 真实 submodule 比对）+ 治理套件。
+      # 与 harness 门禁分开跑，治理红灯不再能靠"没跑"存活（2026-09-26 教训）。
+      - name: Repository governance gates
+        working-directory: .
+        run: |
+          python3 openspec/governance/check_project_gate.py --phase closeout
+          python3 -m unittest discover -s openspec/tests/governance -t . -q
