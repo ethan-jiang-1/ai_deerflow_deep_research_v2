@@ -90,6 +90,17 @@ v2.1.0 同步后 demo 阶梯仅剩一格：`make demo-real`（Gateway observer �
      代码改动即可稳定通过（捷径已在）。备选修复面：驱动对 Gateway 路线改用确定性
      resume 通道（绕过外层 agent），或 transport 保结构化负载。
    - **G1 判据取数仍被阻塞**：wave2 要先过 HITL1（运输层修复）+ 一次稳定链路窗口。
+   - **2026-09-26 深夜再进一步（第七次点火）——答案脚本已破解**：bundle checkpoint
+     解码（`__interrupt__`/`__resume__` 通道）证明答案**逐字到达**节点、运输层清白；
+     第 1 段 profile JSON 被正常消费后，run 因问题为比较型而
+     `comparison_required=true`，**追问缺失字段 `comparison_subjects`**；而我后续喂的
+     `confirm` 在 profile 阶段（无提案可确认）被正确拒绝（rejection_round 1→2）→
+     重试耗尽 → blocked。此前六次的"全部失败"实为脚本缺这一字段 + 链路抖动叠加。
+   - **下次会话的正确脚本（已验证到最后一公里）**：
+     `问题` → 完整 JSON（五维 + **非空 must_answer** + **comparison_subjects**，比较型
+     问题必需）→ `confirm`（提案阶段）→ 备用 `confirm`。
+   - 第七次仍死于链路：语义解析期间断流 4→8 次，主动 job_kill 停损。
+     **真实验证只欠一个 15 分钟级稳定链路窗口，配方与判据全部就绪。**
    教训：交互 observer 路线的瓶颈是外层 agent 的路由随机性 + 今晚的 provider 抖动，
    不是 wave2。G1 判据（category=parser_invalid、detail 非空）要等 wave2 真正被执行
    才能取数；若 agent 路由持续不稳，备选是先在嵌入式路线（demo-real-scripted 同一
