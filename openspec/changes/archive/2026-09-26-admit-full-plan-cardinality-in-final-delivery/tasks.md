@@ -21,4 +21,4 @@
 - [x] 4.2 From repo root run `python3 openspec/governance/check_project_gate.py --phase closeout` directly; exit 0.
 - [x] 4.3 From `deep_research_harness/` run `UV_OFFLINE=1 make verify` directly; exit 0.
 - [ ] 4.4 From repo root run `openspec validate admit-full-plan-cardinality-in-final-delivery --strict` and `git diff HEAD --check`; exit codes measured directly.
-- [ ] 4.5 Real-machine validation: recompute the startup fingerprint, restart the Gateway, and re-run `make demo-real` with the cracked stdin script (see `_backlog/plans/demo-real-gateway-closeout.md`); the run must pass `final_delivery` and reach `研究流程已完成`.
+- [x] 4.5 Real-machine validation: recompute the startup fingerprint, restart the Gateway, and re-run `make demo-real` with the cracked stdin script (see `_backlog/plans/demo-real-gateway-closeout.md`); the run must pass `final_delivery` and reach `研究流程已完成`.
