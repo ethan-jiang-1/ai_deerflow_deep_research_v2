@@ -29,7 +29,9 @@ requirement_ids = ["PRS-001", "PRS-004", "PRS-006"]
 
 [upstream_gitlink]
 path = "deerflow"
-commit = "66b9e7f21212490cf92fafac137542b9deb06615"
+# Sample value for a temp-dir fixture only; never compared against the real submodule.
+# Kept in sync with the live lock out of hygiene, not correctness.
+commit = "ceebf97fc31afbbfe2aadf7c8d82b03c3742d5d7"
 
 [package]
 source_root = "deep_research_harness/src/deerflow_deep_research"

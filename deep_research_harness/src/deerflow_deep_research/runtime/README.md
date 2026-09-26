@@ -14,9 +14,11 @@ docstring, then the owning spec.
 
 ## 1. Run Bundle lifecycle and control
 
-The public `deep_research` tool's `start | resume | status | cancel | refine`
-boundary: Bundle publication, scoped discovery, transitions, and graph
-execution through one selected Bundle.
+The public `deep_research` tool's lifecycle boundary (`start | resume | status |
+cancel | refine`): Bundle publication, scoped discovery, transitions, and graph
+execution through one selected Bundle. The sixth advertised action,
+`infra_probe`, is not a lifecycle action: it runs on the isolated probe host
+wired by `control.py` and `probe.py` below.
 
 | Module | Responsibility | Owning evidence |
 | --- | --- | --- |
@@ -26,7 +28,7 @@ execution through one selected Bundle.
 | `bundle_transition.py` | Safe Bundle root participation checks for transitions | integration transition tests |
 | `bootstrap_bundle.py` / `request_bundle.py` | Bootstrap / profile Bundle stores (atomic publish, `.bootstrap.lock` / `.profile.lock`) | `research-confirmation`, `bootstrap-node` |
 | `checkpoint.py` | Checkpoint adapter (memory / Bundle-local file-backed) | `research-graph-lifecycle` (REG-005) |
-| `control.py` | Control-plane seams shared by the lifecycle actions | `deep-research-harness-run-bundles` |
+| `control.py` | Process-local generic infrastructure-probe host (`infra_probe` only; lifecycle actions bypass it) | `runtime-integration` (RUI-001) |
 
 ## 2. Graph and node execution
 
@@ -64,7 +66,8 @@ discover, authorize, reopen, mutate, or recreate a Bundle.
 | `events.py` | Safe standard-log and live projections for runtime facts | `runtime-observability` (RTO-*) |
 | `trace_projector.py` | Durable facts in, honest versioned trace pages out (checkpoint is commit authority) | `runtime-observability` (LDO-*) |
 | `gateway_observer.py` | Bounded public Gateway transport for local operator entrypoints | `gateway-operator-observer` (GOO-*) |
-| `diagnostics.py` / `probe.py` | Readiness/diagnostic probes (opt-in dev tooling, not a security boundary) | `runtime-operations` |
+| `diagnostics.py` | Runtime diagnostics for operator tooling (opt-in, not a security boundary) | `runtime-operations` |
+| `probe.py` | Public `infra_probe` action wiring: isolated checkpoint namespace, fail-closed schema validation, opaque probe result | `runtime-integration` (RUI-001) |
 | `startup_snapshot.py` | Startup snapshot (`v1`) of configured runtime facts | `runtime-operations` |
 | `workspace_reader.py` | Composition-injected bounded read surface for the local operator | `runtime-integration` |
 | `session_workbench.py` | Inspect and control only Bundles validated by one lifecycle boundary | `research-local-session-workbench` |

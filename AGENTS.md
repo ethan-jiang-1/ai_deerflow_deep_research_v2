@@ -22,7 +22,7 @@ deerflow/                 被 leverage 的外部框架（submodule 锁 commit `c
 - ✅ **用它的 API**——你的应用通过 `import deerflow`（editable 装自 `deerflow/backend/packages/harness`）继承框架能力，有什么用什么。
 - ❌ **不要探索 / 修改它的源码**。它是上游镜像，不是你的代码。
 - ❌ **不要为了解决问题去翻它内部**——如果某任务要求你读框架源码才能继续，停下来重新界定范围（大概率是你在尝试不该改的东西）。
-- 需要理解它内部怎么工作 → 看 `deerflow/AGENTS.md` 与 `deerflow/backend/AGENTS.md`（框架自带的只读指引）。旧的研究笔记（digest）不随 submodule 分发，不要去寻找它。
+- 需要理解它内部怎么工作 → 看 `deerflow/AGENTS.md` 与 `deerflow/backend/AGENTS.md`（框架自带的只读指引）。fork 分支携带 `_digest/`、`_faq_on_digested/` 旧研究笔记：只读历史背景，不作为当前理解来源，不要据此推断框架现状。
 
 > 术语提示：本仓库的 `harness` 默认指 `deep_research_harness/`（你的应用）；`deerflow/backend/packages/harness` 是框架包。两者同名——前者是主角，后者是只读背景板。
 

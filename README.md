@@ -19,7 +19,7 @@ DeerFlow 是宿主运行时，**不 import 本包**；它通过反射出的 `dee
 
 ```
 deep_research_harness/    ★ 你的应用（deep research runtime，基于 deerflow 的 API 构建）
-deerflow/                 被 leverage 的框架（submodule 锁 commit `66b9e7f2`，ethan 分支；旧研究笔记不随 submodule 分发），只读
+deerflow/                 被 leverage 的框架（submodule 锁 commit `ceebf97f`，ethan 分支，= 上游 v2.1.0；fork 携带的 `_digest/` 旧笔记是只读历史背景），只读
 openspec/                 设计规格（openspec CLI 管理）
 _backlog/                 任务账本
 .agents/skills/           openspec 技能（Codex 通用入口，项目自有）
