@@ -10,11 +10,51 @@ from __future__ import annotations
 import json
 from collections.abc import Callable, Iterable
 
+from pydantic import ValidationError
+
 from deerflow_deep_research.domain.context import NodeExecutionRequest
 from deerflow_deep_research.domain.synthesis import SynthesisEvidence, SynthesisResult
 from deerflow_deep_research.domain.untrusted import build_untrusted_data_block
 
 from .capabilities import WAVE2_EVIDENCE_SYNTHESIS, WAVE2_EVIDENCE_SYNTHESIS_REPAIR
+
+
+class SynthesisValidationFailure(ValueError):
+    """A typed deterministic validation failure: concrete category plus a
+    bounded repair-time detail.
+
+    Raised by the output parser (schema-invalid candidates) and the semantic
+    validator (coverage/backing-refs bookkeeping). It IS a ValueError, so
+    existing ``except ValueError:`` seams keep catching it; the concrete
+    category and detail are additionally available to the repair-prompt call
+    site and the second-validation terminal call site. Schema-invalid
+    candidates therefore stay inside the closed ``synthesis_output_*``
+    vocabulary instead of escaping as bare pydantic ``ValidationError``
+    messages that collapse into the generic ``candidate_invalid`` bucket.
+    """
+
+    def __init__(self, category: str, detail: object | None = None) -> None:
+        self.category = category
+        self.detail = detail
+        super().__init__(category)
+
+
+_SCHEMA_DETAIL_MAX_ERRORS = 3
+_SCHEMA_DETAIL_MAX_MSG_CHARS = 120
+
+
+def _schema_detail(exc: ValidationError) -> dict[str, object]:
+    """Bounded projection of the first pydantic errors for repair feedback."""
+    errors = [
+        {
+            "loc": ".".join(str(part) for part in error.get("loc", ())),
+            "type": str(error.get("type", "invalid")),
+            "msg": str(error.get("msg", ""))[:_SCHEMA_DETAIL_MAX_MSG_CHARS],
+        }
+        for error in exc.errors()[:_SCHEMA_DETAIL_MAX_ERRORS]
+    ]
+    return {"schema_errors": errors}
+
 
 # Derived limits: the built request must always satisfy the domain objective cap
 # (NodeExecutionRequest.objective) and the wave2 admission envelope
@@ -218,7 +258,10 @@ def parse_synthesis_output(text: str) -> SynthesisResult:
         raise ValueError("synthesis_output_json_invalid") from exc
     if not isinstance(payload, dict):
         raise ValueError("synthesis_output_not_object")
-    return SynthesisResult.model_validate(payload)
+    try:
+        return SynthesisResult.model_validate(payload)
+    except ValidationError as exc:
+        raise SynthesisValidationFailure("synthesis_output_schema_invalid", detail=_schema_detail(exc)) from exc
 
 
 def build_synthesis_repair_prompt(

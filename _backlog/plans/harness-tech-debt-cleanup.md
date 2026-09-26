@@ -38,6 +38,7 @@
 5. **Entry Surfaces 表 ↔ CONTEXT.md Entry Interfaces 词条互链**，消除双分类法。
 6. **命令表去重**：根/harness README 与 COMMANDS.md 各自收敛（README 留路标，COMMANDS/Makefile 留事实）。
 7. **双 host builder 注释**：control.py:20 / probe.py:80 标明谁是生产正身。
+8. **harness/AGENTS.md 行数**：123 行已触发 change-guidance 的 120 行预警阈值（closeout 门 2026-09-26 警告）；在 P1 顺手瘦身或提升阈值需另议。
 
 ### P2 同步工程（v2.1.0 理解 + openspec 现代化）
 

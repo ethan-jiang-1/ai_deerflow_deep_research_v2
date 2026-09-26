@@ -35,6 +35,14 @@ v2.1.0 同步后 demo 阶梯仅剩一格：`make demo-real`（Gateway observer �
   bounded `.detail`（前 N 条 pydantic 错误的 loc/type/msg 投影）。
   效果：category 变为 `parser_invalid`、日志 detail 非空、修复提示词拿到具体反馈。
   可选加码：被拒候选 bounded 落盘 bundle diagnostics（现未持久化，离线无法取证）。
+  **→ 2026-09-26 已实现（tdd 红→绿）**：`SynthesisValidationFailure` 上移至
+  `prompts.py` 供 parser 与语义校验共用；`parse_synthesis_output` 捕获
+  `ValidationError` → `synthesis_output_schema_invalid` + `_schema_detail`
+  （前 3 条错误、msg 截 120 字符）；`_synthesis_validation_category` 自动映射
+  `parser_invalid`，修复提示词经既有 `validation_detail` 通道拿到结构化反馈。
+  owning spec 无需 delta：WSN 只强制 pre-model ValidationError 不落
+  candidate_invalid 桶（现满足且更优），model-candidate 路径未被枚举。
+  可选加码（候选落盘）未做，保持最小改动。
 - **G2 修复**：按 G1 重跑后的取证决定——
   schema 反馈闭环大概率足以让既有 3 轮修复成功（模型有能力，见 handoff §3 重放实验）；
   若仍失败 → 评估模型侧结构化输出绑定；

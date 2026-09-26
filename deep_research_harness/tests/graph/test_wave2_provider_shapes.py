@@ -45,6 +45,30 @@ def _synthesis_payload(**overrides: object) -> str:
     return json.dumps(payload)
 
 
+def test_wave2_schema_invalid_candidate_stays_in_the_closed_vocabulary_with_detail() -> None:
+    """@impl WSN-008
+
+    A JSON-valid but schema-invalid model candidate raises a closed
+    ``synthesis_output_*`` code with a bounded structured ``detail`` projection,
+    so the repair prompt and the rejection log carry concrete field feedback
+    instead of an escaped pydantic ``ValidationError`` (bare ``ValueError``
+    message, no ``detail``) that lands in the generic ``candidate_invalid``
+    bucket.
+    """
+    from deerflow_deep_research.graph.nodes.wave2_synthesis.node import _synthesis_validation_category
+    from deerflow_deep_research.graph.nodes.wave2_synthesis.prompts import SynthesisValidationFailure
+
+    with pytest.raises(ValueError) as excinfo:
+        parse_synthesis_output(json.dumps({"findings": []}))
+    assert str(excinfo.value).startswith("synthesis_output_")
+    assert isinstance(excinfo.value, SynthesisValidationFailure)
+    assert _synthesis_validation_category(excinfo.value) == "parser_invalid"
+    detail = getattr(excinfo.value, "detail", None)
+    errors = detail.get("schema_errors") if isinstance(detail, dict) else None
+    assert isinstance(errors, list) and 0 < len(errors) <= 3
+    assert errors[0]["loc"] == "schema_version"
+
+
 def test_wave2_finding_priority_labels_normalize_to_ints() -> None:
     """@impl WSN-001
 

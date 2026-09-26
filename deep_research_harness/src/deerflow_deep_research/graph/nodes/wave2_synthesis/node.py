@@ -38,7 +38,12 @@ from deerflow_deep_research.domain.workflow_outcomes import (
 )
 
 from .materializer import materialize_synthesis
-from .prompts import build_synthesis_prompt, build_synthesis_repair_prompt, parse_synthesis_output
+from .prompts import (
+    SynthesisValidationFailure,
+    build_synthesis_prompt,
+    build_synthesis_repair_prompt,
+    parse_synthesis_output,
+)
 
 
 def _synthesis_validation_category(error: ValueError) -> str:
@@ -91,19 +96,8 @@ LOGGER = logging.getLogger(__name__)
 _MAX_SYNTHESIS_REPAIR_ROUNDS = 3
 
 
-class SynthesisValidationFailure(ValueError):
-    """A typed deterministic validation failure: concrete category plus a
-    bounded repair-time detail (missing/duplicated/foreign question ids).
-
-    It IS a ValueError, so existing `except ValueError:` seams keep catching it;
-    the concrete category and detail are additionally available to the
-    repair-prompt call site and the second-validation terminal call site.
-    """
-
-    def __init__(self, category: str, detail: object | None = None) -> None:
-        self.category = category
-        self.detail = detail
-        super().__init__(category)
+# SynthesisValidationFailure is defined in .prompts (imported above) so the
+# output parser and the semantic validator share one typed failure shape.
 
 
 def _evidence_aliases(evidence: tuple[SynthesisEvidence, ...]) -> dict[str, str]:
