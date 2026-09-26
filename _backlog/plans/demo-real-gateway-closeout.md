@@ -1,7 +1,28 @@
 # Plan: demo-real Gateway 路线收尾（v2.1.0 demo 阶梯最后一格）
 
-> 类型: 执行计划（ongoing，长期打磨） | 更新: 2026-09-26
+> 类型: 执行计划（ongoing，长期打磨） | 更新: 2026-09-26（下午：**主线打通**）
 > 前序: `/tmp/handoff-deerflow-v210-demo-real.md`（易失）。本文是其仓库内持久化 + 2026-09-26 诊断增量。
+
+## ✅ 2026-09-26 13:07 主线判决：`make demo-real` 端到端通过
+
+```
+研究配置 → 主题规划 → wave0 → wave1 → wave2 综合 → 补证 → wave2×2
+→ hitl2 自主决策 → 可答性评估 → 报告生成 → 研究流程已完成  [DEMO_EXIT=0]
+```
+
+- **handoff §3 的原始阻塞（wave2 覆盖验证 vs 真实模型）死亡**：wave2 两次执行零拒绝。
+- 三层修复合力：G1 schema 反馈闭环（`c43fd49`）+ HITL1 答案脚本（comparison_subjects）
+  + final_delivery 基数对齐（`3e142ef`，change 已归档 `462c2d9`）。
+- 0 断流（稳定窗口成立）；0 layout 拒绝；9-uncertainty plan 成功交付。
+- 复现配方（已验证两次）：指纹重算 → Gateway 起动 → stdin =
+  `问题` → 完整 JSON（五维 + 非空 must_answer + comparison_subjects）→ `confirm`×3。
+
+## 剩余 G3 验收（handoff §5 原清单）
+
+1. ✅ `UV_OFFLINE=1 make verify`（2711+327+35 全绿）
+2. ⏳ `make test-live`（进行中，目标 50/50，含 gateway_forwarding_proof）
+3. ⏳ TUI 真实路线：`make demo-tui-real-auto`、`make demo-tui`（Pilot 驱动）、session-workbench
+4. ✅ 全部提交；`.agents/skills/` 未触碰
 
 ## 背景 / 现状
 
