@@ -55,7 +55,21 @@ v2.1.0 同步后 demo 阶梯仅剩一格：`make demo-real`（Gateway observer �
 
 1. G1 实现 + 单测（tdd：构造 schema 违例候选，断言 category=parser_invalid、detail 非空）。
    动手前检查 owning spec 是否枚举 wave2 拒绝 category；如枚举，同 change 同步 spec。
+   **→ 2026-09-26 完成（c43fd49）**：owning spec WSN 只强制 pre-model 路径，
+   model-candidate 路径未被枚举 → 纯代码改，无 spec delta。
 2. 重算指纹（handoff §2）→ 起 Gateway → `make demo-real`（管道 stdin，行序见 handoff §2）。
+   **→ 2026-09-26 实跑记录**：指纹已重算（`v1:ed9ad508…`）；三次点火均**未到 wave2**，
+   卡在更早的外层 Gateway agent 路由层：
+   - 裸 `confirm` → run 侧"未识别"（新 thread 上 confirm 的合法性以 demo 自述为准，
+     实测被拒；与 handoff §2 "有提案时 confirm 合法"存在张力，待复核）；
+   - 完整 JSON → 外层 agent 说教不路由 → `protocol.invalid_result`（不可重试）；
+   - question+JSON+confirm 三行 → 期间两次 provider 流式断流（`stream_chunk_timeout`，
+     240s×N，VPN 链路抖动），自动重试后部分推进，结局待本 run 收尾。
+   **每 run 独立 scope，重试无需 soft_bundle clean；唯一一次僵尸 bundle 已归档。**
+   教训：交互 observer 路线的瓶颈是外层 agent 的路由随机性 + 今晚的 provider 抖动，
+   不是 wave2。G1 判据（category=parser_invalid、detail 非空）要等 wave2 真正被执行
+   才能取数；若 agent 路由持续不稳，备选是先在嵌入式路线（demo-real-scripted 同一
+   wave2 代码路径）上验证 G1，再回 Gateway 路线。
 3. 通过 → 直接 G3；再挂 → 用新 detail 细分：
    `parser_invalid` 反复 → 结构化输出绑定方向；
    `coverage_invalid` 出现 → 决策菜单 2/3/4（走 openspec）。

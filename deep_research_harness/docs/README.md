@@ -12,6 +12,7 @@ Current behavior, operations, and policy. Kept in sync with the code.
 
 | Question | Focused document |
 | --- | --- |
+| What does the DeerFlow host (v2.1.0) contract look like from the app side, and which deep imports depend on it? | [DeerFlow host contract](deerflow-contract.md) |
 | How do the downstream graph, checkpoint, evidence, sandbox, and public-control boundaries fit together? | [Runtime architecture](runtime-architecture.md) |
 | How do the 30+ runtime adapter modules group into clusters, and which owning spec backs each? | [Runtime reader index](../src/deerflow_deep_research/runtime/README.md) |
 | How does one run unfold end to end (lifecycle vocabulary in order)? | [Run lifecycle walkthrough](run-lifecycle-walkthrough.md) |
