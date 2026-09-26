@@ -4,6 +4,11 @@ The Deep Research Product helps a person turn a research question into a useful
 research outcome. Its vocabulary distinguishes the person's intent from internal
 runtime and support details.
 
+> Reading order: build the lifecycle skeleton first with
+> [`docs/run-lifecycle-walkthrough.md`](docs/run-lifecycle-walkthrough.md), then use
+> this file as a vocabulary dictionary — not a linear read. Terms like Refinement
+> Round or Bundle Loss only become load-bearing after that walkthrough.
+
 ## Participants
 
 **Primary User**:
@@ -198,6 +203,10 @@ decisions, and finishes by producing a readable report for its fixed research qu
 _Avoid_: a successful preflight, a retained session, a partial graph traversal
 
 ## Entry Interfaces
+
+> Vocabulary view. The runnable-command view of the same surfaces is the
+> **Entry Surfaces** table in [`README.md`](README.md#entry-surfaces); the two
+> classifications must stay name-mapped in the same PR that changes either.
 
 **Primary User Interface**:
 `dormant`: the historical dedicated Deep Research TUI route through which a Primary

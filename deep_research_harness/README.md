@@ -36,6 +36,10 @@ and the end-to-end vocabulary.
 
 ## Entry Surfaces
 
+> Operational view of the surfaces. The vocabulary-side classification is
+> **Entry Interfaces** in [`CONTEXT.md`](CONTEXT.md#entry-interfaces); keep the
+> two name-mapped in the same PR that changes either.
+
 | Surface | Primary reader/user | Purpose | Actual composition | Explicit non-goal |
 | --- | --- | --- | --- | --- |
 | Dedicated Agent + reflected `deep_research` tool | Primary User | Current product route for a research question | The reflected public tool is fixed to all real; see [runtime architecture](docs/runtime-architecture.md) | Not an operator CLI or a fixture/demo route selector |
@@ -127,14 +131,15 @@ does not restate those rules.
 
 ## Frequent Commands
 
+Only the three most common entry points live here; the authoritative command
+inventory and the full demo ladder are [`COMMANDS.md`](COMMANDS.md) and the
+[`Makefile`](Makefile) — keep all three in step in the same PR.
+
 | Goal | Command |
 | --- | --- |
 | Run the zero-credential fixture-graph lifecycle | `make demo` |
-| Run the credentialed all-real demo with a question | `PROFILE=<profile> make demo-real DEMO_ARGS='--question "Compare battery storage costs"'` |
-| Run the prepared all-real research launcher | `bash run/real-research.sh` |
 | Run the deterministic project gate | `UV_OFFLINE=1 make verify` |
-| Inspect one retained observation, read-only | `make demo-sessions DEMO_ARGS="inspect <bundle-id>"` |
-| Check profile validity and runtime readiness, read-only | `make profile-check PROFILE=<name>` / `python scripts/doctor.py` (opt-in dev tooling, not a security boundary; profile semantics in [local-operations.md](docs/local-operations.md)) |
+| Run a real or TUI demo route | `PROFILE=<profile> make demo-real` / `make demo-tui` — see [COMMANDS.md](COMMANDS.md) ladder |
 
 ## Bounded Real-Demo Calibration
 

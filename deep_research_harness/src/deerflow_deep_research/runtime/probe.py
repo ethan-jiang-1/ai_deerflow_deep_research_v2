@@ -78,6 +78,9 @@ class InfraProbeHandler:
 
 
 def build_probe_graph_host(**kwargs: Any) -> GraphHost:
+    """Test-isolated builder: same registration as ``build_control_graph_host``
+    but always constructs a fresh host, so tests never share the process-local
+    default in ``runtime/control.py`` (the production entry point)."""
     host = GraphHost(**kwargs)
     host.register(InfraProbeHandler())
     return host

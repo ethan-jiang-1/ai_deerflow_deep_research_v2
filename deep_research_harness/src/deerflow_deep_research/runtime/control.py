@@ -18,7 +18,12 @@ _default_host: GraphHost | None = None
 
 
 def build_control_graph_host(**kwargs: object) -> GraphHost:
-    """Build the isolated generic host used solely by ``infra_probe``."""
+    """Build the isolated generic host used solely by ``infra_probe``.
+
+    This is the production entry point: the reflected tool's default host lives
+    here (``get_default_graph_host``). ``runtime/probe.py`` offers a fresh-host
+    variant for deterministic isolated tests only.
+    """
 
     host = GraphHost(**kwargs)
     host.register(InfraProbeHandler())

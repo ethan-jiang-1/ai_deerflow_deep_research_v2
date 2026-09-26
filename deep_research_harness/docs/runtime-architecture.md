@@ -75,9 +75,32 @@ projection and legal next action. If a different Bundle is already active in the
 scope, reopening an ended Bundle returns the typed conflict or continuation outcome
 instead of creating competing active work.
 
-Known IM transports and non-interactive contexts refuse `start` and `resume`. Typed
+Known IM transports and non-interactive contexts refuse `start`, `resume`, and
+`refine`. Typed
 results communicate the legal next action; adapters only present that fact and do not
 infer alternative lifecycle paths.
+
+## The Infra Probe Route
+
+`infra_probe` is the sixth advertised tool action and is deliberately not a lifecycle
+action. It runs on a separate process-local host that registers only the probe
+handler (`runtime/control.py` → `runtime/probe.py` → the one-node
+`graph/infra_probe.py` graph with private `InfraProbeState`), bypasses Bundle
+discovery and the lifecycle boundary entirely, and derives its own checkpoint
+namespace. It executes a bounded, read-only readiness probe and returns an opaque
+result (probe id, previous/current marker, provider kind, durability); an unknown
+persisted probe schema version fails closed. The probe never reads or writes Run
+Bundle state, and lifecycle actions never touch this host. The generated
+[logical topology](deep-research-topology.md) intentionally lists only research
+nodes: the probe graph is this second, isolated graph and is out of that
+denominator by design.
+
+Terminology note: "probe" also names two unrelated local mechanisms — the
+work-unit storage/fs probes (`runtime/work_unit_storage_probe.py`,
+`domain/bundle.py` path helpers) that classify storage capability before a
+Bundle opens, and diagnostics readiness checks (`runtime/diagnostics.py`).
+Neither is reachable through the public tool; the only public probe surface is
+the `infra_probe` action above.
 
 ## Ordinary Controller Loading
 

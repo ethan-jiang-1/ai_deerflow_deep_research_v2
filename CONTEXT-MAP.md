@@ -14,3 +14,9 @@ responsibility, host integration, and change governance do not blur together.
 - **DeerFlow Host -> Deep Research Product**: the host supplies the runtime boundary; the product owns its user-facing research outcome.
 - **OpenSpec Governance -> Deep Research Product**: approved requirements constrain product changes; governance does not become runtime behavior.
 - **DeerFlow Host <-> OpenSpec Governance**: host boundaries constrain a change's scope; governance records rather than expands those boundaries.
+
+## Reading order for a fresh agent
+
+1. [AGENTS.md](AGENTS.md) — scope and boundaries.
+2. [deep_research_harness/docs/run-lifecycle-walkthrough.md](deep_research_harness/docs/run-lifecycle-walkthrough.md) — the product context's front door: one run end to end, lifecycle vocabulary in order.
+3. The three context files below — dictionaries, read on demand.
