@@ -45,6 +45,15 @@ non_goals:
 >
 > **本 runbook 是"给用户的操作单"**：agent 负责环境与 bundle 侧证据收集，
 > TUI 里的按键由你本人完成。
+>
+> **验收状态（2026-09-27）**：本路线尚未记录过一次真人全跑验收。研究链
+> 已在 CLI（`make demo-real`，2026-09-26 端到端通过）与 TUI 自动
+> （`demo-tui-real-auto`）两条路线证明健康；Textual 输入组件行为与 TUI UI
+> 契约各有 Pilot 确定性覆盖（`test_demo_tui.py` / `test_gateway_demo_tui.py`，
+> 对 fake 驱动）。因此本 runbook 的未验增量仅为"真实运行时 × 真 Textual
+> 输入组件"的组合缝，属**可选操作员自检**：任何操作员按本手册跑通一次
+> 即在 §7 记录证据并勾销本注记；失败则按 §7 报 bug。原追踪 todo 已退役
+> （DONE-007，`_backlog/_done/_done_todos/`）。
 
 ## 1. 前置检查（agent 侧）
 

@@ -1,7 +1,26 @@
 # TODO: manual-demo-tui-human-validation
 
-> 状态: 待验收（用户裁量项） | 优先级: 低 | 更新: 2026-09-26（深夜复审：未测增量进一步收窄，保留但降为用户裁量）
-> 上游: plan demo-real-gateway-closeout.md（G3 TUI 分诊遗留项，plan 已归档 CLS-060） | 下游: 无
+> 状态: **已退役（DONE-007，2026-09-27）**——价值收窄至一寸组合缝且本质只能
+> 真人执行；退役归宿 = runbook-020 顶部的"验收状态"注记（可选操作员自检）。
+> 优先级: 低 | 更新: 2026-09-27
+> 上游: plan demo-real-gateway-closeout.md（G3 TUI 分诊遗留项，plan 已归档 CLS-060） | 下游: runbook-020 §验收状态
+
+## 终局处置（2026-09-27）
+
+用户拍板"对齐当前 codebase，该清理的清理掉"。裁决依据（2026-09-26 深夜复审 +
+Pilot 覆盖矩阵查证）：
+
+- 未测增量已收窄为唯一组合缝：真实运行时 × 真 Textual 输入组件（两侧各自有
+  Pilot 确定性覆盖：`test_demo_tui.py` 组件行为、`test_gateway_demo_tui.py`
+  UI 契约，均对 fake 驱动）；
+- 该路线在 Entry Surfaces 表明确标注 "Not a current Primary User TUI"；
+- Pilot 真组合自动化成本 > 风险（明确不做）；
+- 一张挂着的 agent 侧 todo 无法推动"用户方便时按键"，反而污染账面。
+
+处置：runbook-020 顶部加"验收状态"注记——任何操作员跑通一次即在 §7 记录
+证据并勾销注记，失败按 §7 报 bug。追踪职责就地转移，todo 关闭。
+
+以下为历史判断记录，供追溯。
 
 ## Why
 

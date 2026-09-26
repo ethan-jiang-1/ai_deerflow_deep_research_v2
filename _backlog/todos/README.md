@@ -1,6 +1,6 @@
 # Active Todos — 活跃 todo + 依赖链 + 执行顺序
 
-> 最后更新: 2026-09-26（demo-real plan CLS-060 关闭，遗留 2 条 todo 入账） | `_backlog/todos/` — 活跃 todo 在此，做完移入 [`../_done/_done_todos/`](../_done/_done_todos/)。
+> 最后更新: 2026-09-27（DONE-006 wave2 预算对齐、DONE-007 手动 TUI 验收退役；活跃 todo 清零） | `_backlog/todos/` — 活跃 todo 在此，做完移入 [`../_done/_done_todos/`](../_done/_done_todos/)。
 >
 > **本文件是所有活跃工作的中枢。** todo 没有编号，文件名即标识（`todo-<name>.md`）。完成后文件名不变，位置即状态。
 
@@ -19,8 +19,7 @@
 
 | # | 文件 | 优先级 | 简述 | 阻塞 / 备注 |
 |---|------|--------|------|-------------|
-| 1 | [todo-wave2-repair-timeout-budget-evaluation.md](todo-wave2-repair-timeout-budget-evaluation.md) | 中 | live lane 唯一剩余失败 case 的 timeout 预算评估（49/50 等效基线的第 50 个） | 需一次 live 窗口取耗时证据；调预算可能走 evaluation 治理 |
-| 2 | [todo-manual-demo-tui-human-validation.md](todo-manual-demo-tui-human-validation.md) | 低 | demo-tui 手动路线的真人 HITL1 验收（唯一未测增量 = Textual 输入组件 + Gateway） | 需真人终端跑 RUN-020.command，或未来写 Pilot 无头驱动 |
+| （无活跃 todo；DONE-006/DONE-007 于 2026-09-27 关账，见 [`../_done/_done_todos/README.md`](../_done/_done_todos/README.md)） |
 
 ---
 
@@ -58,10 +57,9 @@ flowchart LR
 
 | 顺序 | 项 | 为什么 |
 |------|-----|--------|
-| 1 | wave2-repair-timeout-budget-evaluation | live lane 门面数字 49/50 的最后一格；一次 live 窗口即可取数定案 |
-| 2 | manual-demo-tui-human-validation | 只欠真人按键，不堵任何下游；用户方便时跑一次即收 |
+| （暂无活跃 todo；A-009 与 A-004-T01 见上方暂停表。） |
 
-两条都是验收性质，无设计依赖，可并行。
+_（暂无排期。）_
 
 ---
 
