@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 from collections.abc import Mapping
 from typing import Any
@@ -84,6 +85,8 @@ def _pre_model_problem(error: ValueError) -> NodeProblem:
         validation_category=category,
     )
 
+
+LOGGER = logging.getLogger(__name__)
 
 _MAX_SYNTHESIS_REPAIR_ROUNDS = 3
 
@@ -383,6 +386,16 @@ def build_real(dependencies: NodeBuildDependencies):
                     validation_category = _synthesis_validation_category(round_error)
                     repair_detail = getattr(round_error, "detail", None)
                     final_error = round_error
+                    # Round-level observability: the journal records only the
+                    # terminal incident, so without this the failing candidate
+                    # shape is unactionable from a diagnostic reference alone.
+                    LOGGER.warning(
+                        "wave2_synthesis_candidate_rejected round=%d category=%s detail=%s chars=%d",
+                        _repair_round + 1,
+                        validation_category,
+                        str(repair_detail)[:200],
+                        len(candidate_summary),
+                    )
             if output is None:
                 # A still-invalid repaired candidate is a bounded terminal, never
                 # an uncaught crash: route exhausted with a typed incident and
