@@ -29,7 +29,16 @@
      case 预算；校准测试直接传死 `validation_category="parser_invalid"`，与本会话
      改动零交集）——即 handoff 48/50 基线里的那 1 个已知失败。遗留为 backlog：
      评估该 case 的 timeout 预算是否需要走 evaluation 治理调整。
-3. ⏳ TUI 真实路线：`make demo-tui-real-auto`、`make demo-tui`（Pilot 驱动）、session-workbench
+3. ✅ TUI 路线分诊（2026-09-26 下午）：
+   - `demo-tui-real-auto`（嵌入式全真 + 自动 HITL）：**通过**——"Research completed"，
+     report.md + claim-citation-map.json 发布，报告头通过被修复的
+     `_validate_final_artifacts`（final_delivery 基数修复在第二路线复验）。
+   - `session-workbench`：fixture 模式只读投影 UI 正常渲染 ✅。
+   - `demo-tui`（Gateway + 手动 HITL）：**研究层阻塞全死，剩"谁来按键盘"**——管道
+     stdin 无法驱动 Textual 输入组件，沙箱禁 openpty；该路线需要真人终端
+     （`RUN-020.command` 双击启动器即为此设计）或 Pilot 无头驱动脚本。真机已证明：
+     同一研究链在 CLI（demo-real）与 TUI auto（embedded）两路线完成；手动 TUI 的
+     未测增量仅为"Textual 输入组件 + Gateway"。
 4. ✅ 全部提交；`.agents/skills/` 未触碰
 
 ## 背景 / 现状
