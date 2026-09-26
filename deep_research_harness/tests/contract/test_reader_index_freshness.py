@@ -17,9 +17,7 @@ import re
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-RUNTIME_PACKAGE = (
-    REPO_ROOT / "deep_research_harness" / "src" / "deerflow_deep_research" / "runtime"
-)
+RUNTIME_PACKAGE = REPO_ROOT / "deep_research_harness" / "src" / "deerflow_deep_research" / "runtime"
 RUNTIME_README = RUNTIME_PACKAGE / "README.md"
 CONTROL_PY = RUNTIME_PACKAGE / "control.py"
 PROBE_PY = RUNTIME_PACKAGE / "probe.py"
