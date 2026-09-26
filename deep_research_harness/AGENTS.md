@@ -26,11 +26,8 @@ For a Coding Agent creating, changing, or reviewing an LLM-bearing node or direc
 model branch, use this route before implementation navigation. Never infer the seam
 from the first file found or from presence or absence of a model call.
 
-This section is the complete application-owned cognition-versus-code contract. Its
-filename is not important, but the seven decisions in this section are: four-way
-classification, cognitive contract, prompt/trusted-untrusted context, structured
-candidate/feedback/bounded repair, deterministic proof plus cognitive evaluation,
-deterministic handoff, and the explicit non-model branch.
+This section is the complete application-owned cognition-versus-code contract: the
+numbered route below plus the explicit Non-Model Work branch.
 
 1. **Classify the surface** as `cognitive-program`, `deterministic-guardrail`,
    `human-decision`, or `wiring`. A model-bearing behavior symptom reaches cognition
@@ -104,10 +101,9 @@ Run the narrowest relevant test first. The complete application gate is
 
 ## Structural Authority
 
-The active `project-structure` spec owns structural requirements. Exact enumerable
-structure lives in the structure registry; do not edit the generated block below by
-hand. Update the owning change and registry, then render it with the listed
-architecture checker.
+The active `project-structure` spec owns structural requirements; exact inventory
+lives in the structure registry. Do not edit the generated block below by hand;
+update the owning change and registry, then re-render with the architecture checker.
 
 <!-- BEGIN GENERATED: PROJECT-STRUCTURE -->
 ## Canonical Structure Locator
