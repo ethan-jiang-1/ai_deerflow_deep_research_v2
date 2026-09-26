@@ -1,7 +1,7 @@
 # Plans — plan/分析文档索引
 
-> 最后更新: 2026-09-12 | `_backlog/plans/` — 活跃 plan 在此（顶层），冻结未关闭的历史在
-> [`_archive/`](_archive/)，完成的普通 plan 移入 [`../_done/_closed_plans/`](../_done/_closed_plans/)。
+> 最后更新: 2026-09-26 | `_backlog/plans/` — 活跃 plan 在此（顶层），
+> 完成的普通 plan 移入 [`../_done/_closed_plans/`](../_done/_closed_plans/)。
 >
 > **plan 没有编号，文件名即标识。完成后文件名不变，位置即状态。**
 
@@ -18,7 +18,10 @@
 
 ## 活跃列表
 
-（当前无活跃 plan——TUI workflow debugger 战役已收口，见 `_done/_closed_plans/tui-workflow-debugger/`）
+| Plan | 一句话 |
+|------|--------|
+| [harness-tech-debt-cleanup.md](harness-tech-debt-cleanup.md) | 四路审计后的分阶段技术债清理：P0 事实裁决 → P1 两条链/渐进式披露 → P2 v2.1.0+openspec 同步 → P3 守护机制 |
+| [demo-real-gateway-closeout.md](demo-real-gateway-closeout.md) | demo-real Gateway 路线收尾：G1 wave2 诊断闭环（candidate_invalid 根因已定位）→ G2 修复 → G3 验收 |
 
 **Next available plan ID: CLS-060**（移入 `_closed_plans/` 时分配）
 
