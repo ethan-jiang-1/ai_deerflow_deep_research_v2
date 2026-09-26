@@ -1,14 +1,14 @@
 # Runbook 031 — 调试工作台（embedded 真实图，逐边界 step + Node Context）
 
 > 前置：同 003 的 `.env` 三变量（`DEEPSEEK_API_KEY`、`TAVILY_API_KEY`、`DEERFLOW_DEMO_MODEL`）+ `make install` + 网络
-> 入口：`./run/tui-workflow-debugger.sh --embedded`
+> 入口：`./run/tui-workflow-debugger.sh --embedded-smoke`
 > 本质：与 030 相同的 DebugRunDriver 逐边界推进，但跑在**真实模型和网页工具**上。wave0 等 LLM-bearing node 会捕获 Node Context Snapshot（initial prompt、runtime MD、enforced tools/budget、mount roots）。
 
 ## 1. 启动
 
 ```bash
 cd deep_research_harness
-./run/tui-workflow-debugger.sh --embedded
+./run/tui-workflow-debugger.sh --embedded-smoke
 ```
 
 TUI 打开后 preflight 检查 `.env` 三变量和网络。失败会在创建 Bundle 前明确报错。

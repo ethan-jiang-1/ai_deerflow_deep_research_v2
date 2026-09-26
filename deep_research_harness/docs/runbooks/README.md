@@ -21,7 +21,7 @@
 >   入口 `make demo-tui-embedded-smoke` / `RUN-020.command`）
 > - **030/031 = 调试工作台**（拆解者：节点边界 step/continue + `/context`
 >   查看 Node Context + `/detach` 干净退出。
->   入口 `run/tui-workflow-debugger.sh --fixture`（030）或 `--embedded`（031）。
+>   入口 `run/tui-workflow-debugger.sh --fixture`（030）或 `--embedded-smoke`（031）。
 >
 >   030/031 **不是 010/020 的替代品**——它走 `DebugRunDriver` 逐边界推进，
 >   不走 shared experience 的 start/resume 路径。01x 告诉你"能跑完"，
@@ -258,7 +258,7 @@ inspect 手段（看 workspace 结构 / 查 bundle / 拿日志），runbook 里�
 | 编号 | 入口 | 模式 | Node Context |
 |------|------|------|--------------|
 | 030 | `./run/tui-workflow-debugger.sh --fixture` | fixture（零凭证） | `/context` 为空属预期 |
-| 031 | `./run/tui-workflow-debugger.sh --embedded` | embedded（真实模型） | `/context` 显示 captured snapshot |
+| 031 | `./run/tui-workflow-debugger.sh --embedded-smoke` | embedded（真实模型） | `/context` 显示 captured snapshot |
 
 ### 03x 与 01x/02x 的关系
 
