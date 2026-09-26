@@ -1,6 +1,6 @@
 # Closed Plans Index — 已完成 plan 归档
 
- > 最后更新: 2026-09-12 | `_backlog/_done/_closed_plans/` — 已完成 plan 的归档目录。
+ > 最后更新: 2026-09-26（登记 CLS-060 demo-real Gateway 收尾、CLS-061 harness 技术债清理；活跃 plan 清零） | `_backlog/_done/_closed_plans/` — 已完成 plan 的归档目录。
 > 接收来自 [`../../plans/`](../../plans/) 的 plan。`_` 前缀 = coding agent 默认忽略。
 >
 > **plan 完成后文件名不变，位置即状态。** 移入时分配 `CLS-NNN` 序号（Closed），按完成时间递增。
@@ -80,5 +80,7 @@ plan 完成后从 `_backlog/plans/` 通过 `git mv` 移入本目录：
 | CLS-057 | 2026-08-31 | [doc-gate-docs-layer-and-fresh-agent-narrative.md](doc-gate-docs-layer-and-fresh-agent-narrative.md) | CLS-056 两收尾：doc gate 扩到 docs/ 层 + 范围完整性守卫（change `2026-08-31-doc-gate-docs-layer` 归档，PRS-020 MODIFIED）；`docs/run-lifecycle-walkthrough.md` 叙事层落地（DONE-003） |
 | CLS-058 | 2026-09-02 | [tui-workflow-debugger/](tui-workflow-debugger/tui-workflow-debugger-progressive-plan.md) | TUI workflow debugger 战役收口：`run/tui-workflow-debugger.sh` launcher + `make tui-debugger`、节点边界 step/continue workbench、Node Context pane、`--attach`/`--replay` exact-bundle intent；三个 plan 全部落地（progressive / target-ux / grounding-review）。补登：文件已移入但此前漏登记索引 |
 | CLS-059 | 2026-09-12 | [local-demo-debugger-runbook.md](local-demo-debugger-runbook.md) | 补齐调试工作台 runbook-030/031（fixture 零凭证 + embedded）与 embedded recorder 接线；`_local_demo` 活手册迁出后内容当日完成，本次按 ritual 关账登记 |
+| CLS-060 | 2026-09-26 | [demo-real-gateway-closeout.md](demo-real-gateway-closeout.md) | demo-real Gateway 路线收尾完成：wave2 `candidate_invalid` 根因（pydantic ValidationError 裸逃逸）经 G1 schema 反馈闭环修复（c43fd49）、G2 final_delivery 基数对齐（3e142ef，change `admit-full-plan-cardinality-in-final-delivery` 归档 462c2d9）；`make demo-real` 端到端通过（DEMO_EXIT=0），G3 验收四项全过（verify 全绿、live 49/50 等效、TUI 分诊、提交清账）；遗留 2 条 todo（wave2 timeout 预算评估、手动 TUI 真人验收） |
+| CLS-061 | 2026-09-26 | [harness-tech-debt-cleanup.md](harness-tech-debt-cleanup.md) | 四路审计后的技术债清理四阶段全部落地：P0 gitlink/README/CNI-001 经 `finalize-v210-governance-sync`（closeout 门绿后归档）+ launcher 死链与 runtime/README 三行（ae279b1）；P1 infra_probe 文档家/术语消歧/阅读顺序（92009cc）+ refine 补录/互链/双 builder 注释/命令表收敛/AGENTS.md 123→119 行；P2 契约速查（e424e43）/账面刷新/skills 落地 1.13.1（1c8ab70）；P3 治理门进 CI + 锚点单一权威（03fdff2）+ 索引新鲜度 tripwire（test_reader_index_freshness）+ config.yaml closeout 版本对齐惯例 |
 
-**Next available plan ID: CLS-060**
+**Next available plan ID: CLS-062**
