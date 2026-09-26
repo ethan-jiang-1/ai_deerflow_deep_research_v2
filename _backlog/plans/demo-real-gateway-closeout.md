@@ -76,11 +76,20 @@ v2.1.0 同步后 demo 阶梯仅剩一格：`make demo-real`（Gateway observer �
    - 提案阶段 `visible_controls` 为空（`allow_acceptance=False`）→ 控件选择这条
      零模型调用通路也不可用；`allow_acceptance = interaction.controls` 非空才开启，
      而 interaction.controls 由语义解析结果驱动——与上条同因。
-   - **改进候选（新决策菜单项，需用户拍板 + 查 human-interaction-contract spec）**：
-     把显式确认短语（confirm/确认）做成与 `_local_phrase_revision` 对称的零模型
-     确定性捷径（→ SemanticCandidate(ACCEPT_CURRENT_PROPOSAL)），demo 阶梯对
-     provider 抖动的鲁棒性会显著提升，且与既有确定性捷径模式一致。
-   - **G1 判据取数仍被阻塞在同一处**：wave2 要等一次 10 分钟级稳定链路窗口。
+   - **改进候选（修正版，2026-09-26 深夜复核）**：~~确定性确认捷径~~ **已存在**——
+     `domain/profile.py::normalize_clear_confirmation`（封闭集含 confirm/确认/yes…）
+     + `test_local_clear_confirmations_bypass_the_semantic_bridge` 全绿；据此撤回了
+     冗余的 `deterministic-explicit-confirmation-shortcut` 提案（ca13563）。
+   - **真正的缺陷定位（下一步诊断）**：节点直连路径上捷径工作正常，但 Gateway 路线的
+     六次实跑中答案从未被节点接受——`profile_rejection_round=0`、
+     `interaction_feedback=None`、`hitl1_visit_count=4`（四次访问全裸挂）。结论：
+     驱动 `AnswerRun` 携带的逐字答案（含 `human_input_response` 结构化负载）在
+     Gateway 会话运输层被外层 agent 转述/丢弃，未以原值到达节点，精确匹配的封闭集
+     永远打不中。**下一步 = 追踪答案在 gateway transport（threads/runs API → 外层
+     agent → deep_research resume 调用）中的保存/变形点**，修好后 HITL1 无需任何
+     代码改动即可稳定通过（捷径已在）。备选修复面：驱动对 Gateway 路线改用确定性
+     resume 通道（绕过外层 agent），或 transport 保结构化负载。
+   - **G1 判据取数仍被阻塞**：wave2 要先过 HITL1（运输层修复）+ 一次稳定链路窗口。
    教训：交互 observer 路线的瓶颈是外层 agent 的路由随机性 + 今晚的 provider 抖动，
    不是 wave2。G1 判据（category=parser_invalid、detail 非空）要等 wave2 真正被执行
    才能取数；若 agent 路由持续不稳，备选是先在嵌入式路线（demo-real-scripted 同一
