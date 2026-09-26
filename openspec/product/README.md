@@ -15,7 +15,7 @@ state write, tool permission, recovery action, or current runtime fact.
 | Question | Open | Why it owns the answer |
 | --- | --- | --- |
 | What do Deep Research terms mean? | [Product glossary](../../deep_research_harness/CONTEXT.md) | It owns terminology. |
-| What behavior is approved or pending? | [Approved main specs](../specs/) and the one [active delta](../changes/) | They own required behavior. |
+| What behavior is approved or pending? | [Approved main specs](../specs/) and any [active delta](../changes/) when one exists | They own required behavior. |
 | What does the application do now, and what proves it? | [Code](../../deep_research_harness/src/deerflow_deep_research/), typed contracts, and [tests](../../deep_research_harness/tests/) | Code, typed contracts, and tests own current facts and proof. |
 | How is an LLM-Bearing Node authored or reviewed? | [LLM-node authoring gate](../change-guidance/profiles/node-agent/node-agent.md) | It owns the exact cognitive-program-first route. |
 
