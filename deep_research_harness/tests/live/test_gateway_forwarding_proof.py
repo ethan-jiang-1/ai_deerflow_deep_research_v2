@@ -22,7 +22,8 @@ import urllib.request
 from collections import Counter
 
 import pytest
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, ToolMessage
+from langgraph.types import Command
 
 from deerflow_deep_research.runtime.gateway_observer import (
     PUBLIC_GATEWAY_ORIGIN,
@@ -80,6 +81,28 @@ def _assert_redacted(candidate: dict[str, object], *, bundle_id: str, outer_run_
         assert candidate["outer_run_id"] == outer_run_id
 
 
+def _typed_result_payload(result: object) -> dict[str, object]:
+    """Accept both typed-result surfaces the reflected tool may return.
+
+    A terminal or rejected action returns the typed lifecycle result dict
+    directly; a HITL suspension returns a LangGraph ``Command`` wrapping a
+    ``ToolMessage`` whose content is the same typed result JSON. Both name the
+    Bundle; the proof asserts on the payload either way.
+    """
+
+    if isinstance(result, dict):
+        return result
+    if isinstance(result, Command):
+        update = result.update or {}
+        messages = update.get("messages") or ()
+        for message in messages:
+            if isinstance(message, ToolMessage) and isinstance(message.content, str):
+                payload = json.loads(message.content)
+                if isinstance(payload, dict):
+                    return payload
+    pytest.fail("reflected tool must return the typed lifecycle result dict or a suspension Command carrying it")
+
+
 async def _probe_withheld_forwarding() -> tuple[dict[str, object], list[dict[str, object]], str | None]:
     client = HttpGatewayPublicClient()
     withheld: list[dict[str, object]] = []
@@ -102,13 +125,13 @@ async def _probe_withheld_forwarding() -> tuple[dict[str, object], list[dict[str
         pytest.fail(f"public Gateway turn failed before a typed result: {exc}")
     finally:
         await client.aclose()
-    assert isinstance(result, dict), "reflected tool must return the typed lifecycle result dict"
-    bundle_id = result.get("bundle_id")
+    payload = _typed_result_payload(result)
+    bundle_id = payload.get("bundle_id")
     assert isinstance(bundle_id, str) and bundle_id.startswith("b_"), "typed result must name a Bundle"
-    assert result.get("implementation_mode") == "all_real"
+    assert payload.get("implementation_mode") == "all_real"
     # The public SSE metadata run correlation is the only safe run identity the
     # observer retains; it must match the reflected candidate's outer_run_id.
-    return result, withheld, observer.correlation.run_id
+    return payload, withheld, observer.correlation.run_id
 
 
 def test_gateway_forwarding_proof() -> None:
