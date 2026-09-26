@@ -1,6 +1,16 @@
 # Plan: harness 技术债打扫与高信噪比重构
 
-> 类型: 分析 + 执行计划 | 更新: 2026-09-26
+> 类型: 分析 + 执行计划 | 更新: 2026-09-26（**P0–P3 全部落地，plan 关闭**）
+> **状态: 已完成并归档（CLS-061，2026-09-26）**——四阶段全部兑现：P0 走
+> `finalize-v210-governance-sync` change（gitlink/README/CNI-001，closeout 门绿后归档）；
+> P0-3 launcher 死链与 P0-4 runtime/README 三行（ae279b1）；P1 文档面
+> （92009cc infra_probe 文档家 + 术语消歧 + 阅读顺序、refine 补录、Entry Surfaces
+> 互链、双 builder 注释、命令表收敛）；P2（e424e43 契约速查、a503470 账面刷新、
+> pycache ignore、1c8ab70 skills 落地 1.13.1）；P3-1/2（03fdff2 治理门进 CI +
+> 锚点单一权威）；收尾三件 = AGENTS.md 123→119 行（警告消除）、
+> `test_reader_index_freshness.py` 索引新鲜度 tripwire（负例验证过）、
+> config.yaml closeout 惯例补 `openspec --version` ↔ `generatedBy` 对齐核对。
+> 终验：六 checker 治理门 + doc hygiene + `UV_OFFLINE=1 make verify` 全绿（退出码直测）。
 > 审计输入: 四路只读审计（fresh-agent 两条链 / 内容腐化 / openspec 约束 / DeerFlow v2.1.0 理解同步），
 > 全部关键断言经本会话直接复验（治理 checker 实跑、wave2 离线复现、git 元数据核对）。
 

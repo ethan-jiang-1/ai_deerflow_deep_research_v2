@@ -20,9 +20,9 @@
 
 | Plan | 一句话 |
 |------|--------|
-| [harness-tech-debt-cleanup.md](harness-tech-debt-cleanup.md) | 四路审计后的分阶段技术债清理：P0 事实裁决 → P1 两条链/渐进式披露 → P2 v2.1.0+openspec 同步 → P3 守护机制 |
+| （无活跃 plan） |
 
-**Next available plan ID: CLS-061**（移入 `_closed_plans/` 时分配）
+**Next available plan ID: CLS-062**（移入 `_closed_plans/` 时分配）
 
 ## 已归档（移至 `_done/_closed_plans/`）
 
@@ -64,6 +64,7 @@
 | local-demo-debugger-runbook.md | CLS-059 | 2026-09-12 |
 | openspec-product-boundary-portability.md | CLS-054 | 2026-08-17 |
 | demo-real-gateway-closeout.md | CLS-060 | 2026-09-26 |
+| harness-tech-debt-cleanup.md | CLS-061 | 2026-09-26 |
 
 ---
 
