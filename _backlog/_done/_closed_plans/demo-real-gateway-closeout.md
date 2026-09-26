@@ -1,6 +1,10 @@
 # Plan: demo-real Gateway 路线收尾（v2.1.0 demo 阶梯最后一格）
 
-> 类型: 执行计划（ongoing，长期打磨） | 更新: 2026-09-26（下午：**主线打通**）
+> 类型: 执行计划（ongoing，长期打磨） | 更新: 2026-09-26（深夜：**G3 全勾，plan 关闭**）
+> **状态: 已完成并归档（CLS-060，2026-09-26）**——主线判决 + G1 + G2 + G3 四项全部
+> 落地提交（c43fd49 / 3e142ef / 462c2d9 / f0b58df / 53a13fc）。两条遗留项已入
+> todos 账本：`todo-wave2-repair-timeout-budget-evaluation.md`（live lane 第 50 个）
+> 与 `todo-manual-demo-tui-human-validation.md`（真人按键验收）。
 > 前序: `/tmp/handoff-deerflow-v210-demo-real.md`（易失）。本文是其仓库内持久化 + 2026-09-26 诊断增量。
 
 ## ✅ 2026-09-26 13:07 主线判决：`make demo-real` 端到端通过

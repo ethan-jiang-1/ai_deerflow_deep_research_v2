@@ -21,9 +21,8 @@
 | Plan | 一句话 |
 |------|--------|
 | [harness-tech-debt-cleanup.md](harness-tech-debt-cleanup.md) | 四路审计后的分阶段技术债清理：P0 事实裁决 → P1 两条链/渐进式披露 → P2 v2.1.0+openspec 同步 → P3 守护机制 |
-| [demo-real-gateway-closeout.md](demo-real-gateway-closeout.md) | demo-real Gateway 路线收尾：G1 wave2 诊断闭环（candidate_invalid 根因已定位）→ G2 修复 → G3 验收 |
 
-**Next available plan ID: CLS-060**（移入 `_closed_plans/` 时分配）
+**Next available plan ID: CLS-061**（移入 `_closed_plans/` 时分配）
 
 ## 已归档（移至 `_done/_closed_plans/`）
 
@@ -64,6 +63,7 @@
 | tui-step-debugger-grounding-review.md | CLS-058 | 2026-09-02 |
 | local-demo-debugger-runbook.md | CLS-059 | 2026-09-12 |
 | openspec-product-boundary-portability.md | CLS-054 | 2026-08-17 |
+| demo-real-gateway-closeout.md | CLS-060 | 2026-09-26 |
 
 ---
 
