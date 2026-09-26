@@ -56,6 +56,25 @@ _ZERO = dict(max_attempts=1, max_model_calls=1, max_tool_calls=0, max_total_toke
 # MODEL_CALL_LIMIT. 4 matches the evidence-intake worker bounds and the
 # focused canary preconditions.
 _WORKER = dict(max_attempts=1, max_model_calls=4, max_tool_calls=1, max_total_tokens=32_768, timeout_seconds=180)
+# The Wave2 synthesis branches carry the corpus's heavy-grade headroom: the
+# production wave2-evidence-synthesis policy was raised to 300 s / 64 k after
+# observed budget.exhausted on real output, and the pre-lesson 60 s / 16 k
+# zero tier timed out live repair rounds without recording any rubric
+# disposition. 180 s / 32 k matches the established worker grade and stays
+# under the production branch policy ceiling.
+_WAVE2 = dict(max_attempts=1, max_model_calls=1, max_tool_calls=0, max_total_tokens=32_768, timeout_seconds=180)
+_WAVE2_BRANCHES = ("wave2-synthesis/synthesis", "wave2-synthesis/repair")
+
+
+def _branch_tier(branch: str) -> dict[str, int]:
+    """Return the fail-closed resource tier a corpus branch must declare."""
+    if branch == "targeted-evidence/worker":
+        return _WORKER
+    if branch in _WAVE2_BRANCHES:
+        return _WAVE2
+    return _ZERO
+
+
 _SUBMISSION_REF = "h_" + "J" * 43
 _EVIDENCE = (
     SynthesisEvidence(
@@ -90,7 +109,7 @@ def _case(
         rubric=rubric,
         permitted_degradation=_COMMON,
         nondeterministic_boundary="A live result evaluates only an untrusted candidate; parser, validator, materializer, controller, ledger, gate, and route remain deterministic owners.",
-        **(_WORKER if branch == "targeted-evidence/worker" else _ZERO),
+        **_branch_tier(branch),
     )
 
 
@@ -228,7 +247,7 @@ def validate_evidence_judgment_calibration_cases(
             raise ValueError("evidence_judgment_calibration_case_contract_invalid")
         if case.permitted_degradation != _COMMON or case.max_attempts != 1:
             raise ValueError("evidence_judgment_calibration_case_contract_invalid")
-        expected = _WORKER if case.branch_id == "targeted-evidence/worker" else _ZERO
+        expected = _branch_tier(case.branch_id)
         if any(getattr(case, name) != value for name, value in expected.items()):
             raise ValueError("evidence_judgment_calibration_bounds_invalid")
         by_branch[case.branch_id].append(case)
