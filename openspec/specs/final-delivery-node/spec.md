@@ -10,8 +10,8 @@ Produce bounded final report artifacts, verify their evidence integrity, and com
 ### Requirement: Writer produces report and claim-citation map
 
 The real final-delivery node SHALL invoke one bounded zero-tool report composer per
-non-degenerate visit. Trusted code SHALL derive its read-only request solely from the
-admitted readiness report plan and accepted evidence projection. The composer SHALL
+non-degenerate visit. Trusted code SHALL derive its read-only request solely from
+the admitted readiness report plan and accepted evidence projection. The composer SHALL
 return one closed typed layout candidate containing only complete, duplicate-free orders
 of deterministically derived writable-conclusion and mandatory-uncertainty entry
 identities; it SHALL receive no raw checkpoint, writable path, tool, publication
@@ -23,6 +23,16 @@ renderer SHALL produce `report.md` and `claim-citation-map.json` from the exact
 admitted plan text and backing submission references before the publisher writes
 either artifact. Fixture final delivery SHALL remain fixture-controlled.
 (`FID-001`)
+
+The layout candidate's order fields SHALL admit every entry identity of the admitted
+plan: no fixed cardinality bound below the plan contract's own bounds SHALL reject a
+complete plan-order or composer-delivered permutation, and the deterministic
+plan-order layout SHALL construct for an admitted plan of any legal cardinality. A
+delivery that parses as a well-formed JSON object but fails the typed layout
+validation SHALL carry the closed concrete category `final_layout_schema_invalid`
+with a bounded structured detail rather than collapsing into the generic layout
+shape code, so the recorded validation fact and any repair feedback name the failing
+field.
 
 For a degenerate plan — at most one writable conclusion and at most one mandatory
 uncertainty — the complete legal layout is mathematically unique, and the node SHALL
@@ -43,7 +53,11 @@ composer-produced candidate. A layout degradation SHALL NOT itself produce a wor
 failure, consume a repair round, or prevent publication, and SHALL leave the rendered
 artifact content exactly as the admitted plan text and backing references dictate. The
 composer's ordering contribution is advisory: no visit SHALL fail, block, or lose its
-delivery solely because the composer's ordering was unavailable or inadmissible.
+delivery solely because the composer's ordering was unavailable or inadmissible. A
+failure of rendering, publication, or artifact read-back SHALL leave one bounded
+closed-code validation fact in the journal before the visit's work-failure
+disposition, so a terminal delivery block never depends on offline reproduction to
+name its cause.
 
 #### Scenario: Admitted composer candidate is published
 - **WHEN** the composer returns complete valid plan-entry orders
@@ -91,6 +105,27 @@ delivery solely because the composer's ordering was unavailable or inadmissible.
 #### Scenario: Full-fake delivery remains fixture-controlled
 - **WHEN** the fixture graph reaches final delivery
 - **THEN** it does not invoke the composer and retains its declared fixture outcome
+
+#### Scenario: A full-cardinality plan delivers end to end
+- **WHEN** the admitted plan carries more mandatory-uncertainty or writable-conclusion
+  entries than any fixed small bound (for example nine uncertainties and seven
+  conclusions)
+- **THEN** the layout candidate contracts admit the complete plan-order and
+  composer-delivered orders, the deterministic plan-order layout constructs without
+  error, and the visit publishes its two artifacts instead of blocking
+
+#### Scenario: Schema-invalid delivery keeps a concrete category
+- **WHEN** the composer delivers a well-formed JSON object that fails the typed layout
+  validation (for example a missing or wrongly typed order field)
+- **THEN** the recorded validation fact and repair feedback carry the closed
+  `final_layout_schema_invalid` category with a bounded detail naming the failing
+  field, not the collapsed generic layout shape code
+
+#### Scenario: A read-back failure leaves a closed-code fact
+- **WHEN** rendering, publication, or artifact read-back raises before the visit's
+  artifacts are admitted
+- **THEN** the journal records one bounded closed-code validation fact for that
+  failure before the visit takes its work-failure disposition
 
 ### Requirement: Integrity gate verifies report and evidence
 

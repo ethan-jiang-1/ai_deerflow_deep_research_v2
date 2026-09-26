@@ -38,12 +38,22 @@ _LAYOUT_LITERAL_CODES = frozenset(
         "final_layout_empty",
         "final_layout_json_invalid",
         "final_layout_not_object",
+        "final_layout_schema_invalid",
         "final_layout_schema_unsupported",
         "final_layout_conclusions_invalid",
         "final_layout_uncertainties_invalid",
     }
 )
 _LAYOUT_SHAPE_INVALID = "final_layout_shape_invalid"
+_READBACK_LITERAL_CODES = frozenset(
+    {
+        "final_report_shape_invalid",
+        "final_citation_map_shape_invalid",
+        "final_publication_refs_invalid",
+        *_LAYOUT_LITERAL_CODES,
+    }
+)
+_READBACK_FALLBACK_CODE = "final_delivery_readback_failed"
 
 
 def _canonical_layout_code(error: ValueError) -> str:
@@ -69,8 +79,10 @@ def _validate_final_artifacts(report: bytes, citation_map: bytes) -> None:
         raise ValueError("final_citation_map_shape_invalid")
 
 
-async def _record_layout_validation_fact(dependencies: NodeBuildDependencies, *, code: str) -> None:
-    """Retain the closed canonical code of a rejected composer delivery.
+async def _record_layout_validation_fact(
+    dependencies: NodeBuildDependencies, *, code: str, validation_stage: str = "initial"
+) -> None:
+    """Retain the closed canonical code of a rejected delivery or read-back.
 
     Observation only (BUG-055): persistence failure must not perturb the visit,
     mirroring the topic-planning validation-fact owner.
@@ -82,11 +94,16 @@ async def _record_layout_validation_fact(dependencies: NodeBuildDependencies, *,
         await dependencies.event_recorder.record(
             category=RunEventCategory.VALIDATION,
             phase="final_delivery",
-            validation_stage="initial",
+            validation_stage=validation_stage,
             validation_codes=(code,),
         )
     except Exception:
         return
+
+
+def _readback_code(error: BaseException) -> str:
+    """Project a render/publish/read-back failure onto one closed code."""
+    return str(error) if str(error) in _READBACK_LITERAL_CODES else _READBACK_FALLBACK_CODE
 
 
 def _is_degenerate(plan: ReadinessReportPlan) -> bool:
@@ -171,7 +188,8 @@ def build_real(dependencies: NodeBuildDependencies):
             typed_refs = (refs[0], refs[1])
             read_report, read_citation_map = await dependencies.final_delivery_bundle.read_final_artifacts(typed_refs)
             _validate_final_artifacts(read_report, read_citation_map)
-        except Exception:
+        except Exception as exc:
+            await _record_layout_validation_fact(dependencies, code=_readback_code(exc), validation_stage="readback")
             return {
                 **base,
                 FINAL_DELIVERY_GATE_VIEW_KEY: _failure_view(evidence_present=True, code=FailureCode.WORK_FAILED),

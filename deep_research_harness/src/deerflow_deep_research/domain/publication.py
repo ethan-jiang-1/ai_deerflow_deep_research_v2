@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
-from pydantic import Field, model_validator
+from pydantic import model_validator
 
 from deerflow_deep_research.domain.failure_codes import FailureCode
 from deerflow_deep_research.domain.lifecycle import FrozenContract
@@ -18,9 +18,19 @@ FINAL_DELIVERY_GATE_VIEW_KEY = "_final_delivery_gate_view"
 
 
 class FinalDeliveryLayoutCandidate(FrozenContract):
+    """Layout orders admit every entry identity of the admitted plan.
+
+    Cardinality mirrors the plan contract (``ReadinessReportPlan`` unbounded
+    tuples): natural bounds flow from the wave1 open-question cap, per-item
+    field bounds, and the REG-008 checkpoint byte bound. A fixed small cap here
+    killed both the composer and the deterministic plan-order path on a real
+    9-uncertainty plan (2026-09-26 Gateway incident; locked by the FID-001
+    full-cardinality scenario).
+    """
+
     schema_version: int = 1
-    conclusion_order: tuple[str, ...] = Field(default=(), max_length=8)
-    uncertainty_order: tuple[str, ...] = Field(default=(), max_length=8)
+    conclusion_order: tuple[str, ...] = ()
+    uncertainty_order: tuple[str, ...] = ()
 
     @model_validator(mode="after")
     def validate_unique_orders(self) -> FinalDeliveryLayoutCandidate:

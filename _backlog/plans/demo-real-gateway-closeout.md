@@ -30,6 +30,20 @@ v2.1.0 同步后 demo 阶梯仅剩一格：`make demo-real`（Gateway observer �
 
 ## 目标（拟定）
 
+- **G2（重定义，2026-09-26 上午）**：wave2 已**零拒绝通过**（G1 修复经受真机检验，
+  handoff §3 原始阻塞正式死亡）。新阻塞在 `final_delivery`，已离线复现定案：
+  - 真实 run 产出 7 conclusions + **9 mandatory uncertainties**；
+  - `FinalDeliveryLayoutCandidate` 两个 order 字段 `max_length=8`（早期小问题集假设，
+    spec 从未背书）→ composer 候选与**确定性降级路径双双撞死** → WORK_FAILED×3 →
+    gate_blocked。违反 final-delivery spec 明文"no visit SHALL fail ... solely
+    because the composer's ordering was unavailable or inadmissible"。
+  - 伴随两个同族缺口：`parse_layout_candidate` 裸 pydantic ValidationError 折叠成
+    `final_layout_shape_invalid` 无细节（wave2 同款）；final try/except 静默吞掉
+    render/publish/read-back 失败原因（本次取证全靠离线复现）。
+  - **修复走 change**：`admit-full-plan-cardinality-in-final-delivery`
+    （MODIFIED FID-001：布局 order 基数对齐 plan 契约 + 新 scenario 锁死 +
+    `final_layout_schema_invalid` 封闭类别带 bounded detail + read-back 失败留痕）。
+
 - **G1 诊断闭环（无准入语义变更）**：把 pydantic `ValidationError` 折进封闭词表——
   `parse_synthesis_output` 捕获后 raise `synthesis_output_schema_invalid` 并携带
   bounded `.detail`（前 N 条 pydantic 错误的 loc/type/msg 投影）。

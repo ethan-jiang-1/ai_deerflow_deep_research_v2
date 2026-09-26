@@ -35,12 +35,19 @@ from deerflow_deep_research.graph.nodes.final_delivery.composer import (
     admit_layout_candidate,
     build_final_delivery_request,
     parse_layout_candidate,
+    plan_order_layout,
+    render_final_artifacts,
 )
 from deerflow_deep_research.graph.nodes.final_delivery.contracts import (
     FINAL_DELIVERY_GATE_VIEW_KEY,
     FinalDeliveryGateView,
 )
-from deerflow_deep_research.graph.nodes.final_delivery.node import build_real
+from deerflow_deep_research.graph.nodes.final_delivery.node import (
+    _LAYOUT_LITERAL_CODES,
+    _canonical_layout_code,
+    _validate_final_artifacts,
+    build_real,
+)
 from deerflow_deep_research.graph.nodes.readiness.contracts import ReadinessReportPlan
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
 from deerflow_deep_research.runtime.work_unit_store import WorkUnitStore
@@ -455,8 +462,8 @@ class TestRealFinalDelivery:
         assert "response_shape" not in validations[0] or validations[0]["response_shape"] is None
 
     @pytest.mark.asyncio
-    async def test_duplicate_order_candidate_collapses_to_shape_invalid_and_degrades(self) -> None:
-        """Typed-candidate validation detail collapses to the closed shape code."""
+    async def test_duplicate_order_candidate_carries_the_closed_schema_code_and_degrades(self) -> None:
+        """Typed-candidate validation failures carry the closed schema-invalid code."""
 
         recorder = SpyEventRecorder()
         duplicate = json.dumps(
@@ -474,7 +481,7 @@ class TestRealFinalDelivery:
         assert result[FINAL_DELIVERY_GATE_VIEW_KEY].failure_code is None
         validations = [event for event in recorder.events if event.get("category") is not None]
         assert len(validations) == 1
-        assert validations[0]["validation_codes"] == ("final_layout_shape_invalid",)
+        assert validations[0]["validation_codes"] == ("final_layout_schema_invalid",)
         assert len(dependencies.publication_bundle.calls) == 1  # type: ignore[union-attr]
 
     @pytest.mark.asyncio
@@ -583,3 +590,65 @@ class TestRealFinalDelivery:
         assert await store.publish_final(b"report\n", b'{"claims":{}}') == first
         with pytest.raises(ValueError, match="final_artifact_write_conflict"):
             await store.publish_final(b"changed\n", b'{"claims":{}}')
+
+
+class TestFullCardinalityAndClosedFeedback:
+    """@impl FID-001
+
+    The 2026-09-26 Gateway incident: a real plan (7 conclusions + 9 uncertainties)
+    killed both the composer path and the deterministic plan-order fallback on the
+    layout contract's legacy max_length=8, and the terminal block left no journal
+    fact. These tests lock the corrected contracts.
+    """
+
+    def test_full_cardinality_plan_constructs_renders_and_validates_end_to_end(self) -> None:
+        plan = ReadinessReportPlan.model_validate(
+            {
+                "writable_conclusions": [
+                    {
+                        "question": f"Established fact {index}?",
+                        "conclusion_text": f"Approved conclusion {index} is retained verbatim.",
+                        "backing_claim_ids": [_LEDGER_HASH],
+                    }
+                    for index in range(7)
+                ],
+                "mandatory_uncertainties": [
+                    {"question": f"Open question {index}?", "limitation": f"Bounded limitation {index}."}
+                    for index in range(9)
+                ],
+            }
+        )
+        layout = plan_order_layout(plan)
+        assert len(layout.conclusion_order) == 7
+        assert len(layout.uncertainty_order) == 9
+        report, citation_map = render_final_artifacts(plan, layout)
+        _validate_final_artifacts(report, citation_map)
+        text = report.decode("utf-8")
+        assert text.startswith("# Deep Research Report\n")
+        assert text.count("### Open question") == 9
+
+    def test_schema_invalid_object_delivery_keeps_a_concrete_closed_category(self) -> None:
+        delivery = json.dumps({"schema_version": 1, "conclusion_order": "not-a-tuple", "uncertainty_order": []})
+        with pytest.raises(ValueError) as excinfo:
+            parse_layout_candidate(delivery)
+        assert str(excinfo.value) == "final_layout_schema_invalid"
+        detail = getattr(excinfo.value, "detail", None)
+        errors = detail.get("schema_errors") if isinstance(detail, dict) else None
+        assert isinstance(errors, list) and 0 < len(errors) <= 3
+        assert errors[0]["loc"] == "conclusion_order"
+        assert _canonical_layout_code(excinfo.value) == "final_layout_schema_invalid"
+
+    @pytest.mark.asyncio
+    async def test_readback_failure_records_one_closed_code_fact_before_work_failure(self) -> None:
+        bundle = ScriptedFinalBundle(plan=_multi_conclusion_plan())
+        bundle.fail_final_read = True
+        recorder = SpyEventRecorder()
+        dependencies = _deps(bundle=bundle, event_recorder=recorder)
+        result = await build_real(dependencies)(_state(bundle))
+        view = result[FINAL_DELIVERY_GATE_VIEW_KEY]
+        assert view.failure_code is FailureCode.WORK_FAILED
+        codes = [event.get("validation_codes") for event in recorder.events if event.get("category") == "validation"]
+        assert codes and all(all(code for code in entry) for entry in codes)
+        flat = {code for entry in codes for code in entry}
+        assert flat <= {"final_layout_schema_invalid", "final_delivery_readback_failed"} | set(_LAYOUT_LITERAL_CODES)
+        assert "final_delivery_readback_failed" in flat, "read-back failure must leave its own closed-code fact"

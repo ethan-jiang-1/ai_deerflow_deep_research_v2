@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from collections.abc import Iterable
 
+from pydantic import ValidationError
+
 from deerflow_deep_research.domain.context import NodeExecutionRequest
 from deerflow_deep_research.domain.publication import FinalDeliveryLayoutCandidate
 from deerflow_deep_research.domain.readiness import ReadinessReportPlan
@@ -14,6 +16,35 @@ from deerflow_deep_research.domain.untrusted import build_untrusted_data_block
 from .capabilities import FINAL_DELIVERY_COMPOSER
 
 MAX_FINAL_DELIVERY_EVIDENCE_BYTES = 8_192
+
+_SCHEMA_DETAIL_MAX_ERRORS = 3
+_SCHEMA_DETAIL_MAX_MSG_CHARS = 120
+
+
+class LayoutSchemaInvalid(ValueError):
+    """Closed category for a well-formed JSON object failing typed validation.
+
+    Carries a bounded structured ``detail`` (first pydantic errors projected to
+    loc/type/msg) so the recorded validation fact and any repair feedback name
+    the failing field instead of collapsing into the generic shape code.
+    """
+
+    def __init__(self, detail: dict[str, object]) -> None:
+        self.detail = detail
+        super().__init__("final_layout_schema_invalid")
+
+
+def _schema_detail(exc: ValidationError) -> dict[str, object]:
+    """Bounded projection of the first pydantic errors for repair feedback."""
+    errors = [
+        {
+            "loc": ".".join(str(part) for part in error.get("loc", ())),
+            "type": str(error.get("type", "invalid")),
+            "msg": str(error.get("msg", ""))[:_SCHEMA_DETAIL_MAX_MSG_CHARS],
+        }
+        for error in exc.errors()[:_SCHEMA_DETAIL_MAX_ERRORS]
+    ]
+    return {"schema_errors": errors}
 
 
 def _entry_ids(prefix: str, count: int) -> tuple[str, ...]:
@@ -87,7 +118,10 @@ def parse_layout_candidate(text: str) -> FinalDeliveryLayoutCandidate:
         raise ValueError("final_layout_json_invalid")
     if not isinstance(payload, dict):
         raise ValueError("final_layout_not_object")
-    return FinalDeliveryLayoutCandidate.model_validate(payload)
+    try:
+        return FinalDeliveryLayoutCandidate.model_validate(payload)
+    except ValidationError as exc:
+        raise LayoutSchemaInvalid(_schema_detail(exc)) from exc
 
 
 def _load_delivered_object(stripped: str) -> object | None:
