@@ -66,6 +66,21 @@ v2.1.0 同步后 demo 阶梯仅剩一格：`make demo-real`（Gateway observer �
    - question+JSON+confirm 三行 → 期间两次 provider 流式断流（`stream_chunk_timeout`，
      240s×N，VPN 链路抖动），自动重试后部分推进，结局待本 run 收尾。
    **每 run 独立 scope，重试无需 soft_bundle clean；唯一一次僵尸 bundle 已归档。**
+   **2026-09-26 深夜诊断定论（六次点火后的机制链）**：
+   - 交互路线的 HITL1 文本回答解析是**认知面**：profile 细节与提案确认都走
+     `hitl1/_classify_proposal_reply` → `build_semantic_intake_prompt` → 真模型调用；
+     仅"短语修订"有确定性捷径（`_local_phrase_revision`）。
+   - 今晚 provider 流式反复断流（`stream_chunk_timeout` 240s×4+）→ 语义解析调用
+     失败/无法完成 → 所有 stdin 答案（裸 confirm、精确匹配建议值的 JSON）一律
+     "未识别" → stdin 耗尽 → `input.invalid_response`。**非代码 bug、非契约错配。**
+   - 提案阶段 `visible_controls` 为空（`allow_acceptance=False`）→ 控件选择这条
+     零模型调用通路也不可用；`allow_acceptance = interaction.controls` 非空才开启，
+     而 interaction.controls 由语义解析结果驱动——与上条同因。
+   - **改进候选（新决策菜单项，需用户拍板 + 查 human-interaction-contract spec）**：
+     把显式确认短语（confirm/确认）做成与 `_local_phrase_revision` 对称的零模型
+     确定性捷径（→ SemanticCandidate(ACCEPT_CURRENT_PROPOSAL)），demo 阶梯对
+     provider 抖动的鲁棒性会显著提升，且与既有确定性捷径模式一致。
+   - **G1 判据取数仍被阻塞在同一处**：wave2 要等一次 10 分钟级稳定链路窗口。
    教训：交互 observer 路线的瓶颈是外层 agent 的路由随机性 + 今晚的 provider 抖动，
    不是 wave2。G1 判据（category=parser_invalid、detail 非空）要等 wave2 真正被执行
    才能取数；若 agent 路由持续不稳，备选是先在嵌入式路线（demo-real-scripted 同一
