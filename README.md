@@ -61,4 +61,4 @@ UV_OFFLINE=1 make verify                  # 跑确定性测试 gate
 ## 备注
 
 - `deerflow/` submodule 需 `git clone --recurse-submodules` 或 `git submodule update --init` 才完整。
-- 框架运行时基座：submodule 锁在 commit `66b9e7f2`（ethan 分支的一个 commit，见 `openspec/governance/project-structure.toml` 的 `upstream_gitlink`）。
+- 框架运行时基座：submodule 锁在 commit `ceebf97f`（ethan 分支 tip，= 上游 v2.1.0；声明见 `openspec/governance/project-structure.toml` 的 `upstream_gitlink`，与 `deep_research_harness/tests/contract/test_deerflow_public_api.py` 的 `CURRENT_DEERFLOW_PIN` 互为镜像锚点）。

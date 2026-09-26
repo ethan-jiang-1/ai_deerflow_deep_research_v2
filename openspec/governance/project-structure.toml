@@ -4,7 +4,7 @@ requirement_ids = ["PRS-001", "PRS-002", "PRS-003", "PRS-004", "PRS-005", "PRS-0
 
 [upstream_gitlink]
 path = "deerflow"
-commit = "66b9e7f21212490cf92fafac137542b9deb06615"
+commit = "ceebf97fc31afbbfe2aadf7c8d82b03c3742d5d7"
 
 [guide]
 path = "deep_research_harness/AGENTS.md"
