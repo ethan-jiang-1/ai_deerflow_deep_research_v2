@@ -1653,9 +1653,35 @@ async def test_context_pane_renders_captured_invocations(monkeypatch: pytest.Mon
             await asyncio.sleep(0.05)
         assert app.query_one("#node-context").display
         pane = app.query_one("#node-context").render().plain
-        assert "⌨ wave0#1 model=2" in pane, pane
-        assert "coverage:" in pane and "INITIAL CAPTURED" in pane and "NOT RETAINED" in pane, pane
+        assert "⌨ wave0#1 model=2 tool=1" in pane, pane
+        assert "coverage:" in pane and "INITIAL CAPTURED" in pane, pane
         assert "Objective: Compare storage options" in pane, pane
+        # The debugger's real value: what the model was allowed to do.
+        assert "enforced tools: web_search" in pane, pane
+        assert "budget: max_model_calls=8" in pane, pane
+
+        # Drilling into one capture shows its content, layers and hashes.
+        composer.value = "/context wave0#1"
+        await pilot.pause()
+        await pilot.press("enter")
+        for _ in range(80):
+            await pilot.pause()
+            if "捕获详情" in app.query_one("#node-context").render().plain:
+                break
+            await asyncio.sleep(0.05)
+        detail = app.query_one("#node-context").render().plain
+        for fragment in (
+            "=== wave0#1 捕获详情（CAPTURED）===",
+            "system policy text",
+            "base policy layer: resources/node_agent/runtime_policy.md",
+            "base policy",  # the runtime MD content itself, not only its hash
+            "capability layer: pkg:capabilities/wave0.md",
+            "capability body",  # the capability text the model was given
+            "enforced tools: requested=web_search → enforced=web_search (required)",
+            "virtual roots: workspace_root=/mnt/user-data/workspace",
+            "raw provider histories: NOT_RETAINED",
+        ):
+            assert fragment in detail, f"the capture detail omits {fragment!r}:\n{detail[-500:]}"
 
 
 @pytest.mark.asyncio

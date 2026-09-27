@@ -3,7 +3,10 @@
 > **状态（2026-09-27）：已落地。** 调试驱动是组合无关的：`--embedded-smoke` 现在起的是
 > **全真实图（ALL_REAL）上的调试工作台**——launcher 会为该组合注入 `--debug`，driver 以
 > `ImplementationMode.ALL_REAL` 建 bundle，step/continue、`/context`、`/files`、`/attach`、
-> `/replay` 与 fixture 路线完全一致；`/context` 此时能看到 LLM-bearing node 的捕获上下文。
+> `/replay` 与 fixture 路线完全一致；`/context` 此时能看到 LLM-bearing node 的捕获上下文，
+> 且可用 `/context <node>#<n>` **下钻**到某一次调用：initial system policy / human message、
+> base policy 与 capability 分层的内容摘录与哈希、enforced tools（requested→enforced）与
+> budget、output schema、virtual roots 与 mounts、activity 与 coverage strip。
 >
 > 前置：同 003 的 `.env` 三变量（`DEEPSEEK_API_KEY`、`TAVILY_API_KEY`、
 > `DEERFLOW_DEMO_MODEL`）+ `make install` + 网络——真实节点真的要调模型与网页工具。

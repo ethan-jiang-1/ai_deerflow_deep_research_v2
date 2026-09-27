@@ -305,6 +305,15 @@ HITL1 prompt, answering, empty-Enter stepping, mid-ladder `/detach`, the retaine
 `/context`, and final `/detach`. It prints a step transcript, runs in about five
 seconds, and exits non-zero at the first failing step with both panes captured.
 
+**Operator-experience suite.** `scripts/tui_experience_suite.py` (`make tui-experiences`)
+drives fifteen independent end-to-end operator journeys — first screen, HITL request
+display, stepping, continuous run, pause semantics, observation panes, help and palette,
+the recovery chain, attach, read-only replay, degraded layout, observation honesty,
+harness anatomy, debuggable-object inventory, and captured-context drill-down — each in
+its own app and Bundle root at a realistic terminal size, printing one PASS/FAIL line per
+journey. `make debugger-proof` runs the whole debugger evidence chain (driver matrix, entry
+contract, workbench tests, journey harness, experience suite) in one command.
+
 **Rule of use:** an agent must run this harness before handing any TUI path to a
 human operator, and the same assertion runs inside `make verify`
 (`tests/integration/test_debugger_entry.py`). A leftover active debug bundle (a

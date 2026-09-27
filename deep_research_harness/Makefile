@@ -1,4 +1,4 @@
-.PHONY: install entry-preflight verify lock-check format lint test test-fast test-integration test-workflow test-entry-environment-regression test-live test-unit test-contract test-viability test-durability test-blocking-io test-assets test-intake test-retained-observation test-work-unit test-strict-checkpoint test-duration-policy test-changed benchmark-fast prompt-dump prompt-dump-check profile-setup profile-preflight profiles profile-init profile-check profile-dev demo demo-scripted demo-fixture-graph demo-real demo-real-embedded-smoke demo-real-scripted demo-tui demo-tui-embedded-smoke demo-tui-fixture demo-tui-real-auto demo-sessions session-workbench debug-scripted-real-workflow soft-bundle demo-workspace-report demo-clean
+.PHONY: install entry-preflight verify lock-check format lint test test-fast test-integration test-workflow test-entry-environment-regression test-live test-unit test-contract test-viability test-durability test-blocking-io test-assets test-intake test-retained-observation test-work-unit test-strict-checkpoint test-duration-policy test-changed benchmark-fast prompt-dump prompt-dump-check profile-setup profile-preflight profiles profile-init profile-check profile-dev demo demo-scripted demo-fixture-graph demo-real demo-real-embedded-smoke demo-real-scripted demo-tui demo-tui-embedded-smoke demo-tui-fixture demo-tui-real-auto demo-sessions session-workbench debug-scripted-real-workflow soft-bundle demo-workspace-report demo-clean tui-experiences debugger-proof
 
 DEMO_ARGS ?=
 # BUG-032 conclusion: sandboxed environments (DSH workspace-write) EPERM on the
@@ -99,6 +99,22 @@ tui-debugger:
 # run this before handing any TUI path to an operator; it is also wired into
 # `make verify`. JOURNEY_ARGS="--cancel-active" abandons a leftover active
 # debug bundle (recovery after an interrupted session).
+tui-experiences:
+	@env -u PYTHONPATH $(ENTRY_RUN) --extra operations --extra demo-tui python scripts/tui_experience_suite.py $(EXPERIENCE_ARGS)
+
+debugger-proof:
+	@echo "== 1/5 driver matrix (closed commands, lease, stop policy, pending request) =="
+	@env -u PYTHONPATH $(ENTRY_RUN) --extra operations --extra demo-tui python -m pytest tests/integration/test_debug_driver_matrix.py -q
+	@echo "== 2/5 debugger entry contract (launcher, PYTHONPATH seam, harness subprocess) =="
+	@env -u PYTHONPATH $(ENTRY_RUN) --extra operations --extra demo-tui python -m pytest tests/integration/test_debugger_entry.py -q
+	@echo "== 3/5 workbench tests (UX, layout tiers, panes, palette) =="
+	@env -u PYTHONPATH $(ENTRY_RUN) --extra operations --extra demo-tui python -m pytest tests/integration/test_demo_tui.py -q
+	@echo "== 4/5 operator journey harness (real script as __main__, dwell at every checkpoint) =="
+	@env -u PYTHONPATH $(ENTRY_RUN) --extra operations --extra demo-tui python scripts/tui_journey_probe.py
+	@echo "== 5/5 operator experience suite (15 end-to-end journeys) =="
+	@env -u PYTHONPATH $(ENTRY_RUN) --extra operations --extra demo-tui python scripts/tui_experience_suite.py
+	@echo "debugger-proof: every lane exited 0"
+
 tui-journey:
 	env -u PYTHONPATH $(ENTRY_RUN) --extra operations --extra demo-tui python scripts/tui_journey_probe.py $(JOURNEY_ARGS)
 

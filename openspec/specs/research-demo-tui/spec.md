@@ -419,6 +419,17 @@ The workbench SHALL state, for the current posture, what the session is waiting 
 and which actions are legal at that moment; it SHALL expose both start compositions -
 Start Step and Start Run over one validated question draft - and the driver's pause
 request, and SHALL offer a capability listing that names every workbench action.
+The workbench SHALL also offer an exploration surface for the harness it drives: it
+SHALL report the composition it runs (recipe identity and per-node kinds), the trusted
+workspace roots, and the readable projections it exposes; it SHALL inventory every
+Bundle the workspace offers as a debug target with its lifecycle status and attach
+posture, and SHALL show one selected Bundle's internals including its frames and its
+typed work-unit records; and for a captured node-agent invocation it SHALL show the
+content the model was given and allowed - the request objective, the initial policy and
+human message, the base-policy and capability layers with their identities and hashes,
+the requested versus enforced tools, the budget, and the mount/root facts - with raw
+provider histories labelled NOT RETAINED. Every entry that takes a Bundle id SHALL list
+bounded candidates rather than answering with a bare usage line.
 (`RED-014`)
 
 #### Scenario: Three entries are explicit and equivalently reachable
@@ -459,3 +470,15 @@ request, and SHALL offer a capability listing that names every workbench action.
 - **WHEN** an operator supplies one validated question draft
 - **THEN** Start Step and Start Run are both reachable over that draft, and a
   running session can request a pause at its next committed boundary
+
+#### Scenario: The debugger exposes what it is debugging
+- **WHEN** an operator asks the workbench for its own anatomy or for the available
+  debug targets
+- **THEN** it reports the composition and readable projections, and lists each Bundle
+  with its status and attach posture plus one selected Bundle's frames and work units
+
+#### Scenario: A captured invocation shows what the model was given and allowed
+- **WHEN** an operator drills into one captured node-agent invocation
+- **THEN** the workbench shows that invocation's objective, initial policy and human
+  message, layer identities and hashes, requested versus enforced tools, budget and
+  mounts, with raw provider histories labelled NOT RETAINED

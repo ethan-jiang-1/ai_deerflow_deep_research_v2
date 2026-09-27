@@ -783,6 +783,8 @@ class WorkbenchCommands(Provider):
             ("Attach", "Attach to the composer bundle id (lifecycle-validated)", self._attach),
             ("Replay", "Read-only replay of the composer bundle id", self._replay),
             ("Pause", "Request a pause at the next committed boundary", self._pause),
+            ("Harness", "Show what this harness is made of", self._harness),
+            ("Targets", "List every object available to debug", self._targets),
             ("Help", "List every workbench capability", self._help),
         )
         lowered = query.lower().strip()
@@ -805,6 +807,14 @@ class WorkbenchCommands(Provider):
     def _help(self) -> None:
         app = self.app
         app._debug_help()
+
+    def _harness(self) -> None:
+        app = self.app
+        app.run_worker(app._debug_harness_anatomy(), exclusive=True, group="debug")
+
+    def _targets(self) -> None:
+        app = self.app
+        app.run_worker(app._debug_targets(), exclusive=True, group="debug")
 
     def _attach(self) -> None:
         app = self.app
@@ -1339,6 +1349,19 @@ class DeepResearchDemoTUI(App[None]):
             self.query_one("#composer", Input).value = ""
             self.run_worker(self._debug_cancel_active(), exclusive=True, group="debug")
             return
+        if self.debug_mode and value.startswith("/harness"):
+            self.query_one("#composer", Input).value = ""
+            self.run_worker(self._debug_harness_anatomy(), exclusive=True, group="debug")
+            return
+        if self.debug_mode and value.startswith("/targets"):
+            self.query_one("#composer", Input).value = ""
+            self.run_worker(self._debug_targets(), exclusive=True, group="debug")
+            return
+        if self.debug_mode and value.startswith("/inspect"):
+            _, _, target = value.partition(" ")
+            self.query_one("#composer", Input).value = ""
+            self.run_worker(self._debug_inspect_bundle(target), exclusive=True, group="debug")
+            return
         if self.debug_mode and value.startswith("/help"):
             self.query_one("#composer", Input).value = ""
             self._debug_help()
@@ -1381,8 +1404,10 @@ class DeepResearchDemoTUI(App[None]):
             self.run_worker(self._debug_command(value), exclusive=True, group="debug")
             return
         if self.debug_mode and self._debug_driver is not None and value.startswith("/context"):
+            # /context [node#n]: list captures, or drill into one capture's content.
+            _, _, selector = value.partition(" ")
             self.query_one("#composer", Input).value = ""
-            self.run_worker(self._debug_command(value), exclusive=True, group="debug")
+            self.run_worker(self._debug_render_context(selector.strip()), exclusive=True, group="debug")
             return
         if value.startswith("/"):
             # Global inspect commands work at any time (recon or mid-research)
@@ -2127,19 +2152,24 @@ class DeepResearchDemoTUI(App[None]):
         )[:limit]
         return [path.name for path in candidates]
 
-    async def _debug_attach_candidates(self, adapter: Any) -> None:
-        """Render the bounded Attach candidates with their lease postures."""
+    async def _debug_attach_candidates(self, adapter: Any, verb: str = "/attach") -> None:
+        """Render the bounded candidates of an id-taking entry with their postures.
+
+        Both ``/attach`` and ``/replay`` take a bundle id, and the operator has no
+        way to know one, so neither entry may answer with a bare usage line.
+        """
         log = self.query_one("#log", RichLog)
         candidates = self._attach_candidate_ids(adapter)
+        label = "Attach" if verb == "/attach" else "Replay"
         if not candidates:
-            log.write(Text("没有可附加的候选 bundle（workspace 无记录）。", style="yellow"))
+            log.write(Text(f"没有可供 {label} 的候选 bundle（workspace 无记录）。", style="yellow"))
             return
         driver = self._new_debug_driver(adapter)
-        log.write(Text("Attach 候选（operator view，非生命周期权威；生命周期校验后使用）：", style="cyan"))
+        log.write(Text(f"{label} 候选（operator view，非生命周期权威；生命周期校验后使用）：", style="cyan"))
         for candidate in candidates:
             posture = await driver.attach_posture(candidate) if driver is not None else "unresolvable"
             log.write(Text(f"  {candidate[:20]}…  [{posture}]", style="dim"))
-        log.write(Text("用法: /attach <bundle_id>，或把 id 填进 composer 后点 Attach。", style="dim"))
+        log.write(Text(f"用法: {verb} <bundle_id>（id 取自上表；不自动选最新）。", style="dim"))
 
     def _workspace_reader(self, adapter: Any) -> Any:
         """Read-only Files reader over this demo workspace's trusted roots.
@@ -2244,10 +2274,13 @@ class DeepResearchDemoTUI(App[None]):
 
         log = self.query_one("#log", RichLog)
         bundle_id = bundle_id.strip()
-        if not bundle_id:
-            log.write(Text("用法: /replay <bundle_id>（或启动时 --replay <bundle_id>）", style="yellow"))
-            return
         adapter = self._adapter
+        if not bundle_id:
+            if adapter is not None:
+                await self._debug_attach_candidates(adapter, verb="/replay")
+            else:
+                log.write(Text("用法: /replay <bundle_id>（或启动时 --replay <bundle_id>）", style="yellow"))
+            return
         if adapter is None:
             return
         bundle = await adapter._bundle_lifecycle.resolve(
@@ -2337,6 +2370,206 @@ class DeepResearchDemoTUI(App[None]):
         else:
             await self._debug_advance()
 
+    async def _debug_harness_anatomy(self) -> None:
+        """Show what this harness is made of (read-only, no lease, no host paths)."""
+        from deerflow_deep_research.domain.identifiers import LOGICAL_PHASE_NAMES
+
+        log = self.query_one("#log", RichLog)
+        adapter = self._adapter
+        executor = getattr(self._transport, "_graph_executor", None)
+        recipe = getattr(executor, "_recipe", None)
+        recipe_name = type(recipe).__name__ or "unavailable"
+        composition = getattr(recipe, "composition_name", "unavailable")
+        revision = getattr(recipe, "recipe_revision", "unavailable")
+        fingerprint = getattr(recipe, "compatibility_fingerprint", "unavailable")
+        kinds = getattr(recipe, "adapter_kinds", ()) or ()
+        node_kinds = " · ".join(f"{name}:{getattr(kind, 'value', kind)}" for name, kind in kinds) or "unavailable"
+        requires = (
+            ", ".join(
+                flag.removeprefix("requires_")
+                for flag in (
+                    "requires_work_units",
+                    "requires_bootstrap_bundle",
+                    "requires_request_bundle",
+                    "requires_publication_bundle",
+                    "requires_final_delivery_bundle",
+                    "requires_node_agent_bridge",
+                    "requires_wave0_worker_bridge",
+                )
+                if getattr(recipe, flag, False)
+            )
+            or "（无额外前置）"
+        )
+        mode = (
+            "embedded_smoke（ALL_REAL：真实模型+网页工具）"
+            if self.mode == "embedded_smoke"
+            else "fixture-graph（无凭据、无网络）"
+        )
+        implementation = self._debug_implementation_mode().value
+        roots = "unavailable"
+        if adapter is not None:
+            reader = self._workspace_reader(adapter)
+            if reader is not None:
+                roots = ", ".join(f"{view.alias}[{view.policy_label}]" for view in reader.list_roots())
+        nodes = ", ".join(LOGICAL_PHASE_NAMES)
+        log.write(
+            Text(
+                "Harness 解剖（只读；不取 lease、不写、不泄露 host 路径）：\n"
+                f"  组合: {mode}\n"
+                f"  本次会话实现模式: {implementation} · executor recipe: {recipe_name}\n"
+                f"  组合名: {composition} · revision: {revision} · 兼容指纹: {str(fingerprint)[:16]}\n"
+                f"  节点类型({len(kinds)}): {node_kinds}\n"
+                f"  前置要求: {requires}\n"
+                f"  逻辑节点({len(LOGICAL_PHASE_NAMES)}): {nodes}\n"
+                f"  工作区根(虚拟 alias): {roots}\n"
+                "  可读投影: 生命周期 state · trace 帧 · Node Context 捕获 · 观测 run-summary ·\n"
+                "            工作单元(work/) · 交付产物(final/) · debug-commands 账本\n"
+                "  探索入口: /targets 可调试对象 · /inspect <id> 单个对象 · /context 调用上下文 ·\n"
+                "            /files [路径] 工作区文件 · /attach <id> 接管 · /replay <id> 只读回放\n"
+                "  手册: runbook-030（本工作台）· 031（真实图）· 001/010/020（演示阶梯）",
+                style="cyan",
+            )
+        )
+
+    async def _debug_targets(self) -> None:
+        """List every object this workspace offers for debugging (operator view)."""
+        from deerflow_deep_research.domain.bundle import BundleId
+        from deerflow_deep_research.runtime.trace_projector import RunTraceProjector
+
+        log = self.query_one("#log", RichLog)
+        adapter = self._adapter
+        if adapter is None:
+            log.write(Text("尚无工作区可枚举。", style="yellow"))
+            return
+        scope = self._debug_scope(adapter)
+        log.write(Text("可调试对象（operator view，非生命周期权威；校验后使用）：", style="cyan"))
+        log.write(Text(f"  scope: {scope[1][:20]}…", style="dim"))
+        candidates = self._attach_candidate_ids(adapter, limit=8)
+        if not candidates:
+            log.write(Text("  （workspace 暂无 bundle 记录）", style="dim"))
+        driver = self._new_debug_driver(adapter)
+        for candidate in candidates:
+            bundle = await adapter._bundle_lifecycle.resolve(scope=scope, bundle_id=BundleId(candidate))
+            if bundle is None:
+                continue
+            state = await adapter._bundle_lifecycle.read_state(bundle)
+            page = await RunTraceProjector(adapter._bundle_lifecycle).project_full(bundle, live=False)
+            posture = await driver.attach_posture(candidate) if driver is not None else "unresolvable"
+            status = (
+                state.terminal_status.value
+                if state.terminal_status is not None
+                else ("suspended" if state.waiting_for else "active")
+            )
+            log.write(
+                Text(
+                    f"  bundle {candidate[:20]}…  [{posture}] 状态={status} phase={state.phase.value} "
+                    f"帧 {len(page.frames)} generation={state.generation}",
+                    style="dim",
+                )
+            )
+        if self._debug_driver is not None and self._debug_bundle_id is not None:
+            session = await self._debug_driver.session_snapshot(self._debug_bundle_id)
+            if session is not None:
+                request = session.pending_request
+                log.write(
+                    Text(
+                        f"  当前会话: {self._debug_bundle_id[:20]}… · 姿态={session.posture}"
+                        f" · 下一节点={', '.join(session.cursor.next_nodes) or '—'}"
+                        f" · 帧 {session.cursor.frame_sequence}"
+                        + (f" · 等待={request.title}（{request.mode}）" if request is not None else ""),
+                        style="dim",
+                    )
+                )
+        log.write(Text("  用法: /inspect <bundle_id> 看单个对象内部 · /attach 接管 · /replay 只读回放", style="dim"))
+
+    async def _debug_inspect_bundle(self, bundle_id: str) -> None:
+        """Show one validated Bundle's internals (read-only, bounded, no host paths)."""
+        from deerflow_deep_research.domain.bundle import BundleId
+        from deerflow_deep_research.runtime.node_context_store import NodeContextStore
+        from deerflow_deep_research.runtime.trace_projector import RunTraceProjector
+
+        log = self.query_one("#log", RichLog)
+        adapter = self._adapter
+        if adapter is None:
+            log.write(Text("尚无工作区可检查。", style="yellow"))
+            return
+        bundle_id = bundle_id.strip()
+        if not bundle_id:
+            await self._debug_targets()
+            log.write(Text("用法: /inspect <bundle_id>（id 取自 /targets）。", style="dim"))
+            return
+        scope = self._debug_scope(adapter)
+        bundle = await adapter._bundle_lifecycle.resolve(scope=scope, bundle_id=BundleId(bundle_id))
+        if bundle is None:
+            log.write(Text(f"不可解析: {bundle_id[:24]}…（不属于本 scope）", style="red"))
+            return
+        state = await adapter._bundle_lifecycle.read_state(bundle)
+        page = await RunTraceProjector(adapter._bundle_lifecycle).project_full(bundle, live=False)
+        store = NodeContextStore(bundle_root=adapter._bundle_lifecycle.private_root(bundle), bundle_id=bundle_id)
+        contexts = store.page().total
+        root = adapter._bundle_lifecycle.private_root(bundle)
+        records = ()
+        create_store = getattr(adapter, "create_work_unit_store", None)
+        if create_store is not None:
+            try:
+                records = await (await create_store(adapter._envelope, bundle=bundle)).load_records()
+            except (OSError, RuntimeError, TypeError, ValueError):
+                records = ()
+        work_units = [record.work_id for record in records]
+        report = (root / "final" / "report.md").is_file()
+        summary_path = root / "diagnostics" / "run-summary.json"
+        summary_status = None
+        if summary_path.is_file():
+            try:
+                import json as _json
+
+                summary_status = _json.loads(summary_path.read_text(encoding="utf-8")).get("status")
+            except (OSError, ValueError):
+                summary_status = "unreadable"
+        status = (
+            state.terminal_status.value
+            if state.terminal_status is not None
+            else ("suspended" if state.waiting_for else "active")
+        )
+        log.write(
+            Text(
+                f"Bundle {bundle_id[:24]}…（只读）: 状态={status} · phase={state.phase.value}"
+                f" · generation={state.generation} · 帧 {len(page.frames)} · Node Context {contexts}",
+                style="cyan",
+            )
+        )
+        for frame in page.frames[:12]:
+            log.write(
+                Text(
+                    f"  帧 {frame.frame_sequence:02d} {frame.node} {frame.outcome}"
+                    + (f" next={','.join(frame.next_nodes)}" if frame.next_nodes else "")
+                    + (f" terminal={frame.terminal_disposition}" if frame.terminal_disposition else ""),
+                    style="dim",
+                )
+            )
+        if len(page.frames) > 12:
+            log.write(Text(f"  …（共 {len(page.frames)} 帧，仅显示前 12）", style="dim"))
+        log.write(
+            Text(
+                f"  工作单元({len(work_units)}): {', '.join(work_units[:4]) or '（无）'}"
+                f" · 交付产物: {'有' if report else '无'}"
+                f" · 观测摘要: {summary_status or '缺失'}",
+                style="dim",
+            )
+        )
+        for record in records[:8]:
+            log.write(
+                Text(
+                    f"    单元 {record.work_id} · {record.phase.value} · {record.worker_role}"
+                    f" · {record.result_contract} · 输出 {len(record.output_refs)} · 来源 {len(record.source_refs)}"
+                    f" · checks {','.join(record.passed_checks[:3])}",
+                    style="dim",
+                )
+            )
+        log.write(
+            Text(f"  可做: /replay {bundle_id[:16]}… 只读回放 · /attach {bundle_id[:16]}… 接管（若可）", style="dim")
+        )
+
     def _debug_help(self) -> None:
         """List every capability of the workbench (nothing hidden)."""
         self.query_one("#log", RichLog).write(
@@ -2348,6 +2581,8 @@ class DeepResearchDemoTUI(App[None]):
                 "(HITL/终态/指定节点) · /pause=请求在下一节点边界暂停\n"
                 "  回答: HITL 停止时直接输入文本（choice 模式输入选项 id）后按 Enter\n"
                 "  观察: /context=节点上下文与 coverage strip · /files [路径]=工作区(目录进入/文件预览)\n"
+                "  探索: /harness=harness 自身解剖(组合/executor/节点/根/可读投影) · "
+                "/targets=所有可调试对象 · /inspect <id>=单个对象内部\n"
                 "  收尾: /detach=退出会话(保留 bundle) · /cancel=放弃活跃 bundle(释放 scope 后可重开)\n"
                 "  其他: Copy details=复制日志 · Ctrl+C=退出",
                 style="cyan",
@@ -2484,9 +2719,9 @@ class DeepResearchDemoTUI(App[None]):
     # the operator is told, instead of silently clipping or squeezing the log.
     _MIN_DEBUG_SIZE = (100, 30)
     _DEBUG_HINT = (
-        "调试工作台: 问题+Enter=Start Step · Start Run 按钮=连续 · Enter(可留空)=单步 · "
-        "/run [节点]=跑到停点 · /pause=暂停 · HITL 直接输入回答 · /context · /files · "
-        "/attach · /cancel · /help=全部能力 · Ctrl-C 退出"
+        "调试工作台: 问题+Enter=Start Step · Start Run=连续 · Enter=单步 · /run [节点] · /pause · "
+        "/context · /files · /harness · /targets · /inspect <id> · /attach · /replay · /cancel · "
+        "/help=全部能力 · Ctrl-C 退出"
     )
 
     def _debug_size_notice(self) -> str | None:
@@ -2545,11 +2780,15 @@ class DeepResearchDemoTUI(App[None]):
         self.query_one("#log", RichLog).write(Text(text, style="yellow"))
 
     def _render_no_debug_session(self) -> None:
-        """Honest operator state when no debug session is live (never stale)."""
+        """Honest operator state when no debug session is live (never stale).
+
+        The no-session screen lists the same posture-legal actions as every other
+        posture, so the first screen already answers "what can I do here".
+        """
         self._last_debug_hint = ""
         self._render_inspect(("姿态: 无调试会话 · 输入研究问题开始调试（或 /attach <id>、/replay <id>）",))
         self.query_one("#prompt", Static).update(
-            "输入研究问题开始调试会话 · /attach <id> 附加保留 bundle · /replay <id> 只读回放"
+            "输入问题后 Enter=Start Step · Start Run 按钮=连续推进 · /attach <id>、/replay <id>=回看 · /help"
         )
 
     # What the operator may do at each posture; never leaves them guessing.
@@ -2578,7 +2817,7 @@ class DeepResearchDemoTUI(App[None]):
         actions = self._DEBUG_LEGAL_ACTIONS.get(posture, "/help 查看全部能力")
         self.query_one("#prompt", Static).update(f"{ask} · {actions}")
 
-    async def _debug_render_context(self) -> None:
+    async def _debug_render_context(self, selector: str = "") -> None:
         """Render the captured node-context page with its coverage strip.
 
         RED-014 owns this pane: the workbench shows the selected frame's
@@ -2614,16 +2853,92 @@ class DeepResearchDemoTUI(App[None]):
                 )
             )
             return
-        lines = [f"Node Context: {page.total} 次已捕获调用"]
+        lines = [f"Node Context: {page.total} 次已捕获调用（/context <node>#<n> 看某次的完整捕获）"]
+        views: list[tuple[str, Any]] = []
         for summary in page.summaries:
-            view = store.read(f"{summary.attempt_id}/{summary.node_agent_ordinal:04d}")
+            key = f"{summary.attempt_id}/{summary.node_agent_ordinal:04d}"
+            view = store.read(key)
             if view is None:
                 continue
-            model_calls = view.activity.model_calls if view.activity else "?"
-            lines.append(f"⌨ {summary.node}#{summary.node_agent_ordinal} model={model_calls}")
+            views.append((f"{summary.node}#{summary.node_agent_ordinal}", view))
+            snapshot = view.snapshot
+            activity = view.activity
+            calls = f"model={activity.model_calls} tool={activity.tool_calls}" if activity else "model=? tool=?"
+            stop = f" stop={activity.budget_stop_reason}" if activity and activity.budget_stop_reason else ""
+            lines.append(f"⌨ {summary.node}#{summary.node_agent_ordinal} {calls}{stop} · {snapshot.safe_model_label}")
             lines.append(f"  coverage: {self._node_context_strip(view)}")
-            lines.append(f"  Objective: {view.snapshot.request_objective[:120]}")
+            lines.append(f"  enforced tools: {', '.join(snapshot.tool_posture.enforced_tool_names) or '（无）'}")
+            budget = ", ".join(f"{key}={value}" for key, value in list(snapshot.budget.items())[:4]) or "（未记录）"
+            lines.append(f"  budget: {budget} · mounts: {len(snapshot.mount_manifest)}")
+            lines.append(f"  Objective: {snapshot.request_objective[:120]}")
+        selected = selector.strip()
+        if selected:
+            match = next((item for item in views if item[0] == selected or item[0].startswith(selected)), None)
+            if match is None:
+                lines.append(f"未找到捕获 {selected!r}；可用: " + ", ".join(item[0] for item in views))
+            else:
+                lines.extend(self._node_context_detail(match[0], match[1]))
         pane.update(Text("\n".join(lines)))
+
+    @staticmethod
+    def _node_context_detail(label: str, view: Any) -> list[str]:
+        """Bounded detail of one captured invocation (what the model actually saw)."""
+
+        def excerpt(text: str, limit: int = 1200) -> list[str]:
+            body = "\n".join(line for line in text.splitlines() if line.strip())
+            if len(body) > limit:
+                body = body[:limit] + "…（已截断）"
+            return [f"    {line}" for line in body.splitlines()]
+
+        snapshot = view.snapshot
+        lines = [f"=== {label} 捕获详情（{snapshot.capture_quality}）==="]
+        lines.append(f"  model: {snapshot.safe_model_label} · objective/expected output:")
+        lines.extend(excerpt(snapshot.request_objective, 400))
+        if snapshot.request_expected_output:
+            lines.extend(excerpt(snapshot.request_expected_output, 400))
+        lines.append("  initial system policy:")
+        lines.extend(excerpt(snapshot.initial_system_policy))
+        lines.append("  initial human message:")
+        lines.extend(excerpt(snapshot.initial_human_message))
+        for name, layer in (("base policy", snapshot.base_policy_layer), ("capability", snapshot.capability_layer)):
+            lines.append(f"  {name} layer: {layer.identity} · sha256={layer.sha256[:12]} · {len(layer.text)} 字")
+            # The debugger's point: read what the model was actually given.
+            lines.extend(excerpt(layer.text, 800))
+        posture = snapshot.tool_posture
+        lines.append(
+            f"  enforced tools: requested={', '.join(posture.requested_tool_names) or '—'}"
+            f" → enforced={', '.join(posture.enforced_tool_names) or '—'} ({posture.posture_kind})"
+        )
+        if snapshot.budget:
+            lines.append("  budget: " + ", ".join(f"{key}={value}" for key, value in snapshot.budget.items()))
+        if snapshot.structured_output_schema_identity:
+            lines.append(f"  output schema: {snapshot.structured_output_schema_identity}")
+        if snapshot.request_source_artifact_refs:
+            lines.append("  source refs: " + ", ".join(snapshot.request_source_artifact_refs[:4]))
+        roots = snapshot.virtual_roots
+        lines.append(
+            "  virtual roots: "
+            + ", ".join(
+                f"{name}={getattr(roots, name)}"
+                for name in ("workspace_root", "uploads_root", "outputs_root")
+                if getattr(roots, name, None)
+            )
+        )
+        if snapshot.mount_manifest:
+            lines.append(
+                "  mounts: "
+                + ", ".join(f"{entry.alias}[{entry.policy_label}]" for entry in snapshot.mount_manifest[:6])
+            )
+        activity = view.activity
+        if activity is not None:
+            lines.append(
+                f"  activity: model={activity.model_calls} tool={activity.tool_calls}"
+                f" outcome={activity.outcome}"
+                + (f" stop={activity.budget_stop_reason}" if activity.budget_stop_reason else "")
+            )
+        lines.append(f"  coverage: {DeepResearchDemoTUI._node_context_strip(view)}")
+        lines.append(f"  raw provider histories: {view.raw_provider_history}")
+        return lines
 
     async def _render_debug_result(self, result) -> None:
         """Render one DebugSessionUpdate into the panels (bounded safe facts)."""

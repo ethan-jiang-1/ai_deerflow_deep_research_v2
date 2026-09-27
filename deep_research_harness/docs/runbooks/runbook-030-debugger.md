@@ -94,6 +94,13 @@ topic_planning → wave0 → wave1 → wave2_synthesis → hitl2 → readiness �
 - 下方出现 **Node Context 分栏**（不再往日志里倒内容），分栏高度有上限
 - fixture 模式下 deterministic node 没有 LLM 调用，分栏显示
   `Node Context: 尚无已捕获的调用上下文（deterministic node 没有模型调用，属预期覆盖）。`
+- **有捕获时（真实图）每次都列出**：`⌨ <node>#<n> model=<次数> tool=<次数> · <模型标签>`、
+  coverage strip、**被允许的工具**、budget、mount 数、Objective
+- **`/context <node>#<n>` 下钻到那一次的完整捕获**：request objective / expected output、
+  initial system policy 与 initial human message（有界摘录）、base policy 与 capability
+  分层（identity + sha256 + 字数 + **内容摘录**——即"模型到底收到什么指令"）、enforced tools
+  的 requested→enforced 与 posture、budget、输出 schema、virtual roots 与 mounts、
+  activity（model/tool 次数与 outcome/stopy 原因）、coverage strip、raw provider histories 标注
 - embedded/真实模式下，每次调用列出 `⌨ <node>#<n> model=<次数>`、固定 coverage strip
   （`INITIAL CAPTURED · RUNTIME ENFORCED · ACTIVITY BOUNDED · OUTCOME OBSERVED/UNAVAILABLE ·
   FILES CURRENT · RAW PROVIDER HISTORIES NOT RETAINED`）与 Objective 摘要
@@ -129,6 +136,19 @@ topic_planning → wave0 → wave1 → wave2_synthesis → hitl2 → readiness �
 输入 `/help` 列出工作台全部能力与入口（New Run/Start Run、单步、`/run`、`/pause`、
 HITL 回答、`/context`、`/files`、`/attach`、`/replay`、`/detach`、`/cancel`、
 命令面板、Copy details、Ctrl+C）。hint 行也常驻提示关键命令。
+
+## 6d. 探索 harness 与可调试对象（/harness、/targets、/inspect）
+
+调试器不是只有步进——它是这个 harness 的探索控制台（全部只读、不取 lease、不泄露 host 路径）：
+
+- **`/harness`**：harness 自身解剖——组合名、recipe revision、兼容指纹、**每个节点的类型**
+  （认知/确定性/人）、前置要求、逻辑节点阶梯、虚拟工作区根及其策略标签、可读投影清单
+  （生命周期 state · trace 帧 · Node Context 捕获 · 观测 run-summary · 工作单元 · 交付产物）。
+- **`/targets`**：**所有可调试对象**——scope、workspace 里的每个 bundle（id、可接管性
+  `[takeover|rebind|busy]`、状态、phase、帧数、generation），以及当前会话的姿态/下一节点/等待项。
+- **`/inspect <bundle_id>`**：单个对象的内部——状态/phase/generation、帧序列（前 12 帧）、
+  **类型化工作单元**（work_id · phase · worker_role · 结果契约 · 输出/来源数 · passed checks）、
+  交付产物有无、观测摘要状态。`/inspect` 不带 id 时先列 `/targets`，不留死路。
 
 ## 7. 干净退出
 
