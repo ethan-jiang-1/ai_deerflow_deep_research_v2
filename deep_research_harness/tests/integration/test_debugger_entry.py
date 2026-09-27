@@ -185,7 +185,9 @@ def test_launcher_chooses_a_composition_when_started_bare(tmp_path: Path) -> Non
 
     embedded = _launcher_forwarded_argv(tmp_path=tmp_path, extra_env={"DEBUGGER_COMPOSITION": "embedded-smoke"})
     assert "--embedded-smoke" in embedded
-    assert "--debug" not in embedded
+    # This launcher IS the debugger, so the all-real composition is debugged too.
+    assert "--debug" in embedded
+    assert "--fixture" not in embedded
 
     stub = tmp_path / "stub-python"
     stub.write_text('#!/bin/sh\nprintf "%s\\n" "$@"\n', encoding="utf-8")
@@ -225,5 +227,5 @@ def test_launcher_injects_the_fixture_debugger_for_every_entry_spelling(tmp_path
     assert "--attach=b_aaaaaaaaaaaaaaaaaaaaaaaa" in attached
 
     embedded = _launcher_forwarded_argv("--embedded-smoke", tmp_path=tmp_path)
-    assert "--debug" not in embedded, "a real composition must not be forced into the workbench"
+    assert "--debug" in embedded, "the debugger launcher debugs the composition it was given"
     assert "--fixture" not in embedded, "a real composition must not gain the fixture composition"

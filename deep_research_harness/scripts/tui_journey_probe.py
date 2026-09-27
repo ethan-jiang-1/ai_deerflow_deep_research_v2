@@ -115,6 +115,23 @@ async def _click(app: Any, pilot: Any, selector: str) -> None:
     await pilot.pause()
 
 
+async def _assert_pane_not_hijacked(app: Any, pilot: Any, step: str) -> None:
+    """The shared 1s "已收到，正在处理…" hint must never own the debug panes.
+
+    Regression: the debug path used to leave the shared pending timer running,
+    so a second later it overwrote the posture line and the operator could no
+    longer see "等待输入（直接输入回答）" - the workbench looked stuck.
+    """
+    await asyncio.sleep(1.6)
+    await pilot.pause()
+    inspect = _inspect_text(app)
+    _require(
+        "正在处理" not in inspect,
+        step,
+        f"the shared pending hint hijacked the debug pane: {inspect!r}",
+    )
+
+
 async def _fixture_debugger_journey(app: Any, pilot: Any) -> None:
     """Drive the runbook-030 debugger ladder with per-step assertions.
 
@@ -142,12 +159,14 @@ async def _fixture_debugger_journey(app: Any, pilot: Any) -> None:
     inspect = _inspect_text(app)
     _require("awaiting_hitl" in inspect, "start-posture", f"expected the hitl1 prompt: {inspect!r}")
     _require("下一节点: hitl1" in inspect, "start-next-node", f"next node not projected: {inspect!r}")
+    await _assert_pane_not_hijacked(app, pilot, "start-pending-hint")
     _log(f"  [2] New Run button -> {first_bundle[:16]}... at hitl1 prompt ... ok")
 
     # 3. Answer HITL1 ------------------------------------------------------
     await _submit_and_settle(app, pilot, "Use the default profile.")
     ok = await _wait(pilot, lambda: "awaiting_hitl" not in _inspect_text(app), deadline_seconds=60)
     _require(ok, "answer-hitl1", f"HITL1 answer not consumed; inspect={_inspect_text(app)!r}")
+    await _assert_pane_not_hijacked(app, pilot, "answer-pending-hint")
     _log("  [3] HITL1 answer consumed (paused at next boundary) ..... ok")
 
     # 4. Empty Enter advances one boundary ---------------------------------

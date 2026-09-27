@@ -4,6 +4,13 @@
 > 入口：`./run/tui-workflow-debugger.sh --fixture`（或 `make tui-debugger DEBUGGER_ARGS="--fixture"`）
 > 本质：用 `DebugRunDriver` 逐边界推进同一张 fixture StateGraph，实时看 timeline 和 Node Context。
 >
+> **同一张工作台也跑在真实图上**：`./run/tui-workflow-debugger.sh --embedded-smoke` 起的是
+> ALL_REAL 组合（driver 以 `ImplementationMode.ALL_REAL` 建 bundle），step/continue、
+> `/context`、`/files`、`/attach`、`/replay` 与本文完全一致——差别只在真实节点会调模型与
+> 网页工具（需要 `.env` 三变量 + 网络），且 `/context` 能看到捕获的调用上下文。见
+> [runbook-031](runbook-031-debugger-embedded.md)。裸跑 `./run/tui-workflow-debugger.sh`
+> 会给出组合选择器（fixture / embedded / gateway）。
+>
 > **本手册的步骤由 `scripts/tui_journey_probe.py` 在真机等价环境下逐条断言**
 > （`make tui-journey`）：它执行真实脚本、驱动下面整条流程并在每步校验姿态与提交。
 > 手册与代码不一致时，以该 harness 的断言为准并同 PR 修手册。

@@ -1317,7 +1317,17 @@ class DeepResearchDemoTUI(App[None]):
             # and are never routed as chat or research answers.
             self._handle_slash_command(value)
             return
-        self._echo_input(value)
+        if self.debug_mode:
+            # The debugger owns the #inspect pane for its posture line, so the
+            # shared "已收到，正在处理…" pending hint must never take it over:
+            # stop its 1s timer, clear the pending marker, and echo the input to
+            # the log instead (the debug path never runs the Working heartbeat
+            # that clears the log).
+            self._stop_pending_timer()
+            self._last_typed = ""
+            self.query_one("#log", RichLog).write(Text(f"你: {value}"))
+        else:
+            self._echo_input(value)
         if self._onboarding:
             await self._handle_onboarding_input(value)
             return
@@ -1913,6 +1923,20 @@ class DeepResearchDemoTUI(App[None]):
             return
         await self._debug_advance()
 
+    def _debug_implementation_mode(self) -> Any:
+        """Which implementation mode a debug session creates for this composition.
+
+        The debug driver is composition-agnostic: it drives whatever recipe the
+        bound executor holds, so the workbench debugs the all-real graph by
+        creating ALL_REAL bundles over the real executor, and fixture bundles
+        over the fixture executor.
+        """
+        from deerflow_deep_research.domain.lifecycle import ImplementationMode
+
+        if self.mode == "embedded_smoke":
+            return ImplementationMode.ALL_REAL
+        return ImplementationMode.FIXTURE
+
     def _new_debug_driver(self, adapter: Any) -> Any | None:
         """Build a workbench-owned debug driver for this adapter (or None)."""
         import time as _time
@@ -1929,6 +1953,7 @@ class DeepResearchDemoTUI(App[None]):
             scope=(adapter._envelope.effective_user_id, adapter._envelope.outer_thread_id),
             owner="workbench",
             clock=_time.time,
+            implementation_mode=self._debug_implementation_mode(),
         )
 
     def _debug_scope(self, adapter: Any) -> tuple[str, str]:
@@ -2405,10 +2430,10 @@ def _validate_args(parser: argparse.ArgumentParser, args: argparse.Namespace) ->
         parser.error("--auto applies only with --embedded-smoke")
     if args.attach and args.replay:
         parser.error("--attach and --replay cannot be combined")
-    if args.debug and not args.fixture:
-        parser.error("--debug applies only with --fixture")
-    if (args.attach or args.replay) and not args.fixture:
-        parser.error("--attach/--replay apply only to the fixture debugger workbench (--fixture)")
+    if args.debug and not (args.fixture or args.embedded_smoke):
+        parser.error("--debug applies to a debugger composition (--fixture or --embedded-smoke)")
+    if (args.attach or args.replay) and not (args.fixture or args.embedded_smoke):
+        parser.error("--attach/--replay apply to a debugger composition (--fixture or --embedded-smoke)")
 
 
 def _build_app(args: argparse.Namespace) -> DeepResearchDemoTUI:

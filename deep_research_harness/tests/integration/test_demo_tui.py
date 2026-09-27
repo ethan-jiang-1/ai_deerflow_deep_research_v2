@@ -504,24 +504,43 @@ async def test_tui_auto_mode_stays_interactive_when_embedded_only(monkeypatch: p
     assert intents[0].scripted is False
 
 
-def test_tui_attach_and_replay_intents_require_the_fixture_workbench() -> None:
-    """RED-014 entries: attach/replay are debugger intents, fixture-only today."""
+def test_debug_intents_require_a_debugger_composition() -> None:
+    """The debugger debugs the composition it is given: fixture OR all-real.
+
+    Carrying a debug intent (--debug/--attach/--replay) implies the workbench,
+    but never a composition: Gateway mode with no profile is still refused.
+    """
     parser = demo_tui._build_parser()
-    for flag in ("--attach=b_aaaaaaaaaaaaaaaaaaaaaaaa", "--replay=b_aaaaaaaaaaaaaaaaaaaaaaaa"):
+    for composition, expected_mode in (("--fixture", "fixture"), ("--embedded-smoke", "embedded_smoke")):
+        for flag in (
+            "--debug",
+            "--attach=b_aaaaaaaaaaaaaaaaaaaaaaaa",
+            "--replay=b_aaaaaaaaaaaaaaaaaaaaaaaa",
+        ):
+            accepted = parser.parse_args([composition, flag])
+            demo_tui._validate_args(parser, accepted)
+            app = demo_tui._build_app(accepted)
+            assert app.debug_mode is True
+            assert app.mode == expected_mode
         rejected = parser.parse_args([flag])
         with pytest.raises(SystemExit):
             demo_tui._validate_args(parser, rejected)
-        accepted = parser.parse_args(["--fixture", flag])
-        demo_tui._validate_args(parser, accepted)
-        app = demo_tui._build_app(accepted)
-        # Carrying an entry intent implies the workbench even without --debug.
-        assert app.debug_mode is True
-        assert app.mode == "fixture"
     both = parser.parse_args(
         ["--fixture", "--attach=b_aaaaaaaaaaaaaaaaaaaaaaaa", "--replay=b_aaaaaaaaaaaaaaaaaaaaaaaa"]
     )
     with pytest.raises(SystemExit):
         demo_tui._validate_args(parser, both)
+
+
+def test_debug_implementation_mode_follows_the_composition() -> None:
+    """Fixture debug creates fixture bundles; the all-real debug creates ALL_REAL ones."""
+    from deerflow_deep_research.domain.lifecycle import ImplementationMode
+
+    parser = demo_tui._build_parser()
+    fixture = demo_tui._build_app(parser.parse_args(["--fixture", "--debug"]))
+    assert fixture._debug_implementation_mode() is ImplementationMode.FIXTURE
+    embedded = demo_tui._build_app(parser.parse_args(["--embedded-smoke", "--debug"]))
+    assert embedded._debug_implementation_mode() is ImplementationMode.ALL_REAL
 
 
 def test_tui_auto_flag_is_rejected_outside_embedded_smoke() -> None:

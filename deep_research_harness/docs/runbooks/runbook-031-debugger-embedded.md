@@ -1,16 +1,18 @@
 # Runbook 031 — 调试工作台（embedded 真实图，逐边界 step + Node Context）
 
-> **状态（2026-09-27）：本文描述的 embedded 调试工作台尚未落地。** 调试驱动
-> （DebugRunDriver）当前仅支持 fixture 图（`--debug` 校验只接受 `--fixture`）；
-> embedded 真实图的逐边界调试是 B1 延期项
-> （`_done/_suspended_plans/deferred-stage-b1-embedded-real-run.md`）。今天
-> `./run/tui-workflow-debugger.sh --embedded-smoke` 起的是**普通全真实 TUI**
-> （无 step/continue、无 `/context` 调试语义）；真机逐步调试请用
-> [runbook-030](runbook-030-debugger.md)（fixture，零凭证）。本文保留为 B1
-> 落地时的操作单草案，落地前其步骤不可执行。
-
-> 前置：同 003 的 `.env` 三变量（`DEEPSEEK_API_KEY`、`TAVILY_API_KEY`、`DEERFLOW_DEMO_MODEL`）+ `make install` + 网络
-> 入口（B1 落地后生效）：`./run/tui-workflow-debugger.sh --embedded-smoke`
+> **状态（2026-09-27）：已落地。** 调试驱动是组合无关的：`--embedded-smoke` 现在起的是
+> **全真实图（ALL_REAL）上的调试工作台**——launcher 会为该组合注入 `--debug`，driver 以
+> `ImplementationMode.ALL_REAL` 建 bundle，step/continue、`/context`、`/files`、`/attach`、
+> `/replay` 与 fixture 路线完全一致；`/context` 此时能看到 LLM-bearing node 的捕获上下文。
+>
+> 前置：同 003 的 `.env` 三变量（`DEEPSEEK_API_KEY`、`TAVILY_API_KEY`、
+> `DEERFLOW_DEMO_MODEL`）+ `make install` + 网络——真实节点真的要调模型与网页工具。
+> **诚实边界**：本路线的*接线*（组合、实现模式、入口旗标）已由无头测试与 harness 断言
+> 锁住；真实模型下的逐边界实跑需要凭证与网络窗口，我无法在无头环境验证，需在你的真机
+> 或一次 live 窗口确认。
+>
+> 入口：`./run/tui-workflow-debugger.sh --embedded-smoke`（等价：
+> `DEBUGGER_COMPOSITION=embedded-smoke ./run/tui-workflow-debugger.sh`）。
 > 本质：与 030 相同的 DebugRunDriver 逐边界推进，但跑在**真实模型和网页工具**上。wave0 等 LLM-bearing node 会捕获 Node Context Snapshot（initial prompt、runtime MD、enforced tools/budget、mount roots）。
 
 ## 1. 启动
