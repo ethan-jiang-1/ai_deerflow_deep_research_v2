@@ -47,7 +47,7 @@ _backlog/
 
 | 类型 | 活跃（当前工作） | 归档（已完成） | 编号方式 |
 |------|-----------------|---------------|---------|
-| 🐛 **Bug** | [`bugs/`](bugs/) — 活跃 bug 列表 | [`_done/_fixed_bugs/`](_done/_fixed_bugs/) — 已修复 | BUG-NNN 递增，权威在 `_fixed_bugs/` |
+| 🐛 **Bug** | [`bugs/`](bugs/) — 活跃 bug 列表 | [`_done/_fixed_bugs/`](_done/_fixed_bugs/) — 已修复 | BUG-NNN 递增，编号权威在 `_fixed_bugs/`；新号 = 已分配的最大编号 + 1（已修复 ∪ 活跃） |
 | 📋 **Todo** | [`todos/`](todos/) — 活跃 todo + 依赖链 + 执行顺序 | [`_done/_done_todos/`](_done/_done_todos/) — 已完成 | DONE-NNN 递增，移入时分配 |
 | 📐 **Plan** | [`plans/`](plans/) — 活跃 plan 列表 | [`_done/_closed_plans/`](_done/_closed_plans/) — 已完成 | CLS-NNN 递增，移入时分配 |
 | ⏸ **Suspended follow-up** | 无；不进入推荐执行顺序 | [`_done/_suspended_plans/`](_done/_suspended_plans/) — 明确暂停 | 文件名不变；重新开启时移回活跃目录 |

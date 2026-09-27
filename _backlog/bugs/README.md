@@ -1,7 +1,7 @@
 # Active Bugs — 活跃 bug 列表
 
 >
-> **bug 编号权威在 `_done/_fixed_bugs/`，新 bug = 最大编号 + 1。** 本文件只列活跃 bug。
+> **bug 编号权威在 `_done/_fixed_bugs/`；新 bug = 已分配的最大编号 + 1（已修复目录 ∪ 活跃目录），避免与活跃 bug 撞号。** 本文件只列活跃 bug。
 
 ## 修完一个 bug 的步骤
 
@@ -16,7 +16,7 @@
 
 | Bug | 标题 | 发现 | 状态 |
 |-----|------|------|------|
-| [BUG-071-red014-workbench-ui-remainder.md](BUG-071-red014-workbench-ui-remainder.md) | RED-014 剩余 UI 面：命令面板归一、Node Context 分栏、Files 分栏 | 2026-09-27 | 活跃（P2） |
+| [BUG-071-red014-workbench-ui-remainder.md](BUG-071-red014-workbench-ui-remainder.md) | 调试工作台 RED-013/RED-014 剩余面：无参 chooser、命令面板、Node Context/Files 分栏、attach 候选面 | 2026-09-27 | 活跃（P2，部分待人裁） |
 
 **Next available bug ID: BUG-072**
 

@@ -71,6 +71,7 @@ rules:
     - "New requirement IDs SHALL be declared on the delta's `> req:` line before its first heading; the change's own apply task SHALL register them in `openspec/governance/req-registry.yaml`. Planning stages only reserve; they never write the registry."
   design:
     - "Separate verified current behavior, approved decisions, and unresolved questions. Define ownership for state, checkpoints, artifacts, evidence, and recovery; do not create competing controllers or authorities."
+    - "Cross-surface vocabularies (result contracts, trace/lifecycle statuses, report keys, cursor identities) evolve additively: add an optional field with a defined default rather than a new enum value or a changed meaning, and pin the change with a contract test that compares the implementation's values against the machine-readable contract. A projection (a value derived for readers) is never part of a write permit or an identity comparison unless a spec says so."
     - "New downstream code lives under deep_research_harness/ and may use public deerflow.* APIs. Keep blocking I/O off the async event loop."
     - >
       当 graph、node、state、checkpoint、candidate admission、retry 或 terminal handling 改变时，

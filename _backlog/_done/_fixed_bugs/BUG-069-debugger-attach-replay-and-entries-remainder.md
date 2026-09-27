@@ -1,6 +1,6 @@
 # BUG-069: C4b CLI 接线剩余——attach/replay 意图存储未消费、RED-014 三入口未落地
 
-> 严重级别: P2 | 发现: 2026-09-27 | 状态: 活跃
+> 严重级别: P2 | 发现: 2026-09-27 | 状态: 已修复（2026-09-27）
 
 ## 症状
 
@@ -36,8 +36,10 @@ cd deep_research_harness
 （`RunTraceProjector.project_full(live=False)` 只读渲染帧序列/route/next/terminal，
 **不取 lease、不建会话、不写**）。
 
-**三入口等价**（RED-014）：New Run / Attach / Replay 各有 按钮、slash
-（`/attach`、`/replay`）、启动参数三条等价路径，全部落到同一组 typed 方法。
+**三入口**（RED-014 的已交付子集）：New Run / Attach / Replay 各有 **按钮**、
+**slash**（`/attach`、`/replay`）、**启动参数**三条等价路径，全部落到同一组 typed
+方法。RED-014 还要求"命令面板动作"作为第三条等价通路，以及 Node Context / Files
+分栏与带 posture 的 attach 候选面——这些**未交付**，登记在 BUG-071。
 `--attach/--replay` 隐含 fixture 调试器组合（`_build_app` 推断 debug_mode；parser
 要求 `--fixture`；launcher 按需补 `--fixture --debug`）。
 另修一处按钮引入的 UX 缺陷：点击调试按钮后焦点留在按钮，导致后续 Enter（step 节奏键）
