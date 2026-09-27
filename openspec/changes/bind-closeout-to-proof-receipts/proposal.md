@@ -66,6 +66,6 @@ decides a change is done, so closeout is where a receipt must become binding.
   against recent archived changes.
 - **Not in scope:** runtime or lifecycle behavior, the lane definitions
   themselves, and anything under `deerflow/`.
+This change alters the closeout verdict and the aggregate's registered component set,
+so it carries the `PRS-009` delta for review before apply.
 - **Triggered review policies:** change-admission, authority-and-projections
-  This change alters the closeout verdict and the aggregate's registered component set,
-  so it carries the `PRS-009` delta for review before apply.

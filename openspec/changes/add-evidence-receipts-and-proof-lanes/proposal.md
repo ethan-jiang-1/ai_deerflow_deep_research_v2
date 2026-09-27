@@ -16,6 +16,11 @@ still travels further than its proof:
    bytes and enforced tools/budget while the pane rendered a summary line - a
    documented promise no assertion pinned, so it drifted.
 
+A fourth instance happened while writing these changes: a proposal line was
+edited into a two-line list, the Change Guidance checker rejected it, and the
+commit had already been chained after the edit - the same "claim outruns its
+proof" pattern, three times in one session.
+
 A receipt is what none of those had: a runner-written record that a named lane
 exited zero on a revision that still covers the delivered files.
 
