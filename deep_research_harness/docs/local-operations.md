@@ -21,6 +21,8 @@ Run commands from `deep_research_harness/`. Use the root README's
 | Start the Textual Gateway visualizer | `make demo-tui PROFILE=demo` |
 | Run explicit direct local graph smoke | `make demo-real-embedded-smoke`, `make demo-real-scripted`, or `make demo-tui-embedded-smoke` |
 | Start the fixture visualizer | `make demo-tui-fixture` |
+| Run the fixture graph without the TUI | `make demo-fixture-graph` |
+| Check local entry prerequisites | `make profile-preflight` |
 | Open the standalone local workbench | `make session-workbench` |
 | Inspect one retained observation | `make demo-sessions DEMO_ARGS="inspect <bundle-id>"` |
 | Run the operator-only scripted-real workflow debug | `make debug-scripted-real-workflow` |
