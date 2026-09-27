@@ -71,6 +71,12 @@ def _node_context_text(app: Any) -> str:
     return app.query_one("#node-context", Static).render().plain
 
 
+def _files_text(app: Any) -> str:
+    from textual.widgets import Static
+
+    return app.query_one("#files", Static).render().plain
+
+
 def _capture(app: Any) -> None:
     PANE["log"] = _log_text(app)
     PANE["inspect"] = _inspect_text(app)
@@ -256,6 +262,19 @@ async def _fixture_debugger_journey(app: Any, pilot: Any) -> None:
         "the context view must live in its pane, not the log",
     )
     _log("  [10] /context fills the Node Context pane ............... ok")
+
+    # 10b. Files pane consumes typed workspace pages ----------------------
+    await _submit(app, pilot, "/files")
+    ok = await _wait(pilot, lambda: "Files:" in _files_text(app), deadline_seconds=30)
+    _require(ok, "files-pane", f"/files filled no Files pane; pane={_files_text(app)!r}")
+    files_text = _files_text(app)
+    _require("workspace[" in files_text, "files-roots", f"root aliases with labels missing: {files_text[:200]!r}")
+    _require(
+        "/Users/" not in files_text and "/private/" not in files_text,
+        "files-no-host-paths",
+        f"the Files pane leaked an absolute host path: {files_text[:200]!r}",
+    )
+    _log("  [10b] /files fills the Files pane (typed pages, no host paths) ok")
 
     # 11. Clean detach -----------------------------------------------------
     await _submit(app, pilot, "/detach")

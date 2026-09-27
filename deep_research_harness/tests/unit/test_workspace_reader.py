@@ -142,3 +142,34 @@ def test_hash_detects_post_preview_modification(tmp_path: Path) -> None:
     preview = reader.preview("workspace", "report.md")
     assert isinstance(preview, FilePreview)
     assert preview.hash_verified is True
+
+
+def test_symlinked_root_still_returns_typed_pages(tmp_path: Path) -> None:
+    """A root reached through a symlink (macOS /var -> /private/var) must work.
+
+    Regression for the Files pane: the trusted root is canonicalized at
+    construction, so entry relative paths resolve against the same form the
+    containment check produces instead of raising ValueError.
+    """
+    real = tmp_path / "real"
+    (real / "workspace").mkdir(parents=True)
+    (real / "workspace" / "report.md").write_text("# Report\n", encoding="utf-8")
+    link = tmp_path / "linked"
+    link.symlink_to(real, target_is_directory=True)
+
+    reader = OperatorWorkspaceReader(
+        roots={
+            "workspace": {
+                "path": link / "workspace",
+                "label": WorkspacePolicyLabel.MODEL_READ,
+                "readable": True,
+                "writable": False,
+            }
+        }
+    )
+    page = reader.list("workspace", ".")
+    assert isinstance(page, WorkspacePage)
+    assert [entry.relative_path for entry in page.entries] == ["report.md"]
+    preview = reader.preview("workspace", "report.md")
+    assert isinstance(preview, FilePreview)
+    assert "Report" in preview.content

@@ -51,7 +51,11 @@ class OperatorWorkspaceReader:
         self._roots: dict[str, _TrustedRoot] = {}
         for alias, spec in roots.items():
             self._roots[alias] = _TrustedRoot(
-                host_path=Path(str(spec["path"])),
+                # Canonicalize once: containment checks and entry relative paths
+                # compare against resolution results, so an unresolved root (for
+                # example a symlinked temporary directory) would otherwise raise
+                # instead of returning a typed page or denial.
+                host_path=Path(str(spec["path"])).resolve(strict=False),
                 policy_label=WorkspacePolicyLabel(str(spec["label"])),
                 readable=bool(spec.get("readable", True)),
                 writable=bool(spec.get("writable", False)),

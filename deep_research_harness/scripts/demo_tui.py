@@ -924,6 +924,7 @@ class DeepResearchDemoTUI(App[None]):
                 yield Button("Attach", id="debug-attach")
                 yield Button("Replay", id="debug-replay")
             yield Static(id="node-context")
+            yield Static(id="files")
         yield Static(
             "「Start Deep Research」按钮启动研究 · 中间对话区: 双击=复制全文 · "
             "Option+拖拽=选中一段 · Copy details=复制全部 · Ctrl-C 退出",
@@ -1292,6 +1293,11 @@ class DeepResearchDemoTUI(App[None]):
             # Recovery path: abandon the scope's active bundle. A previous
             # session left paused blocks every new Start Step as busy.
             self.run_worker(self._debug_cancel_active(), exclusive=True, group="debug")
+            return
+        if self.debug_mode and value.startswith("/files"):
+            # RED-014 Files pane: read-only typed pages, no host paths.
+            _, _, path_argument = value.partition(" ")
+            self.run_worker(self._debug_render_files(path_argument.strip()), exclusive=True, group="debug")
             return
         if self.debug_mode and (value.startswith("/attach") or value.startswith("/replay")):
             # RED-014 entries: /attach and /replay dispatch the same typed
@@ -2019,6 +2025,87 @@ class DeepResearchDemoTUI(App[None]):
             posture = await driver.attach_posture(candidate) if driver is not None else "unresolvable"
             log.write(Text(f"  {candidate[:20]}…  [{posture}]", style="dim"))
         log.write(Text("用法: /attach <bundle_id>，或把 id 填进 composer 后点 Attach。", style="dim"))
+
+    def _workspace_reader(self, adapter: Any) -> Any:
+        """Read-only Files reader over this demo workspace's trusted roots.
+
+        RED-014: the Files pane consumes ``OperatorWorkspaceReader`` typed pages
+        instead of exposing host paths. Labels say why the operator may see a
+        root (model visibility is orthogonal): the model reads its workspace
+        and the uploads, while published outputs stay operator-only.
+        """
+        from deerflow_deep_research.domain.workspace import WorkspacePolicyLabel
+        from deerflow_deep_research.runtime.workspace_reader import OperatorWorkspaceReader
+
+        root = getattr(adapter, "bundle_root", None)
+        if root is None:
+            return None
+        root = Path(root)
+        return OperatorWorkspaceReader(
+            roots={
+                "workspace": {
+                    "path": root / "workspace",
+                    "label": WorkspacePolicyLabel.MODEL_READ,
+                    "readable": True,
+                    "writable": False,
+                },
+                "uploads": {
+                    "path": root / "uploads",
+                    "label": WorkspacePolicyLabel.MODEL_READ,
+                    "readable": True,
+                    "writable": False,
+                },
+                "outputs": {
+                    "path": root / "outputs",
+                    "label": WorkspacePolicyLabel.OPERATOR_ONLY,
+                    "readable": True,
+                    "writable": False,
+                },
+            }
+        )
+
+    async def _debug_render_files(self, relative_path: str) -> None:
+        """Render one bounded Files page (or a preview) into the Files pane."""
+        from deerflow_deep_research.domain.workspace import FilePreview, WorkspaceDenial, WorkspacePage
+
+        pane = self.query_one("#files", Static)
+        adapter = self._adapter
+        if adapter is None:
+            pane.update(Text("Files: 尚未初始化工作区。", style="yellow"))
+            return
+        reader = self._workspace_reader(adapter)
+        if reader is None:
+            pane.update(Text("Files: 无可用工作区根。", style="yellow"))
+            return
+        roots = ", ".join(f"{view.alias}[{view.policy_label}]" for view in reader.list_roots())
+        if not relative_path:
+            page = reader.list("workspace", ".")
+            if isinstance(page, WorkspaceDenial):
+                pane.update(Text(f"Files: workspace 不可用（{page.reason}）。", style="yellow"))
+                return
+            assert isinstance(page, WorkspacePage)
+            lines = [f"Files: {page.root_alias}:{page.relative_path} · 根: {roots}"]
+            if not page.entries:
+                lines.append("  （空）")
+            for entry in page.entries:
+                size = f" {entry.byte_size}B" if entry.byte_size is not None else ""
+                lines.append(f"  [{entry.kind}][{entry.policy_label}] {entry.relative_path}{size}")
+            if page.truncated:
+                lines.append("  （已截断，仅显示前若干条）")
+            lines.append("用法: /files <relative_path> 预览一个文件。")
+            pane.update(Text("\n".join(lines)))
+            return
+        preview = reader.preview("workspace", relative_path)
+        if isinstance(preview, WorkspaceDenial):
+            pane.update(Text(f"Files: {relative_path} 不可读（{preview.reason}）。", style="yellow"))
+            return
+        assert isinstance(preview, FilePreview)
+        head = (
+            f"Files: {preview.root_alias}:{preview.relative_path} · {preview.byte_size}B"
+            f" · [{preview.policy_label}] · {preview.time_posture}"
+        )
+        tail = "（已截断）" if preview.truncated else ""
+        pane.update(Text(f"{head}{tail}\n{preview.content}"))
 
     async def _debug_replay(self, bundle_id: str) -> None:
         """Render one retained bundle's trace read-only (no lease, no stepping).
