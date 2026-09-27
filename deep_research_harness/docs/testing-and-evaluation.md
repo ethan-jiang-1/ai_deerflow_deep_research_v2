@@ -57,6 +57,7 @@ Top-level test directories under `deep_research_harness/tests/`:
 | `integration/`, `blocking_io/` | Deterministic integration and event-loop/blocking-I/O lanes. |
 | `live/` | Credentialed live canaries (`requires_llm`), never part of the deterministic gate. |
 | `eval/` | Evaluation metrics, corpora, and adversarial checks. |
+| `mutations/` | Declarative mutation registry for the delivery lanes: each entry removes one guarded behaviour so `make mutation-check` can require the named selector to go red. Contains no collected test. |
 
 Directory placement is a convention, not an evidence authority: exact selection and
 evidence semantics remain in the owning spec and executable test-owned assets.
