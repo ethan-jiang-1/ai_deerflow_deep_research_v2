@@ -115,14 +115,16 @@ async def _click(app: Any, pilot: Any, selector: str) -> None:
     await pilot.pause()
 
 
-async def _assert_pane_not_hijacked(app: Any, pilot: Any, step: str) -> None:
-    """The shared 1s "已收到，正在处理…" hint must never own the debug panes.
+async def _assert_pane_stable(app: Any, pilot: Any, step: str, *, expects: tuple[str, ...] = ()) -> None:
+    """After a realistic dwell the debug panes still show the expected state.
 
-    Regression: the debug path used to leave the shared pending timer running,
-    so a second later it overwrote the posture line and the operator could no
-    longer see "等待输入（直接输入回答）" - the workbench looked stuck.
+    Two blind spots this closes: assertions used to run in under a second, so a
+    one-second timer could hijack the pane immediately afterwards and no test
+    noticed (the operator saw "已收到，正在处理…" instead of the HITL prompt);
+    and nothing checked that the state the operator needs is *still* there once
+    the UI settles.
     """
-    await asyncio.sleep(1.6)
+    await asyncio.sleep(1.3)
     await pilot.pause()
     inspect = _inspect_text(app)
     _require(
@@ -130,6 +132,9 @@ async def _assert_pane_not_hijacked(app: Any, pilot: Any, step: str) -> None:
         step,
         f"the shared pending hint hijacked the debug pane: {inspect!r}",
     )
+    _require(bool(inspect.strip()), step, "the debug pane went blank after a dwell")
+    for expected in expects:
+        _require(expected in inspect, step, f"the debug pane lost {expected!r} after a dwell: {inspect!r}")
 
 
 async def _fixture_debugger_journey(app: Any, pilot: Any) -> None:
@@ -159,14 +164,14 @@ async def _fixture_debugger_journey(app: Any, pilot: Any) -> None:
     inspect = _inspect_text(app)
     _require("awaiting_hitl" in inspect, "start-posture", f"expected the hitl1 prompt: {inspect!r}")
     _require("下一节点: hitl1" in inspect, "start-next-node", f"next node not projected: {inspect!r}")
-    await _assert_pane_not_hijacked(app, pilot, "start-pending-hint")
+    await _assert_pane_stable(app, pilot, "start-dwell", expects=("awaiting_hitl", "hitl1", "等待输入"))
     _log(f"  [2] New Run button -> {first_bundle[:16]}... at hitl1 prompt ... ok")
 
     # 3. Answer HITL1 ------------------------------------------------------
     await _submit_and_settle(app, pilot, "Use the default profile.")
     ok = await _wait(pilot, lambda: "awaiting_hitl" not in _inspect_text(app), deadline_seconds=60)
     _require(ok, "answer-hitl1", f"HITL1 answer not consumed; inspect={_inspect_text(app)!r}")
-    await _assert_pane_not_hijacked(app, pilot, "answer-pending-hint")
+    await _assert_pane_stable(app, pilot, "answer-dwell", expects=("paused_at_boundary",))
     _log("  [3] HITL1 answer consumed (paused at next boundary) ..... ok")
 
     # 4. Empty Enter advances one boundary ---------------------------------
@@ -174,6 +179,7 @@ async def _fixture_debugger_journey(app: Any, pilot: Any) -> None:
     await _submit(app, pilot, "")
     ok = await _wait(pilot, lambda: _log_text(app) != before, deadline_seconds=60)
     _require(ok, "empty-advance", "an empty Enter did not advance the session")
+    await _assert_pane_stable(app, pilot, "advance-dwell", expects=("paused_at_boundary",))
     _log("  [4] empty Enter advances one boundary ................... ok")
 
     # 5. Mid-ladder detach preserves the active bundle ---------------------
@@ -239,6 +245,7 @@ async def _fixture_debugger_journey(app: Any, pilot: Any) -> None:
     _require(ok, "restart", f"session did not reopen after /cancel; log tail:\n{_log_text(app)[-500:]}")
     second_bundle = app._debug_bundle_id
     _require(second_bundle != first_bundle, "restart-identity", "reopened the same bundle")
+    await _assert_pane_stable(app, pilot, "restart-dwell", expects=("awaiting_hitl",))
     _log(f"  [8] fresh session after recovery -> {second_bundle[:16]}... ok")
 
     # 9. Step the ladder to a terminal posture -----------------------------
@@ -265,6 +272,7 @@ async def _fixture_debugger_journey(app: Any, pilot: Any) -> None:
         "ladder-terminal",
         f"ladder did not reach terminal in {steps} steps; inspect={_inspect_text(app)!r}",
     )
+    await _assert_pane_stable(app, pilot, "terminal-dwell", expects=("terminal",))
     _log(f"  [9] ladder reached terminal in {steps} steps ............ ok")
 
     # 10. Node Context page ------------------------------------------------
@@ -292,6 +300,14 @@ async def _fixture_debugger_journey(app: Any, pilot: Any) -> None:
         "/Users/" not in files_text and "/private/" not in files_text,
         "files-no-host-paths",
         f"the Files pane leaked an absolute host path: {files_text[:200]!r}",
+    )
+    await _assert_pane_stable(app, pilot, "files-dwell")
+    await asyncio.sleep(1.3)
+    await pilot.pause()
+    _require(
+        "Files:" in _files_text(app),
+        "files-dwell",
+        f"the Files pane emptied after a dwell: {_files_text(app)!r}",
     )
     _log("  [10b] /files fills the Files pane (typed pages, no host paths) ok")
 

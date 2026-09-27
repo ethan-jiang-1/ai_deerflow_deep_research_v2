@@ -1412,3 +1412,47 @@ async def test_workbench_palette_actions_match_the_button_path(monkeypatch: pyte
             await asyncio.sleep(0.05)
         assert app._debug_driver is not None, "the palette New Run action opened no session"
         assert "Start Step" in app._rich_log_text()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("size", [(80, 24), (100, 30), (120, 45)])
+async def test_workbench_panes_are_visible_at_common_terminal_sizes(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, size: tuple[int, int]
+) -> None:
+    """The operator must be able to see and drive the workbench at real sizes.
+
+    Regression for an operator-visible class of defect: a verification that only
+    reads widget text can pass while a pane sits off-screen or the composer is
+    squeezed to nothing, so every operator-facing pane is checked for a real
+    region inside the screen and the composer for usable size and focus.
+    """
+    _install_isolated_fixture_adapter(monkeypatch, bundle_root=tmp_path / "demo-runs")
+    app = DeepResearchDemoTUI(mode="fixture", debug_mode=True)
+    async with app.run_test(size=size) as pilot:
+        await _wait_for(app, pilot, demo_tui.Ready)
+        screen = app.screen.region
+        for widget_id in (
+            "banner",
+            "log",
+            "inspect",
+            "prompt",
+            "controls",
+            "debug-controls",
+            "node-context",
+            "files",
+            "hint",
+        ):
+            widget = app.query_one(f"#{widget_id}")
+            assert widget.display, f"#{widget_id} is hidden at {size}"
+            region = widget.region
+            assert region.height > 0 and region.width > 0, f"#{widget_id} has no visible area at {size}: {region}"
+            assert region.y + region.height <= screen.height, (
+                f"#{widget_id} extends past the screen bottom at {size}: {region} vs {screen}"
+            )
+        log_region = app.query_one("#log").region
+        assert log_region.height >= 3, f"the log is unreadably short at {size}: {log_region}"
+        composer = app.query_one("#composer", demo_tui.Input)
+        assert composer.region.height > 0 and composer.region.width > 20, (
+            f"the composer is unusable at {size}: {composer.region}"
+        )
+        assert composer.has_focus, f"the composer is not focused at {size}"

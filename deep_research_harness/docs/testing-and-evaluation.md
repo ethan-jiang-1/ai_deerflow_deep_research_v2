@@ -311,6 +311,18 @@ human operator, and the same assertion runs inside `make verify`
 session interrupted mid-ladder) is recovered with `make tui-journey
 JOURNEY_ARGS="--cancel-active"`, which abandons it so a fresh Start Step is admitted.
 
+Two assertion styles are mandatory, because a "green" harness that omits them can
+still hand an operator a broken screen:
+
+- **Realistic dwell.** Every checkpoint waits at least 1.3 s and then re-asserts the
+  operator-facing state. Assertions that complete faster than the UI's own timers
+  prove nothing: the workbench once showed the shared one-second "已收到，正在处理…"
+  hint instead of the HITL prompt, and only a post-dwell assertion catches it.
+- **Layout visibility.** `tests/integration/test_demo_tui.py` runs the workbench at
+  80×24, 100×30 and 120×45 and asserts every operator pane has a real region inside
+  the screen, the log keeps readable height, and the composer is usable and focused.
+  Reading widget text is not the same as the operator being able to see the tool.
+
 **Boundary:** the harness drives the application, CLI wiring, `__main__` execution
 order, session routing, and lifecycle admission headlessly. It does not exercise the
 real terminal driver or literal keystrokes; those remain a human/terminal concern.
