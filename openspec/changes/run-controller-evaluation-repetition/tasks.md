@@ -76,9 +76,9 @@
 
 ## 5. Gates and closeout
 
-- [ ] 5.1 Refresh receipts for every lane whose covered surface this change touched
+- [x] 5.1 Refresh receipts for every lane whose covered surface this change touched
       (the manifest/subject code lands under `src/**` and `tests/**`); `make
       proof-status` must show every lane valid.
-- [ ] 5.2 Full gates: `UV_OFFLINE=1 make verify`, the repository closeout gate with
+- [x] 5.2 Full gates: `UV_OFFLINE=1 make verify`, the repository closeout gate with
       this change's attestation, governance suite, doc hygiene, dependency
       direction — all zero; commit with the evidence.
