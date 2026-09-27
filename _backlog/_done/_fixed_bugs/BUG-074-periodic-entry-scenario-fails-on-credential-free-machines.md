@@ -1,6 +1,6 @@
 # BUG-074: periodic 入口环境场景在无凭据机器上必然失败(含 CI)
 
-> 严重级别: P2 | 发现: 2026-09-28(CI 首次真实运行) | 状态: 待修
+> 严重级别: P2 | 发现: 2026-09-28(CI 首次真实运行) | 状态: 已修复(2026-09-28,change `fix-periodic-launcher-credential-bounded`)
 
 ## 症状
 
@@ -29,7 +29,17 @@ CI 失败形态:launcher(`run/real-research.sh`)输出 `尚未找到可用的模
 - `agent-entry-environment-regression.yml`(每日 + 手动)自创建以来全红;
 - EVH-005 声明 periodic lane "credential-free",此测试违反其所在 lane 的自身要求。
 
-## 修复方向(待定,须先想清 launcher 的 ready/blocked 语义)
+## 修复(2026-09-28)
+
+采用方案 B(诚实断言 not-ready 旅程)。方案 A(注入假凭据)被实测否决:假钥匙让就绪通过后,
+`--embedded-smoke --scripted` 的自动建档自动确认、topic_planning 真打了 api.deepseek.com
+(HTTP 401, provider.authentication_failed)——"就绪→blocked"旅程无法离线展开,属有凭据的手动 lane。
+方案 B 断言:就绪诚实不就绪(尚未找到可用的模型配置 + 下一步指引)、就绪摘要不存在、
+非零退出、凭据变量名不泄漏。本地边界如实记录(change 的 evidence/local-environment-note.md:
+DSH 沙箱下重路径非确定性挂起,7 轮探针 4 个挂点);验收 = CI——**entry-environment workflow
+于 2026-09-28 取得史上首个绿灯**(此前全部历史运行均失败)。
+
+## 原始修复方向记录(已被上述实测取代)
 
 - 方案 A:测试为 launcher 阶段**显式注入有界假凭据**(与测试名 keep_launcher_credential_bounded
   的本意一致:注入假值,断言就绪 + research.blocked + 凭据名不泄漏);

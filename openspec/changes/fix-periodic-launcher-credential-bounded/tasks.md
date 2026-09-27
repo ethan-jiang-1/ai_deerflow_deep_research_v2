@@ -30,9 +30,9 @@
       (same non-deterministic hang); the sibling scenario passes locally and
       the fixed scenario's assertions match the CI-proven not-ready output
       byte for byte. Lane acceptance moves to CI (3.4).
-- [ ] 3.2 Full gates: `UV_OFFLINE=1 make verify`, closeout gate, governance
+- [x] 3.2 Full gates: `UV_OFFLINE=1 make verify`, closeout gate, governance
       suite, doc hygiene, dependency direction — all zero; commit.
-- [ ] 3.3 Close BUG-074: move the card to `_done/_fixed_bugs/`, update the
+- [x] 3.3 Close BUG-074: move the card to `_done/_fixed_bugs/`, update the
       three indexes, and note the fix in the card.
-- [ ] 3.4 Push and watch the entry-environment CI workflow — its first green
+- [x] 3.4 Push and watch the entry-environment CI workflow — its first green
       run in history is this change's acceptance.

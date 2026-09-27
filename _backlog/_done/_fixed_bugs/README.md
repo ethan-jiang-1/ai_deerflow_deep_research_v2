@@ -95,7 +95,9 @@ bug 修完后从 `_backlog/bugs/` 通过 `git mv` 移入本目录：
 
 | BUG-073 | 2026-09-27 | 调试驱动 stop policy 三处缺陷：`drive_until` 无视 `stop_on_hitl`（实测一次命令 `_advance` 64 次重入等待节点）、pending pause 返回 `None` 致调用方崩溃、并发 pause 被 `_invoke_once` 静默清除——均已修复并加回归（change `expose-debugger-pending-request-and-capabilities`） |
 
-**Next available bug ID: BUG-074**
+| BUG-074 | 2026-09-28 | [BUG-074-periodic-entry-scenario-fails-on-credential-free-machines.md](BUG-074-periodic-entry-scenario-fails-on-credential-free-machines.md) | periodic 入口环境场景的 launcher 断言不可能状态(清凭据却断言就绪);经 change `fix-periodic-launcher-credential-bounded` 修复——方案 A(假凭据)被实测否决(topic_planning 真打 API 401),落方案 B(诚实 not-ready 断言);entry-environment workflow 取得史上首个绿灯。 |
+
+**Next available bug ID: BUG-075**
 
 ---
 

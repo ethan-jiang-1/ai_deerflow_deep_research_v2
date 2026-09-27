@@ -16,7 +16,6 @@
 
 | Bug | 标题 | 发现 | 状态 |
 |-----|------|------|------|
-| [BUG-074](BUG-074-periodic-entry-scenario-fails-on-credential-free-machines.md) | periodic 入口环境场景在无凭据机器上必然失败(含 CI;entry 工作流从未绿过) | 2026-09-28 | 活跃 |
 
 **Next available bug ID: BUG-075**
 
