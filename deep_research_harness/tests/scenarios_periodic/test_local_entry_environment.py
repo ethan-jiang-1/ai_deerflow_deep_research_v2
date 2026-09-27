@@ -235,10 +235,16 @@ def test_prepared_entries_preserve_dependency_state_and_keep_launcher_credential
 
     # The test-owned empty dotenv prevents a developer credential file from reaching the launcher.
     (project / ".env").write_text("", encoding="utf-8")
+    # BUG-074: with every real secret scrubbed, the real-mode readiness gate honestly
+    # reports the model configuration as not ready. The previously asserted
+    # ready-then-blocked journey is unsatisfiable offline — an injected fake
+    # credential was measured to drive topic_planning into a REAL model call
+    # (HTTP 401, provider.authentication_failed), so that journey belongs to
+    # credentialed manual lanes, not this credential-free one.
     launcher = _assert_state_unchanged(project, lambda: _launcher(project))
     assert launcher.returncode != 0
-    assert "本地前提检查已就绪" in launcher.stdout
-    assert "结果类别: research.blocked" in launcher.stdout
+    assert "本地前提检查已就绪" not in launcher.stdout
+    assert "尚未找到可用的模型配置" in launcher.stdout
     assert "TAVILY_API_KEY" not in launcher.stdout
     assert "DEEPSEEK_API_KEY" not in launcher.stdout
 
