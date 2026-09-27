@@ -20,7 +20,7 @@
 
 | Plan | 一句话 |
 |------|--------|
-| （无活跃 plan） |
+| [deerflow-harness-agent-support-improvement.md](deerflow-harness-agent-support-improvement.md) | 基于 DeerFlow 既有边界，先走查 Coding Agent 与专用 Agent 两条路径，再按证据补诊断可消费性与认知评测；公共诊断接口待单独裁决。 |
 
 **Next available plan ID: CLS-062**（移入 `_closed_plans/` 时分配）
 
