@@ -91,7 +91,9 @@ bug 修完后从 `_backlog/bugs/` 通过 `git mv` 移入本目录：
 
 | BUG-071 | 2026-09-27 | 调试工作台 RED-013/RED-014 剩余面全部交付——无参 chooser、Node Context 分栏+coverage strip、attach 候选面+姿态、命令面板归一、Files 分栏（change `complete-debugger-workbench-conformance`）；过程中 harness 抓到两个真实缺陷（候选布局、符号链接根 ValueError）并修复 |
 
-**Next available bug ID: BUG-072**
+| BUG-072 | 2026-09-27 | 操作员清册把已取消 bundle 报成 resumable（根因：调试路径从不发布 lifecycle observation，摘要停在建立事实）＋演示 CLI 测试耦合工作区现场——驱动与恢复取消改为发布观测（LDD-003 同普通运行），演示适配器新增可注入根 `DEERFLOW_DEMO_BUNDLE_ROOT`，测试密封；真实工作区端到端验证报告 59 terminal / 0 non-terminal |
+
+**Next available bug ID: BUG-073**
 
 ---
 

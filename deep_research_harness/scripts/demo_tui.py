@@ -1891,6 +1891,7 @@ class DeepResearchDemoTUI(App[None]):
         """
         from deerflow_deep_research.domain.bundle import BundleId
         from deerflow_deep_research.domain.debug_driving import DebugCommand
+        from deerflow_deep_research.runtime.debug_driver import publish_lifecycle_observation
 
         adapter = self._adapter
         if adapter is None:
@@ -1936,6 +1937,17 @@ class DeepResearchDemoTUI(App[None]):
                 return
             bundle_id = active.bundle_id.value
         await adapter._bundle_lifecycle.cancel(scope=scope, bundle_id=BundleId(bundle_id))
+        # This path reaches the lifecycle without a driver session, so it must
+        # publish the terminal observation itself (BUG-072): DPL-014's operator
+        # report reads the run summary, which otherwise stays at its start fact.
+        resolved = await adapter._bundle_lifecycle.resolve(scope=scope, bundle_id=BundleId(bundle_id))
+        if resolved is not None:
+            await publish_lifecycle_observation(
+                adapter._bundle_lifecycle,
+                getattr(adapter, "observation_publisher", None),
+                resolved,
+                action="cancel",
+            )
         self._debug_driver = None
         self._debug_bundle_id = None
         log.write(Text(f"已取消活跃调试 bundle: {bundle_id[:20]}…（可重新 Start Step）", style="cyan"))
@@ -1987,6 +1999,10 @@ class DeepResearchDemoTUI(App[None]):
             owner="workbench",
             clock=_time.time,
             implementation_mode=self._debug_implementation_mode(),
+            # LDD-003: a debug run behaves like an ordinary run, so its durable
+            # lifecycle observations are published too (DPL-014's operator report
+            # reads the run summary, which otherwise stays at the start fact).
+            observation_publisher=getattr(adapter, "observation_publisher", None),
         )
 
     def _debug_scope(self, adapter: Any) -> tuple[str, str]:

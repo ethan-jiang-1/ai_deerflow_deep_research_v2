@@ -141,7 +141,13 @@ not isolated by a profile.
 ## Fixture And Real Demos
 
 `make demo`, `make demo-scripted`, and `make demo-tui-fixture` are zero-credential fixture-graph
-routes: no Gateway, config, model credentials, or network are needed. Their Make targets
+routes: no Gateway, config, model credentials, or network are needed.
+
+These routes keep their Run Bundles in the harness-local `.deep-research-demo-runs/` tree.
+An isolated run can point somewhere else with `DEERFLOW_DEMO_BUNDLE_ROOT=<path>` (blank
+falls back to the default): tests and throwaway probes use it so they never read or write
+the ambient workspace, where a leftover non-terminal Bundle would otherwise change what
+the operator report and the demo CLI see (BUG-072). Their Make targets
 add `src_fixtures` only to the selected child process. The production package and reflected
 runtime neither import nor discover that package. These routes execute the fixed fixture recipe;
 they are deterministic composition proof, not product research results.

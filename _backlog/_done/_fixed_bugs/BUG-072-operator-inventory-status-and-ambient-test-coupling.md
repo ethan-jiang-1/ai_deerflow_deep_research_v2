@@ -1,6 +1,6 @@
 # BUG-072: 操作员清册把已取消 bundle 报成 resumable + 演示 CLI 测试耦合环境现场
 
-> 严重级别: P2 | 发现: 2026-09-27 | 状态: 活跃
+> 严重级别: P2 | 发现: 2026-09-27 | 状态: 已修复（2026-09-27）
 
 ## 症状
 
@@ -21,6 +21,32 @@
    一旦工作区存在任何非终态 bundle（例如操作者停在 HITL 的一次调试会话），
    fixture 运行被生命周期拒为"仍在执行"，测试即 **红**（`git stash` 验证：在
    HEAD 上也红，与当时未提交的改动无关）。取消遗留 bundle 后即恢复绿。
+
+## 修复（2026-09-27）
+
+**第 1 条（清册状态说谎）—— 在根因处修，未改 DPL-014 措辞**：DPL-014 明确要求状态读
+"the bundle's own run summary"，所以真正缺的是**观测发布**：普通运行经 experience
+wrapper 发布 lifecycle observation，而调试工作台直接驱动 lifecycle，**从不发布**，
+于是摘要停在建立时的事实。修法：
+
+- `runtime/debug_driver.py` 新增模块级 `publish_lifecycle_observation(lifecycle,
+  publisher, bundle, action=…)`（照 experience 的 fact 形状；best-effort，不因观测失败
+  而让命令失败），驱动在 `open_start` / `answer` / `advance_one` / `drive_until` /
+  `cancel` 等**被接受的命令后**发布（LDD-003 要求调试跑与普通运行同行为）；
+- 工作台把 adapter 的 `observation_publisher` 交给驱动；
+- 工作台的**恢复取消**路径（无本地会话时直达 lifecycle）也发布同一条 fact；
+- 用一次性对账（state.json 与摘要不一致即补发）修好了修复前遗留的 3 个历史 bundle。
+
+验证：驱动矩阵新增测试（cancel 后摘要即 `cancelled`，否则报告会称其 resumable）；TUI
+新增"新工作台无本地会话 → /cancel → 摘要刷新"测试；**真实工作区端到端**跑过一次
+（`BUNDLE=b_fHY5…` → 报告 `terminal (cancelled)`），此后报告为 **59 terminal / 0
+non-terminal**。
+
+**第 2 条（测试耦合环境现场）**：`_demo_core` 新增可注入根
+`DEERFLOW_DEMO_BUNDLE_ROOT`（空值回落默认，默认行为不变，已记入
+`docs/local-operations.md`），演示 CLI 集成测试改为指向各自 tmp 根，并断言
+**从未写入环境工作区**。验证：故意在环境工作区留一个活跃（非终态）bundle，演示 CLI
+测试仍全绿（修复前该场景必红）。
 
 ## 根因
 

@@ -8,6 +8,7 @@ boundary commands, the expiring control lease, stop policies, and recovery.
 
 from __future__ import annotations
 
+import asyncio
 import time
 from collections.abc import Callable
 from typing import Any
@@ -40,6 +41,58 @@ class DebugDriverError(Exception):
     """Typed driver failure; message carries the closed reason."""
 
 
+async def publish_lifecycle_observation(
+    lifecycle: Any,
+    publisher: Any | None,
+    bundle: Any,
+    *,
+    action: str,
+    trace_delta: tuple[str, ...] = (),
+) -> None:
+    """Publish one durable lifecycle observation for a debug-driven Bundle.
+
+    LDD-003 requires a debug run to behave like an ordinary run, and ordinary
+    runs publish a lifecycle observation per accepted control result. Without
+    this the retained run summary stays at the establishment fact, so operator
+    views that read it (DPL-014's workspace report) called a cancelled Bundle
+    resumable. Shared with the workbench's recovery cancel, which reaches the
+    lifecycle without holding a driver session.
+
+    Best-effort by contract: an observation failure never fails the command.
+    """
+    if publisher is None:
+        return
+    from deerflow_deep_research.domain.run_observation import RecordBearingLifecycleFact
+
+    try:
+        state = await lifecycle.read_state(bundle)
+        terminal = getattr(state, "terminal_status", None)
+        if terminal is not None:
+            status = terminal.value
+        else:
+            status = "suspended" if getattr(state, "waiting_for", None) else "active"
+        fact = RecordBearingLifecycleFact(
+            bundle_id=bundle.bundle_id.value,
+            action=action,
+            status=status,
+            phase=state.phase.value,
+            generation=state.generation,
+            durability="restart_durable",
+            trace_delta=trace_delta,
+            terminal_outcome=status if status in {"completed", "stopped", "cancelled", "blocked"} else None,
+        )
+    except asyncio.CancelledError:
+        raise
+    except (OSError, RuntimeError, TypeError, ValueError, AttributeError):
+        return
+    try:
+        await publisher.publish(fact)
+    except asyncio.CancelledError:
+        raise
+    except (OSError, RuntimeError, TypeError, ValueError):
+        return
+
+
 class DebugRunDriver:
     """Drives the one real graph boundary-by-boundary for a local operator."""
 
@@ -54,6 +107,7 @@ class DebugRunDriver:
         clock: Callable[[], float] = time.time,
         lease_ttl: float = 300.0,
         implementation_mode: ImplementationMode = ImplementationMode.FIXTURE,
+        observation_publisher: Any | None = None,
     ) -> None:
         self._lifecycle = lifecycle
         self._executor = executor
@@ -63,6 +117,7 @@ class DebugRunDriver:
         self._clock = clock
         self._lease_ttl = lease_ttl
         self._implementation_mode = implementation_mode
+        self._observation_publisher = observation_publisher
         self._sessions: dict[str, dict[str, Any]] = {}
 
     # -- session open ------------------------------------------------------
@@ -100,6 +155,7 @@ class DebugRunDriver:
             lease=lease.snapshot(),
             stop_policy=StopPolicy(),
         )
+        await self._publish_observation(bundle, action="start")
         return DebugSessionUpdate(snapshot=snapshot, command_id=request.command_id)
 
     async def open_attach(self, request: AttachRequest) -> DebugSessionUpdate:
@@ -204,24 +260,48 @@ class DebugRunDriver:
                 lease=lease.snapshot(),
                 stop_policy=session["stop_policy"],
             )
-            return DebugSessionUpdate(snapshot=snapshot, command_id=command.command_id)
+            return await self._with_observation(
+                bundle, DebugSessionUpdate(snapshot=snapshot, command_id=command.command_id), action="cancel"
+            )
 
         if command.kind == "answer":
             session["ledger"].mark(command.command_id)
-            return await self._answer(command, session, bundle, lease)
+            return await self._with_observation(
+                bundle, await self._answer(command, session, bundle, lease), action="resume"
+            )
 
         if command.breakpoint is not None:
             session["stop_policy"] = command.breakpoint
 
         if command.kind == "advance_one":
             session["ledger"].mark(command.command_id)
-            return await self._advance(command, session, bundle, lease, single=True)
+            return await self._with_observation(
+                bundle, await self._advance(command, session, bundle, lease, single=True), action="resume"
+            )
         if command.kind == "drive_until":
             session["ledger"].mark(command.command_id)
-            return await self._drive_until(command, session, bundle, lease)
+            return await self._with_observation(
+                bundle, await self._drive_until(command, session, bundle, lease), action="resume"
+            )
         return DebugSessionUpdate(command_id=command.command_id, denied="invalid")
 
     # -- internals -------------------------------------------------------------
+
+    async def _publish_observation(self, bundle, *, action: str, trace_delta: tuple[str, ...] = ()) -> None:
+        """Publish this command's lifecycle observation (see the module helper)."""
+        await publish_lifecycle_observation(
+            self._lifecycle,
+            self._observation_publisher,
+            bundle,
+            action=action,
+            trace_delta=trace_delta,
+        )
+
+    async def _with_observation(self, bundle, update: DebugSessionUpdate, *, action: str) -> DebugSessionUpdate:
+        """Publish for an accepted command; a denial changes nothing to observe."""
+        if update.denied is None:
+            await self._publish_observation(bundle, action=action)
+        return update
 
     async def _resolve(self, bundle_id: str):
         from deerflow_deep_research.domain.bundle import BundleId

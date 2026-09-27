@@ -1,6 +1,6 @@
 # _done — 已完成/暂停的归档记录
 
-> 最后更新: 2026-09-27（关闭 BUG-071 工作台 conformance 剩余面；活跃 bug 清零） | `_backlog/_done/` — 已完成内容与明确暂停项的归档根目录。
+> 最后更新: 2026-09-27（关闭 BUG-072 清册状态说谎 + 测试环境耦合；活跃 bug 清零） | `_backlog/_done/` — 已完成内容与明确暂停项的归档根目录。
 > **`_done/` = 归档工作件，coding agent 默认忽略，除非显式点名要读**（`_` 前缀的两类语义见 [`../README.md`](../README.md)）。
 >
 > 状态总览和查阅指南在本文件。活跃工作的 PENDING 表、依赖链、执行顺序 → 见 [`../todos/README.md`](../todos/README.md)。
@@ -25,7 +25,7 @@ _done/
 
 | 归档目录 | 数量 | Next ID |
 |---------|------|---------|
-| `_fixed_bugs/` | 71 | BUG-072 |
+| `_fixed_bugs/` | 72 | BUG-073 |
 | `_done_todos/` | 7 | DONE-008 |
 | `_closed_plans/` | 60 | CLS-062 |
 

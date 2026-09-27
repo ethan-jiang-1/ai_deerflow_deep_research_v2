@@ -66,6 +66,22 @@ _TAVILY_ATTEMPT_TIMEOUT_SECONDS = 60.0
 _TAVILY_MAX_READ_ATTEMPTS = 3
 _TAVILY_RETRY_BACKOFF_SECONDS = (1.0, 2.0)
 _DEMO_BUNDLE_ROOT_NAME = ".deep-research-demo-runs"
+_DEMO_BUNDLE_ROOT_VAR = "DEERFLOW_DEMO_BUNDLE_ROOT"
+
+
+def _demo_bundle_root_from_environment(agent_root: Path) -> Path:
+    """Resolve the local demo workspace root, overridable for isolated runs.
+
+    Tests and throwaway probes must not read or write the ambient workspace
+    (BUG-072): a leftover non-terminal bundle there made the demo CLI suite fail
+    red for reasons unrelated to the code. The default stays the harness-local
+    directory; an explicit non-blank ``DEERFLOW_DEMO_BUNDLE_ROOT`` points one run
+    at its own root.
+    """
+    override = _nonblank_environment_value(_DEMO_BUNDLE_ROOT_VAR)
+    return Path(override) if override is not None else agent_root / _DEMO_BUNDLE_ROOT_NAME
+
+
 _DEMO_RETAINED_DATA_SCOPE_REVISION = "retained-run-data-v5"
 
 
@@ -351,7 +367,7 @@ class DemoAdapter:
         model_profile: DemoModelProfile | None = None,
     ) -> None:
         agent_root = Path(__file__).resolve().parents[1]
-        root = bundle_root or agent_root / _DEMO_BUNDLE_ROOT_NAME
+        root = bundle_root or _demo_bundle_root_from_environment(agent_root)
         workspace = root / "workspace"
         uploads = root / "uploads"
         outputs = root / "outputs"

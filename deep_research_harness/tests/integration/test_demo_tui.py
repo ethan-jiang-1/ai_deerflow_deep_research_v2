@@ -1656,3 +1656,66 @@ async def test_context_pane_renders_captured_invocations(monkeypatch: pytest.Mon
         assert "⌨ wave0#1 model=2" in pane, pane
         assert "coverage:" in pane and "INITIAL CAPTURED" in pane and "NOT RETAINED" in pane, pane
         assert "Objective: Compare storage options" in pane, pane
+
+
+@pytest.mark.asyncio
+async def test_cancel_recovery_without_a_local_session_refreshes_the_summary(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """BUG-072: a recovery cancel must refresh the run summary, not only the driver's.
+
+    DPL-014's operator report reads the retained summary. When recovery reached
+    the lifecycle without a driver session it published nothing, so a cancelled
+    bundle still looked resumable to the operator.
+    """
+    import json
+
+    root = tmp_path / "demo-runs"
+    _install_isolated_fixture_adapter(monkeypatch, bundle_root=root)
+
+    def summary_status(bundle_id: str) -> str | None:
+        summary = next(root.rglob(f"{bundle_id}/diagnostics/run-summary.json"))
+        return json.loads(summary.read_text(encoding="utf-8")).get("status")
+
+    first = DeepResearchDemoTUI(mode="fixture", debug_mode=True)
+    async with first.run_test(size=(100, 30)) as pilot:
+        await _wait_for(first, pilot, demo_tui.Ready)
+        composer = first.query_one("#composer", demo_tui.Input)
+        composer.value = "Compare storage approaches"
+        await pilot.pause()
+        await pilot.press("enter")
+        for _ in range(120):
+            await pilot.pause()
+            if first._debug_driver is not None:
+                break
+            await asyncio.sleep(0.05)
+        assert first._debug_driver is not None
+        bundle_id = first._debug_bundle_id
+        assert bundle_id
+        composer.value = "/detach"
+        await pilot.pause()
+        await pilot.press("enter")
+        for _ in range(80):
+            await pilot.pause()
+            if first._debug_driver is None:
+                break
+            await asyncio.sleep(0.05)
+        assert first._debug_driver is None, "detach must clear the local session"
+
+    # A fresh workbench holds no session, so recovery takes the lifecycle path.
+    second = DeepResearchDemoTUI(mode="fixture", debug_mode=True)
+    async with second.run_test(size=(100, 30)) as pilot:
+        await _wait_for(second, pilot, demo_tui.Ready)
+        composer = second.query_one("#composer", demo_tui.Input)
+        composer.value = "/cancel"
+        await pilot.pause()
+        await pilot.press("enter")
+        for _ in range(80):
+            await pilot.pause()
+            if "已取消活跃调试 bundle" in second._rich_log_text():
+                break
+            await asyncio.sleep(0.05)
+        assert "已取消活跃调试 bundle" in second._rich_log_text(), "recovery did not cancel the retained bundle"
+        assert "姿态: 无调试会话" in second.query_one("#inspect").render().plain
+
+    assert summary_status(bundle_id) == "cancelled", "the operator report would call this bundle resumable"

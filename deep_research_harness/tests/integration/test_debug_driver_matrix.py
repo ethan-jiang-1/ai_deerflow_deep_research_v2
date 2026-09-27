@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import json
 import secrets
 import time
 from datetime import UTC, datetime
@@ -27,6 +28,7 @@ from deerflow_deep_research.domain.lifecycle import ImplementationMode
 from deerflow_deep_research.runtime.bundle_graph import BundleGraphExecutor
 from deerflow_deep_research.runtime.bundle_lifecycle import BundleLifecycle
 from deerflow_deep_research.runtime.debug_driver import DebugDriverError, DebugRunDriver
+from deerflow_deep_research.runtime.run_observation import BundleRunObservationPublisher
 from deerflow_deep_research.runtime.runtime_adapter import TrustedRuntimeEnvelope
 from deerflow_deep_research.runtime.work_unit_store import WorkUnitStore
 from tests.fixtures.recipes import fixture_recipe
@@ -551,3 +553,61 @@ async def test_topology_guard_fails_closed_on_multi_visit_superstep(tmp_path: Pa
             )
         )
     assert str(excinfo.value) == "topology_guard_multi_visit"
+
+
+@pytest.mark.asyncio
+async def test_accepted_commands_keep_the_run_summary_truthful(tmp_path: Path) -> None:
+    """DPL-014's operator report reads the run summary; a debug run must refresh it.
+
+    Regression for BUG-072: debug sessions drive the lifecycle directly, so no
+    observation was ever published and the retained summary stayed at the
+    establishment fact - the workspace report then called a cancelled bundle
+    resumable.
+    """
+    lifecycle = BundleLifecycle(workspace_host_path=tmp_path / "demo-runs")
+
+    async def create(_envelope, *, bundle, **_kwargs):
+        return WorkUnitStore(
+            workspace_host_path=tmp_path / "demo-runs",
+            bundle=bundle,
+            clock=lambda: datetime.now(UTC),
+            monotonic=time.monotonic,
+            lock_sleep=time.sleep,
+            token_factory=lambda: secrets.token_hex(16),
+            fault_hook=None,
+        )
+
+    executor = BundleGraphExecutor(recipe=fixture_recipe(work_unit_store_factory=create))
+    envelope = _envelope(tmp_path)
+    scope = (envelope.effective_user_id, envelope.outer_thread_id)
+    driver = DebugRunDriver(
+        lifecycle=lifecycle,
+        executor=executor,
+        envelope=envelope,
+        scope=scope,
+        owner="op-summary",
+        observation_publisher=BundleRunObservationPublisher(lifecycle=lifecycle, scope=scope),
+    )
+
+    def summary_status(bundle_id: str) -> str | None:
+        summary = next((tmp_path / "demo-runs").rglob(f"{bundle_id}/diagnostics/run-summary.json"))
+        return json.loads(summary.read_text(encoding="utf-8")).get("status")
+
+    opened = await driver.open_start(
+        StartRequest(question="Compare storage", mode="step", owner="op-summary", command_id="start-00000001")
+    )
+    bundle_id = opened.snapshot.bundle_id
+    assert summary_status(bundle_id) in {"active", "suspended"}
+
+    session = await driver.session_snapshot(bundle_id)
+    assert session is not None
+    cancelled = await driver.execute(
+        DebugCommand(
+            kind="cancel",
+            bundle_id=bundle_id,
+            command_id="cancel-00000001",
+            expected_cursor=session.cursor.token(),
+        )
+    )
+    assert cancelled.denied is None
+    assert summary_status(bundle_id) == "cancelled", "the operator report would call this bundle resumable"
