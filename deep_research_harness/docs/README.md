@@ -18,6 +18,7 @@ Current behavior, operations, and policy. Kept in sync with the code.
 | How does one run unfold end to end (lifecycle vocabulary in order)? | [Run lifecycle walkthrough](run-lifecycle-walkthrough.md) |
 | How do I run profiles, demos, diagnostics, retained sessions, and the local workbench? | [Local operations](local-operations.md) |
 | How are deterministic, live, and release tests selected and interpreted? | [Testing and evaluation](testing-and-evaluation.md) |
+| How do I prove a change ran (lanes, receipts) and which guards can fail? | [Testing and evaluation](testing-and-evaluation.md) |
 | How are live or release defects classified and descended to deterministic regressions? | [Regression descent](regression-descent.md) |
 | How do I prepare, run, and review a manually selected cognitive case? | [Cognitive Evaluation Suite](cognitive-evaluation-suite.md) |
 | How do I run the local demo ladder end to end (001–004 / 010 / 020 / 030 / 031)? | [Local runbooks](runbooks/README.md) |

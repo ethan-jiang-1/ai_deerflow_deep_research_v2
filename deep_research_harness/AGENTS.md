@@ -75,13 +75,12 @@ cognition is not causal. Do not invent a capability, prompt, or repair loop.
 | Need | Read first |
 | --- | --- |
 | How one run unfolds end to end (lifecycle vocabulary in order) | [`docs/run-lifecycle-walkthrough.md`](docs/run-lifecycle-walkthrough.md) |
-| Product use, setup, demo, or operator journey | [`README.md`](README.md) |
+| Product use, setup, demo ladder, commands and targets | [`README.md`](README.md), [`COMMANDS.md`](COMMANDS.md), [`Makefile`](Makefile) |
+| How do I prove a change (lanes, receipts, mutations)? | [`docs/testing-and-evaluation.md`](docs/testing-and-evaluation.md) (Delivery lanes and receipts) |
 | Runtime and authority boundaries | [`docs/runtime-architecture.md`](docs/runtime-architecture.md) |
 | Local commands and profiles | [`docs/local-operations.md`](docs/local-operations.md) |
 | Local demo ladder / operator runbooks (001–004 / 010 / 020 / 030 / 031) | [`docs/runbooks/README.md`](docs/runbooks/README.md) |
-| Testing and evaluation | [`docs/testing-and-evaluation.md`](docs/testing-and-evaluation.md) |
 | Test-owned evidence/inventory support library (not tests) | [`tests/assets/README.md`](tests/assets/README.md) |
-| Commands and targets | [`Makefile`](Makefile) |
 
 ## Boundaries
 

@@ -35,13 +35,20 @@ produced for a declared lane is what a gate may verify.
 
 ## Delivery Lanes
 
-| Surface | Lane |
+Harness-owned lanes live in `deep_research_harness/proof-lanes.toml`; `make proof LANE=<lane>`
+records a receipt for one and `make proof-status` reports what went stale. Governance checks
+are governance-owned and are not harness lanes.
+
+| Surface | Harness lane (receipt-backed) |
 | --- | --- |
-| Application behavior, typed contracts, gates | `UV_OFFLINE=1 make verify` |
-| Interactive TUI and the debugger workbench | `make tui-journey`, `make debugger-proof` |
-| Operator journeys (whole experiences) | `make tui-experiences` |
+| Application behavior, typed contracts, gates | `make verify` (`UV_OFFLINE=1`) |
+| Interactive TUI and the debugger workbench | `make debugger-proof` |
+| Guards that must be able to fail | `make mutation-check` |
+
+| Governance check (not a harness lane) | Command |
+| --- | --- |
 | Published docs and guidance | `python3 openspec/governance/check_doc_hygiene.py` |
-| Design and admission governance | `python3 openspec/governance/check_project_gate.py --phase closeout` |
+| Design, admission, and closeout receipts | `python3 openspec/governance/check_project_gate.py --phase closeout` |
 
 Escalate to a human only for product direction or scope, reserved areas
 (`.agents/skills/`, `.env`, gitignored local conveniences), irreversible or
