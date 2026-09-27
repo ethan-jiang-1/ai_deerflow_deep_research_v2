@@ -52,6 +52,10 @@ jobs:
       # 与 harness 门禁分开跑，治理红灯不再能靠"没跑"存活（2026-09-26 教训）。
       # discover 命令与套件 docstring 记载一致；不得加 -t .（治理套件不是包，
       # Python 3.12/3.13 上 discovery 直接 ImportError，原命令从未真正跑过一个测试）。
+      # 治理套件的 planted-negative 会调用原生 openspec CLI（strict 验证归属外部
+      # 包）；开发机为全局安装（@fission-ai/openspec@1.13.1），CI 按同版本钉住安装。
+      - name: Install pinned openspec CLI for governance planted negatives
+        run: npm install -g @fission-ai/openspec@1.13.1
       - name: Repository governance gates
         working-directory: .
         run: |
