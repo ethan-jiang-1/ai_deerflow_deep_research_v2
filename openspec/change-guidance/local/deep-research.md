@@ -30,7 +30,22 @@ Freeze budget, order, archive invariant, recovery, and exclusions; each workstre
 retains owner, IDs, target/retirement, surface, policies, negative path, and reviews.
 Failed work stays active; no partial archive. Selected control-placement changes retain
 plan-review and archive-closeout-review as ordinary tasks. Operation guidance and
-caller-declared Git closeout evidence remain advisory.
+caller-declared closeout claims remain advisory; evidence that a registered runner
+produced for a declared lane is what a gate may verify.
+
+## Delivery Lanes
+
+| Surface | Lane |
+| --- | --- |
+| Application behavior, typed contracts, gates | `UV_OFFLINE=1 make verify` |
+| Interactive TUI and the debugger workbench | `make tui-journey`, `make debugger-proof` |
+| Operator journeys (whole experiences) | `make tui-experiences` |
+| Published docs and guidance | `python3 openspec/governance/check_doc_hygiene.py` |
+| Design and admission governance | `python3 openspec/governance/check_project_gate.py --phase closeout` |
+
+Escalate to a human only for product direction or scope, reserved areas
+(`.agents/skills/`, `.env`, gitignored local conveniences), irreversible or
+out-of-bounds actions, spec-semantics adjudication, or an explicit review request.
 
 ## Information Map
 

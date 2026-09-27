@@ -11,6 +11,8 @@
 4. Select every policy whose trigger applies; one policy cannot waive another.
 5. Match evidence to the changed decision and include the material negative path.
 6. Give migration, recovery, retirement, and deletion a terminal invariant.
+7. Make evidence newer than the change it claims, and let a runner write it.
+8. Prove operator-facing behavior as a journey, and prove each guard can fail.
 
 Guidance and review records never grant runtime behavior, state writes, routes,
 permissions, tools, retries, or native workflow transitions.
@@ -27,6 +29,19 @@ substitute for required behavior.
 Use a planted invalid input for a deterministic validator and the narrowest real
 handoff for a cross-boundary fact. A failed migration stays active for repair,
 rollback, or explicit re-scope; it never silently narrows the approved outcome.
+
+## Delivery Evidence
+
+Evidence is only as good as its freshness: once the line, file, or surface changes,
+earlier evidence is stale and proves nothing about the version being delivered.
+Prefer evidence a runner produces - the command, its exit code, the revision, and a
+digest of its own output - over anyone's summary of having run something.
+
+Match the evidence to the surface. A deterministic owner takes a focused test; an
+operator-facing surface takes at least one end-to-end journey (enter, act, observe,
+recover or exit) beside its unit tests. A new guard is unproven until a recorded
+mutation shows it failing when the guarded behavior is removed. State plainly what
+could not be verified locally instead of passing over it quietly.
 
 ## Authority And Projections
 
