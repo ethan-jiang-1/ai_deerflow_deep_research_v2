@@ -263,3 +263,39 @@ readiness diagnostics (`doctor.py`), and file-backed SQLite lifecycle recovery a
 real subprocess restart (`make test-durability`), and event-loop blocking checks
 (`make test-blocking-io`). The topology snapshot is generated with
 `uv run python scripts/render_topology.py`.
+
+## Interactive TUI Journey Harness
+
+Import-time tests and per-link unit tests cannot see defects that live in *how the
+TUI script executes as `__main__`*. Three operator-reported failures in a row were
+invisible to the suite:
+
+- the launcher never enabled `src_fixtures`, so the fixture graph failed to import
+  and the app rendered a generic presentation fault (pytest injects that path via
+  `pythonpath`, so every test passed);
+- the C4b debug methods were defined at module level and bound to the class *after*
+  the `if __name__ == "__main__": main()` guard, so a real launch blocked inside
+  `main()` before the bindings ran and the first composer submit raised
+  `AttributeError`;
+- the submit router kept treating a live debug session as "not started", so a
+  second Enter tried to open another session and was refused as `busy`.
+
+`scripts/tui_journey_probe.py` (target: `make tui-journey`) closes that gap. It
+executes the real script as `__main__` with `PYTHONPATH` stripped, replaces
+`App.run` with a headless stand-in, and drives the [runbook-030](runbooks/runbook-030-debugger.md)
+debugger ladder with per-step semantic assertions — Ready, Start Step landing on the
+HITL1 prompt, answering, empty-Enter stepping, mid-ladder `/detach`, the retained-bundle
+`busy` refusal, `/cancel` recovery, a fresh session, the ladder to `terminal`,
+`/context`, and final `/detach`. It prints a step transcript, runs in about five
+seconds, and exits non-zero at the first failing step with both panes captured.
+
+**Rule of use:** an agent must run this harness before handing any TUI path to a
+human operator, and the same assertion runs inside `make verify`
+(`tests/integration/test_debugger_entry.py`). A leftover active debug bundle (a
+session interrupted mid-ladder) is recovered with `make tui-journey
+JOURNEY_ARGS="--cancel-active"`, which abandons it so a fresh Start Step is admitted.
+
+**Boundary:** the harness drives the application, CLI wiring, `__main__` execution
+order, session routing, and lifecycle admission headlessly. It does not exercise the
+real terminal driver or literal keystrokes; those remain a human/terminal concern.
+

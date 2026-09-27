@@ -1234,6 +1234,15 @@ class DeepResearchDemoTUI(App[None]):
         raw_value = event.value
         value = raw_value.strip()
         if not value:
+            if self.debug_mode and self._debug_driver is not None:
+                # Runbook-030 rhythm: an empty Enter advances one boundary
+                # unless a HITL prompt is waiting (then it must be answered).
+                self.run_worker(self._debug_empty_submit(), exclusive=True, group="debug")
+            return
+        if self.debug_mode and value.startswith("/cancel"):
+            # Recovery path: abandon the scope's active bundle. A previous
+            # session left paused blocks every new Start Step as busy.
+            self.run_worker(self._debug_cancel_active(), exclusive=True, group="debug")
             return
         if self.debug_mode and self._debug_driver is not None and value.startswith("/detach"):
             self.run_worker(self._debug_command(value), exclusive=True, group="debug")
@@ -1252,14 +1261,19 @@ class DeepResearchDemoTUI(App[None]):
             return
         if self.last_update is None:
             return
+        if self._debug_driver is not None and self._debug_bundle_id:
+            # A live debug session owns the composer: plain text advances or
+            # answers it. This is checked before the Ready branch because the
+            # debug path renders to its own panes and leaves last_update at
+            # Ready, so a second Enter used to try opening a second session
+            # and be refused as busy.
+            self.run_worker(self._debug_command(value), exclusive=True, group="debug")
+            return
         if isinstance(self.last_update, Ready) and self.last_update.report.ready:
             if self.debug_mode:
                 self.run_worker(self._debug_start(value), exclusive=True, group="debug")
                 return
             self._dispatch(StartRun(question=value))
-        elif self._debug_driver is not None and self._debug_bundle_id:
-            self.run_worker(self._debug_command(value), exclusive=True, group="debug")
-            return
         elif isinstance(self.last_update, AwaitingInput):
             prompt = self.last_update.prompt
             if prompt.mode == "choice":
@@ -1749,6 +1763,55 @@ class DeepResearchDemoTUI(App[None]):
             self._dispatch(CancelRun())
 
     # ── C4b debugger workbench: debug-driver wiring (RED-013/RED-014) ────────────
+    async def _debug_cancel_active(self) -> None:
+        """Abandon the scope's active debug bundle and clear the local session.
+
+        The lifecycle admits at most one active Bundle per scope, and
+        ``/detach`` deliberately leaves the Bundle paused at its boundary, so a
+        paused session blocks every later Start Step as ``busy``. This is the
+        workbench-local recovery: cancel the active Bundle (driver-backed when
+        this app holds the session, otherwise discovered through the lifecycle)
+        so a fresh Start Step is admitted again.
+        """
+        from deerflow_deep_research.domain.bundle import BundleId
+
+        adapter = self._adapter
+        if adapter is None:
+            return
+        scope = (adapter._envelope.effective_user_id, adapter._envelope.outer_thread_id)
+        log = self.query_one("#log", RichLog)
+        bundle_id = self._debug_bundle_id
+        if bundle_id is None:
+            active = await adapter._bundle_lifecycle.discover_active(scope=scope)
+            if active is None:
+                log.write(Text("没有可取消的活跃调试会话。", style="yellow"))
+                return
+            bundle_id = active.bundle_id.value
+        await adapter._bundle_lifecycle.cancel(scope=scope, bundle_id=BundleId(bundle_id))
+        self._debug_driver = None
+        self._debug_bundle_id = None
+        log.write(Text(f"已取消活跃调试 bundle: {bundle_id[:20]}…（可重新 Start Step）", style="cyan"))
+
+    async def _debug_empty_submit(self) -> None:
+        """Advance one boundary for an empty-composer Enter in a debug session."""
+        driver = self._debug_driver
+        if driver is None or self._debug_bundle_id is None:
+            return
+        info = driver._sessions[self._debug_bundle_id]
+        session = await driver._snapshot(
+            await driver._resolve(self._debug_bundle_id),
+            mode="step",
+            pause_requested=False,
+            lease=info["lease"].snapshot(),
+            stop_policy=info["stop_policy"],
+        )
+        if session.posture == "awaiting_hitl":
+            self.query_one("#log", RichLog).write(
+                Text("等待 HITL 输入：请在 composer 里直接输入回答。", style="yellow")
+            )
+            return
+        await self._debug_advance()
+
     async def _debug_start(self, question: str) -> None:
         """Open a debug session on the one real graph and perform Start Step."""
         import time as _time
@@ -1784,7 +1847,17 @@ class DeepResearchDemoTUI(App[None]):
             )
         )
         if opened.snapshot is None:
-            self.query_one("#log", RichLog).write(Text(f"调试会话开启失败: {opened.denied}", style="red"))
+            log = self.query_one("#log", RichLog)
+            if opened.denied == "busy":
+                log.write(
+                    Text(
+                        "调试会话开启失败: 本 scope 已有活跃 bundle（可能是上次未走完的会话）。"
+                        "输入 /cancel 放弃它后再 Start Step；已开启的会话请直接继续步进。",
+                        style="red",
+                    )
+                )
+            else:
+                log.write(Text(f"调试会话开启失败: {opened.denied}", style="red"))
             return
         bundle_id = opened.snapshot.bundle_id
         self._debug_driver = driver

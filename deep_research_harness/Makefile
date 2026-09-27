@@ -93,6 +93,15 @@ demo-real-scripted: entry-preflight
 tui-debugger:
 	./run/tui-workflow-debugger.sh $(DEBUGGER_ARGS)
 
+# Headless self-verification harness for the interactive TUI entry chain.
+# Executes the real script as __main__ (PYTHONPATH stripped) and drives the
+# runbook-030 debugger ladder with per-step semantic assertions. Agents MUST
+# run this before handing any TUI path to an operator; it is also wired into
+# `make verify`. JOURNEY_ARGS="--cancel-active" abandons a leftover active
+# debug bundle (recovery after an interrupted session).
+tui-journey:
+	env -u PYTHONPATH $(ENTRY_RUN) --extra operations --extra demo-tui python scripts/tui_journey_probe.py $(JOURNEY_ARGS)
+
 demo-tui: entry-preflight
 	test -n "$(PROFILE)" || { echo "Usage: make demo-tui PROFILE=demo"; exit 2; }
 	$(ENTRY_RUN) $(LOCAL_ENV_ARG) --extra operations --extra demo-real --extra demo-tui python scripts/demo_tui.py --profile "$(PROFILE)" $(DEMO_ARGS)

@@ -3,6 +3,10 @@
 > 前置：`make install` 已跑（含 demo-tui extra）；零凭证、零网络。
 > 入口：`./run/tui-workflow-debugger.sh --fixture`（或 `make tui-debugger DEBUGGER_ARGS="--fixture"`）
 > 本质：用 `DebugRunDriver` 逐边界推进同一张 fixture StateGraph，实时看 timeline 和 Node Context。
+>
+> **本手册的步骤由 `scripts/tui_journey_probe.py` 在真机等价环境下逐条断言**
+> （`make tui-journey`）：它执行真实脚本、驱动下面整条流程并在每步校验姿态与提交。
+> 手册与代码不一致时，以该 harness 的断言为准并同 PR 修手册。
 
 ## 1. 启动
 
@@ -13,37 +17,44 @@ cd deep_research_harness
 
 TUI 打开后看到 Ready 状态（fixture composition，无凭证要求）。
 
-## 2. 提交问题（Start Step）
+## 2. 提交问题（Start Step）→ 落在 HITL1 提问处
 
 在 composer 输入一个研究问题（如 `Compare renewable energy storage technologies`），按 Enter。
 
 预期：
 - 日志区出现 `调试会话: b_XXXX… (Start Step)`
-- 然后 `✓ bootstrap 提交（帧 1）`
-- 面板显示 `姿态: paused_at_boundary · 下一节点: hitl1`
+- 然后 `✓ bootstrap 提交（帧 N）`
+- 面板显示 `姿态: awaiting_hitl · 等待输入（直接输入回答）`
 
-## 3. Step 到 HITL1
+说明：**Start Step 在全新 bundle 上会一路跑到第一个 interrupt**（driver 在
+fresh 状态下没有已知的下一个节点，故 `interrupt_after` 为空），所以第一步就停在
+hitl1 的提问处，而不是停在 hitl1 之前的边界。
 
-按 Enter（composer 留空或输入任意文本——paused 态下 Enter 就是 advance_one）。
-
-预期：
-- hitl1 开始执行并触发 interrupt
-- 面板显示 `姿态: awaiting_hitl · 等待输入`
-- hitl1 的 suspended 卡出现在 timeline
-
-## 4. 回答 HITL1
+## 3. 回答 HITL1
 
 在 composer 输入一个 profile 描述（如 `depth: standard` 或 `Use the default profile.`），按 Enter。
 
 预期：
-- hitl1 完成并提交
-- 面板更新为下一边界
+- `✓ hitl1 提交（帧 N）`
+- 面板变为 `姿态: paused_at_boundary`
 
-## 5. 逐步推进 / Continue
+## 4. 逐步推进（step）
 
-继续按 Enter 逐步穿过 `topic_planning → wave0 → wave1 → wave2 → hitl2 → readiness → final_delivery`。每次 Enter 提交恰好一个逻辑节点。
+**composer 留空按 Enter** 即推进一个节点边界（也可输入任意非斜杠文本，效果相同）。
+每次 Enter 提交恰好一个逻辑节点，日志逐行给出 `✓ <node> 提交（帧 N）`：
 
-## 6. 查看 Node Context
+```
+topic_planning → wave0 → wave1 → wave2_synthesis → hitl2 → readiness → final_delivery
+```
+
+预期：
+- 最终 `姿态: terminal`
+- 面板的 `下一节点` 在 fixture 流程中可能显示 `—`（trace 投影暂未填充 next_nodes，
+  见 BUG-070）；**以日志的 `✓ … 提交（帧 N）` 为推进权威**。
+- 再次处于 `awaiting_hitl` 时，空 Enter 不会推进，而是提示"等待 HITL 输入"——
+  此时必须直接输入回答。
+
+## 5. 查看 Node Context
 
 输入 `/context` 并按 Enter。
 
@@ -51,20 +62,28 @@ TUI 打开后看到 Ready 状态（fixture composition，无凭证要求）。
 - fixture 模式下，deterministic node（bootstrap、hitl1、topic_planning 等）没有 LLM 调用，所以 `/context` 显示 `尚无已捕获的调用上下文` 属预期
 - embedded 模式下，LLM-bearing node（wave0 等）会有 captured context snapshot
 
-## 7. 干净退出
+## 6. 干净退出
 
 输入 `/detach` 并按 Enter。
 
 预期：
 - `调试会话` 引用被清除
-- Bundle 保留在原 boundary，不触发 cancel
-- 下次 `--attach <bundle_id>` 可恢复到同一位置
+- **Bundle 保留在原 boundary（仍是 active），不触发 cancel**
 
-## 8. Attach / Replay
+## 7. 中途退出后的恢复（重要）
 
-```bash
-./run/tui-workflow-debugger.sh --attach <bundle_id>
-./run/tui-workflow-debugger.sh --replay <bundle_id>
+因为 `/detach` 不 cancel，而生命周期每个 scope 只允许一个 active bundle，
+**中途 detach 后再提交新问题会被拒为 `busy`**（日志给出可操作提示）。两条出路：
+
+- `/cancel` —— 放弃该活跃 bundle，之后可重新 Start Step（推荐用于调试脚手架）；
+- 或走完整个 ladder 到 `terminal`（bundle 完成，scope 自然释放）。
+
+```text
+调试会话开启失败: 本 scope 已有活跃 bundle（可能是上次未走完的会话）。
+输入 /cancel 放弃它后再 Start Step；已开启的会话请直接继续步进。
 ```
 
-Attach 恢复到 durable checkpoint 且不自动推进；Replay 只读。
+## 8. Attach / Replay（尚未接线）
+
+`--attach <id>` / `--replay <id>` 的意图会被 CLI 接收，但 workbench 侧消费尚未
+落地（BUG-069）；在那之前请用 `/cancel` 清理活跃 bundle，或继续步进当前会话。
