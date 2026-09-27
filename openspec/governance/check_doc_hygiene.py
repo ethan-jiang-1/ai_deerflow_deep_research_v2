@@ -3,7 +3,7 @@
 
 @impl PRS-020
 
-Four mechanical doc-layer rules plus one backlog navigation rule:
+Five mechanical doc-layer rules plus one backlog navigation rule:
 
 1. ADR index <-> directory consistency: every ``NNNN-*.md`` in
    ``deep_research_harness/docs/adr/`` (excluding ``README.md``) is listed in the
@@ -22,6 +22,13 @@ Four mechanical doc-layer rules plus one backlog navigation rule:
    directory exists, and each declared name is documented in ``_backlog/README.md``.
    This keeps the ``_`` prefix meaning "retained collection, not the active work
    queue" instead of drifting back into "actively edited but hidden".
+6. Entry-chain character budgets: each resident document listed in
+   ``DOC_BUDGETS`` must not exceed its character ceiling. Counts are characters,
+   not words: ``wc -w``-style counting treats CJK text as one word per run and
+   would be loose by an order of magnitude. Budgets apply only to listed files —
+   routed-to documents are deliberately unbudgeted. Ceilings ratchet down:
+   lowering one is always allowed; raising one requires a one-line justification
+   recorded next to the entry.
 
 A docs-layer document is a Markdown document under ``deep_research_harness/docs/``
 — the top-level ``docs/*.md`` documents, the ``docs/runbooks/*.md`` operator
@@ -64,6 +71,22 @@ ENTRY_DOCS: tuple[str, ...] = (
     "_backlog/README.md",
     "openspec/README.md",
 )
+# Resident-document character ceilings (rule 6). These are the files an agent
+# host loads every session at the repository/module root; the resident layer is
+# the denominator of every prompt, so its thickness is budgeted. Counts are
+# characters (``len`` of the decoded text), never words. Ceilings ratchet down:
+# lowering one is always allowed; raising one requires a one-line justification
+# recorded next to the entry below.
+DOC_BUDGETS: dict[str, int] = {
+    # Root resident instructions (2526 chars at adoption, 2026-09-27).
+    "AGENTS.md": 2900,
+    # Root Claude entry stub; must stay a thin AGENTS.md import, never a copy.
+    "CLAUDE.md": 400,
+    # Module change map incl. generated structure block (7335 chars at adoption).
+    "deep_research_harness/AGENTS.md": 8200,
+    # Module Claude entry stub (253 chars at adoption).
+    "deep_research_harness/CLAUDE.md": 400,
+}
 DOC_LAYER_DOCS: tuple[str, ...] = (
     # docs/ top-level markdown documents.
     "deep_research_harness/docs/README.md",
@@ -256,6 +279,33 @@ def _rule_backlog_underscore(root: Path) -> list[str]:
     return problems
 
 
+def _rule_doc_budgets(root: Path) -> list[str]:
+    """Resident documents listed in ``DOC_BUDGETS`` must fit their ceilings.
+
+    The resident layer is what an agent host loads every session; its size is
+    the denominator of every prompt, so each listed file gets a character
+    ceiling. Counts use ``len`` of the decoded text so CJK documents are
+    measured honestly. Missing files are the link rule's report, not this one's.
+    """
+    problems: list[str] = []
+    for rel, ceiling in DOC_BUDGETS.items():
+        doc = root / rel
+        if not doc.is_file():
+            continue  # missing document already reported by the link rule
+        text, decode_problem = _read_utf8(doc)
+        if text is None:
+            problems.append(f"non-UTF-8 resident document, budget not checked: {rel}")
+            continue
+        size = len(text)
+        if size > ceiling:
+            problems.append(
+                f"resident document over character budget: {rel} "
+                f"({size} > {ceiling}); shrink it, or justify raising the ceiling "
+                f"with a one-line note next to the DOC_BUDGETS entry"
+            )
+    return problems
+
+
 def violations(root: Path) -> list[str]:
     found: list[str] = []
     found.extend(_rule_adr_index(root))
@@ -263,6 +313,7 @@ def violations(root: Path) -> list[str]:
     found.extend(_rule_encoding_newline(root))
     found.extend(_rule_docs_scope(root))
     found.extend(_rule_backlog_underscore(root))
+    found.extend(_rule_doc_budgets(root))
     return found
 
 
@@ -366,6 +417,12 @@ def _self_test() -> list[str]:
             for v in _rule_backlog_underscore(base)
         ):
             errors.append("self-test: undocumented backlog directory not detected")
+
+        # Rule 6 negative: resident document over its character ceiling.
+        write_doc("AGENTS.md", "# T\n\n" + "x" * (DOC_BUDGETS["AGENTS.md"] + 1) + "\n")
+        if not any("over character budget" in v for v in _rule_doc_budgets(base)):
+            errors.append("self-test: over-budget resident document not detected")
+        write_doc("AGENTS.md", "# T\n\n[self](AGENTS.md)\n")
 
     return errors
 
