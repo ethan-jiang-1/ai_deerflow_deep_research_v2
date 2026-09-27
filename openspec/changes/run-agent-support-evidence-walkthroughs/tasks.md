@@ -57,6 +57,6 @@
 - [x] 3.3 Update `_backlog/todos/todo-agent-support-walkthroughs-and-diagnostics.md`
       with the phase-0 outcome and branch decisions; keep the ledger index and
       counts consistent (three places per the backlog ritual).
-- [ ] 3.4 Refresh receipts for the lanes the walkthrough exercised; run the
+- [x] 3.4 Refresh receipts for the lanes the walkthrough exercised; run the
       repository closeout gate (every component checker zero) and record the
       command and exit codes.
