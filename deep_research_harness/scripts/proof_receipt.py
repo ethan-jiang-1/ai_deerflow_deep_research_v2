@@ -135,7 +135,9 @@ def receipt_valid(lane: dict, receipt: dict | None, *, root: Path = ROOT, head: 
     revision = receipt.get("revision")
     if not revision:
         return False, "no recorded revision"
-    changed = _git("diff", "--name-only", f"{revision}..{head}", "--", *lane["surfaces"], root=root)
+    # Against the working tree, not revision..HEAD: an uncommitted edit to a covered
+    # surface must invalidate the receipt too (found by touching a covered file).
+    changed = _git("diff", "--name-only", revision, "--", *lane["surfaces"], root=root)
     if changed:
         return False, f"covered surface changed since the receipt: {changed.splitlines()[0]}"
     transcript = receipt.get("transcript")
