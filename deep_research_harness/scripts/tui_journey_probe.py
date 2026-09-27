@@ -65,6 +65,12 @@ def _log_text(app: Any) -> str:
     return app._rich_log_text()
 
 
+def _node_context_text(app: Any) -> str:
+    from textual.widgets import Static
+
+    return app.query_one("#node-context", Static).render().plain
+
+
 def _capture(app: Any) -> None:
     PANE["log"] = _log_text(app)
     PANE["inspect"] = _inspect_text(app)
@@ -224,9 +230,18 @@ async def _fixture_debugger_journey(app: Any, pilot: Any) -> None:
 
     # 10. Node Context page ------------------------------------------------
     await _submit(app, pilot, "/context")
-    ok = await _wait(pilot, lambda: "Node Context" in _log_text(app), deadline_seconds=30)
-    _require(ok, "context", f"/context produced no page; log tail:\n{_log_text(app)[-400:]}")
-    _log("  [10] /context renders its log view (RED-014 pane pending) . ok")
+    ok = await _wait(pilot, lambda: "Node Context" in _node_context_text(app), deadline_seconds=30)
+    _require(
+        ok,
+        "context-pane",
+        f"/context filled no node-context pane; pane={_node_context_text(app)!r}",
+    )
+    _require(
+        "Node Context" not in _log_text(app),
+        "context-pane-only",
+        "the context view must live in its pane, not the log",
+    )
+    _log("  [10] /context fills the Node Context pane ............... ok")
 
     # 11. Clean detach -----------------------------------------------------
     await _submit(app, pilot, "/detach")

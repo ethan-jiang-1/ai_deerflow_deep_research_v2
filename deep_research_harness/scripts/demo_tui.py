@@ -884,6 +884,7 @@ class DeepResearchDemoTUI(App[None]):
                 yield Button("New Run", id="debug-new-run")
                 yield Button("Attach", id="debug-attach")
                 yield Button("Replay", id="debug-replay")
+            yield Static(id="node-context")
         yield Static(
             "「Start Deep Research」按钮启动研究 · 中间对话区: 双击=复制全文 · "
             "Option+拖拽=选中一段 · Copy details=复制全部 · Ctrl-C 退出",
@@ -2095,41 +2096,69 @@ class DeepResearchDemoTUI(App[None]):
             self._debug_bundle_id = None
         await self._render_debug_result(result)
 
+    @staticmethod
+    def _node_context_strip(view: Any) -> str:
+        """Fixed coverage strip projected from the view's own coverage fields.
+
+        RED-014 requires the labels INITIAL CAPTURED, RUNTIME ENFORCED,
+        ACTIVITY BOUNDED, OUTCOME OBSERVED/UNAVAILABLE, FILES CURRENT, and raw
+        provider histories marked NOT RETAINED. Every value comes from the
+        stored view, so a coverage claim cannot drift from the store.
+        """
+        return (
+            f"INITIAL {view.coverage_initial_context}"
+            f" · RUNTIME {view.coverage_runtime_posture}"
+            f" · ACTIVITY {view.coverage_inner_activity}"
+            f" · OUTCOME {view.coverage_outcome}"
+            f" · FILES {view.coverage_files}"
+            f" · RAW PROVIDER HISTORIES {str(view.raw_provider_history).replace('_', ' ')}"
+        )
+
     async def _debug_render_context(self) -> None:
-        """Render the captured node-context page (bounded) into the log panel."""
+        """Render the captured node-context page with its coverage strip.
+
+        RED-014 owns this pane: the workbench shows the selected frame's
+        node-agent invocations in their own surface (never as a log dump), and
+        states coverage honestly when nothing was captured.
+        """
         from deerflow_deep_research.domain.bundle import BundleId
         from deerflow_deep_research.runtime.node_context_store import NodeContextStore
 
+        pane = self.query_one("#node-context", Static)
         adapter = self._adapter
         if adapter is None or self._debug_bundle_id is None:
+            pane.update(Text("Node Context: 尚未开启调试会话。", style="yellow"))
             return
         bundle = await adapter._bundle_lifecycle.resolve(
-            scope=(adapter._envelope.effective_user_id, adapter._envelope.outer_thread_id),
+            scope=self._debug_scope(adapter),
             bundle_id=BundleId(self._debug_bundle_id),
         )
         if bundle is None:
+            pane.update(Text("Node Context: bundle 不可解析。", style="red"))
             return
         store = NodeContextStore(
             bundle_root=adapter._bundle_lifecycle.private_root(bundle),
             bundle_id=self._debug_bundle_id,
         )
         page = store.page()
-        log = self.query_one("#log", RichLog)
         if page.total == 0:
-            log.write(Text("Node Context: 尚无已捕获的调用上下文", style="yellow"))
+            pane.update(
+                Text(
+                    "Node Context: 尚无已捕获的调用上下文（deterministic node 没有模型调用，属预期覆盖）。",
+                    style="yellow",
+                )
+            )
             return
+        lines = [f"Node Context: {page.total} 次已捕获调用"]
         for summary in page.summaries:
             view = store.read(f"{summary.attempt_id}/{summary.node_agent_ordinal:04d}")
             if view is None:
                 continue
-            log.write(
-                Text(
-                    f"⌨ {summary.node}#{summary.node_agent_ordinal} "
-                    f"[{view.coverage_initial_context}] model={view.activity.model_calls if view.activity else '?'}",
-                    style="cyan",
-                )
-            )
-            log.write(Text(f"  Objective: {view.snapshot.request_objective[:120]}", style="dim"))
+            model_calls = view.activity.model_calls if view.activity else "?"
+            lines.append(f"⌨ {summary.node}#{summary.node_agent_ordinal} model={model_calls}")
+            lines.append(f"  coverage: {self._node_context_strip(view)}")
+            lines.append(f"  Objective: {view.snapshot.request_objective[:120]}")
+        pane.update(Text("\n".join(lines)))
 
     async def _render_debug_result(self, result) -> None:
         """Render one DebugSessionUpdate into the panels (bounded safe facts)."""

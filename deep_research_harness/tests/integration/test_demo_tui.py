@@ -1305,3 +1305,64 @@ def test_build_app_wires_debug_flag_into_the_workbench() -> None:
     plain_app = demo_tui._build_app(parser.parse_args(["--fixture"]))
     assert plain_app.mode == "fixture"
     assert plain_app.debug_mode is False
+
+
+def test_node_context_strip_projects_the_fixed_coverage_labels() -> None:
+    """RED-014 coverage strip: every label is projected from the stored view."""
+    import hashlib
+    from datetime import UTC, datetime
+
+    from deerflow_deep_research.domain.node_context import (
+        CapturedResourceLayer,
+        EnforcedToolPosture,
+        NodeContextSnapshot,
+        NodeContextView,
+        VirtualRootsView,
+    )
+
+    def _digest(text: str) -> str:
+        return hashlib.sha256(text.encode()).hexdigest()
+
+    snapshot = NodeContextSnapshot(
+        context_id="ctx-" + "0" * 28,
+        bundle_id="b_" + "A" * 43,
+        node="wave0",
+        attempt_id="g0-wave0-a1",
+        node_agent_ordinal=1,
+        created_at=datetime.now(UTC),
+        initial_system_policy="system policy text",
+        initial_human_message="Objective: compare storage",
+        base_policy_layer=CapturedResourceLayer(
+            identity="resources/node_agent/runtime_policy.md", text="base policy", sha256=_digest("base policy")
+        ),
+        capability_layer=CapturedResourceLayer(
+            identity="pkg:capabilities/wave0.md", text="capability body", sha256=_digest("capability body")
+        ),
+        request_objective="Compare storage options",
+        request_expected_output="A comparison",
+        safe_model_label="configured-model",
+        tool_posture=EnforcedToolPosture(
+            requested_tool_names=("web_search",),
+            enforced_tool_names=("web_search",),
+            posture_kind="required",
+        ),
+        budget={"max_model_calls": 8},
+        virtual_roots=VirtualRootsView(workspace_root="/mnt/user-data/workspace"),
+    )
+    captured = DeepResearchDemoTUI._node_context_strip(NodeContextView(snapshot=snapshot))
+    for label in (
+        "INITIAL CAPTURED",
+        "RUNTIME ENFORCED",
+        "ACTIVITY BOUNDED",
+        "OUTCOME UNAVAILABLE",
+        "FILES CURRENT",
+        "RAW PROVIDER HISTORIES NOT RETAINED",
+    ):
+        assert label in captured, f"coverage strip missing {label!r}: {captured!r}"
+
+    observed = DeepResearchDemoTUI._node_context_strip(NodeContextView(snapshot=snapshot, coverage_outcome="OBSERVED"))
+    assert "OUTCOME OBSERVED" in observed
+    degraded = DeepResearchDemoTUI._node_context_strip(
+        NodeContextView(snapshot=snapshot, coverage_initial_context="DEGRADED")
+    )
+    assert "INITIAL DEGRADED" in degraded

@@ -146,7 +146,7 @@ def test_launcher_enables_fixture_source_and_injects_debug_for_fixture() -> None
     assert "--debug" in text, "launcher must inject --debug for the fixture composition"
 
 
-def _launcher_forwarded_argv(*args: str, tmp_path: Path) -> str:
+def _launcher_forwarded_argv(*args: str, tmp_path: Path, extra_env: dict[str, str] | None = None) -> str:
     """Run the launcher with a stub interpreter and capture the forwarded argv."""
     import os
 
@@ -156,6 +156,10 @@ def _launcher_forwarded_argv(*args: str, tmp_path: Path) -> str:
     env = dict(os.environ)
     env["DEBUGGER_PYTHON"] = str(stub)
     env.pop("PYTHONPATH", None)
+    env.pop("DEBUGGER_COMPOSITION", None)
+    env.pop("DEBUGGER_PROFILE", None)
+    if extra_env:
+        env.update(extra_env)
     result = subprocess.run(
         [str(LAUNCHER), *args],
         capture_output=True,
@@ -166,6 +170,39 @@ def _launcher_forwarded_argv(*args: str, tmp_path: Path) -> str:
     )
     assert result.returncode == 0, result.stderr
     return result.stdout
+
+
+def test_launcher_chooses_a_composition_when_started_bare(tmp_path: Path) -> None:
+    """RED-013 chooser: a bare invocation must not fall into Gateway mode.
+
+    Non-interactive callers (agents, CI) take the documented default — the
+    fixture debugger — and DEBUGGER_COMPOSITION is the explicit selection seam.
+    """
+    import os
+
+    default_argv = _launcher_forwarded_argv(tmp_path=tmp_path)
+    assert "--fixture" in default_argv and "--debug" in default_argv
+
+    embedded = _launcher_forwarded_argv(tmp_path=tmp_path, extra_env={"DEBUGGER_COMPOSITION": "embedded-smoke"})
+    assert "--embedded-smoke" in embedded
+    assert "--debug" not in embedded
+
+    stub = tmp_path / "stub-python"
+    stub.write_text('#!/bin/sh\nprintf "%s\\n" "$@"\n', encoding="utf-8")
+    stub.chmod(0o755)
+    env = dict(os.environ)
+    env["DEBUGGER_PYTHON"] = str(stub)
+    env.pop("PYTHONPATH", None)
+    env["DEBUGGER_COMPOSITION"] = "gateway"
+    no_profile = subprocess.run([str(LAUNCHER)], capture_output=True, text=True, timeout=30, cwd=tmp_path, env=env)
+    assert no_profile.returncode != 0
+    assert "DEBUGGER_PROFILE" in (no_profile.stderr + no_profile.stdout)
+
+    gateway = _launcher_forwarded_argv(
+        tmp_path=tmp_path, extra_env={"DEBUGGER_COMPOSITION": "gateway", "DEBUGGER_PROFILE": "demo"}
+    )
+    assert "--profile" in gateway and "demo" in gateway
+    assert "--debug" not in gateway
 
 
 def test_launcher_injects_the_fixture_debugger_for_every_entry_spelling(tmp_path: Path) -> None:

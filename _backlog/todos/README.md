@@ -19,7 +19,7 @@
 
 | # | 文件 | 优先级 | 简述 | 阻塞 / 备注 |
 |---|------|--------|------|-------------|
-| （无活跃 todo；DONE-006/DONE-007 于 2026-09-27 关账，见 [`../_done/_done_todos/README.md`](../_done/_done_todos/README.md)） |
+| 1 | [todo-adopt-framework-engineering-protocols.md](todo-adopt-framework-engineering-protocols.md) | 中 | 借力审计余下的机制级三项：bounded-run `stop_reason`、评测可复现协议、waiver 内容哈希 | 需先判定 owning 层与"适用/不适用"，再拆 change 排期 |
 
 ---
 
@@ -57,9 +57,7 @@ flowchart LR
 
 | 顺序 | 项 | 为什么 |
 |------|-----|--------|
-| （暂无活跃 todo；A-009 与 A-004-T01 见上方暂停表。） |
-
-_（暂无排期。）_
+| 1 | adopt-framework-engineering-protocols | 唯一活跃 todo；机制级、非用户可见，排在 BUG-071 工作台 conformance 之后 |
 
 ---
 
