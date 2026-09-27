@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
@@ -27,29 +28,7 @@ class DurationWaiver:
     expires_on: date
 
 
-# 第一批真实 duration waiver（2026-09-28，CI 首次真实运行时落地）：GitHub ubuntu
-# runner 比本地基准机慢数倍，这三个子进程/收集密集型测试在 CI 上超并行预算
-# （8s），本地均在预算内。按 DONE-009 停靠项的要求，同改动加了"未用即红"防锈。
-DURATION_WAIVERS: tuple[DurationWaiver, ...] = (
-    DurationWaiver(
-        selector="tests.contract.test_asset_checker_contract::test_case_budget_gate_passes_on_current_collection",
-        reason="CI runner slowness: collection-heavy test measured 9.2s on ubuntu runners vs in-budget locally",
-        owner="ci",
-        expires_on=date(2026, 12, 31),
-    ),
-    DurationWaiver(
-        selector="tests.contract.test_test_lane_selection::test_live_tests_are_selected_only_by_the_live_lane",
-        reason="CI runner slowness: subprocess-heavy test measured 9.4s on ubuntu runners vs in-budget locally",
-        owner="ci",
-        expires_on=date(2026, 12, 31),
-    ),
-    DurationWaiver(
-        selector="tests.contract.test_configure::test_cli_read_only_modes_emit_redacted_json_and_runtime_axis_exit_codes",
-        reason="CI runner slowness: CLI subprocess test measured 14.0s on ubuntu runners vs in-budget locally",
-        owner="ci",
-        expires_on=date(2026, 12, 31),
-    ),
-)
+DURATION_WAIVERS: tuple[DurationWaiver, ...] = ()
 PERIODIC_DURATION_WAIVERS: tuple[DurationWaiver, ...] = ()
 
 
@@ -98,6 +77,18 @@ def main() -> int:
         waivers = DURATION_WAIVERS
     else:
         max_seconds, waivers = MAX_PERIODIC_TEST_SECONDS, PERIODIC_DURATION_WAIVERS
+    # 机器档位覆盖：CI runner 比本地基准机慢数倍且负载波动，不同测试会轮流贴线，
+    # 逐个 waiver 是打地鼠。DURATION_MAX_FAST_SECONDS 只允许放宽（≥ 内建预算），
+    # 供 CI 声明自己的机器档；本地不设此变量，内建预算照常严格。
+    override = os.environ.get("DURATION_MAX_FAST_SECONDS")
+    if override:
+        try:
+            ceiling = float(override)
+        except ValueError as exc:
+            raise SystemExit("DURATION_MAX_FAST_SECONDS must be a number") from exc
+        if ceiling < max_seconds:
+            raise SystemExit("DURATION_MAX_FAST_SECONDS may only loosen the built-in budget")
+        max_seconds = ceiling
     failures = slow_selectors(
         args.report,
         now=datetime.now(UTC).date(),
