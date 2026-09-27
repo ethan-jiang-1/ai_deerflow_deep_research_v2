@@ -228,10 +228,13 @@ credential-free, carry `periodic`, and are run with
 `UV_OFFLINE=1 make test-entry-environment-regression`, which writes
 `.reports/test-entry-environment.xml` and enforces a 180-second per-scenario duration
 budget. Owner/reason/expiry waivers live in `scripts/checks/check_test_durations.py`; an expiry
-requires a deliberate renewal. No duration waiver is active today; when the first one lands, add
-unused-waiver anti-rot in the same change — a selector matching no over-budget test must fail,
-mirroring the command-inventory tripwire — and revisit whether hash binding is needed
-(2026-09-27 audit, DONE-009). `make test-assets` collects the periodic selectors to
+requires a deliberate renewal. The first real waivers (three, owner `ci`, expiry 2026-12-31) landed
+2026-09-28 when CI first truly ran: GitHub ubuntu runners are several times slower than the local
+baseline machine, and three subprocess/collection-heavy tests exceeded the parallel budget there
+while staying in budget locally. They landed together with the unused-waiver anti-rot the DONE-009
+audit parked: a waiver whose selector matches no test in the report fails
+(`waiver_selector_unknown`) — softer than an over-budget match, because durations fluctuate and a
+waived test running fast is not a dead waiver; only a renamed or removed test is. `make test-assets` collects the periodic selectors to
 validate their central claims without running their process bodies. The distinct
 `agent-entry-environment-regression.yml` CI job runs the target for declared
 entry-environment path changes, daily, and manually; it does not change the rapid

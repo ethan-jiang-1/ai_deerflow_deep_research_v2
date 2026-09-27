@@ -27,7 +27,29 @@ class DurationWaiver:
     expires_on: date
 
 
-DURATION_WAIVERS: tuple[DurationWaiver, ...] = ()
+# 第一批真实 duration waiver（2026-09-28，CI 首次真实运行时落地）：GitHub ubuntu
+# runner 比本地基准机慢数倍，这三个子进程/收集密集型测试在 CI 上超并行预算
+# （8s），本地均在预算内。按 DONE-009 停靠项的要求，同改动加了"未用即红"防锈。
+DURATION_WAIVERS: tuple[DurationWaiver, ...] = (
+    DurationWaiver(
+        selector="tests.contract.test_asset_checker_contract::test_case_budget_gate_passes_on_current_collection",
+        reason="CI runner slowness: collection-heavy test measured 9.2s on ubuntu runners vs in-budget locally",
+        owner="ci",
+        expires_on=date(2026, 12, 31),
+    ),
+    DurationWaiver(
+        selector="tests.contract.test_test_lane_selection::test_live_tests_are_selected_only_by_the_live_lane",
+        reason="CI runner slowness: subprocess-heavy test measured 9.4s on ubuntu runners vs in-budget locally",
+        owner="ci",
+        expires_on=date(2026, 12, 31),
+    ),
+    DurationWaiver(
+        selector="tests.contract.test_configure::test_cli_read_only_modes_emit_redacted_json_and_runtime_axis_exit_codes",
+        reason="CI runner slowness: CLI subprocess test measured 14.0s on ubuntu runners vs in-budget locally",
+        owner="ci",
+        expires_on=date(2026, 12, 31),
+    ),
+)
 PERIODIC_DURATION_WAIVERS: tuple[DurationWaiver, ...] = ()
 
 
@@ -47,11 +69,17 @@ def slow_selectors(
     root = ET.parse(report).getroot()
     valid = {waiver.selector for waiver in waivers if waiver.reason and waiver.owner and waiver.expires_on >= now}
     failures: list[str] = []
+    report_selectors: set[str] = set()
     for case in root.iter("testcase"):
         duration = float(case.attrib.get("time", "0"))
         selector = _selector(case)
+        report_selectors.add(selector)
         if duration > max_seconds and selector not in valid:
             failures.append(f"{selector}={duration:.3f}s")
+    # 未用即红（DONE-009 停靠项，随第一批真 waiver 落地）：时长会波动，某次跑快不算
+    # 未用；只有选择器在报告里根本不存在（测试被改名或删除）时，waiver 才算烂掉。
+    dead = sorted(valid - report_selectors)
+    failures.extend(f"waiver_selector_unknown:{selector}" for selector in dead)
     return failures
 
 
