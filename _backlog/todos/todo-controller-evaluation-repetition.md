@@ -1,7 +1,18 @@
 # TODO: controller-evaluation-repetition
 
-> 状态: 待排期（需人批预算与成本边界） | 优先级: 中 | 更新: 2026-09-27
+> 状态: 实施中（controller 半已交付并经评审；topic-planning 半待续） | 优先级: 中 | 更新: 2026-09-27 晚
 > 上游: [`todo-agent-support-walkthroughs-and-diagnostics.md`](../_done/_done_todos/todo-agent-support-walkthroughs-and-diagnostics.md) 阶段 0 的 go 裁决（证据表 B-3 行） | 下游: 若证实失败 → 独立 change 下沉最窄 deterministic regression
+
+## 进展（2026-09-27 晚，change `run-controller-evaluation-repetition` apply 中）
+
+- **controller 半已交付**：change 的 manifest provenance（CES-003 delta）、controller live subject、
+  手动 runner、金丝雀 + 三次 series 全部落地；四次真模型执行（deepseek-v4-flash）的逐场景
+  对照、三份协议评审（均 failed：load-before-select 关键判据每轮 2-4/17）与边界声明见
+  change 的 `evidence/controller-evaluation-results.md`。
+- **实测结论**：真模型在此案例上的意图映射不可靠（动作 8-12/17、refine 族全败、
+  infra_probe 漂移、一次爆调用预算）；后续 seam = 先诊断技能不重读是模型选择还是组合提示问题。
+- **剩余**：topic-planning 节点 subject（change 任务 2.4）与其 series（3.4）——change 保持
+  active，下个会话继续；本 todo 在其完成前不关闭。
 
 ## Why
 

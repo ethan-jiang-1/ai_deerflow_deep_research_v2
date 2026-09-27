@@ -59,11 +59,11 @@
 
 ## 4. Reviews and evidence
 
-- [ ] 4.1 For each retained bundle, submit a review per the versioned protocol
+- [x] 4.1 For each retained bundle, submit a review per the versioned protocol
       (read-only; four-state result, evidence, confidence, unknowns, owning seam,
       follow-up), judging the rubric criteria from the recorded per-scenario
       proposals; record review ids.
-- [ ] 4.2 Write `evidence/controller-evaluation-results.md`: per case and
+- [x] 4.2 Write `evidence/controller-evaluation-results.md`: per case and
       repetition — execution status, per-scenario expected vs actual proposal,
       review result with confidence and unknowns, aggregate cost, the staged-spend
       narrative, and the explicit fake-lifecycle boundary (intent mapping measured;
