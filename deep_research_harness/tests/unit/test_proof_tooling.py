@@ -1,7 +1,4 @@
-"""The evidence tooling must fail loudly, not quietly.
-
-@impl DRS-001
-"""
+"""The evidence tooling must fail loudly, not quietly (change add-evidence-receipts-and-proof-lanes)."""
 
 from __future__ import annotations
 

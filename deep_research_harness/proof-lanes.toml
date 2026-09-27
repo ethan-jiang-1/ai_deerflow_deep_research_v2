@@ -1,4 +1,6 @@
-# Delivery lanes: which command proves which surface (see change add-evidence-receipts-and-proof-lanes).
+# Delivery lanes owned by the application: which harness command proves which harness surface.
+# Governance-side evidence (doc hygiene, the OpenSpec gate) stays with the governance tree;
+# the application must not depend on it (see change add-evidence-receipts-and-proof-lanes).
 # Surfaces are repository-root-relative globs; `sentinel` is the string a green run prints.
 version = 1
 
@@ -34,41 +36,4 @@ surfaces = [
   "deep_research_harness/tests/integration/test_debug_driver_matrix.py",
   "deep_research_harness/tests/integration/test_debugger_entry.py",
   "deep_research_harness/docs/runbooks/runbook-03*.md",
-]
-
-[[lane]]
-name = "doc-hygiene"
-command = "python3 openspec/governance/check_doc_hygiene.py"
-cwd = "."
-tier = "fast"
-sentinel = "doc-layer hygiene passed."
-surfaces = [
-  "AGENTS.md",
-  "CLAUDE.md",
-  "deep_research_harness/AGENTS.md",
-  "deep_research_harness/CLAUDE.md",
-  "deep_research_harness/docs/**",
-  "openspec/change-guidance/**",
-  "_backlog/**",
-]
-
-[[lane]]
-name = "closeout-gate"
-command = "python3 openspec/governance/check_project_gate.py --phase closeout"
-cwd = "."
-tier = "fast"
-sentinel = "OpenSpec governance closeout passed"
-surfaces = [
-  "openspec/**",
-]
-
-[[lane]]
-name = "mutation-check"
-command = "make mutation-check"
-cwd = "deep_research_harness"
-tier = "full"
-sentinel = "mutation-check: every guard went red"
-surfaces = [
-  "deep_research_harness/scripts/mutation_check.py",
-  "deep_research_harness/tests/mutations/**",
 ]

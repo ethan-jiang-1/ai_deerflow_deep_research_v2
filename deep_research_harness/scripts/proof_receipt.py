@@ -34,12 +34,12 @@ LANE_KEYS = {
     "requires_credentials",
 }
 DELIVERABLE_ROOTS = (
+    # The application tree only: governance coverage (docs hygiene, the OpenSpec gate)
+    # is a governance-side lane, and the application must not reach into it.
     "deep_research_harness/src",
+    "deep_research_harness/src_fixtures",
     "deep_research_harness/scripts",
     "deep_research_harness/tests",
-    "deep_research_harness/docs",
-    "openspec",
-    "_backlog",
 )
 
 
@@ -98,9 +98,6 @@ def uncovered_files(lanes: list[dict], root: Path = ROOT) -> list[str]:
                 rel = path.relative_to(root).as_posix()
                 if rel not in covered:
                     missing.append(rel)
-    for name in ("AGENTS.md", "CLAUDE.md"):
-        if (root / name).is_file() and name not in covered:
-            missing.append(name)
     return missing
 
 
