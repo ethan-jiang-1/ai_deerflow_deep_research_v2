@@ -1,6 +1,6 @@
 # Plans — plan/分析文档索引
 
-> 最后更新: 2026-09-26 | `_backlog/plans/` — 活跃 plan 在此（顶层），
+> 最后更新: 2026-09-27（活跃 plan 清空，末条 CLS-062 已归档） | `_backlog/plans/` — 活跃 plan 在此（顶层），
 > 完成的普通 plan 移入 [`../_done/_closed_plans/`](../_done/_closed_plans/)。
 >
 > **plan 没有编号，文件名即标识。完成后文件名不变，位置即状态。**
@@ -20,7 +20,6 @@
 
 | Plan | 一句话 |
 |------|--------|
-| [deerflow-harness-agent-support-improvement.md](deerflow-harness-agent-support-improvement.md) | 基于 DeerFlow 既有边界，先走查 Coding Agent 与专用 Agent 两条路径，再按证据补诊断可消费性与认知评测；公共诊断接口待单独裁决。 |
 
 **Next available plan ID: CLS-062**（移入 `_closed_plans/` 时分配）
 

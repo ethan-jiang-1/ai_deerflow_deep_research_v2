@@ -58,6 +58,7 @@ flowchart LR
 | 顺序 | 项 | 为什么 |
 |------|-----|--------|
 | 1 | adopt-framework-engineering-protocols | 唯一活跃 todo；机制级、非用户可见，排在 BUG-071 工作台 conformance 之后 |
+| 2 | [todo-agent-support-walkthroughs-and-diagnostics.md](todo-agent-support-walkthroughs-and-diagnostics.md) | 中 | agent 支持的阶段 0–3：两条路径只读走查 → 本地诊断 JSON（待证）→ controller 认知评测 → 公共 tool 诊断（待裁决） | 由已关闭 plan 的未启动阶段落账，防止孤儿；每阶段可独立停止 |
 
 ---
 
