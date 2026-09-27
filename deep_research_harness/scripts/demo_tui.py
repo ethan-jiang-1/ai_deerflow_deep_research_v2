@@ -2137,12 +2137,8 @@ class DeepResearchDemoTUI(App[None]):
             pane.update(Text("Files: 无可用工作区根。", style="yellow"))
             return
         roots = ", ".join(f"{view.alias}[{view.policy_label}]" for view in reader.list_roots())
-        if not relative_path:
-            page = reader.list("workspace", ".")
-            if isinstance(page, WorkspaceDenial):
-                pane.update(Text(f"Files: workspace 不可用（{page.reason}）。", style="yellow"))
-                return
-            assert isinstance(page, WorkspacePage)
+
+        def render_listing(page) -> None:
             lines = [f"Files: {page.root_alias}:{page.relative_path} · 根: {roots}"]
             if not page.entries:
                 lines.append("  （空）")
@@ -2151,11 +2147,25 @@ class DeepResearchDemoTUI(App[None]):
                 lines.append(f"  [{entry.kind}][{entry.policy_label}] {entry.relative_path}{size}")
             if page.truncated:
                 lines.append("  （已截断，仅显示前若干条）")
-            lines.append("用法: /files <relative_path> 预览一个文件。")
+            lines.append("用法: /files <relative_path> 进入目录或预览文件。")
             pane.update(Text("\n".join(lines)))
+
+        if not relative_path:
+            page = reader.list("workspace", ".")
+            if isinstance(page, WorkspaceDenial):
+                pane.update(Text(f"Files: workspace 不可用（{page.reason}）。", style="yellow"))
+                return
+            assert isinstance(page, WorkspacePage)
+            render_listing(page)
             return
         preview = reader.preview("workspace", relative_path)
         if isinstance(preview, WorkspaceDenial):
+            # A directory is not a previewable file; entering it is the useful
+            # action, so list it instead of reporting a misleading not_found.
+            page = reader.list("workspace", relative_path)
+            if isinstance(page, WorkspacePage):
+                render_listing(page)
+                return
             pane.update(Text(f"Files: {relative_path} 不可读（{preview.reason}）。", style="yellow"))
             return
         assert isinstance(preview, FilePreview)

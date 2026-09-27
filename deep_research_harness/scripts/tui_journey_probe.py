@@ -71,6 +71,12 @@ def _node_context_text(app: Any) -> str:
     return app.query_one("#node-context", Static).render().plain
 
 
+def _prompt_text(app: Any) -> str:
+    from textual.widgets import Static
+
+    return app.query_one("#prompt", Static).render().plain
+
+
 def _files_text(app: Any) -> str:
     from textual.widgets import Static
 
@@ -273,6 +279,11 @@ async def _fixture_debugger_journey(app: Any, pilot: Any) -> None:
         f"ladder did not reach terminal in {steps} steps; inspect={_inspect_text(app)!r}",
     )
     await _assert_pane_stable(app, pilot, "terminal-dwell", expects=("terminal",))
+    _require(
+        "终态" in _prompt_text(app),
+        "terminal-prompt",
+        f"the terminal prompt does not say the session ended: {_prompt_text(app)!r}",
+    )
     _log(f"  [9] ladder reached terminal in {steps} steps ............ ok")
 
     # 10. Node Context page ------------------------------------------------
@@ -287,6 +298,11 @@ async def _fixture_debugger_journey(app: Any, pilot: Any) -> None:
         "Node Context" not in _log_text(app),
         "context-pane-only",
         "the context view must live in its pane, not the log",
+    )
+    _require(
+        app.query_one("#composer").value == "",
+        "context-clears-composer",
+        "a slash command must clear the composer so Enter does not repeat it",
     )
     _log("  [10] /context fills the Node Context pane ............... ok")
 

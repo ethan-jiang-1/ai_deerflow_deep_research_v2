@@ -1413,6 +1413,23 @@ async def test_workbench_palette_actions_match_the_button_path(monkeypatch: pyte
         assert app._debug_driver is not None, "the palette New Run action opened no session"
         assert "Start Step" in app._rich_log_text()
 
+        # Attach and Replay are reachable through the same palette, and each
+        # reports its closed denial for an unknown id rather than doing nothing.
+        app.query_one("#composer", demo_tui.Input).value = "b_" + "Z" * 43
+        await pilot.pause()
+        for action, expected in (("Attach", "附加失败"), ("Replay", "只读回放失败")):
+            await pilot.press("ctrl+p")
+            await pilot.pause()
+            app.screen.query_one(CommandInput).value = action
+            await pilot.pause()
+            await pilot.press("enter")
+            for _ in range(80):
+                await pilot.pause()
+                if expected in app._rich_log_text():
+                    break
+                await asyncio.sleep(0.05)
+            assert expected in app._rich_log_text(), f"the palette {action} action dispatched nothing"
+
 
 @pytest.mark.asyncio
 async def test_workbench_degrades_honestly_below_the_supported_minimum(
@@ -1501,3 +1518,43 @@ async def test_workbench_panes_are_visible_at_supported_terminal_sizes(
             assert app.query_one(f"#{pane_id}").display, f"{command} did not open #{pane_id} at {size}"
             assert_visible(pane_id)
         assert app.query_one("#log").region.height >= 3, f"the log lost its room once panes opened at {size}"
+
+
+@pytest.mark.asyncio
+async def test_files_pane_walks_directories_and_denies_closed(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """`/files` browses typed pages: list a directory, preview a file, deny closed.
+
+    Regression for the misleading denial the operator hit: entering a directory
+    reported `not_found` although it exists, because only the preview path was
+    tried. Directories now list, files preview, escapes and misses stay typed
+    denials, no host path is rendered, and the command clears the composer.
+    """
+    root = tmp_path / "demo-runs"
+    (root / "workspace" / "notes").mkdir(parents=True)
+    (root / "workspace" / "notes" / "inner.md").write_text("inner content\n", encoding="utf-8")
+    (root / "workspace" / "top.md").write_text("# top\n", encoding="utf-8")
+    _install_isolated_fixture_adapter(monkeypatch, bundle_root=root)
+    app = DeepResearchDemoTUI(mode="fixture", debug_mode=True)
+    async with app.run_test(size=(100, 30)) as pilot:
+        await _wait_for(app, pilot, demo_tui.Ready)
+        for command, expected in (
+            ("/files", "Files: workspace:."),
+            ("/files notes", "Files: workspace:notes"),
+            ("/files notes", "[MODEL_READ] notes/inner.md"),
+            ("/files notes/inner.md", "Files: workspace:notes/inner.md"),
+            ("/files notes/inner.md", "inner content"),
+            ("/files ../../etc/passwd", "path_escape"),
+            ("/files no-such-thing", "not_found"),
+        ):
+            app.query_one("#composer", demo_tui.Input).value = command
+            await pilot.pause()
+            await pilot.press("enter")
+            for _ in range(60):
+                await pilot.pause()
+                if expected in app.query_one("#files").render().plain:
+                    break
+                await asyncio.sleep(0.05)
+            rendered = app.query_one("#files").render().plain
+            assert expected in rendered, f"{command!r} did not render {expected!r}: {rendered!r}"
+            assert "/private/" not in rendered and "/Users/" not in rendered, f"host path leaked: {rendered!r}"
+        assert app.query_one("#composer", demo_tui.Input).value == "", "a slash command must clear the composer"
