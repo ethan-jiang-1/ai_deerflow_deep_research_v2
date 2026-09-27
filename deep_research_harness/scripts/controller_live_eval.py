@@ -132,6 +132,9 @@ def build_home(*, model: str, api_key: str) -> Any:
 
 
 async def _run(*, case_id: str, mode: str, price_in: float | None, price_out: float | None) -> int:
+    from unittest.mock import patch
+
+    from deerflow_deep_research import tool as public_tool
     from deerflow_deep_research.runtime.evaluation import (
         CaseRegistry,
         CognitiveEvaluationRunner,
@@ -139,7 +142,10 @@ async def _run(*, case_id: str, mode: str, price_in: float | None, price_out: fl
         run_selected_live_case,
         run_selected_live_case_series,
     )
-    from deerflow_deep_research.runtime.evaluation.controller_live import controller_live_subject
+    from deerflow_deep_research.runtime.evaluation.controller_live import _control_factory, controller_live_subject
+
+    def control_override(state: str, calls: list) -> Any:
+        return patch.object(public_tool, "BundleControl", _control_factory(state, calls))
 
     registry = load_case_registry()
     case = registry.resolve(case_id=case_id, version="v1")
@@ -153,6 +159,7 @@ async def _run(*, case_id: str, mode: str, price_in: float | None, price_out: fl
         app_config=app_config,
         provider=PROVIDER,
         model=model,
+        control_override=control_override,
         price_input_per_mtok=price_in,
         price_output_per_mtok=price_out,
     )

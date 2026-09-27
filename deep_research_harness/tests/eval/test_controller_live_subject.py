@@ -18,6 +18,7 @@ import pytest
 from langchain_core.language_models.fake_chat_models import FakeMessagesListChatModel
 from langchain_core.messages import AIMessage, HumanMessage
 
+from deerflow_deep_research import tool as public_tool
 from deerflow_deep_research.domain.lifecycle import BundleControlResult, ResultCode
 from deerflow_deep_research.runtime.evaluation import load_case_registry
 from deerflow_deep_research.runtime.evaluation.controller_live import (
@@ -163,7 +164,17 @@ async def test_subject_end_to_end_with_scripted_model_through_real_composition(
     case = _case()
     app_config = configured_deerflow_home(deferred_discovery=False)
 
-    subject = controller_live_subject(app_config=app_config, provider="fixture-provider", model="fixture-model")
+    from deerflow_deep_research.runtime.evaluation.controller_live import _control_factory as factory
+
+    def control_override(state: str, calls: list) -> Any:
+        return patch.object(public_tool, "BundleControl", factory(state, calls))
+
+    subject = controller_live_subject(
+        app_config=app_config,
+        provider="fixture-provider",
+        model="fixture-model",
+        control_override=control_override,
+    )
     context = ExecutionContext(workspace=tmp_path / "workspace", fixture=case.fixture)
 
     counts: dict[str, int] = {"invocations": 0}

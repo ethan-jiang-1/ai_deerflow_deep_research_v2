@@ -19,10 +19,9 @@ import asyncio
 import hashlib
 import json
 import os
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import Any
-from unittest.mock import patch
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 
@@ -739,6 +738,7 @@ def controller_live_subject(
     app_config: Any,
     provider: str,
     model: str,
+    control_override: Callable[[str, list[dict[str, Any]]], Any],
     price_input_per_mtok: float | None = None,
     price_output_per_mtok: float | None = None,
     recursion_limit: int = 128,
@@ -746,7 +746,6 @@ def controller_live_subject(
     """Build the real-model public-controller subject for the direction-loop case."""
 
     async def invoke(context: ExecutionContext) -> SubjectExecution:
-        from deerflow_deep_research import tool as public_tool
         from deerflow_deep_research.runtime.runtime_adapter import STARTUP_FINGERPRINT_ENV
         from deerflow_deep_research.runtime.startup_snapshot import capture_startup_fingerprint
 
@@ -779,7 +778,7 @@ def controller_live_subject(
             messages = [*prefix, HumanMessage(content=user_turn)]
             prompt_digests.append(_message_digest(messages))
             calls: list[dict[str, Any]] = []
-            with patch.object(public_tool, "BundleControl", _control_factory(state, calls)):
+            with control_override(state, calls):
                 result = await _drive_turn(
                     app_config,
                     messages,

@@ -1747,9 +1747,11 @@ async def test_finalized_manifest_names_the_code_revision_of_the_worktree(tmp_pa
     execution = await runner.run(case_id="hitl1-brief", version="v1")
 
     manifest = json.loads((execution.bundle_path / "manifest.json").read_text(encoding="utf-8"))
-    head = subprocess.run(
-        ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True
-    ).stdout.strip()
+
+    def _current_head() -> str:
+        return subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True).stdout.strip()
+
+    head = await asyncio.to_thread(_current_head)
     assert manifest["code_revision"] == head
     additive = dict(manifest)
     additive.pop("code_revision")
