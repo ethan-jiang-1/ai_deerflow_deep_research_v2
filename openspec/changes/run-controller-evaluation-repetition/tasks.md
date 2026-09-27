@@ -45,7 +45,7 @@
 - [x] 3.1 Preflight: `scripts/live_preflight.py` (or the entrypoint's own
       preflight) with `.env` exported; confirm the model credential and the
       registered case ids.
-- [ ] 3.2 Pipeline canary: ONE `run_selected_live_case` invocation for
+- [x] 3.2 Pipeline canary: ONE `run_selected_live_case` invocation for
       `public-controller-direction-loop@v1` (17 real-model turns). Inspect the
       bundle: execution status, telemetry completeness, sanity of captured
       proposals, manifest revision; confirm it is reviewable. Stop and fix
