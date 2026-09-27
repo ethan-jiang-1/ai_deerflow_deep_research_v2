@@ -5,10 +5,14 @@ on:
     paths:
       - "deep_research_harness/**"
       - ".github/workflows/agent-tests.yml"
+      - "openspec/governance/**"
+      - "openspec/tests/governance/**"
   push:
     paths:
       - "deep_research_harness/**"
       - ".github/workflows/agent-tests.yml"
+      - "openspec/governance/**"
+      - "openspec/tests/governance/**"
 
 permissions:
   contents: read
@@ -34,10 +38,18 @@ jobs:
       # 显式 -n 4（runner vCPU 固定 4 核，比 -n auto 可预期）；L2 并行安全 review 已完成。
       - run: UV_OFFLINE=1 make verify PYTEST_XDIST="-n 4"
       - run: UV_OFFLINE=1 make test-duration-policy
+      # Governance 侧 Python lint：治理脚本在 harness 树之外，make verify 永远够不着
+      # 它们（PRS-020 应用无关 + 依赖方向禁令），这条义务只能由 CI 承载。规则集用
+      # ruff --isolated 默认，自含、不隐式捡 harness pyproject 的配置。UV_CACHE_DIR
+      # 沿用 Makefile 的 BUG-032 约定（前面的 install 步骤已焐热该缓存），沙箱与 runner 通用。
+      - name: Governance Python lint
+        run: UV_CACHE_DIR=$PWD/.uv-cache UV_OFFLINE=1 uv run ruff check --isolated ../openspec/governance/
       # 仓库治理门（closeout 含 gitlink 锁 vs 真实 submodule 比对）+ 治理套件。
       # 与 harness 门禁分开跑，治理红灯不再能靠"没跑"存活（2026-09-26 教训）。
+      # discover 命令与套件 docstring 记载一致；不得加 -t .（治理套件不是包，
+      # Python 3.12/3.13 上 discovery 直接 ImportError，原命令从未真正跑过一个测试）。
       - name: Repository governance gates
         working-directory: .
         run: |
           python3 openspec/governance/check_project_gate.py --phase closeout
-          python3 -m unittest discover -s openspec/tests/governance -t . -q
+          python3 -m unittest discover -s openspec/tests/governance -q

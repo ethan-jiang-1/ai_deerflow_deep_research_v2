@@ -5,7 +5,8 @@ Canonical maintained command, from the repository root:
 
     python3 -m unittest discover -s openspec/tests/governance
 
-No CI or Makefile wiring exists for this suite; it is run by that command.
+CI runs this suite in the deterministic workflow's governance step; no
+Makefile target hosts it.
 
 Most fixtures are built under temp directories and never mutate the
 repository. The planted Focus Card negative invokes `check_change_guidance.py`
@@ -74,6 +75,7 @@ def _make_repo(tmp: Path) -> Path:
         "check_change_guidance.py",
         "check_project_req_coverage.py",
         "check_harness_dependency_direction.py",
+        "check_proof_receipts.py",
     ):
         source = GOVERNANCE_DIR / name
         if source.is_file():
@@ -334,7 +336,7 @@ class ReqsPlanningModeTest(unittest.TestCase):
 
 
 class GateCloseoutTest(unittest.TestCase):
-    def test_closeout_runs_all_six_and_propagates_failures_with_explicit_cwd(self) -> None:
+    def test_closeout_runs_all_seven_and_propagates_failures_with_explicit_cwd(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = _make_repo(Path(td))
             gate = _load_gate()
@@ -356,6 +358,7 @@ class GateCloseoutTest(unittest.TestCase):
                 "check_change_guidance.py",
                 "check_project_req_coverage.py",
                 "check_harness_dependency_direction.py",
+                "check_proof_receipts.py",
             ):
                 self.assertIn(expected, names, f"{expected} must be invoked")
             self.assertTrue(

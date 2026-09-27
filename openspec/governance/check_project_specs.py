@@ -260,7 +260,7 @@ def _validate_main_specs(root: Path) -> int:
         dm = DELTA_HEADER_RE.search(structural)
         if dm:
             structural_lines = structural.split("\n")
-            line_num = next((i + 1 for i, l in enumerate(structural_lines) if DELTA_HEADER_RE.match(l)), None)
+            line_num = next((i + 1 for i, line in enumerate(structural_lines) if DELTA_HEADER_RE.match(line)), None)
             violations.append({"file": short, "check": "deltaHeaderInMain",
                                "detail": f'main spec 包含 delta 头 "{dm.group(0).strip()}"（delta 头只在 openspec/changes/ 下合法）',
                                "line": line_num})
