@@ -157,6 +157,20 @@ async def _fixture_debugger_journey(app: Any, pilot: Any) -> None:
     _require(ok, "detach", "detach did not clear the session")
     _log("  [5] /detach clears the session .......................... ok")
 
+    # 5c. Attach entry lists bounded candidates with postures --------------
+    before_candidates = _log_text(app)
+    await _submit(app, pilot, "/attach")
+    ok = await _wait(pilot, lambda: "Attach 候选" in _log_text(app), deadline_seconds=30)
+    _require(
+        ok,
+        "attach-candidates",
+        f"/attach listed no candidates; log tail:\n{_log_text(app)[-400:]}",
+    )
+    candidate_delta = _log_text(app)[len(before_candidates) :]
+    _require(first_bundle[:20] in candidate_delta, "attach-candidate-id", "the retained bundle is not listed")
+    _require("[takeover]" in candidate_delta, "attach-posture", f"posture not reported: {candidate_delta[-300:]!r}")
+    _log("  [5c] /attach lists bounded candidates with postures ..... ok")
+
     # 5a. Attach entry (button) reopens the retained bundle ----------------
     app.query_one("#composer").value = first_bundle
     await pilot.pause()

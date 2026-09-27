@@ -1920,10 +1920,15 @@ class DeepResearchDemoTUI(App[None]):
 
         log = self.query_one("#log", RichLog)
         bundle_id = bundle_id.strip()
-        if not bundle_id:
-            log.write(Text("用法: /attach <bundle_id>（或启动时 --attach <bundle_id>）", style="yellow"))
-            return
         adapter = self._adapter
+        if not bundle_id:
+            # RED-014: the Attach entry presents bounded, lifecycle-verified
+            # candidates with their postures instead of demanding an id.
+            if adapter is not None:
+                await self._debug_attach_candidates(adapter)
+            else:
+                log.write(Text("用法: /attach <bundle_id>（或启动时 --attach <bundle_id>）", style="yellow"))
+            return
         if adapter is None or self._node_context_holder is None:
             return
         driver = self._new_debug_driver(adapter)
@@ -1939,6 +1944,42 @@ class DeepResearchDemoTUI(App[None]):
         await self._bind_node_context(adapter, bundle_id)
         log.write(Text(f"已附加调试会话: {bundle_id[:20]}…（生命周期校验通过）", style="cyan"))
         await self._render_debug_result(attached)
+
+    def _attach_candidate_ids(self, adapter: Any, *, limit: int = 5) -> list[str]:
+        """Bounded operator-view candidate ids from this demo workspace.
+
+        An operator view over local demo files — never a lifecycle authority and
+        never an implicit "latest": the operator picks from what is shown. Run
+        Bundle directories live under ``<bundle_root>/workspace`` (the same
+        layout the operator inventory reads); each candidate is validated (and
+        its posture read) through the driver before use.
+        """
+        bundle_root = getattr(adapter, "bundle_root", None)
+        if bundle_root is None:
+            return []
+        runs_root = Path(bundle_root) / "workspace"
+        if not runs_root.is_dir():
+            return []
+        candidates = sorted(
+            (path for path in runs_root.rglob("b_*") if path.is_dir()),
+            key=lambda path: path.stat().st_mtime,
+            reverse=True,
+        )[:limit]
+        return [path.name for path in candidates]
+
+    async def _debug_attach_candidates(self, adapter: Any) -> None:
+        """Render the bounded Attach candidates with their lease postures."""
+        log = self.query_one("#log", RichLog)
+        candidates = self._attach_candidate_ids(adapter)
+        if not candidates:
+            log.write(Text("没有可附加的候选 bundle（workspace 无记录）。", style="yellow"))
+            return
+        driver = self._new_debug_driver(adapter)
+        log.write(Text("Attach 候选（operator view，非生命周期权威；生命周期校验后使用）：", style="cyan"))
+        for candidate in candidates:
+            posture = await driver.attach_posture(candidate) if driver is not None else "unresolvable"
+            log.write(Text(f"  {candidate[:20]}…  [{posture}]", style="dim"))
+        log.write(Text("用法: /attach <bundle_id>，或把 id 填进 composer 后点 Attach。", style="dim"))
 
     async def _debug_replay(self, bundle_id: str) -> None:
         """Render one retained bundle's trace read-only (no lease, no stepping).

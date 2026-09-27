@@ -297,6 +297,32 @@ async def test_cancel_then_detach_releases_the_control_lease(tmp_path: Path) -> 
 
 
 @pytest.mark.asyncio
+async def test_attach_posture_reports_takeover_rebind_busy_and_unresolvable(tmp_path: Path) -> None:
+    """RED-014 candidate postures, answered by the driver (lease semantics stay here)."""
+    driver, _lifecycle = _make_driver(tmp_path, owner="op-1")
+    other, _lifecycle2 = _make_driver(tmp_path, owner="op-2")
+    opened = await driver.open_start(
+        StartRequest(question="Compare storage", mode="step", owner="op-1", command_id="start-00000001")
+    )
+    bundle_id = opened.snapshot.bundle_id
+    assert await driver.attach_posture(bundle_id) == "rebind"
+    assert await other.attach_posture(bundle_id) == "busy"
+    assert await other.attach_posture("b_" + "Z" * 43) == "unresolvable"
+    session = await driver.session_snapshot(bundle_id)
+    assert session is not None
+    detached = await driver.execute(
+        DebugCommand(
+            kind="detach",
+            bundle_id=bundle_id,
+            command_id="detach-00000001",
+            expected_cursor=session.cursor.token(),
+        )
+    )
+    assert detached.denied is None
+    assert await other.attach_posture(bundle_id) == "takeover"
+
+
+@pytest.mark.asyncio
 async def test_pause_request_holds_drive_at_next_boundary(tmp_path: Path) -> None:
     driver, _lifecycle = _make_driver(tmp_path, owner="op-1")
     opened = await driver.open_start(

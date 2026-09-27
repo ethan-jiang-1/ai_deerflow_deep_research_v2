@@ -385,6 +385,25 @@ class DebugRunDriver:
             next_nodes=next_nodes,
         )
 
+    async def attach_posture(self, bundle_id: str, *, owner: str | None = None) -> str:
+        """Read-only attach posture for one bundle (no takeover, no writes).
+
+        RED-014's Attach entry needs candidate postures before anything is
+        acquired. Returns one of ``unresolvable`` (no such bundle in this
+        scope), ``takeover`` (no live lease), ``rebind`` (live lease held by
+        this owner, so a generation CAS rebinds) or ``busy`` (live lease held
+        by another owner; observation stays read-only). Lease semantics stay in
+        the driver, so callers never read the lease themselves.
+        """
+        bundle = await self._resolve(bundle_id)
+        if bundle is None:
+            return "unresolvable"
+        lease = ControlLease(private_root=self._lifecycle.private_root(bundle), clock=self._clock, ttl=self._lease_ttl)
+        posture = lease.snapshot()
+        if not posture.live:
+            return "takeover"
+        return "rebind" if posture.owner == (owner or self._owner) else "busy"
+
     async def session_snapshot(self, bundle_id: str) -> DebugSessionSnapshot | None:
         """Current snapshot of one live session, or None when this driver holds none.
 

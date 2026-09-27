@@ -12,7 +12,7 @@
 
 ## 3. Attach candidates and postures (RED-014)
 
-- [ ] 3.1 Present a bounded operator-view candidate list (max five, deterministic order, each with its bundle id and lifecycle-derived posture) and validate the selected candidate through the lifecycle before opening the session; never auto-select. Verify: journey assertions cover (a) a free candidate shown as takeover/available, (b) a live-foreign candidate shown as busy/read-only, (c) an unknown id still denied with a closed reason.
+- [x] 3.1 Present a bounded operator-view candidate list (max five, deterministic order, each with its bundle id and lifecycle-derived posture) and validate the selected candidate through the lifecycle before opening the session; never auto-select. Verify: journey assertions cover (a) a free candidate shown as takeover/available, (b) a live-foreign candidate shown as busy/read-only, (c) an unknown id still denied with a closed reason. ✓ driver postures pinned by test_attach_posture_reports_takeover_rebind_busy_and_unresolvable; harness step [5c] asserts the bounded list shows the retained bundle as [takeover]
 
 ## 4. Command palette entries (RED-014)
 
