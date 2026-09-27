@@ -142,10 +142,6 @@ async def _run(*, case_id: str, mode: str, price_in: float | None, price_out: fl
         run_selected_live_case,
         run_selected_live_case_series,
     )
-    from deerflow_deep_research.runtime.evaluation.controller_live import _control_factory, controller_live_subject
-
-    def control_override(state: str, calls: list) -> Any:
-        return patch.object(public_tool, "BundleControl", _control_factory(state, calls))
 
     registry = load_case_registry()
     case = registry.resolve(case_id=case_id, version="v1")
@@ -155,14 +151,35 @@ async def _run(*, case_id: str, mode: str, price_in: float | None, price_out: fl
         return 2
     model = os.environ.get("DEERFLOW_DEMO_MODEL", DEFAULT_MODEL).strip() or DEFAULT_MODEL
     app_config = build_home(model=model, api_key=api_key)
-    subject = controller_live_subject(
-        app_config=app_config,
-        provider=PROVIDER,
-        model=model,
-        control_override=control_override,
-        price_input_per_mtok=price_in,
-        price_output_per_mtok=price_out,
-    )
+    if case.subject == "public_controller":
+        from deerflow_deep_research.runtime.evaluation.controller_live import _control_factory, controller_live_subject
+
+        def control_override(state: str, calls: list) -> Any:
+            return patch.object(public_tool, "BundleControl", _control_factory(state, calls))
+
+        subject = controller_live_subject(
+            app_config=app_config,
+            provider=PROVIDER,
+            model=model,
+            control_override=control_override,
+            price_input_per_mtok=price_in,
+            price_output_per_mtok=price_out,
+        )
+    elif case.subject == "topic_planning":
+        from deerflow_deep_research.graph.nodes.topic_planning import NODE_SPEC
+        from deerflow_deep_research.runtime.evaluation.topic_planning_live import topic_planning_live_subject
+
+        subject = topic_planning_live_subject(
+            node_spec=NODE_SPEC,
+            app_config=app_config,
+            provider=PROVIDER,
+            model=model,
+            price_input_per_mtok=price_in,
+            price_output_per_mtok=price_out,
+        )
+    else:
+        print(f"evaluation_subject_unavailable: {case.subject}", file=sys.stderr)
+        return 2
     runner = CognitiveEvaluationRunner(
         registry=CaseRegistry((case,)),
         runs_root=REPO / "evals" / "runs",

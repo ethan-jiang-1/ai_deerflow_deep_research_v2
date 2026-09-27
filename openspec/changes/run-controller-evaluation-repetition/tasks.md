@@ -32,7 +32,7 @@
       and telemetry aggregation (the real-model judgment itself is NOT claimed by
       these tests); a digest mismatch (uncommitted skill) fails the subject
       honestly.
-- [ ] 2.4 Build the topic-planning node subject: the `topic_planning` node's real
+- [x] 2.4 Build the topic-planning node subject: the `topic_planning` node's real
       factory through `graph_context.run_agent` with the real model (the node
       cognitive program, not the lead agent), scenario state from the case
       fixture, same telemetry aggregation.
