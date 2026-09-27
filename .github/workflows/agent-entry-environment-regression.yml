@@ -38,7 +38,11 @@ jobs:
       run:
         working-directory: deep_research_harness
     steps:
+      # deerflow 是 gitlink 子模块（install 步骤的 editable 依赖在其内）；
+      # 默认 checkout 不拉子模块——CI 自工作流创建起一直死在安装步（2026-09-28 审计发现）。
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       # uv 缓存显式开启（与 agent-tests.yml 一致）：install 冷缓存 → 命中后 ~30s，
       # 且 UV_OFFLINE=1 依赖 install 预热后的本地缓存。
       - uses: astral-sh/setup-uv@v5
