@@ -58,7 +58,9 @@ def test_periodic_duration_policy_rejects_over_budget_and_expired_waiver(tmp_pat
         encoding="utf-8",
     )
     expected = f"tests.periodic::test_copy={MAX_PERIODIC_TEST_SECONDS + 1:.3f}s"
-    assert slow_selectors(report, now=date(2026, 8, 17), max_seconds=MAX_PERIODIC_TEST_SECONDS, waivers=()) == [expected]
+    assert slow_selectors(report, now=date(2026, 8, 17), max_seconds=MAX_PERIODIC_TEST_SECONDS, waivers=()) == [
+        expected
+    ]
     expired = DurationWaiver("tests.periodic::test_copy", "known", "evaluation", date(2026, 8, 16))
     assert slow_selectors(
         report,
