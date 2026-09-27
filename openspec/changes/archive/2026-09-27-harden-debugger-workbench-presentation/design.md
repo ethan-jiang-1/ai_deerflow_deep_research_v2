@@ -40,8 +40,9 @@ size is not under our control, and the operator may be on an 80×24 window.
    first attempt that omitted them broke the render path and the app never
    reached Ready — recorded here so a future editor does not repeat it. Hidden is
    honest: they are inert in the workbench.
-4. **Panes are on demand and bounded; 100×30 is the declared supported
-   minimum.** At 80×24 the operator keeps a readable log, the entries and the
+4. **Panes are on demand and bounded; the implementation declares 100×30 as its
+   supported minimum, while the spec pins only the declare/report/degrade
+   behaviour and the non-clipping invariant.** At 80×24 the operator keeps a readable log, the entries and the
    composer, the panes stay folded, and the hint states the limitation.
    Alternatives: cramming every pane into 24 rows (clips or starves the log), or
    refusing to start below the minimum (hostile for a read-only look).
@@ -63,5 +64,6 @@ size is not under our control, and the operator may be on an 80×24 window.
   the harness takes about twenty seconds instead of five, and it is the only
   thing that catches a one-second re-render.
 - [Declaring a minimum could look like an excuse for a cramped small-size
-  layout] → the degraded tier is explicitly tested (entries and composer usable,
-  panes folded, limitation stated), so 80×24 stays honest rather than broken.
+  layout; keeping the number out of the spec could let it drift] → the degraded tier is explicitly tested (entries and composer usable,
+  panes folded, limitation stated), so 80×24 stays honest rather than broken, and the reported minimum is asserted
+  against the implementation's declared value.

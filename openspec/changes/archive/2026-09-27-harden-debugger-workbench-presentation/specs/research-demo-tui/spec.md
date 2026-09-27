@@ -17,12 +17,12 @@ from the C3 context inspector with the fixed coverage strip, and SHALL consume
 workspace for a latest bundle, rebuild prompts, or expose host paths.
 The workbench SHALL always state the current session posture and the next legal
 composer action, and after a detach, a cancel, or a refused start it SHALL state
-an explicit no-session posture instead of the previous session's posture. The
-Node Context and Files panes SHALL be on demand — folded until the operator asks
-for them and bounded so the log keeps readable room. The workbench SHALL declare
-a supported minimum terminal size and, below it, state the limitation while
-keeping the entries and the composer usable rather than clipping content or
-silently squeezing the log.
+an explicit no-session posture instead of the previous session's posture. It
+SHALL declare the minimum terminal size it supports and report that minimum to
+the operator; on a smaller terminal it SHALL state the limitation and keep the
+three entries, the composer, and the log usable. Opening the Node Context or
+Files pane SHALL not clip pane content or reduce the log below a readable
+height.
 (`RED-014`)
 
 #### Scenario: Three entries are explicit and equivalently reachable
@@ -45,12 +45,11 @@ silently squeezing the log.
 - **THEN** the workbench states an explicit no-session posture with the legal
   next actions instead of the previous posture
 
-#### Scenario: Panes are on demand and the log keeps its room
+#### Scenario: Panes never starve the log or clip
 - **WHEN** an operator opens the Node Context or Files pane
-- **THEN** that pane appears with its content while the log retains readable
-  height at the supported minimum size
+- **THEN** the pane shows its content and the log retains a readable height
 
 #### Scenario: A small terminal degrades honestly
-- **WHEN** the terminal is below the workbench's declared supported minimum
-- **THEN** the workbench states the limitation, keeps the entries and composer
-  usable, and folds the on-demand panes instead of clipping content
+- **WHEN** the terminal is smaller than the declared supported minimum
+- **THEN** the workbench reports that minimum and the limitation, keeps the
+  entries and the composer usable, and clips no content

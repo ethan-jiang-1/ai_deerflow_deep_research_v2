@@ -13,7 +13,7 @@
 ## 3. On-demand panes and a declared minimum size
 
 - [x] 3.1 Fold the Node Context and Files panes until asked for, bound their heights, and show them when the operator opens them. Verify: the supported-tier layout test asserts both panes start folded, appear on `/context` and `/files`, and leave the log ≥3 rows at 100×30 and 120×45. ✓
-- [x] 3.2 Declare 100×30 as the supported minimum and state the limitation below it while keeping entries and composer usable. Verify: the degraded-tier test asserts the notice names both the current and supported sizes at 80×24, every remaining pane is inside the screen, the log keeps ≥4 rows, the panes stay folded and the composer keeps focus. ✓
+- [x] 3.2 Declare the supported minimum (current value 100×30, reported to the operator) and state the limitation below it while keeping entries and composer usable. Verify: the degraded-tier test asserts the notice names both the current and supported sizes at 80×24, every remaining pane is inside the screen, the log keeps ≥4 rows, the panes stay folded and the composer keeps focus. ✓
 
 ## 4. Verification method (the hard-won part)
 

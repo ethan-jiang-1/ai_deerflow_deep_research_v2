@@ -31,11 +31,15 @@ method it must satisfy.
 - **Workbench-only controls**: the shared entry buttons (inert here) are hidden
   while remaining in the DOM for the shared render path; the hint documents the
   workbench commands.
-- **On-demand, bounded panes**: the Node Context and Files panes stay folded
-  until asked for, are height-bounded, and leave the log readable.
-- **Declared supported minimum**: the workbench declares 100×30; below it, it
-  states the limitation, folds the on-demand panes and keeps entries/composer
-  usable instead of clipping or squeezing.
+- **Panes never starve the log**: opening the Node Context or Files pane must
+  not clip content or reduce the log to an unreadable height (this
+  implementation realises that by folding the panes until asked for and bounding
+  their heights; the mechanism is implementation-owned).
+- **Declared supported minimum**: the workbench declares the minimum terminal
+  size it supports and reports that minimum to the operator (the current value is
+  100×30, owned by the implementation and pinned by its tests); below it, the
+  workbench states the limitation and keeps the entries, composer and log usable
+  instead of clipping.
 - **Slash commands clear the composer** so the next Enter is not an accidental
   repeat.
 - **Verification method made mandatory** (the hard-won part): the journey harness
@@ -52,9 +56,10 @@ method it must satisfy.
 
 ### Modified Capabilities
 
-- `research-demo-tui`: `RED-014` gains the truthful-state, on-demand-pane and
-  declared-minimum clauses plus three scenarios (no stale state, panes keep the
-  log readable, honest degradation).
+- `research-demo-tui`: `RED-014` gains the truthful-state, declared-minimum and
+  non-starving-pane clauses plus three scenarios (no stale state, panes never
+  starve the log or clip, honest small-terminal degradation). The concrete
+  minimum value and the pane-folding mechanism stay implementation-owned.
 
 ## Impact
 
