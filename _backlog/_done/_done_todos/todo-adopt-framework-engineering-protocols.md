@@ -1,7 +1,7 @@
 # TODO: adopt-framework-engineering-protocols
 
-> 状态: 停靠（仅余一项触发条件；三项判定已完成，无排期动作） | 优先级: 低（触发驱动） | 更新: 2026-09-27（晚间对码审计）
-> 上游: 2026-09-27 DeerFlow 只读指引借力审计（8 条候选，流程级 5 条已采纳，机制级 3 条为本卡） | 下游: 项 2 残余并入 [`todo-controller-evaluation-repetition.md`](todo-controller-evaluation-repetition.md)
+> 状态: 已完成（2026-09-27，DONE-009；当晚对码审计判定三项均无独立排期工作，卡直接归档） | 优先级: — | 更新: 2026-09-27（晚间对码审计）
+> 上游: 2026-09-27 DeerFlow 只读指引借力审计（8 条候选，流程级 5 条已采纳，机制级 3 条为本卡） | 下游: 项 2 残余并入 [`todo-controller-evaluation-repetition.md`](../../todos/todo-controller-evaluation-repetition.md)（活跃区，等预算批准后经 OpenSpec 执行）
 
 ## Why（2026-09-27 晚间对码审计的结论）
 
@@ -33,7 +33,9 @@
    上游哈希绑定解决的问题是"高频变更文件被过期 waiver 掩护"，本仓 waiver 对象是
    稳定选择器与目标名，不存在此问题。**触发条件：第一条真 duration waiver 落地时，
    在当次改动里顺手加"未用即红"防锈（对齐 command-inventory tripwire 的同类机制），
-   并届时重评哈希绑定是否需要。**
+   并届时重评哈希绑定是否需要。** 该触发条件已按"就地写明"规矩落在
+   `deep_research_harness/docs/testing-and-evaluation.md` 的 waiver 段落，
+   不依赖本卡被重读。
 
 ## Non-Goals
 
@@ -42,5 +44,5 @@
 
 ## Next Step
 
-无排期动作。项 3 触发条件发生时（第一条 duration waiver 落地）顺手加防锈；
-项 2 残余见下游卡；项 1 关闭。
+无。三项判定即本卡结论：项 1 关闭（刻意分歧，既有测试锁定）；项 2 残余见下游卡；
+项 3 触发条件就地落在 `docs/testing-and-evaluation.md` 的 waiver 段落。

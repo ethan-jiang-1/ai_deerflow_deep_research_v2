@@ -26,7 +26,7 @@ _done/
 | 归档目录 | 数量 | Next ID |
 |---------|------|---------|
 | `_fixed_bugs/` | 73 | BUG-074 |
-| `_done_todos/` | 8 | DONE-009 |
+| `_done_todos/` | 9 | DONE-010 |
 | `_closed_plans/` | 61 | CLS-063 |
 
 ### ⏸ SUSPENDED（明确暂停）

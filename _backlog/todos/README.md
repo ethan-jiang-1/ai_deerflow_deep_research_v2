@@ -1,6 +1,6 @@
 # Active Todos — 活跃 todo + 依赖链 + 执行顺序
 
-> 最后更新: 2026-09-27 晚（两项 todo 审计处置:protocols 三项判定完成转停靠、controller-eval 吸收 preflight 残余；活跃 todo 2 项,其中 1 项停靠） | `_backlog/todos/` — 活跃 todo 在此，做完移入 [`../_done/_done_todos/`](../_done/_done_todos/)。
+> 最后更新: 2026-09-27 晚（DONE-009 protocols 卡对码审计后直接归档——三项均无独立工作；活跃区仅剩 controller-eval 一张卡，等预算批准后经 OpenSpec 执行） | `_backlog/todos/` — 活跃 todo 在此，做完移入 [`../_done/_done_todos/`](../_done/_done_todos/)。
 >
 > **本文件是所有活跃工作的中枢。** todo 没有编号，文件名即标识（`todo-<name>.md`）。完成后文件名不变，位置即状态。
 
@@ -19,8 +19,7 @@
 
 | # | 文件 | 优先级 | 简述 | 阻塞 / 备注 |
 |---|------|--------|------|-------------|
-| 1 | [todo-adopt-framework-engineering-protocols.md](todo-adopt-framework-engineering-protocols.md) | 低（停靠） | 已停靠：2026-09-27 晚间对码审计完成三项判定——项 1 三层已存在（刻意分歧留痕）、项 2 残余（manifest 记 git revision）已并入 controller-eval、项 3 触发驱动 | 唯一触发条件：第一条真 duration waiver 落地时，顺手加"未用即红"防锈 |
-| 2 | [todo-controller-evaluation-repetition.md](todo-controller-evaluation-repetition.md) | 中 | 阶段 0 go 裁决的存活分支（B-3 模型自主选择）+ 并入的 preflight（manifest 记 git revision） | 待人批预算与成本边界（≈69 次 live 执行 + 人工评审）；最佳时机：controller 面要动之前或对外声明质量之前 |
+| 1 | [todo-controller-evaluation-repetition.md](todo-controller-evaluation-repetition.md) | 中 | 阶段 0 go 裁决的存活分支（B-3 模型自主选择）+ 并入的 preflight（manifest 记 git revision） | 待人批预算与成本边界（≈69 次 live 执行 + 人工评审）；最佳时机：controller 面要动之前或对外声明质量之前 |
 
 ---
 
@@ -58,10 +57,7 @@ flowchart LR
 
 | 顺序 | 项 | 为什么 |
 |------|-----|--------|
-| 1 | [todo-controller-evaluation-repetition.md](todo-controller-evaluation-repetition.md) | 唯一可排期项（仍需人批预算）；含并入的 preflight（manifest 记 git revision）；最佳时机是 controller 相关面（skill/prompt）要改动之前——首跑即基线，后续改动才有 before 可比 |
-
-> `adopt-framework-engineering-protocols` 已停靠（三项判定完成，见其卡），不进推荐顺序；
-> 其项 3 的触发条件（第一条 duration waiver 落地）发生时在当次改动里顺手处理。
+| 1 | [todo-controller-evaluation-repetition.md](todo-controller-evaluation-repetition.md) | 唯一活跃项（需人批预算）；含并入的 preflight（manifest 记 git revision）；最佳时机是 controller 相关面（skill/prompt）要改动之前——首跑即基线，后续改动才有 before 可比 |
 
 ---
 

@@ -1,6 +1,6 @@
 # Done Todos Index — 已完成 todo 归档
 
-> 最后更新: 2026-09-27（DONE-008 agent 支持阶段 0 走查完成，每分支 go/no-go 已裁决） | `_backlog/_done/_done_todos/` — 已完成 todo 的归档目录。
+> 最后更新: 2026-09-27 晚（DONE-009 protocols 卡对码审计后直接归档） | `_backlog/_done/_done_todos/` — 已完成 todo 的归档目录。
 > 接收来自 [`../../todos/`](../../todos/) 的 todo。`_` 前缀 = coding agent 默认忽略。
 >
 > **todo 完成后文件名不变（`todo-<name>.md`），位置即状态。** 移入时分配 `DONE-NNN` 序号，按完成时间递增。
@@ -27,5 +27,6 @@ todo 完成后从 `_backlog/todos/` 通过 `git mv` 移入本目录：
 | DONE-006 | 2026-09-27 | [todo-wave2-repair-timeout-budget-evaluation.md](todo-wave2-repair-timeout-budget-evaluation.md) | wave2 calibration case 预算对齐：四个 `wave2-synthesis` case 从 `_ZERO`（60s/16k）迁入 `_WAVE2`（180s/32k，= corpus worker 档，< 生产 300s/64k 上限），validator 分支键控 fail-closed 保留；change `align-wave2-calibration-case-budget` 归档，全门禁绿；live 窗口验证为非阻塞补充证据。 |
 | DONE-007 | 2026-09-27 | [todo-manual-demo-tui-human-validation.md](todo-manual-demo-tui-human-validation.md) | 手动 TUI 真人验收退役：未测增量收窄为"真实运行时 × 真 Textual 输入组件"组合缝（两侧各有 Pilot fake 驱动覆盖），追踪职责转移至 runbook-020 顶部"验收状态"注记（可选操作员自检，跑通一次即勾销）。 |
 | DONE-008 | 2026-09-27 | [todo-agent-support-walkthroughs-and-diagnostics.md](todo-agent-support-walkthroughs-and-diagnostics.md) | agent 支持阶段 0 走查完成（change `run-agent-support-evidence-walkthroughs`）：一页证据表 + 每分支裁决——阶段 1 no-go（解析卡点未证实）、阶段 3 no-go（typed result 未测得不足）、阶段 2 go（模型自主选择为唯一开放证据问题，另立 `todo-controller-evaluation-repetition` 待人批预算）；附带实测路由缺口三则（LDD-003 无路由、ADR 零入链、make 外 uv 陷阱）。 |
+| DONE-009 | 2026-09-27 | [todo-adopt-framework-engineering-protocols.md](todo-adopt-framework-engineering-protocols.md) | 借力审计机制级三项经晚间对码审计后直接归档（无独立排期工作）：stop_reason 三层已存在（刻意分歧留痕，既有测试锁定）；评测可复现残余（manifest 记 git revision）并入 controller-eval 的 preflight；waiver 哈希停靠——触发条件（第一条 waiver 落地时加"未用即红"防锈）就地落在 testing-and-evaluation.md 的 waiver 段落。 |
 
-**Next available DONE ID: DONE-009**
+**Next available DONE ID: DONE-010**
