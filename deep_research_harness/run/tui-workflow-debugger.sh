@@ -22,9 +22,14 @@ Usage:
   run/tui-workflow-debugger.sh --fixture          # debugger workbench over the zero-credential fixture graph
   run/tui-workflow-debugger.sh --fixture --debug  # same (the launcher injects --debug for you)
   run/tui-workflow-debugger.sh --embedded-smoke   # plain all-real TUI (no step/continue; debug driver is fixture-only today)
-  run/tui-workflow-debugger.sh --attach <id>      # attach to this exact bundle (lifecycle-validated)
-  run/tui-workflow-debugger.sh --replay <id>      # read-only replay for this exact bundle
+  run/tui-workflow-debugger.sh --attach <id>      # attach the workbench to this exact bundle (implies --fixture --debug)
+  run/tui-workflow-debugger.sh --replay <id>      # read-only trace replay for this exact bundle (no lease, no session)
   run/tui-workflow-debugger.sh --help
+
+Workbench entries (all three reach the same typed action):
+  New Run button / question + Enter / --fixture      start a session
+  Attach button  / /attach <id>    / --attach <id>   reopen a retained bundle
+  Replay button  / /replay <id>    / --replay <id>   read-only trace
 
 Equivalent Make commands (run inside deep_research_harness/):
   make tui-debugger DEBUGGER_ARGS="--fixture"  # same debugger workbench
@@ -44,16 +49,23 @@ fi
 PYTHONPATH="$HARNESS_ROOT/src_fixtures${PYTHONPATH:+:$PYTHONPATH}"
 export PYTHONPATH
 
-# RED-013: the launcher's fixture entry IS the debugger workbench. Inject the
-# debug flag unless the operator already supplied it (--debug is fixture-only).
+# RED-013/RED-014: the launcher's fixture entry IS the debugger workbench.
+# Inject the composition and debug flags unless the operator supplied them;
+# --attach/--replay are workbench entries, so they imply the fixture debugger.
 WANTS_FIXTURE=0
 HAS_DEBUG=0
+WANTS_INTENT=0
 for arg in "$@"; do
   case "$arg" in
     --fixture) WANTS_FIXTURE=1 ;;
     --debug) HAS_DEBUG=1 ;;
+    --attach|--replay) WANTS_INTENT=1 ;;
   esac
 done
+if [ "$WANTS_INTENT" = "1" ] && [ "$WANTS_FIXTURE" = "0" ]; then
+  set -- "$@" --fixture
+  WANTS_FIXTURE=1
+fi
 if [ "$WANTS_FIXTURE" = "1" ] && [ "$HAS_DEBUG" = "0" ]; then
   set -- "$@" --debug
 fi

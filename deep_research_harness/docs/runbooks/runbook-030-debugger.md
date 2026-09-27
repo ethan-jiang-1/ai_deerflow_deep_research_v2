@@ -83,7 +83,28 @@ topic_planning → wave0 → wave1 → wave2_synthesis → hitl2 → readiness �
 输入 /cancel 放弃它后再 Start Step；已开启的会话请直接继续步进。
 ```
 
-## 8. Attach / Replay（尚未接线）
+## 8. Attach / Replay（三入口：按钮、slash、启动参数等价）
 
-`--attach <id>` / `--replay <id>` 的意图会被 CLI 接收，但 workbench 侧消费尚未
-落地（BUG-069）；在那之前请用 `/cancel` 清理活跃 bundle，或继续步进当前会话。
+工作台的三个入口各自可等价触发同一组动作（RED-014）：
+
+| 入口 | 按钮 | slash | 启动参数 |
+|------|------|-------|----------|
+| 新会话 | `New Run`（用 composer 里的问题） | 直接在 composer 输入问题按 Enter | `--fixture --debug` |
+| 附加保留 bundle | `Attach`（用 composer 里的 bundle id） | `/attach <bundle_id>` | `--attach <bundle_id>` |
+| 只读回放 | `Replay`（用 composer 里的 bundle id） | `/replay <bundle_id>` | `--replay <bundle_id>` |
+
+- **Attach**：经生命周期校验后把工作台接到该 bundle 的 durable checkpoint，**不自动推进**；
+  之后 composer Enter 即可继续 step/answer。
+- **Replay**：只读渲染该 bundle 的 trace（帧序列、route、next、terminal 处置），
+  **不取 lease、不建调试会话、不写任何东西**。
+- `--attach` / `--replay` 隐含 fixture 调试工作台组合；launcher 会按需补
+  `--fixture --debug`，所以下面两条可直接用：
+
+```bash
+./run/tui-workflow-debugger.sh --attach <bundle_id>
+./run/tui-workflow-debugger.sh --replay <bundle_id>
+```
+
+> 备注：命令面板（command palette）归一与专门的 Node Context/Files 分栏属 RED-014
+> 的后续 UI 面，见 `_backlog/bugs/` 的历史卡片（BUG-069 已交付按钮/slash/参数三入口
+> 与 attach/replay 消费）。

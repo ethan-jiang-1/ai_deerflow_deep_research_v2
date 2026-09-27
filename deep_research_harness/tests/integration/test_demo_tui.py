@@ -504,6 +504,26 @@ async def test_tui_auto_mode_stays_interactive_when_embedded_only(monkeypatch: p
     assert intents[0].scripted is False
 
 
+def test_tui_attach_and_replay_intents_require_the_fixture_workbench() -> None:
+    """RED-014 entries: attach/replay are debugger intents, fixture-only today."""
+    parser = demo_tui._build_parser()
+    for flag in ("--attach=b_aaaaaaaaaaaaaaaaaaaaaaaa", "--replay=b_aaaaaaaaaaaaaaaaaaaaaaaa"):
+        rejected = parser.parse_args([flag])
+        with pytest.raises(SystemExit):
+            demo_tui._validate_args(parser, rejected)
+        accepted = parser.parse_args(["--fixture", flag])
+        demo_tui._validate_args(parser, accepted)
+        app = demo_tui._build_app(accepted)
+        # Carrying an entry intent implies the workbench even without --debug.
+        assert app.debug_mode is True
+        assert app.mode == "fixture"
+    both = parser.parse_args(
+        ["--fixture", "--attach=b_aaaaaaaaaaaaaaaaaaaaaaaa", "--replay=b_aaaaaaaaaaaaaaaaaaaaaaaa"]
+    )
+    with pytest.raises(SystemExit):
+        demo_tui._validate_args(parser, both)
+
+
 def test_tui_auto_flag_is_rejected_outside_embedded_smoke() -> None:
     """@impl RED-010
 

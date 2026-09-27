@@ -96,6 +96,11 @@ async def _submit_and_settle(app: Any, pilot: Any, text: str, *, deadline_second
     )
 
 
+async def _click(app: Any, pilot: Any, selector: str) -> None:
+    await pilot.click(selector)
+    await pilot.pause()
+
+
 async def _fixture_debugger_journey(app: Any, pilot: Any) -> None:
     """Drive the runbook-030 debugger ladder with per-step assertions.
 
@@ -104,13 +109,17 @@ async def _fixture_debugger_journey(app: Any, pilot: Any) -> None:
     so the operator lands on hitl1's prompt, not on a pre-hitl1 boundary.
     """
 
-    # 1. Ready -------------------------------------------------------------
+    # 1. Ready and the RED-014 three entries -------------------------------
     ok = await _wait(pilot, lambda: type(getattr(app, "last_update", None)).__name__ == "Ready")
     _require(ok, "ready", f"app never reached Ready; inspect={_inspect_text(app)!r}")
-    _log("  [1] Ready .............................................. ok")
+    for entry in ("#debug-new-run", "#debug-attach", "#debug-replay"):
+        _require(len(app.query(entry)) == 1, "entries", f"workbench entry {entry} is missing")
+    _log("  [1] Ready + New Run/Attach/Replay entries .............. ok")
 
-    # 2. Start Step lands on the first interrupt (hitl1) --------------------
-    await _submit(app, pilot, "Compare renewable-energy storage approaches")
+    # 2. New Run button lands on the first interrupt (hitl1) ---------------
+    app.query_one("#composer").value = "Compare renewable-energy storage approaches"
+    await pilot.pause()
+    await _click(app, pilot, "#debug-new-run")
     ok = await _wait(pilot, lambda: app._debug_driver is not None, deadline_seconds=60)
     _require(ok, "start", f"session did not open; log tail:\n{_log_text(app)[-800:]}")
     first_bundle = app._debug_bundle_id
@@ -119,7 +128,7 @@ async def _fixture_debugger_journey(app: Any, pilot: Any) -> None:
     inspect = _inspect_text(app)
     _require("awaiting_hitl" in inspect, "start-posture", f"expected the hitl1 prompt: {inspect!r}")
     _require("下一节点: hitl1" in inspect, "start-next-node", f"next node not projected: {inspect!r}")
-    _log(f"  [2] Start Step -> {first_bundle[:16]}... at hitl1 prompt ..... ok")
+    _log(f"  [2] New Run button -> {first_bundle[:16]}... at hitl1 prompt ... ok")
 
     # 3. Answer HITL1 ------------------------------------------------------
     await _submit_and_settle(app, pilot, "Use the default profile.")
@@ -139,6 +148,29 @@ async def _fixture_debugger_journey(app: Any, pilot: Any) -> None:
     ok = await _wait(pilot, lambda: app._debug_driver is None, deadline_seconds=30)
     _require(ok, "detach", "detach did not clear the session")
     _log("  [5] /detach clears the session .......................... ok")
+
+    # 5a. Attach entry (button) reopens the retained bundle ----------------
+    app.query_one("#composer").value = first_bundle
+    await pilot.pause()
+    await _click(app, pilot, "#debug-attach")
+    ok = await _wait(pilot, lambda: app._debug_driver is not None, deadline_seconds=60)
+    _require(ok, "attach-button", f"Attach button opened no session; log tail:\n{_log_text(app)[-500:]}")
+    _require(app._debug_bundle_id == first_bundle, "attach-target", f"attached to {app._debug_bundle_id!r}")
+    _require("已附加调试会话" in _log_text(app), "attach-log", "missing attach log line")
+    _log(f"  [5a] Attach button reopens {first_bundle[:16]}... ......... ok")
+
+    # 5b. Read-only replay via the slash entry (no session, no lease) ------
+    await _submit(app, pilot, "/detach")
+    ok = await _wait(pilot, lambda: app._debug_driver is None, deadline_seconds=30)
+    _require(ok, "detach-2", "detach did not clear the attached session")
+    before = _log_text(app)
+    await _submit(app, pilot, f"/replay {first_bundle}")
+    ok = await _wait(pilot, lambda: "只读回放（无 lease、不推进）" in _log_text(app), deadline_seconds=60)
+    _require(ok, "replay", f"/replay produced no page; log tail:\n{_log_text(app)[-500:]}")
+    _require(app._debug_driver is None, "replay-readonly", "replay must not open a debug session")
+    replay_log = _log_text(app)[len(before) :]
+    _require("bootstrap" in replay_log, "replay-frames", f"replay rendered no frames: {replay_log[-300:]!r}")
+    _log(f"  [5b] /replay renders {first_bundle[:16]}... read-only ...... ok")
 
     # 6. The retained active bundle is refused with an actionable message --
     await _submit(app, pilot, "Compare renewable-energy storage approaches")

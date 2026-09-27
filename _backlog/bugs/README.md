@@ -16,9 +16,9 @@
 
 | Bug | 标题 | 发现 | 状态 |
 |-----|------|------|------|
-| [BUG-069-debugger-attach-replay-and-entries-remainder.md](BUG-069-debugger-attach-replay-and-entries-remainder.md) | C4b CLI 接线剩余：attach/replay 意图未消费、RED-014 三入口未落地 | 2026-09-27 | 活跃（P2） |
+| [BUG-071-red014-workbench-ui-remainder.md](BUG-071-red014-workbench-ui-remainder.md) | RED-014 剩余 UI 面：命令面板归一、Node Context 分栏、Files 分栏 | 2026-09-27 | 活跃（P2） |
 
-**Next available bug ID: BUG-071**
+**Next available bug ID: BUG-072**
 
 ---
 

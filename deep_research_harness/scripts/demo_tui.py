@@ -879,6 +879,11 @@ class DeepResearchDemoTUI(App[None]):
             yield Button("Copy details", id="copy-details")
             yield Button("Start proposal", id="accept")
             yield Button("Cancel", id="cancel", variant="error")
+        if self.debug_mode:
+            with Horizontal(id="debug-controls"):
+                yield Button("New Run", id="debug-new-run")
+                yield Button("Attach", id="debug-attach")
+                yield Button("Replay", id="debug-replay")
         yield Static(
             "「Start Deep Research」按钮启动研究 · 中间对话区: 双击=复制全文 · "
             "Option+拖拽=选中一段 · Copy details=复制全部 · Ctrl-C 退出",
@@ -959,7 +964,11 @@ class DeepResearchDemoTUI(App[None]):
                 self._experience.set_observation_publisher(adapter.observation_publisher)
             self._adapter = adapter
             self.apply_run_update(Ready(report=report))
-            if self.mode == "embedded_smoke" and self.auto:
+            if self.debug_mode and self._attach_intent:
+                await self._debug_attach(self._attach_intent)
+            elif self.debug_mode and self._replay_intent:
+                await self._debug_replay(self._replay_intent)
+            elif self.mode == "embedded_smoke" and self.auto:
                 # 010 auto TUI: dispatch the fixed scripted question with the
                 # default product path (no profile_intent). Graph-owned policy
                 # answers HITL1/HITL2; the human never types.
@@ -1243,6 +1252,13 @@ class DeepResearchDemoTUI(App[None]):
             # Recovery path: abandon the scope's active bundle. A previous
             # session left paused blocks every new Start Step as busy.
             self.run_worker(self._debug_cancel_active(), exclusive=True, group="debug")
+            return
+        if self.debug_mode and (value.startswith("/attach") or value.startswith("/replay")):
+            # RED-014 entries: /attach and /replay dispatch the same typed
+            # actions as the workbench buttons and the --attach/--replay intents.
+            verb, _, argument = value.partition(" ")
+            runner = self._debug_attach if verb == "/attach" else self._debug_replay
+            self.run_worker(runner(argument.strip()), exclusive=True, group="debug")
             return
         if self.debug_mode and self._debug_driver is not None and value.startswith("/detach"):
             self.run_worker(self._debug_command(value), exclusive=True, group="debug")
@@ -1761,6 +1777,16 @@ class DeepResearchDemoTUI(App[None]):
             self._select_advertised_option(key)
         elif event.button.id == "cancel" and self.mode != "gateway" and isinstance(self.last_update, AwaitingInput):
             self._dispatch(CancelRun())
+        elif event.button.id == "debug-new-run":
+            self.run_worker(self._debug_new_run(), exclusive=True, group="debug")
+        elif event.button.id in ("debug-attach", "debug-replay"):
+            draft = self.query_one("#composer", Input).value.strip()
+            runner = self._debug_attach if event.button.id == "debug-attach" else self._debug_replay
+            self.run_worker(runner(draft), exclusive=True, group="debug")
+        if event.button.id is not None and event.button.id.startswith("debug-"):
+            # A click focuses the button; the workbench's stepping rhythm is the
+            # composer Enter, so hand focus straight back to it.
+            self.query_one("#composer", Input).focus()
 
     # ── C4b debugger workbench: debug-driver wiring (RED-013/RED-014) ────────────
     async def _debug_cancel_active(self) -> None:
@@ -1812,13 +1838,136 @@ class DeepResearchDemoTUI(App[None]):
             return
         await self._debug_advance()
 
+    def _new_debug_driver(self, adapter: Any) -> Any | None:
+        """Build a workbench-owned debug driver for this adapter (or None)."""
+        import time as _time
+
+        from deerflow_deep_research.runtime.debug_driver import DebugRunDriver
+
+        executor = getattr(self._transport, "_graph_executor", None)
+        if executor is None:
+            return None
+        return DebugRunDriver(
+            lifecycle=adapter._bundle_lifecycle,
+            executor=executor,
+            envelope=adapter._envelope,
+            scope=(adapter._envelope.effective_user_id, adapter._envelope.outer_thread_id),
+            owner="workbench",
+            clock=_time.time,
+        )
+
+    def _debug_scope(self, adapter: Any) -> tuple[str, str]:
+        return (adapter._envelope.effective_user_id, adapter._envelope.outer_thread_id)
+
+    async def _debug_attach(self, bundle_id: str) -> None:
+        """Attach the workbench to one retained bundle (lifecycle-validated).
+
+        RED-014 entry: the same typed action is reachable from ``--attach``,
+        the Attach button, and ``/attach <id>``.
+        """
+        from deerflow_deep_research.domain.bundle import BundleId
+        from deerflow_deep_research.domain.debug_driving import AttachRequest
+        from deerflow_deep_research.runtime.node_context_store import (
+            NodeContextRecorder,
+            NodeContextStore,
+        )
+
+        log = self.query_one("#log", RichLog)
+        bundle_id = bundle_id.strip()
+        if not bundle_id:
+            log.write(Text("用法: /attach <bundle_id>（或启动时 --attach <bundle_id>）", style="yellow"))
+            return
+        adapter = self._adapter
+        if adapter is None or self._node_context_holder is None:
+            return
+        driver = self._new_debug_driver(adapter)
+        if driver is None:
+            return
+        attached = await driver.open_attach(AttachRequest(bundle_id=bundle_id, owner="workbench"))
+        if attached.snapshot is None:
+            reason = attached.message or attached.denied or "unavailable"
+            log.write(Text(f"附加失败: {attached.denied}（{reason}）", style="red"))
+            return
+        self._debug_driver = driver
+        self._debug_bundle_id = bundle_id
+        bundle = await adapter._bundle_lifecycle.resolve(
+            scope=self._debug_scope(adapter), bundle_id=BundleId(bundle_id)
+        )
+        if bundle is not None:
+            store = NodeContextStore(
+                bundle_root=adapter._bundle_lifecycle.private_root(bundle),
+                bundle_id=bundle_id,
+            )
+            self._node_context_holder["recorder"] = NodeContextRecorder(store)
+        log.write(Text(f"已附加调试会话: {bundle_id[:20]}…（生命周期校验通过）", style="cyan"))
+        await self._render_debug_result(attached)
+
+    async def _debug_replay(self, bundle_id: str) -> None:
+        """Render one retained bundle's trace read-only (no lease, no stepping).
+
+        RED-014 entry: reachable from ``--replay``, the Replay button, and
+        ``/replay <id>``. It never acquires a control lease or writes.
+        """
+        from deerflow_deep_research.domain.bundle import BundleId
+        from deerflow_deep_research.runtime.trace_projector import RunTraceProjector
+
+        log = self.query_one("#log", RichLog)
+        bundle_id = bundle_id.strip()
+        if not bundle_id:
+            log.write(Text("用法: /replay <bundle_id>（或启动时 --replay <bundle_id>）", style="yellow"))
+            return
+        adapter = self._adapter
+        if adapter is None:
+            return
+        bundle = await adapter._bundle_lifecycle.resolve(
+            scope=self._debug_scope(adapter), bundle_id=BundleId(bundle_id)
+        )
+        if bundle is None:
+            log.write(Text(f"只读回放失败: {bundle_id[:20]}… 不可解析", style="red"))
+            return
+        page = await RunTraceProjector(adapter._bundle_lifecycle).project_full(bundle, live=False)
+        log.write(
+            Text(
+                f"只读回放（无 lease、不推进）: {bundle_id[:20]}… · 帧 {len(page.frames)}"
+                f" · 观察 {page.observation_quality}",
+                style="cyan",
+            )
+        )
+        if not page.frames:
+            log.write(Text("  （无已提交帧）", style="dim"))
+        for frame in page.frames:
+            parts = [f"{frame.frame_sequence:02d}", frame.node, frame.outcome]
+            if frame.route:
+                parts.append(f"route={frame.route}")
+            if frame.next_nodes:
+                parts.append("next=" + ",".join(frame.next_nodes))
+            if frame.terminal_disposition:
+                parts.append(f"terminal={frame.terminal_disposition}")
+            if frame.pending_input:
+                parts.append(f"pending={frame.pending_input}")
+            log.write(Text("  " + " · ".join(parts), style="dim"))
+        self._render_inspect((f"只读回放: {bundle_id[:20]}…（帧 {len(page.frames)}，无调试会话）",))
+
+    async def _debug_new_run(self) -> None:
+        """Start a new session from the composer draft (RED-014 New Run entry)."""
+        log = self.query_one("#log", RichLog)
+        if self._debug_driver is not None:
+            log.write(
+                Text("已有活跃调试会话：直接输入即推进/回答，或用 /detach、/cancel 之后再 New Run。", style="yellow")
+            )
+            return
+        question = self.query_one("#composer", Input).value.strip()
+        if not question:
+            log.write(Text("用法: 在 composer 输入研究问题后按 New Run（或直接按 Enter）。", style="yellow"))
+            return
+        await self._debug_start(question)
+
     async def _debug_start(self, question: str) -> None:
         """Open a debug session on the one real graph and perform Start Step."""
         import time as _time
 
         from deerflow_deep_research.domain.bundle import BundleId
         from deerflow_deep_research.domain.debug_driving import StartRequest
-        from deerflow_deep_research.runtime.debug_driver import DebugRunDriver
         from deerflow_deep_research.runtime.node_context_store import (
             NodeContextRecorder,
             NodeContextStore,
@@ -1827,17 +1976,9 @@ class DeepResearchDemoTUI(App[None]):
         adapter = self._adapter
         if adapter is None or self._node_context_holder is None:
             return
-        executor = getattr(self._transport, "_graph_executor", None)
-        if executor is None:
+        driver = self._new_debug_driver(adapter)
+        if driver is None:
             return
-        driver = DebugRunDriver(
-            lifecycle=adapter._bundle_lifecycle,
-            executor=executor,
-            envelope=adapter._envelope,
-            scope=(adapter._envelope.effective_user_id, adapter._envelope.outer_thread_id),
-            owner="workbench",
-            clock=_time.time,
-        )
         opened = await driver.open_start(
             StartRequest(
                 question=question,
@@ -1863,7 +2004,7 @@ class DeepResearchDemoTUI(App[None]):
         self._debug_driver = driver
         self._debug_bundle_id = bundle_id
         bundle = await adapter._bundle_lifecycle.resolve(
-            scope=(adapter._envelope.effective_user_id, adapter._envelope.outer_thread_id),
+            scope=self._debug_scope(adapter),
             bundle_id=BundleId(bundle_id),
         )
         if bundle is not None:
@@ -2057,6 +2198,8 @@ def _validate_args(parser: argparse.ArgumentParser, args: argparse.Namespace) ->
         parser.error("--attach and --replay cannot be combined")
     if args.debug and not args.fixture:
         parser.error("--debug applies only with --fixture")
+    if (args.attach or args.replay) and not args.fixture:
+        parser.error("--attach/--replay apply only to the fixture debugger workbench (--fixture)")
 
 
 def _build_app(args: argparse.Namespace) -> DeepResearchDemoTUI:
@@ -2074,7 +2217,9 @@ def _build_app(args: argparse.Namespace) -> DeepResearchDemoTUI:
         auto=args.auto,
         attach_intent=args.attach,
         replay_intent=args.replay,
-        debug_mode=args.debug,
+        # Attach/Replay are debugger entries: carrying either intent implies the
+        # workbench even when the operator omitted the explicit --debug flag.
+        debug_mode=args.debug or bool(args.attach or args.replay),
     )
 
 
