@@ -59,6 +59,21 @@ def test_every_user_visible_target_reaches_a_command_inventory() -> None:
     )
 
 
+def test_documented_targets_are_defined() -> None:
+    """A documented `make <target>` that the Makefile does not define must be red.
+
+    This is the deterministic form of a transient seen while hand-mutating the
+    Makefile: contract tests dry-run documented targets with check=True, so a
+    documented-but-missing target fails them with 'No rule to make target'.
+    """
+    text = "\n".join(path.read_text(encoding="utf-8") for path in (INVENTORY, OPERATIONS))
+    # `make LANE=x` / `make PROFILE=demo` are variable assignments, not targets.
+    mentioned = set(re.findall(r"make ([a-zA-Z][a-zA-Z0-9_-]*)(?![=a-zA-Z0-9_-])", text))
+    defined = set(_targets())
+    missing = sorted(name for name in mentioned if name not in defined)
+    assert not missing, f"the command inventories document targets the Makefile does not define: {missing}"
+
+
 def test_waiver_entries_still_exist_and_stay_justified() -> None:
     """A waiver for a target that no longer exists, or that is now documented, must fail."""
     targets = set(_targets())

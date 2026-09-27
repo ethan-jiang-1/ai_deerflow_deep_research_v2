@@ -75,6 +75,14 @@ MUTATIONS: tuple[Mutation, ...] = (
         removes="honouring a pending pause at the next committed boundary",
     ),
     Mutation(
+        id="command-inventory-is-complete",
+        file="docs/local-operations.md",
+        old="| Run the fixture graph without the TUI | `make demo-fixture-graph` |\n",
+        new="| Run the fixture graph without the TUI | `make demo-fixture-graph-typo` |\n",
+        selector="tests/contract/test_command_inventory_freshness.py",
+        removes="the documented-target-is-defined rule (a typo'd inventory entry must be red)",
+    ),
+    Mutation(
         id="demo-cli-is-hermetic",
         file=DEMO_CORE,
         old=(
