@@ -23,13 +23,29 @@ def test_duration_policy_rejects_unwaived_and_expired_slow_test(tmp_path: Path) 
         '<testsuite><testcase classname="tests.fast" name="test_slow" time="5.1"/></testsuite>',
         encoding="utf-8",
     )
-    assert slow_selectors(report, now=date(2026, 7, 23)) == ["tests.fast::test_slow=5.100s"]
+    assert slow_selectors(report, now=date(2026, 7, 23), waivers=()) == ["tests.fast::test_slow=5.100s"]
     expired = DurationWaiver("tests.fast::test_slow", "known", "owner", date(2026, 7, 22))
     assert slow_selectors(report, now=date(2026, 7, 23), waivers=(expired,)) == ["tests.fast::test_slow=5.100s"]
     valid = DurationWaiver("tests.fast::test_slow", "known", "owner", date(2026, 7, 24))
     assert slow_selectors(report, now=date(2026, 7, 23), waivers=(valid,)) == []
     missing_owner = DurationWaiver("tests.fast::test_slow", "known", "", date(2026, 7, 24))
     assert slow_selectors(report, now=date(2026, 7, 23), waivers=(missing_owner,)) == ["tests.fast::test_slow=5.100s"]
+
+
+def test_duration_policy_flags_a_waiver_whose_selector_matches_no_test(tmp_path: Path) -> None:
+    """DONE-009 parked anti-rot: a renamed or removed test's waiver must fail, not rot."""
+
+    report = tmp_path / "fast.xml"
+    report.write_text(
+        '<testsuite><testcase classname="tests.fast" name="test_ok" time="0.1"/></testsuite>',
+        encoding="utf-8",
+    )
+    dead = DurationWaiver("tests.fast::test_gone", "renamed away", "ci", date(2026, 12, 31))
+    assert slow_selectors(report, now=date(2026, 10, 1), waivers=(dead,)) == [
+        "waiver_selector_unknown:tests.fast::test_gone"
+    ]
+    live_fast = DurationWaiver("tests.fast::test_ok", "slow on CI", "ci", date(2026, 12, 31))
+    assert slow_selectors(report, now=date(2026, 10, 1), waivers=(live_fast,)) == []
 
 
 def test_periodic_duration_policy_rejects_over_budget_and_expired_waiver(tmp_path: Path) -> None:
@@ -42,7 +58,7 @@ def test_periodic_duration_policy_rejects_over_budget_and_expired_waiver(tmp_pat
         encoding="utf-8",
     )
     expected = f"tests.periodic::test_copy={MAX_PERIODIC_TEST_SECONDS + 1:.3f}s"
-    assert slow_selectors(report, now=date(2026, 8, 17), max_seconds=MAX_PERIODIC_TEST_SECONDS) == [expected]
+    assert slow_selectors(report, now=date(2026, 8, 17), max_seconds=MAX_PERIODIC_TEST_SECONDS, waivers=()) == [expected]
     expired = DurationWaiver("tests.periodic::test_copy", "known", "evaluation", date(2026, 8, 16))
     assert slow_selectors(
         report,
