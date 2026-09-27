@@ -42,6 +42,7 @@ from rich.table import Table
 from rich.text import Text
 from textual import events, work
 from textual.app import App, ComposeResult
+from textual.command import Hit, Hits, Provider
 from textual.containers import Horizontal
 from textual.widgets import Button, Input, RichLog, Static
 
@@ -767,6 +768,40 @@ def _pipeline_tracker(completed: tuple[str, ...], pending: str | None) -> Table:
     return table
 
 
+class WorkbenchCommands(Provider):
+    """RED-014: the three workbench entries as command palette actions.
+
+    Every action dispatches the same typed method as its button and slash
+    counterpart; id-carrying actions read the composer draft exactly like the
+    buttons, so all three paths converge on one implementation.
+    """
+
+    async def search(self, query: str) -> Hits:
+        entries = (
+            ("New Run", "Start a debug session from the composer question", self._new_run),
+            ("Attach", "Attach to the composer bundle id (lifecycle-validated)", self._attach),
+            ("Replay", "Read-only replay of the composer bundle id", self._replay),
+        )
+        lowered = query.lower().strip()
+        for name, help_text, action in entries:
+            if not lowered or lowered in name.lower():
+                yield Hit(1.0, name, action, text=name, help=help_text)
+
+    def _new_run(self) -> None:
+        app = self.app
+        app.run_worker(app._debug_new_run(), exclusive=True, group="debug")
+
+    def _attach(self) -> None:
+        app = self.app
+        draft = app.query_one("#composer", Input).value.strip()
+        app.run_worker(app._debug_attach(draft), exclusive=True, group="debug")
+
+    def _replay(self) -> None:
+        app = self.app
+        draft = app.query_one("#composer", Input).value.strip()
+        app.run_worker(app._debug_replay(draft), exclusive=True, group="debug")
+
+
 class DeepResearchDemoTUI(App[None]):
     """Textual adapter over one owned ``ResearchRunExperience`` instance."""
 
@@ -806,6 +841,10 @@ class DeepResearchDemoTUI(App[None]):
         self.profile = profile
         self.auto = auto
         self.debug_mode = debug_mode
+        if debug_mode:
+            # RED-014: expose the workbench entries as palette actions without
+            # dropping the app's own system commands.
+            self.COMMANDS = {*self.COMMANDS, WorkbenchCommands}
         self._attach_intent = attach_intent
         self._replay_intent = replay_intent
         self._adapter: DemoAdapter | None = None

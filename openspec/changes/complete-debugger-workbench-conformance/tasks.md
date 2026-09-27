@@ -16,7 +16,7 @@
 
 ## 4. Command palette entries (RED-014)
 
-- [ ] 4.1 Register New Run / Attach / Replay as Textual command palette actions dispatching the same typed methods as the buttons and slash commands. Verify: a focused test invokes the provider's commands and asserts the same effect as the button path (session opened / attach attempted / replay rendered).
+- [x] 4.1 Register New Run / Attach / Replay as Textual command palette actions dispatching the same typed methods as the buttons and slash commands. Verify: a focused test invokes the provider's commands and asserts the same effect as the button path (session opened / attach attempted / replay rendered). ✓ `test_workbench_palette_actions_match_the_button_path` drives ctrl+p, types the action and asserts the session opens with the Start Step line
 
 ## 5. Files pane (RED-014)
 

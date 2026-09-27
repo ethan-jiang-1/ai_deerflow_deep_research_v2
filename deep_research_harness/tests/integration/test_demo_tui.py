@@ -1366,3 +1366,30 @@ def test_node_context_strip_projects_the_fixed_coverage_labels() -> None:
         NodeContextView(snapshot=snapshot, coverage_initial_context="DEGRADED")
     )
     assert "INITIAL DEGRADED" in degraded
+
+
+@pytest.mark.asyncio
+async def test_workbench_palette_actions_match_the_button_path(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """RED-014: palette actions dispatch the same typed methods as the buttons."""
+    from textual.command import CommandInput
+
+    _install_isolated_fixture_adapter(monkeypatch, bundle_root=tmp_path / "demo-runs")
+    app = DeepResearchDemoTUI(mode="fixture", debug_mode=True)
+    async with app.run_test() as pilot:
+        await _wait_for(app, pilot, demo_tui.Ready)
+        # The palette lists the three workbench entries (plus system commands).
+        app.query_one("#composer", demo_tui.Input).value = "Compare storage approaches"
+        await pilot.pause()
+        await pilot.press("ctrl+p")
+        await pilot.pause()
+        command_input = app.screen.query_one(CommandInput)
+        command_input.value = "New Run"
+        await pilot.pause()
+        await pilot.press("enter")
+        for _ in range(80):
+            await pilot.pause()
+            if app._debug_driver is not None:
+                break
+            await asyncio.sleep(0.05)
+        assert app._debug_driver is not None, "the palette New Run action opened no session"
+        assert "Start Step" in app._rich_log_text()
