@@ -86,7 +86,10 @@ cognitive quality verdict and SHALL not be used as a lifecycle checkpoint. Its f
 manifest SHALL declare a digest for each required evidence record; review admission SHALL
 reload the manifest and verify those digests before treating the Bundle as reviewable evidence.
 The manifest SHALL also retain the exact Case, Node Cognitive Control Contract, Rubric, and
-Review Protocol identities selected for that execution. Every finalized manifest SHALL carry an
+Review Protocol identities selected for that execution. When the executing repository is a git
+worktree, the manifest SHALL also record that worktree's code revision at execution time, so a
+retained Bundle always names the code that produced it; the revision is provenance for review
+and reproduction and SHALL NOT gate review admission. Every finalized manifest SHALL carry an
 explicit valid evidence layer. Review admission SHALL reject a retained Bundle whose manifest
 omits that field or supplies an unknown value before any Review Record, quality claim, default,
 backfill, or mutation is produced.
@@ -109,7 +112,7 @@ backfill, or mutation is produced.
 
 #### Scenario: Missing or unknown evidence layer is rejected before review
 - **WHEN** a retained Bundle manifest omits `evidence_layer` or declares a value outside the supported layers
-- **THEN** review admission rejects the Bundle before a Review Record or quality claim is created and does not write, backfill, default, or otherwise change the retained Bundle
+- **THEN** review admission rejects that Bundle before a Review Record or quality claim is created and does not write, backfill, default, or otherwise change the retained Bundle
 
 #### Scenario: Explicit evidence layer remains reviewable
 - **WHEN** a retained Bundle manifest declares a supported explicit evidence layer and its other integrity checks pass
@@ -118,6 +121,10 @@ backfill, or mutation is produced.
 #### Scenario: Changed control cannot reinterpret a retained Bundle
 - **WHEN** a review submits a Case, Contract, Rubric, or Protocol identity that does not resolve to the identity retained in the Bundle manifest
 - **THEN** review admission rejects that submission and creates no Review Record for the substituted control
+
+#### Scenario: Manifest names the code that produced the execution
+- **WHEN** a Runner finalizes an Evaluation Run Bundle in a git worktree
+- **THEN** the manifest records the worktree's code revision, and a retained Bundle whose manifest predates this obligation and carries no revision stays reviewable when its other integrity checks pass
 
 ### Requirement: Review is explicitly human initiated
 
