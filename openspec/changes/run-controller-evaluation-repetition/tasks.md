@@ -42,7 +42,7 @@
 
 ## 3. The runs (staged spend, controller pipeline first)
 
-- [ ] 3.1 Preflight: `scripts/live_preflight.py` (or the entrypoint's own
+- [x] 3.1 Preflight: `scripts/live_preflight.py` (or the entrypoint's own
       preflight) with `.env` exported; confirm the model credential and the
       registered case ids.
 - [ ] 3.2 Pipeline canary: ONE `run_selected_live_case` invocation for

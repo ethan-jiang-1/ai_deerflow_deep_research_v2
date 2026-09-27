@@ -144,6 +144,14 @@ Bundle, or Review Record is created. A missing credential is an honest limited l
 disposition, not a deterministic pass or failure and not a release requirement. These
 manual operations are not collected by pytest or routine CI.
 
+The public controller direction-loop case has a manual runner:
+`scripts/controller_live_eval.py` builds the isolated real-model composition home (the
+API key is read from `DEEPSEEK_API_KEY` at runtime and never committed), wires the
+controller live subject, and invokes the selected-live entrypoint — `--mode single`
+for one execution or `--mode series` for the declared repetitions. Optional
+`--price-in`/`--price-out` (per million tokens) price the recorded token telemetry;
+without them `cost_usd` records 0.0 and the execution output marks `cost_unpriced`.
+
 After preflight succeeds, the selected-live helper is the only path that writes a
 `credentialed_live_quality` manifest layer. That layer remains a bounded evaluation
 record, not release authority and never a profile, State, or route input.
