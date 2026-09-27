@@ -1992,7 +1992,7 @@ class DeepResearchDemoTUI(App[None]):
         cursor = snapshot.cursor
         if result.committed_node:
             log.write(Text(f"✓ {result.committed_node} 提交（帧 {cursor.frame_sequence}）", style="cyan"))
-        line = f"姿态: {snapshot.posture} · 下一节点: {cursor.next_nodes or '—'}"
+        line = f"姿态: {snapshot.posture} · 下一节点: {', '.join(cursor.next_nodes) or '—'}"
         if snapshot.pending_request_id:
             line += " · 等待输入（直接输入回答）"
         if snapshot.pause_requested:

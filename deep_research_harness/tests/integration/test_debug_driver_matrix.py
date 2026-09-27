@@ -227,6 +227,36 @@ async def test_step_to_hitl_answer_then_breakpoint_drive(tmp_path: Path) -> None
 
 
 @pytest.mark.asyncio
+async def test_cursor_reports_the_next_node_after_a_step(tmp_path: Path) -> None:
+    """BUG-070 regression: the boundary cursor names the durable next node.
+
+    The cursor's ``next_nodes`` is the operator-facing projection the workbench
+    renders; it must come from the compiled graph state, not from the trace
+    frame (which never carried it).
+    """
+    driver, _lifecycle = _make_driver(tmp_path, owner="op-1")
+    opened = await driver.open_start(
+        StartRequest(question="Compare storage", mode="step", owner="op-1", command_id="start-00000001")
+    )
+    bundle_id = opened.snapshot.bundle_id
+    step = await driver.execute(
+        DebugCommand(
+            kind="advance_one",
+            bundle_id=bundle_id,
+            command_id="advance-00000001",
+            expected_cursor=opened.snapshot.cursor.token(),
+        )
+    )
+    assert step.snapshot is not None
+    assert step.snapshot.cursor.next_nodes, "cursor must name the next node after a step"
+    assert "hitl1" in step.snapshot.cursor.next_nodes
+    # The write permit stays the durable boundary identity: a cursor rebuilt
+    # without the graph-state projection must still compare equal.
+    rebuilt = step.snapshot.cursor.model_copy(update={"next_nodes": ()})
+    assert rebuilt.token() == step.snapshot.cursor.token()
+
+
+@pytest.mark.asyncio
 async def test_pause_request_holds_drive_at_next_boundary(tmp_path: Path) -> None:
     driver, _lifecycle = _make_driver(tmp_path, owner="op-1")
     opened = await driver.open_start(

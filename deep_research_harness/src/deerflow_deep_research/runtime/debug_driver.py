@@ -344,6 +344,7 @@ class DebugRunDriver:
                     pause_requested=False,
                     lease=lease.snapshot(),
                     stop_policy=session["stop_policy"],
+                    next_nodes=tuple(post.next or ()),
                 )
                 return DebugSessionUpdate(
                     snapshot=snapshot,
@@ -358,21 +359,26 @@ class DebugRunDriver:
             pause_requested=False,
             lease=lease.snapshot(),
             stop_policy=session["stop_policy"],
+            next_nodes=(),
         )
         return DebugSessionUpdate(snapshot=snapshot, command_id="advance")
 
-    async def _boundary_cursor(self, bundle) -> BoundaryCursor:
+    async def _boundary_cursor(self, bundle, *, next_nodes: tuple[str, ...] | None = None) -> BoundaryCursor:
         from deerflow_deep_research.runtime.trace_projector import RunTraceProjector
 
         page = await RunTraceProjector(self._lifecycle).project_full(bundle, live=True)
         last = page.frames[-1] if page.frames else None
         state = await self._lifecycle.read_state(bundle)
+        # The durable next-node fact comes from the compiled graph state, which
+        # the stepping call already reads; the trace-frame projection does not
+        # carry it (BUG-070). Fall back to the frame for callers without it.
+        resolved_next = next_nodes if next_nodes is not None else (last.next_nodes if last else ())
         return BoundaryCursor(
             bundle_id=bundle.bundle_id.value,
             generation=state.generation,
             frame_sequence=len(page.frames),
             checkpoint_id=last.checkpoint_id if last else None,
-            next_nodes=last.next_nodes if last else (),
+            next_nodes=resolved_next,
         )
 
     async def _snapshot(
@@ -383,8 +389,9 @@ class DebugRunDriver:
         pause_requested: bool,
         lease: LeasePosture,
         stop_policy: StopPolicy,
+        next_nodes: tuple[str, ...] | None = None,
     ) -> DebugSessionSnapshot:
-        cursor = await self._boundary_cursor(bundle)
+        cursor = await self._boundary_cursor(bundle, next_nodes=next_nodes)
         state = await self._lifecycle.read_state(bundle)
         from deerflow_deep_research.runtime.trace_projector import RunTraceProjector
 

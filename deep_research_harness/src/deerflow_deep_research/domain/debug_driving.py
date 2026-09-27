@@ -54,6 +54,14 @@ class BoundaryCursor(FrozenContract):
     next_nodes: tuple[str, ...] = ()
 
     def token(self) -> str:
+        """The write permit: durable boundary identity only.
+
+        ``next_nodes`` is deliberately excluded: it is an operator-facing
+        projection of the graph state (and is populated on the stepping path
+        only), not part of the boundary identity the permit fences. Including
+        it made every command that recomputed the cursor without the graph
+        state read as ``stale``.
+        """
         import json
 
         return "BC1." + json.dumps(
@@ -62,7 +70,6 @@ class BoundaryCursor(FrozenContract):
                 "g": self.generation,
                 "f": self.frame_sequence,
                 "c": self.checkpoint_id or "",
-                "n": list(self.next_nodes),
             },
             sort_keys=True,
             separators=(",", ":"),

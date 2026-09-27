@@ -1,6 +1,6 @@
 # Fixed Bugs Index — 已修复 bug 归档
 
-> 最后更新: 2026-08-25 | `_backlog/_done/_fixed_bugs/` — 已修复 bug 的归档目录。
+> 最后更新: 2026-09-27（关闭 BUG-070 调试工作台下一节点投影） | `_backlog/_done/_fixed_bugs/` — 已修复 bug 的归档目录。
 > 接收来自 [`../../bugs/`](../../bugs/) 的 bug。`_` 前缀 = coding agent 默认忽略。
 >
 > **本目录是 bug 编号的唯一权威来源——新 bug 的编号 = 本目录最大编号 + 1。**
@@ -86,8 +86,9 @@ bug 修完后从 `_backlog/bugs/` 通过 `git mv` 移入本目录：
 | BUG-066 | 2026-08-31 | 架构治理检查器干净树即红——`.gitignore` `.uv-cache/` 未同步进 manifest `[ignored_paths]`（sync-structure-registry-ignore-entries） |
 | BUG-067 | 2026-09-02 | 治理 closeout 门干净树即红——scripts 重组在两份 README 留下字面 `openspec/` token（依赖方向字面扫描误报）+ PRS-022 无 `@impl` evidence docstring（随 Cpre closeout 解阻修复，零契约面变更） |
 | BUG-068 | 2026-09-12 | 归档的两条调试 requirement 缺少确定性证据，closeout 门在干净树即红——LDD-005 的 topology guard 无测试，LDO-008 漏标 `@impl`（repair-debug-requirement-evidence） |
+| BUG-070 | 2026-09-27 | 调试工作台"下一节点"投影恒空——trace frame 不携带 next_nodes，且该投影字段被卷进 `BoundaryCursor.token()` 写许可导致命令判 `stale`；改为从图状态 `post.next` 线程化进游标，token 只留 durable boundary 身份 |
 
-**Next available bug ID: BUG-069**
+**Next available bug ID: BUG-071**
 
 ---
 

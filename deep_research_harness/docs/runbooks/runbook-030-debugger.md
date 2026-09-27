@@ -48,9 +48,9 @@ topic_planning → wave0 → wave1 → wave2_synthesis → hitl2 → readiness �
 ```
 
 预期：
-- 最终 `姿态: terminal`
-- 面板的 `下一节点` 在 fixture 流程中可能显示 `—`（trace 投影暂未填充 next_nodes，
-  见 BUG-070）；**以日志的 `✓ … 提交（帧 N）` 为推进权威**。
+- 最终 `姿态: terminal`（此时 `下一节点` 显示 `—`）
+- 每个 paused 帧的面板给出下一个节点名，例如 `姿态: paused_at_boundary · 下一节点: wave0`；
+  harness 对整条 ladder 逐步断言该投影非空。
 - 再次处于 `awaiting_hitl` 时，空 Enter 不会推进，而是提示"等待 HITL 输入"——
   此时必须直接输入回答。
 

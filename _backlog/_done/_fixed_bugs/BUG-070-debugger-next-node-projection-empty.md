@@ -35,9 +35,20 @@ make tui-journey            # 观察每步的 inspect 行：下一节点恒为 �
 
 ## 修复关联
 
-在 trace projector 的 frame 投影处填充 `next_nodes`（来源：该帧对应 checkpoint 的
-`snapshot.next`），或在 `_boundary_cursor` 直接读取图状态而不经 frame 投影——
-前者更正确（投影本就是"可观察事实"的唯一来源，避免第二权威）。修复后
-runbook-030 的 harness 断言可加一条"paused 帧的下一节点非空且等于预期节点"，
-把这条可见性锁进 `make tui-journey`。当前 runbook-030 已诚实标注该显示可能为
-`—`，并以提交日志为推进权威。
+已修复（2026-09-27）：`_invoke_once` 在 invoke 后本就持有
+`post = graph.aget_state(config)`，现将 `post.next` 线程化进
+`_snapshot(next_nodes=...)` → `_boundary_cursor(next_nodes=...)`，游标由此携带
+**真实的下一个节点**（`_terminal_update` 传空）；trace frame 的回退保留给没有图
+状态的调用方。
+
+同时修掉一个被该字段掩盖的设计缺陷：`BoundaryCursor.token()`（driver 的写许可）
+原本把 `next_nodes` 也序列化进 token，导致"投影字段"参与边界身份——命令校验路径
+用回退游标（空 next）重算时必然与快照 token 不一致，`execute` 判定 `stale`。
+现在 token 只含 durable boundary 身份（bundle/generation/frame/checkpoint），
+投影字段不参与 write permit。
+
+回归锁：
+- `tests/integration/test_debug_driver_matrix.py::test_cursor_reports_the_next_node_after_a_step`
+  （step 后游标命名 `hitl1`；token 对 next_nodes 不变）；
+- `make tui-journey` 逐步断言：Start Step 后 `下一节点: hitl1`，ladder 每个 paused 帧
+  的下一节点非空（terminal 时为 `—`），显示为逗号连接的节点名而非 tuple repr。

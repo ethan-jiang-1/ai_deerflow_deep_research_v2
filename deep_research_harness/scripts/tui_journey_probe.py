@@ -118,6 +118,7 @@ async def _fixture_debugger_journey(app: Any, pilot: Any) -> None:
     _require("Start Step" in log, "start-log", f"missing Start Step line; log tail:\n{log[-500:]}")
     inspect = _inspect_text(app)
     _require("awaiting_hitl" in inspect, "start-posture", f"expected the hitl1 prompt: {inspect!r}")
+    _require("下一节点: hitl1" in inspect, "start-next-node", f"next node not projected: {inspect!r}")
     _log(f"  [2] Start Step -> {first_bundle[:16]}... at hitl1 prompt ..... ok")
 
     # 3. Answer HITL1 ------------------------------------------------------
@@ -177,6 +178,9 @@ async def _fixture_debugger_journey(app: Any, pilot: Any) -> None:
         _log(f"      ladder {steps:02d}: {inspect}")
         delta = _log_text(app)[len(ladder_log) :]
         _require("开启失败" not in delta, "ladder-busy", f"ladder hit a busy denial at step {steps}")
+        if "terminal" not in inspect:
+            detail = f"next node missing at step {steps}: {inspect!r}"
+            _require("下一节点: —" not in inspect, "ladder-next-node", detail)
     _require(
         "terminal" in _inspect_text(app),
         "ladder-terminal",
