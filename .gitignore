@@ -238,3 +238,6 @@ __marimo__/
 
 RUN*.command
 RUN-*.command
+
+# proof receipts/transcripts are local evidence, never history
+.proof/

@@ -1,4 +1,4 @@
-.PHONY: install entry-preflight verify lock-check format lint test test-fast test-integration test-workflow test-entry-environment-regression test-live test-unit test-contract test-viability test-durability test-blocking-io test-assets test-intake test-retained-observation test-work-unit test-strict-checkpoint test-duration-policy test-changed benchmark-fast prompt-dump prompt-dump-check profile-setup profile-preflight profiles profile-init profile-check profile-dev demo demo-scripted demo-fixture-graph demo-real demo-real-embedded-smoke demo-real-scripted demo-tui demo-tui-embedded-smoke demo-tui-fixture demo-tui-real-auto demo-sessions session-workbench debug-scripted-real-workflow soft-bundle demo-workspace-report demo-clean tui-experiences debugger-proof
+.PHONY: install entry-preflight verify lock-check format lint test test-fast test-integration test-workflow test-entry-environment-regression test-live test-unit test-contract test-viability test-durability test-blocking-io test-assets test-intake test-retained-observation test-work-unit test-strict-checkpoint test-duration-policy test-changed benchmark-fast prompt-dump prompt-dump-check profile-setup profile-preflight profiles profile-init profile-check profile-dev demo demo-scripted demo-fixture-graph demo-real demo-real-embedded-smoke demo-real-scripted demo-tui demo-tui-embedded-smoke demo-tui-fixture demo-tui-real-auto demo-sessions session-workbench debug-scripted-real-workflow soft-bundle demo-workspace-report demo-clean tui-experiences debugger-proof proof proof-status mutation-check
 
 DEMO_ARGS ?=
 # BUG-032 conclusion: sandboxed environments (DSH workspace-write) EPERM on the
@@ -62,6 +62,7 @@ verify: export UV_NO_SYNC := 1
 # cache is warm (see the warm-up note at the top of this file).
 verify: lock-check lint test-assets test-fast test-integration test-workflow
 
+	@echo "verify: OK"
 # Fixed fixture-graph lifecycle demo. Zero API, no Gateway, config.yaml,
 # model credentials, network access, or TUI installation needed.
 demo: entry-preflight
@@ -99,6 +100,12 @@ tui-debugger:
 # run this before handing any TUI path to an operator; it is also wired into
 # `make verify`. JOURNEY_ARGS="--cancel-active" abandons a leftover active
 # debug bundle (recovery after an interrupted session).
+proof:
+	@env -u PYTHONPATH $(ENTRY_RUN) --extra operations --extra demo-tui python scripts/proof_receipt.py run --lane $(LANE)
+
+proof-status:
+	@env -u PYTHONPATH $(ENTRY_RUN) --extra operations --extra demo-tui python scripts/proof_receipt.py verify $(PROOF_ARGS)
+
 tui-experiences:
 	@env -u PYTHONPATH $(ENTRY_RUN) --extra operations --extra demo-tui python scripts/tui_experience_suite.py $(EXPERIENCE_ARGS)
 
