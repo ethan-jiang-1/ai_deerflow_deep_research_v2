@@ -100,6 +100,9 @@ tui-debugger:
 # run this before handing any TUI path to an operator; it is also wired into
 # `make verify`. JOURNEY_ARGS="--cancel-active" abandons a leftover active
 # debug bundle (recovery after an interrupted session).
+mutation-check:
+	@env -u PYTHONPATH $(ENTRY_RUN) --extra operations --extra demo-tui python scripts/mutation_check.py $(MUTATION_ARGS)
+
 proof:
 	@env -u PYTHONPATH $(ENTRY_RUN) --extra operations --extra demo-tui python scripts/proof_receipt.py run --lane $(LANE)
 

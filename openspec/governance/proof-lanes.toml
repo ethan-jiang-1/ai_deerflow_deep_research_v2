@@ -61,3 +61,14 @@ sentinel = "OpenSpec governance closeout passed"
 surfaces = [
   "openspec/**",
 ]
+
+[[lane]]
+name = "mutation-check"
+command = "make mutation-check"
+cwd = "deep_research_harness"
+tier = "full"
+sentinel = "mutation-check: every guard went red"
+surfaces = [
+  "deep_research_harness/scripts/mutation_check.py",
+  "deep_research_harness/tests/mutations/**",
+]
