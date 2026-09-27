@@ -1764,29 +1764,31 @@ class DeepResearchDemoTUI(App[None]):
             self._copy_details()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "accept":
-            self._select_current_proposal()
-        elif event.button.id == "start-research":
-            self._start_research()
-        elif event.button.id == "copy-details":
-            self._copy_details()
-        elif event.button.id is not None and (
-            event.button.id.startswith("option-") or event.button.id.startswith("revision-")
-        ):
-            key = event.button.id.removeprefix("option-").removeprefix("revision-")
-            self._select_advertised_option(key)
-        elif event.button.id == "cancel" and self.mode != "gateway" and isinstance(self.last_update, AwaitingInput):
-            self._dispatch(CancelRun())
-        elif event.button.id == "debug-new-run":
-            self.run_worker(self._debug_new_run(), exclusive=True, group="debug")
-        elif event.button.id in ("debug-attach", "debug-replay"):
+        button_id = event.button.id or ""
+        if button_id.startswith("debug-"):
             draft = self.query_one("#composer", Input).value.strip()
-            runner = self._debug_attach if event.button.id == "debug-attach" else self._debug_replay
-            self.run_worker(runner(draft), exclusive=True, group="debug")
-        if event.button.id is not None and event.button.id.startswith("debug-"):
+            action = {
+                "debug-new-run": self._debug_new_run,
+                "debug-attach": lambda: self._debug_attach(draft),
+                "debug-replay": lambda: self._debug_replay(draft),
+            }.get(button_id)
+            if action is not None:
+                self.run_worker(action(), exclusive=True, group="debug")
             # A click focuses the button; the workbench's stepping rhythm is the
             # composer Enter, so hand focus straight back to it.
             self.query_one("#composer", Input).focus()
+            return
+        if button_id == "accept":
+            self._select_current_proposal()
+        elif button_id == "start-research":
+            self._start_research()
+        elif button_id == "copy-details":
+            self._copy_details()
+        elif button_id.startswith("option-") or button_id.startswith("revision-"):
+            key = button_id.removeprefix("option-").removeprefix("revision-")
+            self._select_advertised_option(key)
+        elif button_id == "cancel" and self.mode != "gateway" and isinstance(self.last_update, AwaitingInput):
+            self._dispatch(CancelRun())
 
     # ── C4b debugger workbench: debug-driver wiring (RED-013/RED-014) ────────────
     async def _debug_cancel_active(self) -> None:
@@ -1800,13 +1802,45 @@ class DeepResearchDemoTUI(App[None]):
         so a fresh Start Step is admitted again.
         """
         from deerflow_deep_research.domain.bundle import BundleId
+        from deerflow_deep_research.domain.debug_driving import DebugCommand
 
         adapter = self._adapter
         if adapter is None:
             return
-        scope = (adapter._envelope.effective_user_id, adapter._envelope.outer_thread_id)
+        scope = self._debug_scope(adapter)
         log = self.query_one("#log", RichLog)
+        driver = self._debug_driver
         bundle_id = self._debug_bundle_id
+        if driver is not None and bundle_id is not None:
+            session = await driver.session_snapshot(bundle_id)
+            if session is not None:
+                stamp = int(time.time() * 1000)
+                cancelled = await driver.execute(
+                    DebugCommand(
+                        kind="cancel",
+                        bundle_id=bundle_id,
+                        command_id=f"cancel-{stamp}",
+                        expected_cursor=session.cursor.token(),
+                    )
+                )
+                if cancelled.denied is None:
+                    # The driver's cancel does not release the control lease;
+                    # its detach command does, so run it before dropping the
+                    # local session reference.
+                    after = await driver.session_snapshot(bundle_id)
+                    if after is not None:
+                        await driver.execute(
+                            DebugCommand(
+                                kind="detach",
+                                bundle_id=bundle_id,
+                                command_id=f"detach-{stamp}",
+                                expected_cursor=after.cursor.token(),
+                            )
+                        )
+                    self._debug_driver = None
+                    self._debug_bundle_id = None
+                    log.write(Text(f"已取消活跃调试 bundle: {bundle_id[:20]}…（可重新 Start Step）", style="cyan"))
+                    return
         if bundle_id is None:
             active = await adapter._bundle_lifecycle.discover_active(scope=scope)
             if active is None:
@@ -1823,14 +1857,9 @@ class DeepResearchDemoTUI(App[None]):
         driver = self._debug_driver
         if driver is None or self._debug_bundle_id is None:
             return
-        info = driver._sessions[self._debug_bundle_id]
-        session = await driver._snapshot(
-            await driver._resolve(self._debug_bundle_id),
-            mode="step",
-            pause_requested=False,
-            lease=info["lease"].snapshot(),
-            stop_policy=info["stop_policy"],
-        )
+        session = await driver.session_snapshot(self._debug_bundle_id)
+        if session is None:
+            return
         if session.posture == "awaiting_hitl":
             self.query_one("#log", RichLog).write(
                 Text("等待 HITL 输入：请在 composer 里直接输入回答。", style="yellow")
@@ -1859,18 +1888,34 @@ class DeepResearchDemoTUI(App[None]):
     def _debug_scope(self, adapter: Any) -> tuple[str, str]:
         return (adapter._envelope.effective_user_id, adapter._envelope.outer_thread_id)
 
+    async def _bind_node_context(self, adapter: Any, bundle_id: str) -> None:
+        """Bind the C3 node-context recorder for one authorized bundle."""
+        from deerflow_deep_research.domain.bundle import BundleId
+        from deerflow_deep_research.runtime.node_context_store import (
+            NodeContextRecorder,
+            NodeContextStore,
+        )
+
+        if self._node_context_holder is None:
+            return
+        bundle = await adapter._bundle_lifecycle.resolve(
+            scope=self._debug_scope(adapter), bundle_id=BundleId(bundle_id)
+        )
+        if bundle is None:
+            return
+        store = NodeContextStore(
+            bundle_root=adapter._bundle_lifecycle.private_root(bundle),
+            bundle_id=bundle_id,
+        )
+        self._node_context_holder["recorder"] = NodeContextRecorder(store)
+
     async def _debug_attach(self, bundle_id: str) -> None:
         """Attach the workbench to one retained bundle (lifecycle-validated).
 
         RED-014 entry: the same typed action is reachable from ``--attach``,
         the Attach button, and ``/attach <id>``.
         """
-        from deerflow_deep_research.domain.bundle import BundleId
         from deerflow_deep_research.domain.debug_driving import AttachRequest
-        from deerflow_deep_research.runtime.node_context_store import (
-            NodeContextRecorder,
-            NodeContextStore,
-        )
 
         log = self.query_one("#log", RichLog)
         bundle_id = bundle_id.strip()
@@ -1890,15 +1935,7 @@ class DeepResearchDemoTUI(App[None]):
             return
         self._debug_driver = driver
         self._debug_bundle_id = bundle_id
-        bundle = await adapter._bundle_lifecycle.resolve(
-            scope=self._debug_scope(adapter), bundle_id=BundleId(bundle_id)
-        )
-        if bundle is not None:
-            store = NodeContextStore(
-                bundle_root=adapter._bundle_lifecycle.private_root(bundle),
-                bundle_id=bundle_id,
-            )
-            self._node_context_holder["recorder"] = NodeContextRecorder(store)
+        await self._bind_node_context(adapter, bundle_id)
         log.write(Text(f"已附加调试会话: {bundle_id[:20]}…（生命周期校验通过）", style="cyan"))
         await self._render_debug_result(attached)
 
@@ -1966,12 +2003,7 @@ class DeepResearchDemoTUI(App[None]):
         """Open a debug session on the one real graph and perform Start Step."""
         import time as _time
 
-        from deerflow_deep_research.domain.bundle import BundleId
         from deerflow_deep_research.domain.debug_driving import StartRequest
-        from deerflow_deep_research.runtime.node_context_store import (
-            NodeContextRecorder,
-            NodeContextStore,
-        )
 
         adapter = self._adapter
         if adapter is None or self._node_context_holder is None:
@@ -2003,16 +2035,7 @@ class DeepResearchDemoTUI(App[None]):
         bundle_id = opened.snapshot.bundle_id
         self._debug_driver = driver
         self._debug_bundle_id = bundle_id
-        bundle = await adapter._bundle_lifecycle.resolve(
-            scope=self._debug_scope(adapter),
-            bundle_id=BundleId(bundle_id),
-        )
-        if bundle is not None:
-            store = NodeContextStore(
-                bundle_root=adapter._bundle_lifecycle.private_root(bundle),
-                bundle_id=bundle_id,
-            )
-            self._node_context_holder["recorder"] = NodeContextRecorder(store)
+        await self._bind_node_context(adapter, bundle_id)
         self.query_one("#log", RichLog).write(Text(f"调试会话: {bundle_id[:20]}… (Start Step)", style="cyan"))
         await self._debug_advance()
 
@@ -2023,14 +2046,9 @@ class DeepResearchDemoTUI(App[None]):
         driver = self._debug_driver
         if driver is None or self._debug_bundle_id is None:
             return
-        info = driver._sessions[self._debug_bundle_id]
-        session = await driver._snapshot(
-            await driver._resolve(self._debug_bundle_id),
-            mode="step",
-            pause_requested=False,
-            lease=info["lease"].snapshot(),
-            stop_policy=info["stop_policy"],
-        )
+        session = await driver.session_snapshot(self._debug_bundle_id)
+        if session is None:
+            return
         result = await driver.execute(
             DebugCommand(
                 kind="advance_one",
@@ -2048,14 +2066,9 @@ class DeepResearchDemoTUI(App[None]):
         driver = self._debug_driver
         if driver is None or self._debug_bundle_id is None:
             return
-        info = driver._sessions[self._debug_bundle_id]
-        session = await driver._snapshot(
-            await driver._resolve(self._debug_bundle_id),
-            mode="step",
-            pause_requested=False,
-            lease=info["lease"].snapshot(),
-            stop_policy=info["stop_policy"],
-        )
+        session = await driver.session_snapshot(self._debug_bundle_id)
+        if session is None:
+            return
         kind: str
         answer_text = None
         if value.startswith("/detach"):

@@ -83,15 +83,19 @@ topic_planning → wave0 → wave1 → wave2_synthesis → hitl2 → readiness �
 输入 /cancel 放弃它后再 Start Step；已开启的会话请直接继续步进。
 ```
 
-## 8. Attach / Replay（三入口：按钮、slash、启动参数等价）
+## 8. Attach / Replay（已交付入口：按钮、slash、启动参数）
 
-工作台的三个入口各自可等价触发同一组动作（RED-014）：
+工作台的三个动作各有三条**已交付**的等价路径：
 
-| 入口 | 按钮 | slash | 启动参数 |
+| 动作 | 按钮 | slash | 启动参数 |
 |------|------|-------|----------|
 | 新会话 | `New Run`（用 composer 里的问题） | 直接在 composer 输入问题按 Enter | `--fixture --debug` |
 | 附加保留 bundle | `Attach`（用 composer 里的 bundle id） | `/attach <bundle_id>` | `--attach <bundle_id>` |
 | 只读回放 | `Replay`（用 composer 里的 bundle id） | `/replay <bundle_id>` | `--replay <bundle_id>` |
+
+> RED-014 的入口面还包含**命令面板动作**（第三条等价通路），以及专门的
+> Node Context 分栏（含 coverage strip）与 Files 分栏、带 posture 的 attach
+> 候选面——这些都**尚未交付**，登记为 BUG-071；本节只描述已可用路径。
 
 - **Attach**：经生命周期校验后把工作台接到该 bundle 的 durable checkpoint，**不自动推进**；
   之后 composer Enter 即可继续 step/answer。

@@ -363,22 +363,47 @@ class DebugRunDriver:
         )
         return DebugSessionUpdate(snapshot=snapshot, command_id="advance")
 
-    async def _boundary_cursor(self, bundle, *, next_nodes: tuple[str, ...] | None = None) -> BoundaryCursor:
+    async def _boundary_cursor(self, bundle, *, next_nodes: tuple[str, ...] = ()) -> BoundaryCursor:
+        """Project the durable boundary; ``next_nodes`` is projection-only.
+
+        The write permit fences the durable identity (bundle, generation,
+        frame, checkpoint) only, so the next-node projection never takes part
+        in staleness. Exactly one source supplies it: the stepping path reads
+        it from the compiled graph state. The trace-frame projection does not
+        carry it (BUG-070), and no fallback pretends otherwise.
+        """
         from deerflow_deep_research.runtime.trace_projector import RunTraceProjector
 
         page = await RunTraceProjector(self._lifecycle).project_full(bundle, live=True)
         last = page.frames[-1] if page.frames else None
         state = await self._lifecycle.read_state(bundle)
-        # The durable next-node fact comes from the compiled graph state, which
-        # the stepping call already reads; the trace-frame projection does not
-        # carry it (BUG-070). Fall back to the frame for callers without it.
-        resolved_next = next_nodes if next_nodes is not None else (last.next_nodes if last else ())
         return BoundaryCursor(
             bundle_id=bundle.bundle_id.value,
             generation=state.generation,
             frame_sequence=len(page.frames),
             checkpoint_id=last.checkpoint_id if last else None,
-            next_nodes=resolved_next,
+            next_nodes=next_nodes,
+        )
+
+    async def session_snapshot(self, bundle_id: str) -> DebugSessionSnapshot | None:
+        """Current snapshot of one live session, or None when this driver holds none.
+
+        The debug workbench's client surface: callers read the session posture
+        and cursor token through this method instead of reaching into the
+        driver's private session table.
+        """
+        session = self._sessions.get(bundle_id)
+        if session is None:
+            return None
+        bundle = await self._resolve(bundle_id)
+        if bundle is None:
+            return None
+        return await self._snapshot(
+            bundle,
+            mode=session["mode"],
+            pause_requested=bool(session.get("pause_requested")),
+            lease=session["lease"].snapshot(),
+            stop_policy=session["stop_policy"],
         )
 
     async def _snapshot(
@@ -389,7 +414,7 @@ class DebugRunDriver:
         pause_requested: bool,
         lease: LeasePosture,
         stop_policy: StopPolicy,
-        next_nodes: tuple[str, ...] | None = None,
+        next_nodes: tuple[str, ...] = (),
     ) -> DebugSessionSnapshot:
         cursor = await self._boundary_cursor(bundle, next_nodes=next_nodes)
         state = await self._lifecycle.read_state(bundle)

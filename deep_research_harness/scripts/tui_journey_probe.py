@@ -34,13 +34,15 @@ from typing import Any
 HARNESS_ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = HARNESS_ROOT / "scripts"
 
-TRANSCRIPT: list[str] = []
 VERBOSE = False
 PANE = {"log": "", "inspect": ""}
+# Proof that the entry chain was actually exercised: `App.run` fired and the
+# driven routine reached its end. Without both, a broken chain would report a
+# vacuous "JOURNEY OK" because no step ever ran (false green).
+RAN = {"app_run": False, "routine_completed": False}
 
 
 def _log(message: str) -> None:
-    TRANSCRIPT.append(message)
     print(message, flush=True)
 
 
@@ -224,7 +226,7 @@ async def _fixture_debugger_journey(app: Any, pilot: Any) -> None:
     await _submit(app, pilot, "/context")
     ok = await _wait(pilot, lambda: "Node Context" in _log_text(app), deadline_seconds=30)
     _require(ok, "context", f"/context produced no page; log tail:\n{_log_text(app)[-400:]}")
-    _log("  [10] /context renders the Node Context page ............. ok")
+    _log("  [10] /context renders its log view (RED-014 pane pending) . ok")
 
     # 11. Clean detach -----------------------------------------------------
     await _submit(app, pilot, "/detach")
@@ -275,6 +277,7 @@ def _run_journey(*, isolate: bool, routine: Callable[[Any, Any], Any]) -> list[s
     failure: list[str] = []
 
     def fake_run(self: Any, *args: Any, **kwargs: Any) -> None:
+        RAN["app_run"] = True
         if isolate:
             # Patch the __main__ namespace's adapter so the run is isolated.
             main_module = sys.modules["__main__"]
@@ -284,13 +287,30 @@ def _run_journey(*, isolate: bool, routine: Callable[[Any, Any], Any]) -> list[s
         async def drive() -> None:
             try:
                 await _drive(self, routine)
+                RAN["routine_completed"] = True
             except Exception as exc:  # noqa: BLE001 - harness reports everything
                 failure.append(f"{type(exc).__name__}: {exc}")
 
         asyncio.run(drive())
 
     textual.app.App.run = fake_run
-    runpy.run_path(str(SCRIPTS / "demo_tui.py"), run_name="__main__")
+    try:
+        runpy.run_path(str(SCRIPTS / "demo_tui.py"), run_name="__main__")
+    except SystemExit as exc:
+        # A script that exits before App.run (or non-zero) must never read as a
+        # clean journey: SystemExit would otherwise escape and the harness
+        # process itself would exit 0.
+        if not RAN["app_run"]:
+            failure.append(f"the entry chain exited before App.run (SystemExit {exc.code!r})")
+        elif exc.code not in (0, None):
+            failure.append(f"the entry chain exited with SystemExit {exc.code!r}")
+    if not RAN["app_run"] and not failure:
+        failure.append(
+            "App.run was never invoked: the entry chain did not reach the workbench "
+            "(a vacuous pass would be false green)"
+        )
+    elif not RAN["routine_completed"] and not failure:
+        failure.append("the journey routine never completed")
     return failure
 
 

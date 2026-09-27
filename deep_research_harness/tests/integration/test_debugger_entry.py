@@ -144,3 +144,49 @@ def test_launcher_enables_fixture_source_and_injects_debug_for_fixture() -> None
     text = LAUNCHER.read_text(encoding="utf-8")
     assert "src_fixtures" in text, "launcher must enable the fixture source for its child"
     assert "--debug" in text, "launcher must inject --debug for the fixture composition"
+
+
+def _launcher_forwarded_argv(*args: str, tmp_path: Path) -> str:
+    """Run the launcher with a stub interpreter and capture the forwarded argv."""
+    import os
+
+    stub = tmp_path / "stub-python"
+    stub.write_text('#!/bin/sh\nprintf "%s\\n" "$@"\n', encoding="utf-8")
+    stub.chmod(0o755)
+    env = dict(os.environ)
+    env["DEBUGGER_PYTHON"] = str(stub)
+    env.pop("PYTHONPATH", None)
+    result = subprocess.run(
+        [str(LAUNCHER), *args],
+        capture_output=True,
+        text=True,
+        timeout=30,
+        cwd=tmp_path,
+        env=env,
+    )
+    assert result.returncode == 0, result.stderr
+    return result.stdout
+
+
+def test_launcher_injects_the_fixture_debugger_for_every_entry_spelling(tmp_path: Path) -> None:
+    """RED-013 regression: the injection is behavioural, not a text grep.
+
+    A bare ``--fixture``, an explicit ``--debug``, and argparse's
+    ``--attach=<id>`` spelling must all reach the TUI as a fixture debugger
+    session; a real composition must never gain the fixture extras.
+    """
+
+    fixture_argv = _launcher_forwarded_argv("--fixture", tmp_path=tmp_path)
+    assert "--fixture" in fixture_argv
+    assert "--debug" in fixture_argv
+
+    explicit = _launcher_forwarded_argv("--fixture", "--debug", tmp_path=tmp_path)
+    assert explicit.count("--debug") == 1, "an operator-supplied --debug must not be duplicated"
+
+    attached = _launcher_forwarded_argv("--attach=b_aaaaaaaaaaaaaaaaaaaaaaaa", tmp_path=tmp_path)
+    assert "--fixture" in attached and "--debug" in attached
+    assert "--attach=b_aaaaaaaaaaaaaaaaaaaaaaaa" in attached
+
+    embedded = _launcher_forwarded_argv("--embedded-smoke", tmp_path=tmp_path)
+    assert "--debug" not in embedded, "a real composition must not be forced into the workbench"
+    assert "--fixture" not in embedded, "a real composition must not gain the fixture composition"

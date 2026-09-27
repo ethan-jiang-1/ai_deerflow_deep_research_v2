@@ -257,6 +257,46 @@ async def test_cursor_reports_the_next_node_after_a_step(tmp_path: Path) -> None
 
 
 @pytest.mark.asyncio
+async def test_cancel_then_detach_releases_the_control_lease(tmp_path: Path) -> None:
+    """The workbench's /cancel sequence: typed cancel, then detach to free the lease.
+
+    ``cancel`` alone cancels the Bundle but keeps the control lease, so the
+    workbench must run the driver's ``detach`` afterwards; otherwise a later
+    session would be fenced by a lease nobody owns.
+    """
+    driver, _lifecycle = _make_driver(tmp_path, owner="op-1")
+    opened = await driver.open_start(
+        StartRequest(question="Compare storage", mode="step", owner="op-1", command_id="start-00000001")
+    )
+    bundle_id = opened.snapshot.bundle_id
+    session = await driver.session_snapshot(bundle_id)
+    assert session is not None
+    cancelled = await driver.execute(
+        DebugCommand(
+            kind="cancel",
+            bundle_id=bundle_id,
+            command_id="cancel-00000001",
+            expected_cursor=session.cursor.token(),
+        )
+    )
+    assert cancelled.denied is None
+    after = await driver.session_snapshot(bundle_id)
+    assert after is not None
+    detached = await driver.execute(
+        DebugCommand(
+            kind="detach",
+            bundle_id=bundle_id,
+            command_id="detach-00000001",
+            expected_cursor=after.cursor.token(),
+        )
+    )
+    assert detached.denied is None
+    assert detached.snapshot is not None
+    assert detached.snapshot.lease.live is False
+    assert await driver.session_snapshot(bundle_id) is None
+
+
+@pytest.mark.asyncio
 async def test_pause_request_holds_drive_at_next_boundary(tmp_path: Path) -> None:
     driver, _lifecycle = _make_driver(tmp_path, owner="op-1")
     opened = await driver.open_start(

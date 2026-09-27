@@ -91,6 +91,22 @@ so `make verify` remains valid in a clean checkout. The generated Markdown is no
 authority or a prompt-editing surface. Do not edit it by hand: update the owned Python prompt
 source or canonical catalog fixture, then regenerate it.
 
+## Test Hygiene
+
+Tests preserve runtime invariants without changing production execution topology
+(borrowed from the framework's own test guidance):
+
+- synchronize on explicit signals (events, wait-for predicates, bounded polling)
+  instead of sleep thresholds — a timing-based assertion is a flake with a deadline;
+- release every blocked worker before the test ends, so a hung double never leaks
+  into the next case;
+- restore every process-global patch in teardown;
+- never rewire production topology (routing, policy, step order) to make a test pass;
+- label scripted/synthetic inputs as scripted/synthetic in the assertion and in the
+  evidence claim — a fixture run must never read as real evidence;
+- read credentials only from named environment variables, and never download
+  external material silently inside a test.
+
 ## Evidence Classes
 
 Deep Research maintains three active asset classes. Code-correctness tests cover
