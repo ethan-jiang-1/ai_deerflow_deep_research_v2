@@ -3,7 +3,7 @@
 A receipt is runner-written evidence that one lane exited zero on one revision
 (change `add-evidence-receipts-and-proof-lanes`). It is invalid on a dirty tree,
 stale once a covered surface changes, and never claims a pass for a lane whose
-credentials are absent. See `openspec/governance/proof-lanes.toml`.
+credentials are absent. See `deep_research_harness/proof-lanes.toml`.
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ from pathlib import Path
 
 HARNESS = Path(__file__).resolve().parents[1]
 ROOT = HARNESS.parent
-REGISTRY = ROOT / "openspec" / "governance" / "proof-lanes.toml"
+REGISTRY = HARNESS / "proof-lanes.toml"
 PROOF_DIR = ROOT / ".proof"
 RECEIPTS = PROOF_DIR / "receipts"
 TRANSCRIPTS = PROOF_DIR / "transcripts"
@@ -50,7 +50,7 @@ class RegistryError(ValueError):
 def load_lanes(root: Path = ROOT) -> list[dict]:
     import tomllib
 
-    data = tomllib.loads((root / "openspec" / "governance" / "proof-lanes.toml").read_text(encoding="utf-8"))
+    data = tomllib.loads((root / "deep_research_harness" / "proof-lanes.toml").read_text(encoding="utf-8"))
     lanes = data.get("lane", [])
     if not isinstance(lanes, list) or not lanes:
         raise RegistryError("registry declares no lanes")
@@ -255,9 +255,9 @@ def self_test(root: Path = ROOT) -> int:
     ]
     with tempfile.TemporaryDirectory() as tmp:
         tmp_root = Path(tmp)
-        (tmp_root / "openspec" / "governance").mkdir(parents=True)
+        (tmp_root / "deep_research_harness").mkdir(parents=True)
         for label, lane in bad:
-            (tmp_root / "openspec" / "governance" / "proof-lanes.toml").write_text(
+            (tmp_root / "deep_research_harness" / "proof-lanes.toml").write_text(
                 "[[lane]]\n" + "\n".join(f"{k} = {json.dumps(v)}" for k, v in lane.items()) + "\n",
                 encoding="utf-8",
             )

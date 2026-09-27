@@ -26,7 +26,7 @@ exited zero on a revision that still covers the delivered files.
 
 ## What Changes
 
-- **Lane registry (data)**: `openspec/governance/proof-lanes.toml` maps each lane
+- **Lane registry (data)**: `deep_research_harness/proof-lanes.toml` maps each lane
   to its command, working directory, the file surfaces it covers, and (for
   operator-facing surfaces) the journeys it must include.
 - **Receipt runner**: `deep_research_harness/scripts/proof_receipt.py` plus
@@ -62,7 +62,7 @@ before they can be produced would block every closeout.
 
 ## Impact
 
-- New: `openspec/governance/proof-lanes.toml`,
+- New: `deep_research_harness/proof-lanes.toml`,
   `deep_research_harness/scripts/proof_receipt.py`,
   `deep_research_harness/scripts/mutation_check.py`,
   `deep_research_harness/tests/mutations/registry.py`.

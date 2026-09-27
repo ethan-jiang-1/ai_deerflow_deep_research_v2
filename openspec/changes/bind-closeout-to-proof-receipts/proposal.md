@@ -65,7 +65,7 @@ closeout.
   than the evidence that produced it?
 - **Necessary adjacent/external contracts:** `PRS-009` owns the aggregate's
   composition and the registered component set; the companion change owns the lane
-  registry and the receipt format (`proof-lanes.toml`,
+  registry and the receipt format (`deep_research_harness/proof-lanes.toml`,
   `scripts/proof_receipt.py`); git owns the revision diff used for staleness.
 - **Evidence seam:** the checker's own focused tests - a change with a stale
   receipt fails, a change with a fresh receipt passes, a hand-written claim fails
