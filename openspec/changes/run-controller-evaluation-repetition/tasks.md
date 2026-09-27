@@ -14,11 +14,11 @@
 
 ## 2. Live subjects (implementation discovery: the two cases need different subjects; no live subject exists yet)
 
-- [ ] 2.1 Enumerate the `subject_state` values the controller case declares and
+- [x] 2.1 Enumerate the `subject_state` values the controller case declares and
       write the deterministic table of declared typed results each state's
       bounded recording fake may return (fresh per scenario; undeclared state
       fails closed). Unit-test the table against every declared state.
-- [ ] 2.2 Build the controller live subject: isolated DeerFlow home via the
+- [x] 2.2 Build the controller live subject: isolated DeerFlow home via the
       `configure.py` pattern with the real model endpoint (key from
       `DEEPSEEK_API_KEY`, injected at runtime only), committed skill/soul at the
       container paths, `file:read` route, public `deep_research` tool over the
@@ -27,7 +27,7 @@
       `make_lead_agent` composition, capture skill-read evidence and the proposed
       action or clarification, aggregate per-scenario records plus the case's
       required telemetry into one `SubjectExecution`.
-- [ ] 2.3 Deterministic tests for the controller subject's capture path: a
+- [x] 2.3 Deterministic tests for the controller subject's capture path: a
       scripted model double proves the skill-read/action/clarification capture
       and telemetry aggregation (the real-model judgment itself is NOT claimed by
       these tests); a digest mismatch (uncommitted skill) fails the subject
@@ -36,7 +36,7 @@
       factory through `graph_context.run_agent` with the real model (the node
       cognitive program, not the lead agent), scenario state from the case
       fixture, same telemetry aggregation.
-- [ ] 2.5 Verify each case-declared execution timeout can hold a full
+- [x] 2.5 Verify each case-declared execution timeout can hold a full
       multi-scenario real-model session; if not, stop and surface the bound
       question before any live spend.
 

@@ -438,7 +438,7 @@
  ],
  "bounds": {
   "timeout_seconds": 900,
-  "max_model_calls": 18,
+  "max_model_calls": 50,
   "max_tool_calls": 54
  }
 }

@@ -77,6 +77,19 @@ case's scenarios (17 or 6 real-model turns) and returns one aggregated
   No live subject exists for any case yet (`evals/runs/` is empty; the suite
   doc's dependency helpers are caller-supplied examples), so this change builds
   both, controller first.
+- **Corpus budget correction (implementation discovery)**: the case's declared
+  `max_model_calls: 18` was calibrated for a single-call-per-scenario node
+  subject and is incoherent with the case's own contract: the real lead-agent
+  composition needs at least read + proposal + closing response per action
+  scenario (the handoff tests script exactly three responses), so any honest
+  controller subject consumes ~48 calls for 17 scenarios. Amended in place from
+  18 to 50 (the domain contract's own ceiling for the field; the never-consumed
+  v1 — `evals/runs/` is empty, no test or registry digest pins the value) with
+  modest headroom for occasional extra responses; tool budget 54 already covers
+  the ~34 tool calls; the 900s timeout holds a full fresh-thread session on the
+  flash-tier model. If a live model busts the 50 ceiling, the recorded fallback
+  is the leaner shared-thread subject (one amortized skill read, ~35 calls).
+  Recorded loudly here and in the evidence rather than absorbed silently.
 - **Staged spend**: validate the whole pipeline with ONE controller invocation
   (17 real-model turns — composition, model, fake lifecycle, capture, manifest,
   reviewability) before the full series; then the controller series (×3); the
