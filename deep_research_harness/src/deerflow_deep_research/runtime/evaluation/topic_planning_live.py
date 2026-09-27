@@ -52,7 +52,9 @@ _BASE_PROFILE: dict[str, Any] = {
     "comparison_required": True,
     "comparison_subjects": ("lithium-ion batteries", "vanadium redox flow batteries"),
     "request_language": "en",
-    "output_language": "zh",
+    # The case's expected assignment fragments are English prose; the scenario
+    # profile must let the planner produce comparable English topic text.
+    "output_language": "en",
 }
 
 
