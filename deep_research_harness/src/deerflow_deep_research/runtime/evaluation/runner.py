@@ -14,6 +14,7 @@ import json
 import os
 import secrets
 import shutil
+import subprocess
 import time
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import asdict, is_dataclass
@@ -124,6 +125,7 @@ class CognitiveEvaluationRunner:
             raise CaseAdmissionError("evaluation_subject_unavailable")
 
         execution_id = "e_" + secrets.token_hex(16)
+        code_revision = await asyncio.to_thread(_code_revision)
         execution_root = self.runs_root / execution_id
         workspace = execution_root / "workspace"
         bundle_path = execution_root / "bundle"
@@ -193,6 +195,7 @@ class CognitiveEvaluationRunner:
             execution,
             failure,
             evidence_layer,
+            code_revision,
         )
         return ExecutionResult(execution_id=execution_id, status=status, bundle_path=bundle_path)
 
@@ -285,6 +288,27 @@ def _nonnegative_int(value: object) -> bool:
     return isinstance(value, int) and not isinstance(value, bool) and value >= 0
 
 
+def _code_revision() -> str | None:
+    """Best-effort provenance: the git worktree revision of this executing code.
+
+    Returns None outside a git worktree (or without a git binary) so the manifest
+    stays valid without claiming a revision it cannot honestly name (CES-003).
+    """
+
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=Path(__file__).resolve().parent,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    revision = result.stdout.strip()
+    return revision or None
+
+
 def _publish_bundle(
     bundle_path: Path,
     execution_id: str,
@@ -294,6 +318,7 @@ def _publish_bundle(
     execution: SubjectExecution | None,
     failure: FailureDetail | None,
     evidence_layer: EvidenceLayer,
+    code_revision: str | None,
 ) -> None:
     staging = bundle_path.parent / ".bundle-staging"
     if staging.exists():
@@ -324,6 +349,7 @@ def _publish_bundle(
         controls=case.controls,
         content_digests={name: _digest(content) for name, content in records.items()},
         failure=failure,
+        code_revision=code_revision,
     )
     _atomic_write(staging / "manifest.json", manifest.model_dump_json(indent=2).encode("utf-8") + b"\n")
     os.replace(staging, bundle_path)

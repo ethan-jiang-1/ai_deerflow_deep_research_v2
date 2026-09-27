@@ -754,6 +754,10 @@ class EvaluationBundleManifest(_FrozenContract):
     controls: tuple[ControlIdentity, ...]
     content_digests: dict[str, str]
     failure: FailureDetail | None = None
+    # Additive provenance (CES-003): the git worktree revision that produced this
+    # execution. Optional so pre-existing manifests stay valid; review admission
+    # never requires it.
+    code_revision: str | None = Field(default=None, min_length=1, max_length=64)
 
     @field_validator("content_digests")
     @classmethod

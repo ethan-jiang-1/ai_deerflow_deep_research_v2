@@ -21,6 +21,7 @@ import asyncio
 import hashlib
 import importlib
 import json
+import subprocess
 import time
 from copy import deepcopy
 from datetime import UTC, datetime
@@ -1731,6 +1732,28 @@ async def test_evidence_layer_is_manifest_derived_and_live_requires_selected_pre
         ).evidence_layer
         is EvidenceLayer.CREDENTIALED_LIVE_QUALITY
     )
+
+
+@pytest.mark.asyncio
+async def test_finalized_manifest_names_the_code_revision_of_the_worktree(tmp_path: Path) -> None:
+    """@impl CES-003 — the manifest names the code that produced the execution."""
+
+    runner = CognitiveEvaluationRunner(
+        registry=CaseRegistry((_case(),)),
+        runs_root=tmp_path / "evals" / "runs",
+        subjects={"hitl1_brief": _successful_subject},
+    )
+
+    execution = await runner.run(case_id="hitl1-brief", version="v1")
+
+    manifest = json.loads((execution.bundle_path / "manifest.json").read_text(encoding="utf-8"))
+    head = subprocess.run(
+        ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True
+    ).stdout.strip()
+    assert manifest["code_revision"] == head
+    additive = dict(manifest)
+    additive.pop("code_revision")
+    assert EvaluationBundleManifest.model_validate(additive).code_revision is None
 
 
 @pytest.mark.asyncio
