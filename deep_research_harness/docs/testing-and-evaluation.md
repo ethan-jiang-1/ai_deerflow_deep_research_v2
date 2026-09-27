@@ -315,6 +315,19 @@ its own app and Bundle root at a realistic terminal size, printing one PASS/FAIL
 journey. `make debugger-proof` runs the whole debugger evidence chain (driver matrix, entry
 contract, workbench tests, journey harness, experience suite) in one command.
 
+**Delivery lanes and receipts.** A lane is a named command with declared surfaces and a
+success sentinel (`deep_research_harness/proof-lanes.toml`): `verify`, `debugger-proof`
+and `mutation-check`. `make proof LANE=<lane>` runs one, tees its transcript under
+`.proof/transcripts/`, and writes `.proof/receipts/<lane>.json` with the command, exit
+code, revision, cleanliness, tool versions, transcript SHA-256 and the sentinel it
+observed. A dirty tree yields only a provisional receipt; a receipt goes stale as soon
+as a covered surface changes (a diff against the working tree, never a timestamp); a
+credential-gated lane records `unverified` instead of a pass; `make proof-status` names
+what to rerun. `make mutation-check` applies each entry in `tests/mutations/registry.py`
+and fails when a guard stays green. Closeout requires a runner-written receipt for every
+lane whose surfaces the change touched (`openspec/governance/check_proof_receipts.py`),
+so a caller-declared claim never satisfies it.
+
 **Rule of use:** an agent must run this harness before handing any TUI path to a
 human operator, and the same assertion runs inside `make verify`
 (`tests/integration/test_debugger_entry.py`). A leftover active debug bundle (a

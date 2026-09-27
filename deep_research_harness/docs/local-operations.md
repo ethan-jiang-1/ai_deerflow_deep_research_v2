@@ -25,6 +25,9 @@ Run commands from `deep_research_harness/`. Use the root README's
 | Inspect one retained observation | `make demo-sessions DEMO_ARGS="inspect <bundle-id>"` |
 | Run the operator-only scripted-real workflow debug | `make debug-scripted-real-workflow` |
 | Create/run/bind/inspect a soft bundle root | `make soft-bundle DEMO_ARGS="create"` |
+| Prove a delivery lane and record a receipt | `make proof LANE=verify` |
+| Report stale receipts and the rerun command | `make proof-status` |
+| Require every registered guard to go red | `make mutation-check` |
 
 The demo targets ignore a foreign active `VIRTUAL_ENV` and use the locked project
 environment. A retained observation command is read-only: it does not discover a

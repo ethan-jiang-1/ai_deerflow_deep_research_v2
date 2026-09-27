@@ -96,8 +96,9 @@ cognition is not causal. Do not invent a capability, prompt, or repair loop.
 
 ## Verification
 
-Run the narrowest relevant test first; for interactive TUI paths run `make tui-journey` (and
-`make debugger-proof`) before an operator does. Complete gate: `UV_OFFLINE=1 make verify`.
+Run the narrowest relevant test first; for TUI paths `make tui-journey` / `make debugger-proof`.
+Record receipts (`make proof LANE=…`), prove guards (`make mutation-check`). Complete gate:
+`UV_OFFLINE=1 make verify`.
 
 ## Structural Authority
 

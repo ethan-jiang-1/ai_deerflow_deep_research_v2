@@ -77,3 +77,17 @@ soft-bundle 辅助动词：`inspect` / `phases` / `status` / `verify`（对同�
 | 疑似产品 bug | `_backlog/bugs/`（登记流程见其 README） |
 | TUI 卡死/断网死亡 | 用 `--attach <id>` 从 durable checkpoint 恢复（BUG-064 已修，`add-suspended-run-recovery`；`--replay` 只读）；见 [runbook-030](docs/runbooks/runbook-030-debugger.md) |
 | 命令行为与本页不符 | 以 `Makefile` 为准，并修本页 |
+
+## 证据与门禁（交付前）
+
+| 命令 | 作用 |
+| --- | --- |
+| `UV_OFFLINE=1 make verify` | 应用行为、契约与门禁的完整门；绿时打印哨兵 `verify: OK` |
+| `make proof LANE=<lane>` | 跑一条已登记 lane 并写下回执（命令/退出码/revision/是否脏树/transcript 摘要）；**脏树只发 provisional**，凭据 lane 记 `unverified` |
+| `make proof-status` | 报告哪些回执已过期并给出重跑命令（`PROOF_ARGS="--lane verify"` 可限定） |
+| `make mutation-check` | 逐条施加已登记变异并要求对应守卫变红；有守卫不变红即非零退出 |
+| `make tui-journey` / `make tui-experiences` / `make debugger-proof` | 交互式 TUI 的逐步、整程与调试工作台证据（后者一条命令跑完五条链路） |
+
+lane 定义在 `proof-lanes.toml`（harness 侧），回执与 transcript 落在 `.proof/`（gitignored）；
+关账时治理门会要求覆盖被改动表面的 runner 回执。见已归档 change
+`add-evidence-receipts-and-proof-lanes` 与 `bind-closeout-to-proof-receipts`。
