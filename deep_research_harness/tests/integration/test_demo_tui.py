@@ -1415,33 +1415,51 @@ async def test_workbench_palette_actions_match_the_button_path(monkeypatch: pyte
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("size", [(80, 24), (100, 30), (120, 45)])
-async def test_workbench_panes_are_visible_at_common_terminal_sizes(
+async def test_workbench_degrades_honestly_below_the_supported_minimum(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A too-small terminal must say so, keep the core usable and fold the panes.
+
+    The workbench supports 100x30; at 80x24 it must not silently clip or squeeze
+    the operator's log - it folds the on-demand panes and states the limitation.
+    """
+    _install_isolated_fixture_adapter(monkeypatch, bundle_root=tmp_path / "demo-runs")
+    app = DeepResearchDemoTUI(mode="fixture", debug_mode=True)
+    async with app.run_test(size=(80, 24)) as pilot:
+        await _wait_for(app, pilot, demo_tui.Ready)
+        notice = app.query_one("#hint").render().plain
+        assert "100x30" in notice and "80x24" in notice, f"no honest size notice: {notice!r}"
+        screen = app.screen.region
+        for widget_id in ("banner", "log", "inspect", "prompt", "controls", "debug-controls", "hint"):
+            widget = app.query_one(f"#{widget_id}")
+            assert widget.display, f"#{widget_id} is hidden at 80x24"
+            region = widget.region
+            assert region.y + region.height <= screen.height, f"#{widget_id} is clipped at 80x24: {region}"
+        assert app.query_one("#log").region.height >= 4, "the log must stay readable at 80x24"
+        assert not app.query_one("#node-context").display
+        assert not app.query_one("#files").display
+        assert app.query_one("#composer", demo_tui.Input).has_focus
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("size", [(100, 30), (120, 45)])
+async def test_workbench_panes_are_visible_at_supported_terminal_sizes(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, size: tuple[int, int]
 ) -> None:
-    """The operator must be able to see and drive the workbench at real sizes.
+    """At or above the supported minimum every pane is visible and the log keeps room.
 
-    Regression for an operator-visible class of defect: a verification that only
-    reads widget text can pass while a pane sits off-screen or the composer is
-    squeezed to nothing, so every operator-facing pane is checked for a real
-    region inside the screen and the composer for usable size and focus.
+    Regression for an operator-visible class of defect: reading widget text can
+    pass while a pane sits off-screen, the log is squeezed to nothing, or the
+    composer is unusable.
     """
     _install_isolated_fixture_adapter(monkeypatch, bundle_root=tmp_path / "demo-runs")
     app = DeepResearchDemoTUI(mode="fixture", debug_mode=True)
     async with app.run_test(size=size) as pilot:
         await _wait_for(app, pilot, demo_tui.Ready)
         screen = app.screen.region
-        for widget_id in (
-            "banner",
-            "log",
-            "inspect",
-            "prompt",
-            "controls",
-            "debug-controls",
-            "node-context",
-            "files",
-            "hint",
-        ):
+        assert "小于调试工作台建议" not in app.query_one("#hint").render().plain
+
+        def assert_visible(widget_id: str) -> None:
             widget = app.query_one(f"#{widget_id}")
             assert widget.display, f"#{widget_id} is hidden at {size}"
             region = widget.region
@@ -1449,10 +1467,37 @@ async def test_workbench_panes_are_visible_at_common_terminal_sizes(
             assert region.y + region.height <= screen.height, (
                 f"#{widget_id} extends past the screen bottom at {size}: {region} vs {screen}"
             )
-        log_region = app.query_one("#log").region
-        assert log_region.height >= 3, f"the log is unreadably short at {size}: {log_region}"
+
+        for widget_id in ("banner", "log", "inspect", "prompt", "controls", "debug-controls", "hint"):
+            assert_visible(widget_id)
+        for hidden_id in ("start-research", "accept", "cancel"):
+            assert not app.query_one(f"#{hidden_id}").display, f"inert shared button #{hidden_id} visible at {size}"
+        for on_demand in ("node-context", "files"):
+            assert not app.query_one(f"#{on_demand}").display, f"#{on_demand} should start folded at {size}"
+
+        assert app.query_one("#log").region.height >= 5, f"the log is too short at rest at {size}"
         composer = app.query_one("#composer", demo_tui.Input)
-        assert composer.region.height > 0 and composer.region.width > 20, (
-            f"the composer is unusable at {size}: {composer.region}"
-        )
+        assert composer.region.height > 0 and composer.region.width > 20, f"composer unusable at {size}"
         assert composer.has_focus, f"the composer is not focused at {size}"
+
+        composer.value = "Compare storage approaches"
+        await pilot.pause()
+        await pilot.press("enter")
+        for _ in range(120):
+            await pilot.pause()
+            if app._debug_driver is not None:
+                break
+            await asyncio.sleep(0.05)
+        assert app._debug_driver is not None, f"no debug session at {size}"
+        for command, pane_id in (("/context", "node-context"), ("/files", "files")):
+            composer.value = command
+            await pilot.pause()
+            await pilot.press("enter")
+            for _ in range(60):
+                await pilot.pause()
+                if app.query_one(f"#{pane_id}").display:
+                    break
+                await asyncio.sleep(0.05)
+            assert app.query_one(f"#{pane_id}").display, f"{command} did not open #{pane_id} at {size}"
+            assert_visible(pane_id)
+        assert app.query_one("#log").region.height >= 3, f"the log lost its room once panes opened at {size}"

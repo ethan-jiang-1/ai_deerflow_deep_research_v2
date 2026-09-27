@@ -818,6 +818,9 @@ class DeepResearchDemoTUI(App[None]):
     #copy-details { width: 14; margin-left: 1; }
     #accept { width: 16; margin-left: 1; }
     #cancel { width: 14; margin-left: 1; }
+    #debug-controls { height: 3; margin: 0 2 1 2; }
+    #node-context { height: auto; max-height: 8; margin: 0 2; padding: 0 1; border: round #334155; }
+    #files { height: auto; max-height: 10; margin: 0 2; padding: 0 1; border: round #334155; }
     #hint { height: 1; margin: 0 2 1 2; color: #94a3b8; }
     """
 
@@ -914,22 +917,42 @@ class DeepResearchDemoTUI(App[None]):
                 yield Button("", id=f"revision-{revision_id}", classes="advertised-option")
         with Horizontal(id="controls"):
             yield Input(value=self._EXAMPLE_QUESTION, placeholder="Research question", id="composer")
-            yield Button("Start Deep Research", id="start-research")
+            # The shared entry buttons stay in the DOM (the shared render path
+            # queries them) but are hidden in the debugger, where they are
+            # inert: leaving them visible made the workbench look like it had
+            # controls that do nothing.
+            start_button = Button("Start Deep Research", id="start-research")
+            accept_button = Button("Start Proposal", id="accept")
+            cancel_button = Button("Cancel", id="cancel", variant="error")
+            if self.debug_mode:
+                start_button.display = False
+                accept_button.display = False
+                cancel_button.display = False
+            yield start_button
+            yield accept_button
+            yield cancel_button
             yield Button("Copy details", id="copy-details")
-            yield Button("Start proposal", id="accept")
-            yield Button("Cancel", id="cancel", variant="error")
         if self.debug_mode:
             with Horizontal(id="debug-controls"):
                 yield Button("New Run", id="debug-new-run")
                 yield Button("Attach", id="debug-attach")
                 yield Button("Replay", id="debug-replay")
-            yield Static(id="node-context")
-            yield Static(id="files")
-        yield Static(
-            "「Start Deep Research」按钮启动研究 · 中间对话区: 双击=复制全文 · "
-            "Option+拖拽=选中一段 · Copy details=复制全部 · Ctrl-C 退出",
-            id="hint",
-        )
+            # The panes are on demand: they stay hidden until asked for, so the
+            # log keeps its room on a small terminal.
+            node_context = Static(id="node-context")
+            files = Static(id="files")
+            node_context.display = False
+            files.display = False
+            yield node_context
+            yield files
+        if self.debug_mode:
+            yield Static(self._DEBUG_HINT, id="hint")
+        else:
+            yield Static(
+                "「Start Deep Research」按钮启动研究 · 中间对话区: 双击=复制全文 · "
+                "Option+拖拽=选中一段 · Copy details=复制全部 · Ctrl-C 退出",
+                id="hint",
+            )
 
     def on_mount(self) -> None:
         mode_label = {
@@ -1005,6 +1028,10 @@ class DeepResearchDemoTUI(App[None]):
                 self._experience.set_observation_publisher(adapter.observation_publisher)
             self._adapter = adapter
             self.apply_run_update(Ready(report=report))
+            if self.debug_mode:
+                # First screen is actionable: no live session yet.
+                self._refresh_debug_hint()
+                self._render_no_debug_session()
             if self.debug_mode and self._attach_intent:
                 await self._debug_attach(self._attach_intent)
             elif self.debug_mode and self._replay_intent:
@@ -1292,24 +1319,29 @@ class DeepResearchDemoTUI(App[None]):
         if self.debug_mode and value.startswith("/cancel"):
             # Recovery path: abandon the scope's active bundle. A previous
             # session left paused blocks every new Start Step as busy.
+            self.query_one("#composer", Input).value = ""
             self.run_worker(self._debug_cancel_active(), exclusive=True, group="debug")
             return
         if self.debug_mode and value.startswith("/files"):
             # RED-014 Files pane: read-only typed pages, no host paths.
             _, _, path_argument = value.partition(" ")
+            self.query_one("#composer", Input).value = ""
             self.run_worker(self._debug_render_files(path_argument.strip()), exclusive=True, group="debug")
             return
         if self.debug_mode and (value.startswith("/attach") or value.startswith("/replay")):
             # RED-014 entries: /attach and /replay dispatch the same typed
             # actions as the workbench buttons and the --attach/--replay intents.
             verb, _, argument = value.partition(" ")
+            self.query_one("#composer", Input).value = ""
             runner = self._debug_attach if verb == "/attach" else self._debug_replay
             self.run_worker(runner(argument.strip()), exclusive=True, group="debug")
             return
         if self.debug_mode and self._debug_driver is not None and value.startswith("/detach"):
+            self.query_one("#composer", Input).value = ""
             self.run_worker(self._debug_command(value), exclusive=True, group="debug")
             return
         if self.debug_mode and self._debug_driver is not None and value.startswith("/context"):
+            self.query_one("#composer", Input).value = ""
             self.run_worker(self._debug_command(value), exclusive=True, group="debug")
             return
         if value.startswith("/"):
@@ -1907,6 +1939,7 @@ class DeepResearchDemoTUI(App[None]):
         self._debug_driver = None
         self._debug_bundle_id = None
         log.write(Text(f"已取消活跃调试 bundle: {bundle_id[:20]}…（可重新 Start Step）", style="cyan"))
+        self._render_no_debug_session()
 
     async def _debug_empty_submit(self) -> None:
         """Advance one boundary for an empty-composer Enter in a debug session."""
@@ -2094,6 +2127,7 @@ class DeepResearchDemoTUI(App[None]):
         from deerflow_deep_research.domain.workspace import FilePreview, WorkspaceDenial, WorkspacePage
 
         pane = self.query_one("#files", Static)
+        pane.display = True
         adapter = self._adapter
         if adapter is None:
             pane.update(Text("Files: 尚未初始化工作区。", style="yellow"))
@@ -2286,6 +2320,9 @@ class DeepResearchDemoTUI(App[None]):
         if kind == "detach" and result.denied is None:
             self._debug_driver = None
             self._debug_bundle_id = None
+            await self._render_debug_result(result)
+            self._render_no_debug_session()
+            return
         await self._render_debug_result(result)
 
     @staticmethod
@@ -2306,6 +2343,52 @@ class DeepResearchDemoTUI(App[None]):
             f" · RAW PROVIDER HISTORIES {str(view.raw_provider_history).replace('_', ' ')}"
         )
 
+    # The workbench's supported minimum: below this the panes stay folded and
+    # the operator is told, instead of silently clipping or squeezing the log.
+    _MIN_DEBUG_SIZE = (100, 30)
+    _DEBUG_HINT = (
+        "调试工作台: 输入问题=New Run · Enter(可留空)=推进边界 · HITL 直接输入回答 · "
+        "/context=节点上下文 · /files=工作区 · /attach=附加 · /cancel=放弃活跃 bundle · "
+        "双击日志=复制全文 · Ctrl-C 退出"
+    )
+
+    def _debug_size_notice(self) -> str | None:
+        """Honest notice when the terminal is below the supported minimum."""
+        width, height = self.size.width, self.size.height
+        min_width, min_height = self._MIN_DEBUG_SIZE
+        if width >= min_width and height >= min_height:
+            return None
+        return (
+            f"终端 {width}x{height} 小于调试工作台建议的 {min_width}x{min_height}："
+            "上下文/工作区分栏已折叠（仍可用 /context、/files，但会挤压日志），请放大终端。"
+        )
+
+    def _refresh_debug_hint(self) -> None:
+        if not self.debug_mode:
+            return
+        notice = self._debug_size_notice()
+        self.query_one("#hint", Static).update(f"{notice} ｜ {self._DEBUG_HINT}" if notice else self._DEBUG_HINT)
+
+    def on_resize(self, event: events.Resize) -> None:
+        if self.debug_mode:
+            self._refresh_debug_hint()
+
+    def _render_no_debug_session(self) -> None:
+        """Honest operator state when no debug session is live (never stale)."""
+        self._render_inspect(("姿态: 无调试会话 · 输入研究问题开始调试（或 /attach <id>、/replay <id>）",))
+        self.query_one("#prompt", Static).update(
+            "输入研究问题开始调试会话 · /attach <id> 附加保留 bundle · /replay <id> 只读回放"
+        )
+
+    def _render_debug_prompt(self, posture: str) -> None:
+        """Tell the operator what the composer will do for the current posture."""
+        text = {
+            "awaiting_hitl": "HITL 等待输入：直接输入回答后按 Enter",
+            "paused_at_boundary": "Enter（可留空）推进一个边界 · /context · /files · /detach · /cancel",
+            "terminal": "会话已终态 · 输入新问题开始，或 /attach <id> 回看该 bundle",
+        }.get(posture, "Enter 推进 / 直接输入回答 · /context · /files · /detach · /cancel")
+        self.query_one("#prompt", Static).update(text)
+
     async def _debug_render_context(self) -> None:
         """Render the captured node-context page with its coverage strip.
 
@@ -2317,6 +2400,7 @@ class DeepResearchDemoTUI(App[None]):
         from deerflow_deep_research.runtime.node_context_store import NodeContextStore
 
         pane = self.query_one("#node-context", Static)
+        pane.display = True
         adapter = self._adapter
         if adapter is None or self._debug_bundle_id is None:
             pane.update(Text("Node Context: 尚未开启调试会话。", style="yellow"))
@@ -2367,6 +2451,7 @@ class DeepResearchDemoTUI(App[None]):
         cursor = snapshot.cursor
         if result.committed_node:
             log.write(Text(f"✓ {result.committed_node} 提交（帧 {cursor.frame_sequence}）", style="cyan"))
+        self._render_debug_prompt(snapshot.posture)
         line = f"姿态: {snapshot.posture} · 下一节点: {', '.join(cursor.next_nodes) or '—'}"
         if snapshot.pending_request_id:
             line += " · 等待输入（直接输入回答）"
