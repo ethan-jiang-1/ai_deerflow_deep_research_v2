@@ -58,7 +58,16 @@ manifest and SHALL NOT duplicate its source/test/import/gitlink member facts. Th
 manifest, Change Guidance wrapper, current authoring pointers, and downstream entry
 documents SHALL remain synchronized. Repository-root `AGENTS.md` and
 `CLAUDE.md`, Deep Research production structure, glossary authority, and the
-`deerflow/` gitlink SHALL remain unchanged. (`PRS-009`)
+`deerflow/` gitlink SHALL remain unchanged. The canonical structure SHALL also register `openspec/governance/check_proof_receipts.py`
+as a component checker of the same aggregate. When a change's touched files intersect a
+registered lane's declared surfaces, `closeout` SHALL require, for that lane, a receipt
+that a runner produced: exit code zero, recorded on a clean tree, at a revision whose
+diff to the delivered revision (the attestation's head commit) is empty for those
+surfaces, with a transcript that exists,
+whose digest matches the receipt, and whose text carries the lane's registered success
+sentinel. A caller-declared or hand-written claim SHALL NOT satisfy this requirement, and
+the checker SHALL name the exact rerun command for every missing or stale receipt.
+(`PRS-009`)
 
 Dependency direction SHALL be `openspec/` to `deep_research_harness/` only. OpenSpec
 governance MAY inspect the downstream application, but no Harness guide,
@@ -106,6 +115,16 @@ governance script's `@impl` declaration and SHALL NOT require a parallel pytest 
   component checker with exit-code preservation and read-only behavior, delegates
   plan-phase semantics to the owning component scopes, adds no duplicate closeout
   consistency checker, and never writes the requirement registry or judges prose
+
+#### Scenario: A stale or missing receipt blocks closeout
+- **WHEN** a change touches a file covered by a registered lane and no receipt for that
+  lane covers the delivered revision, or the recorded transcript no longer matches
+- **THEN** closeout exits non-zero, names the lane and the touched surface, and prints the
+  rerun command
+
+#### Scenario: A caller-declared claim never satisfies closeout
+- **WHEN** a change states in prose that a lane passed without a runner-produced receipt
+- **THEN** the requirement is unmet and closeout exits non-zero
 
 ### Requirement: Registered ignore policy mirrors the harness gitignore
 

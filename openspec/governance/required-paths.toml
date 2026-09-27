@@ -344,4 +344,5 @@ directories = [
 [paths.PRS-020]
 files = [
   "openspec/governance/check_doc_hygiene.py",
+  "openspec/governance/check_proof_receipts.py",
 ]

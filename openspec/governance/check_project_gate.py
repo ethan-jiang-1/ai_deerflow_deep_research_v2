@@ -36,12 +36,13 @@ it does not and cannot block a direct native `openspec archive` invocation
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 import sys
 from pathlib import Path
 
-# Fixed inventory: exactly the six registered OpenSpec component checkers.
-# Keep the order stable; closeout aggregates these six and nothing else.
+# Fixed inventory: the registered OpenSpec component checkers.
+# Keep the order stable; closeout aggregates these and nothing else.
 CHECKER_NAMES: tuple[str, ...] = (
     "check_project_reqs.py",
     "check_project_specs.py",
@@ -49,6 +50,7 @@ CHECKER_NAMES: tuple[str, ...] = (
     "check_change_guidance.py",
     "check_project_req_coverage.py",
     "check_harness_dependency_direction.py",
+    "check_proof_receipts.py",
 )
 REGISTRY_RELATIVE = Path("openspec") / "governance" / "req-registry.yaml"
 
@@ -124,10 +126,10 @@ def run_closeout(
     runner=_run,
     checker_names: tuple[str, ...] | None = None,
 ) -> int:
-    """Run all six default component checkers; exit 0 only when all exit 0.
+    """Run every registered component checker; exit 0 only when all exit 0.
 
     `runner` and `checker_names` are injectable for deterministic tests;
-    production callers use the default subprocess runner and the fixed six.
+    production callers use the default subprocess runner and the registered inventory.
     Every subprocess is invoked with an explicit cwd of the resolved
     repository root (never inherited from the caller's cwd).
     """
@@ -146,12 +148,22 @@ def run_closeout(
     all_zero = True
     for name in names:
         script = _component_script(root, name)
-        exit_code, output = _safe_run(runner, [sys.executable, str(script)], cwd=root)
+        # The proof-receipt checker runs in enforce mode at closeout (PRS-009): a
+        # missing or stale receipt for a touched surface is a failure, not a warning.
+        arguments = [sys.executable, str(script)]
+        if name == "check_proof_receipts.py":
+            arguments += ["--mode", "enforce"]
+            # A closeout that has a selected-change attestation hands it over; without
+            # one the checker reports 'no selected change' and exits 0.
+            attestation = os.environ.get("PROOF_ATTESTATION", "")
+            if attestation:
+                arguments += ["--attestation", attestation]
+        exit_code, output = _safe_run(runner, arguments, cwd=root)
         _print_component(name, exit_code, output)
         if exit_code != 0:
             all_zero = False
     if all_zero:
-        print("OpenSpec governance closeout passed: all six component checkers exited 0.")
+        print("OpenSpec governance closeout passed: every registered component checker exited 0.")
         return 0
     print("OpenSpec governance closeout failed: at least one component checker exited non-zero.", file=sys.stderr)
     return 1
