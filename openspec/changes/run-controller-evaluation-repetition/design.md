@@ -90,6 +90,11 @@ case's scenarios (17 or 6 real-model turns) and returns one aggregated
   flash-tier model. If a live model busts the 50 ceiling, the recorded fallback
   is the leaner shared-thread subject (one amortized skill read, ~35 calls).
   Recorded loudly here and in the evidence rather than absorbed silently.
+  The topic-planning case had the same calibration defect at node scale: its
+  declared 7 assumed one model response per scenario, while the real zero-tool
+  composition makes two per planner invocation (measured: 12 calls for six
+  scenarios, every scenario materializing); amended in place from 7 to 15
+  (12 plus variance headroom) under the same never-consumed-v1 rationale.
 - **Staged spend**: validate the whole pipeline with ONE controller invocation
   (17 real-model turns — composition, model, fake lifecycle, capture, manifest,
   reviewability) before the full series; then the controller series (×3); the
