@@ -89,6 +89,8 @@ bug 修完后从 `_backlog/bugs/` 通过 `git mv` 移入本目录：
 | BUG-069 | 2026-09-27 | 调试工作台 attach/replay 意图未消费、RED-014 三入口未落地——现以 `_debug_attach`/`_debug_replay` 消费 CLI 意图，按钮/slash/启动参数三入口等价（含按钮后归焦 composer），`make tui-journey` 逐步断言 |
 | BUG-070 | 2026-09-27 | 调试工作台"下一节点"投影恒空——trace frame 不携带 next_nodes，且该投影字段被卷进 `BoundaryCursor.token()` 写许可导致命令判 `stale`；改为从图状态 `post.next` 线程化进游标，token 只留 durable boundary 身份 |
 
+| BUG-071 | 2026-09-27 | 调试工作台 RED-013/RED-014 剩余面全部交付——无参 chooser、Node Context 分栏+coverage strip、attach 候选面+姿态、命令面板归一、Files 分栏（change `complete-debugger-workbench-conformance`）；过程中 harness 抓到两个真实缺陷（候选布局、符号链接根 ValueError）并修复 |
+
 **Next available bug ID: BUG-072**
 
 ---

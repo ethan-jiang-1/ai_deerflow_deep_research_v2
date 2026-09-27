@@ -16,7 +16,6 @@
 
 | Bug | 标题 | 发现 | 状态 |
 |-----|------|------|------|
-| [BUG-071-red014-workbench-ui-remainder.md](BUG-071-red014-workbench-ui-remainder.md) | 调试工作台 RED-013/RED-014 剩余面：无参 chooser、命令面板、Node Context/Files 分栏、attach 候选面 | 2026-09-27 | 活跃（P2，部分待人裁） |
 
 **Next available bug ID: BUG-072**
 

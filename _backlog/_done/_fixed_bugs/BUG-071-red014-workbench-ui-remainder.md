@@ -1,6 +1,6 @@
 # BUG-071: 调试工作台 RED-013/RED-014 剩余面（chooser、命令面板、分栏、候选面）
 
-> 严重级别: P2 | 发现: 2026-09-27 | 状态: 活跃（部分待人裁：是否纳入下一增量）
+> 严重级别: P2 | 发现: 2026-09-27 | 状态: 已修复（2026-09-27）
 
 ## 症状
 
@@ -27,6 +27,34 @@ RED-013/RED-014 要求的工作台面仍有未交付部分。已交付的是入�
    busy/read-only 与 takeover 姿态"（spec:400-401）。当前 `_debug_attach` 只接受
    composer 里的单个 bundle id，姿态逻辑仅存在于 `open_attach` 内部。
 
+## 修复（2026-09-27，change `complete-debugger-workbench-conformance`）
+
+五项全部落地，每项以 `make tui-journey` 逐步语义断言验证并锁进 `make verify`：
+
+1. **无参 chooser**：交互式菜单；非交互式取文档化默认（fixture 调试器，不读 stdin）；
+   `DEBUGGER_COMPOSITION` / `DEBUGGER_PROFILE` 供脚本显式选择。红测覆盖默认 /
+   embedded-smoke / gateway 缺 profile（退 2 + 指引）/ gateway 带 profile。
+2. **Node Context 分栏 + coverage strip**：`/context` 填充独立 `#node-context`；
+   strip 从 `NodeContextView` 自身字段投影（INITIAL/RUNTIME/ACTIVITY/OUTCOME/
+   FILES/RAW PROVIDER HISTORIES），空态诚实；strip 由聚焦测试钉住。
+3. **attach 候选面 + 姿态**：`/attach`（无参）列出有界候选（最近 5 个 run bundle
+   目录，与 operator inventory 同布局）+ 姿态；姿态由 driver 新增只读
+   `attach_posture()` 给出（takeover/rebind/busy/unresolvable），候选经生命周期
+   校验后才用，绝不自动选"最新"。
+4. **命令面板归一**：`WorkbenchCommands` provider 注册三动作，与按钮/slash 同一组
+   typed 方法；用真面板无头驱动断言同效。
+5. **Files 分栏**：`/files` / `/files <path>` 消费 `OperatorWorkspaceReader` typed
+   pages（workspace/uploads=MODEL_READ，outputs=OPERATOR_ONLY），只渲染 alias 与
+   相对路径，绝不泄露 host 路径。
+
+**过程中 harness 抓到两个真实缺陷并修复**：attach 候选我按 `bundles/*.json`
+记录找（真实布局是 bundle 目录）；`OperatorWorkspaceReader` 对符号链接根
+（macOS `/var`→`/private/var`）在 `relative_to` 抛 `ValueError` 而非 typed page
+——已把可信根在构造时规范化，并加符号链接根回归测试。
+
+**流程账**：`/cancel`、journey harness、`make tui-journey` 曾超出前一个 change 的
+tasks 范围（已在上一版卡片记录）；本次五项全部落在本 change 的 tasks 内。
+
 ## 根因
 
 CLS-058 的 `2026-09-02-connect-tui-workflow-debugger` 为部分落地（提交 `e7b0c9e`
@@ -41,11 +69,6 @@ change `repair-debugger-cli-entry-conformance` 的 tasks.md 只覆盖入口链�
 属"实现先行"。它们未改变 spec 拥有的行为语义（`/cancel` 映射 driver 既有闭命令
 `cancel`+`detach`；harness 是验证资产），故按宪章 §1 的"小改可直提"处理，但今后
 同类新增面应**先落到某个 change 的 tasks 或单开 change**，避免账实不符。
-
-## 待裁（宪章 §3：范围/优先级归人）
-
-RED-013 的 chooser 与 RED-014 的分栏/候选面是否纳入下一增量、以何种优先级推进，
-属产品范围取舍——需要人确认后再动。
 
 ## 修复关联
 
