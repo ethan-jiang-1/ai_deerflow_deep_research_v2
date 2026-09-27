@@ -84,7 +84,7 @@ def test_profile_structure_is_project_owned_and_hook_free() -> None:
     assert (REPO_ROOT / "profiles/.gitignore").is_file()
     assert (REPO_ROOT / "deep_research_harness/.gitignore").read_text(encoding="utf-8") == (
         ".deep-research-demo-runs/\n.reports/\n.pytest_cache/\n.ruff_cache/\n.node-prompt-review/\nevals/runs/\n.venv/\n"
-        ".agents/\n.claude/\n.repro-tmp/\n.uv-cache/\n"
+        ".agents/\n.claude/\n.repro-tmp/\n.uv-cache/\n.deer-flow/\n"
     )
     assert not (REPO_ROOT / "deep_research_harness/scripts/profile_handoff.sh").exists()
     assert not (REPO_ROOT / "deep_research_harness/profiles").exists()
