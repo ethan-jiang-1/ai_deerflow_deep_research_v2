@@ -325,7 +325,7 @@ as a covered surface changes (a diff against the working tree, never a timestamp
 credential-gated lane records `unverified` instead of a pass; `make proof-status` names
 what to rerun. `make mutation-check` applies each entry in `tests/mutations/registry.py`
 and fails when a guard stays green. Closeout requires a runner-written receipt for every
-lane whose surfaces the change touched (`openspec/governance/check_proof_receipts.py`),
+lane whose surfaces the change touched (the OpenSpec closeout gate owns that check),
 so a caller-declared claim never satisfies it.
 
 **Rule of use:** an agent must run this harness before handing any TUI path to a
