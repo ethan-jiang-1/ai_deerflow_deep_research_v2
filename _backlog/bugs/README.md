@@ -16,8 +16,9 @@
 
 | Bug | 标题 | 发现 | 状态 |
 |-----|------|------|------|
+| [BUG-069-debugger-attach-replay-and-entries-remainder.md](BUG-069-debugger-attach-replay-and-entries-remainder.md) | C4b CLI 接线剩余：attach/replay 意图未消费、RED-014 三入口未落地 | 2026-09-27 | 活跃（P2） |
 
-**Next available bug ID: BUG-069**
+**Next available bug ID: BUG-070**
 
 ---
 
