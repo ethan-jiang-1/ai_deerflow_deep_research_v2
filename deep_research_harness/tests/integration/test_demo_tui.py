@@ -1558,3 +1558,101 @@ async def test_files_pane_walks_directories_and_denies_closed(monkeypatch: pytes
             assert expected in rendered, f"{command!r} did not render {expected!r}: {rendered!r}"
             assert "/private/" not in rendered and "/Users/" not in rendered, f"host path leaked: {rendered!r}"
         assert app.query_one("#composer", demo_tui.Input).value == "", "a slash command must clear the composer"
+
+
+@pytest.mark.asyncio
+async def test_context_pane_renders_captured_invocations(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Runbook-030 §5: a captured invocation renders its line, strip and objective.
+
+    Locks the captured-rendering claim headlessly: a synthetic snapshot is written
+    into the live session's node-context store, so the pane's captured path is
+    asserted without credentials (running the real composition needs them).
+    """
+    import hashlib
+    from datetime import UTC, datetime
+
+    from deerflow_deep_research.domain.bundle import BundleId
+    from deerflow_deep_research.domain.node_context import (
+        CapturedResourceLayer,
+        EnforcedToolPosture,
+        NodeContextActivityFacts,
+        NodeContextSnapshot,
+        VirtualRootsView,
+    )
+    from deerflow_deep_research.runtime.node_context_store import NodeContextStore
+
+    _install_isolated_fixture_adapter(monkeypatch, bundle_root=tmp_path / "demo-runs")
+    app = DeepResearchDemoTUI(mode="fixture", debug_mode=True)
+    async with app.run_test(size=(100, 30)) as pilot:
+        await _wait_for(app, pilot, demo_tui.Ready)
+        composer = app.query_one("#composer", demo_tui.Input)
+        composer.value = "Compare storage approaches"
+        await pilot.pause()
+        await pilot.press("enter")
+        for _ in range(120):
+            await pilot.pause()
+            if app._debug_driver is not None:
+                break
+            await asyncio.sleep(0.05)
+        assert app._debug_driver is not None, "no debug session to capture into"
+
+        adapter = app._adapter
+        bundle = await adapter._bundle_lifecycle.resolve(
+            scope=app._debug_scope(adapter), bundle_id=BundleId(app._debug_bundle_id)
+        )
+        assert bundle is not None
+        store = NodeContextStore(
+            bundle_root=adapter._bundle_lifecycle.private_root(bundle),
+            bundle_id=app._debug_bundle_id,
+        )
+
+        def digest(text: str) -> str:
+            return hashlib.sha256(text.encode()).hexdigest()
+
+        key = store.record_sync(
+            NodeContextSnapshot(
+                context_id="ctx-" + "0" * 28,
+                bundle_id=app._debug_bundle_id,
+                node="wave0",
+                attempt_id="g0-wave0-a1",
+                node_agent_ordinal=1,
+                created_at=datetime.now(UTC),
+                initial_system_policy="system policy text",
+                initial_human_message="Objective: compare storage",
+                base_policy_layer=CapturedResourceLayer(
+                    identity="resources/node_agent/runtime_policy.md",
+                    text="base policy",
+                    sha256=digest("base policy"),
+                ),
+                capability_layer=CapturedResourceLayer(
+                    identity="pkg:capabilities/wave0.md",
+                    text="capability body",
+                    sha256=digest("capability body"),
+                ),
+                request_objective="Compare storage options",
+                request_expected_output="A comparison",
+                safe_model_label="configured-model",
+                tool_posture=EnforcedToolPosture(
+                    requested_tool_names=("web_search",),
+                    enforced_tool_names=("web_search",),
+                    posture_kind="required",
+                ),
+                budget={"max_model_calls": 8},
+                virtual_roots=VirtualRootsView(workspace_root="/mnt/user-data/workspace"),
+            )
+        )
+        store.record_activity_sync(key, NodeContextActivityFacts(model_calls=2, tool_calls=1, outcome="completed"))
+
+        composer.value = "/context"
+        await pilot.pause()
+        await pilot.press("enter")
+        for _ in range(80):
+            await pilot.pause()
+            if "⌨" in app.query_one("#node-context").render().plain:
+                break
+            await asyncio.sleep(0.05)
+        assert app.query_one("#node-context").display
+        pane = app.query_one("#node-context").render().plain
+        assert "⌨ wave0#1 model=2" in pane, pane
+        assert "coverage:" in pane and "INITIAL CAPTURED" in pane and "NOT RETAINED" in pane, pane
+        assert "Objective: Compare storage options" in pane, pane

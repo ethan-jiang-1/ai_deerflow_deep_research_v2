@@ -171,6 +171,27 @@ async def _fixture_debugger_journey(app: Any, pilot: Any) -> None:
     _require("awaiting_hitl" in inspect, "start-posture", f"expected the hitl1 prompt: {inspect!r}")
     _require("下一节点: hitl1" in inspect, "start-next-node", f"next node not projected: {inspect!r}")
     await _assert_pane_stable(app, pilot, "start-dwell", expects=("awaiting_hitl", "hitl1", "等待输入"))
+
+    # 2b. Empty Enter at a HITL prompt must not advance; it must say so.
+    commits_before = _log_text(app).count("提交（帧")
+    await _submit(app, pilot, "")
+    hinted = await _wait(pilot, lambda: "等待 HITL 输入" in _log_text(app), deadline_seconds=20)
+    _require(
+        hinted,
+        "hitl-empty-enter-hint",
+        f"empty Enter at the HITL1 prompt gave no hint; log tail:\n{_log_text(app)[-300:]}",
+    )
+    _require(
+        _log_text(app).count("提交（帧") == commits_before,
+        "hitl-empty-enter-no-advance",
+        "an empty Enter advanced the graph while a HITL prompt was waiting",
+    )
+    _require(
+        "awaiting_hitl" in _inspect_text(app),
+        "hitl-empty-enter-posture",
+        f"the posture changed after an empty Enter at HITL: {_inspect_text(app)!r}",
+    )
+    _log("  [2b] empty Enter at a HITL prompt does not advance ...... ok")
     _log(f"  [2] New Run button -> {first_bundle[:16]}... at hitl1 prompt ... ok")
 
     # 3. Answer HITL1 ------------------------------------------------------
