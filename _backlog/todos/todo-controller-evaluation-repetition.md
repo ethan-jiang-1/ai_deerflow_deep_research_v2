@@ -13,9 +13,13 @@ typed surface 闭合、诚实、禁止动作有运行时强制层,**未测得语
 
 ## Current Direction
 
+- **Preflight（并入自 `todo-adopt-framework-engineering-protocols` 项 2 残余，2026-09-27
+  审计）**：eval bundle manifest 记录 **git revision**——每次执行的结果绑定到产生它的
+  代码版本（`EvaluationBundleManifest` 现缺此字段；语料 digest 钉住、凭证具名环境变量、
+  provider/model/prompt 摘要强制记录均已是既有事实，不重复建设）。
 - 先做 controller：复用 `public-controller-direction-loop@v1` 与
   `topic-planning-direction-loop@v1` 的真实 loader/受控模型重复评审;覆盖案例声明的
-  17+ 场景（新请求、相关答复、同 Run 方向、status、明确 cancel、歧义停手、
+  17+6 场景（新请求、相关答复、同 Run 方向、status、明确 cancel、歧义停手、
   blocked/unavailable 诚实告知）。
 - 每次执行记录案例/控制 digest、模型/配置版本、样本数、预算、实际动作、误选/拒绝/
   澄清、失败与未知;评审用现有 `pass/limited/inconclusive/failed`。
@@ -24,10 +28,12 @@ typed surface 闭合、诚实、禁止动作有运行时强制层,**未测得语
 
 ## Design Questions
 
-- 预算与成本边界:17 场景 × repeat 3 × 两案例的 live 成本,由人批准后才排期。
-- 与 [`todo-adopt-framework-engineering-protocols.md`](todo-adopt-framework-engineering-protocols.md)
-  的"评测可复现协议"相交:dataset 钉住/禁静默下载/版本化记录谁拥有——先定 owner 与去重
-  （候选:本 todo 拥有"跑什么",protocols todo 拥有"怎么钉住与记录"）。
+- 预算与成本边界:（17+6）场景 × repeat 3 ≈ 69 次 live 执行 + 协议要求的人工评审,由人批准后才排期。
+  最佳触发时机:controller 相关面（skill/prompt）要改动之前,或要对外做质量声明之前——
+  首跑即建立基线,后续改动才有"before"可比。
+- ~~与 protocols todo 的"评测可复现协议"相交,先定 owner 与去重~~ **已裁决（2026-09-27
+  审计）**:本卡拥有"跑什么与怎么记"——protocols 项 2 的残余（manifest 记 git revision）
+  并入本卡 preflight;protocols 卡其余项判定为已存在/停靠,不再构成相交。
 - 研究节点质量（wave0/1/2）是否本轮纳入:默认不纳入,除非 controller 层先出结论。
 
 ## Non-Goals
