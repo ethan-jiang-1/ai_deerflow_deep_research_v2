@@ -16,6 +16,7 @@
 
 | Bug | 标题 | 发现 | 状态 |
 |-----|------|------|------|
+| [BUG-072-operator-inventory-status-and-ambient-test-coupling.md](BUG-072-operator-inventory-status-and-ambient-test-coupling.md) | 操作员清册把已取消 bundle 报成 resumable（读陈旧 run-summary；DPL-014 语义待确认）+ 演示 CLI 测试耦合工作区现场 | 2026-09-27 | 活跃（P2） |
 
 **Next available bug ID: BUG-072**
 
