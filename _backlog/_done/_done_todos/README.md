@@ -28,5 +28,6 @@ todo 完成后从 `_backlog/todos/` 通过 `git mv` 移入本目录：
 | DONE-007 | 2026-09-27 | [todo-manual-demo-tui-human-validation.md](todo-manual-demo-tui-human-validation.md) | 手动 TUI 真人验收退役：未测增量收窄为"真实运行时 × 真 Textual 输入组件"组合缝（两侧各有 Pilot fake 驱动覆盖），追踪职责转移至 runbook-020 顶部"验收状态"注记（可选操作员自检，跑通一次即勾销）。 |
 | DONE-008 | 2026-09-27 | [todo-agent-support-walkthroughs-and-diagnostics.md](todo-agent-support-walkthroughs-and-diagnostics.md) | agent 支持阶段 0 走查完成（change `run-agent-support-evidence-walkthroughs`）：一页证据表 + 每分支裁决——阶段 1 no-go（解析卡点未证实）、阶段 3 no-go（typed result 未测得不足）、阶段 2 go（模型自主选择为唯一开放证据问题，另立 `todo-controller-evaluation-repetition` 待人批预算）；附带实测路由缺口三则（LDD-003 无路由、ADR 零入链、make 外 uv 陷阱）。 |
 | DONE-009 | 2026-09-27 | [todo-adopt-framework-engineering-protocols.md](todo-adopt-framework-engineering-protocols.md) | 借力审计机制级三项经晚间对码审计后直接归档（无独立排期工作）：stop_reason 三层已存在（刻意分歧留痕，既有测试锁定）；评测可复现残余（manifest 记 git revision）并入 controller-eval 的 preflight；waiver 哈希停靠——触发条件（第一条 waiver 落地时加"未用即红"防锈）就地落在 testing-and-evaluation.md 的 waiver 段落。 |
+| DONE-010 | 2026-09-27 | [todo-controller-evaluation-repetition.md](todo-controller-evaluation-repetition.md) | controller 评测重复完成（change `run-controller-evaluation-repetition`）：controller 案例 failed ×3（意图映射不可靠：动作 8-12/17、技能先读纪律 2-4/17、refine 族全败）；topic-planning 案例 pass ×3（五项语义判据全满足，对抗文本被 containment）。七次真模型执行全带 code_revision 溯源与控制摘要；两处语料预算校准修正随 change 记录在案。 |
 
-**Next available DONE ID: DONE-010**
+**Next available DONE ID: DONE-011**

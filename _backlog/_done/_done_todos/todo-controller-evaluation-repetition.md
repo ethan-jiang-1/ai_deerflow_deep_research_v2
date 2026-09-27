@@ -1,18 +1,19 @@
 # TODO: controller-evaluation-repetition
 
-> 状态: 实施中（controller 半已交付并经评审；topic-planning 半待续） | 优先级: 中 | 更新: 2026-09-27 晚
+> 状态: 已完成（2026-09-27，DONE-010；change `run-controller-evaluation-repetition` 两半全部交付并经协议评审） | 优先级: — | 更新: 2026-09-27 深夜
 > 上游: [`todo-agent-support-walkthroughs-and-diagnostics.md`](../_done/_done_todos/todo-agent-support-walkthroughs-and-diagnostics.md) 阶段 0 的 go 裁决（证据表 B-3 行） | 下游: 若证实失败 → 独立 change 下沉最窄 deterministic regression
 
-## 进展（2026-09-27 晚，change `run-controller-evaluation-repetition` apply 中）
+## 完成结论（2026-09-27 深夜，证据见 change 的 `evidence/controller-evaluation-results.md`）
 
-- **controller 半已交付**：change 的 manifest provenance（CES-003 delta）、controller live subject、
-  手动 runner、金丝雀 + 三次 series 全部落地；四次真模型执行（deepseek-v4-flash）的逐场景
-  对照、三份协议评审（均 failed：load-before-select 关键判据每轮 2-4/17）与边界声明见
-  change 的 `evidence/controller-evaluation-results.md`。
-- **实测结论**：真模型在此案例上的意图映射不可靠（动作 8-12/17、refine 族全败、
-  infra_probe 漂移、一次爆调用预算）；后续 seam = 先诊断技能不重读是模型选择还是组合提示问题。
-- **剩余**：topic-planning 节点 subject（change 任务 2.4）与其 series（3.4）——change 保持
-  active，下个会话继续；本 todo 在其完成前不关闭。
+- **controller（public-controller-direction-loop@v1）：failed ×3**——真模型意图映射不可靠：
+  动作 8-12/17、load-before-select 关键判据每轮仅 2-4/17、refine 族场景四轮全败、
+  infra_probe 漂移 6 次、一次爆调用预算。后续 seam：先诊断技能不重读是模型选择还是组合
+  提示问题，再看方向变更场景。
+- **topic-planning（topic-planning-direction-loop@v1）：pass ×3**——节点认知程序在真模型下
+  全部满足五项语义判据（边界保持、方向对比、对抗文本 containment、歧义不发明、修复守界），
+  对抗性 custom notes 被当纯数据、零工具调用、无路由变更。
+- **附带产出**：CES-003 manifest 溯源（code_revision）、两个 live subject、手动 runner、
+  两处语料预算校准修正（controller 18→50、topic-planning 7→15，均为从未消费的 v1）。
 
 ## Why
 

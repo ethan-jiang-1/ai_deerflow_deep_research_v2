@@ -50,10 +50,10 @@
       bundle: execution status, telemetry completeness, sanity of captured
       proposals, manifest revision; confirm it is reviewable. Stop and fix
       before any further spend if anything is off.
-- [ ] 3.3 Controller series: `run_selected_live_case_series` for
+- [x] 3.3 Controller series: `run_selected_live_case_series` for
       `public-controller-direction-loop@v1` (3 fresh bundles); record bundle ids,
       per-execution status and `cost_usd`.
-- [ ] 3.4 Topic-planning series: after its subject lands, the series for
+- [x] 3.4 Topic-planning series: after its subject lands, the series for
       `topic-planning-direction-loop@v1` (6 scenarios × 3); record bundle ids,
       per-execution status and `cost_usd`.
 
@@ -69,7 +69,7 @@
       narrative, and the explicit fake-lifecycle boundary (intent mapping measured;
       lifecycle execution owned by the handoff tests). State plainly anything
       UNVERIFIED.
-- [ ] 4.3 Close the todo: update
+- [x] 4.3 Close the todo: update
       `_backlog/todos/todo-controller-evaluation-repetition.md` with the outcome and
       move it to `_done/_done_todos/` (DONE-010), keeping the three ledger indexes
       consistent.

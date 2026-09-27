@@ -1,6 +1,6 @@
 # Active Todos — 活跃 todo + 依赖链 + 执行顺序
 
-> 最后更新: 2026-09-27 晚（DONE-009 protocols 卡对码审计后直接归档——三项均无独立工作；活跃区仅剩 controller-eval 一张卡，等预算批准后经 OpenSpec 执行） | `_backlog/todos/` — 活跃 todo 在此，做完移入 [`../_done/_done_todos/`](../_done/_done_todos/)。
+> 最后更新: 2026-09-27 深夜（DONE-010 controller-evaluation-repetition 完成：controller failed ×3、topic-planning pass ×3；活跃区清零） | `_backlog/todos/` — 活跃 todo 在此，做完移入 [`../_done/_done_todos/`](../_done/_done_todos/)。
 >
 > **本文件是所有活跃工作的中枢。** todo 没有编号，文件名即标识（`todo-<name>.md`）。完成后文件名不变，位置即状态。
 
@@ -19,7 +19,7 @@
 
 | # | 文件 | 优先级 | 简述 | 阻塞 / 备注 |
 |---|------|--------|------|-------------|
-| 1 | [todo-controller-evaluation-repetition.md](todo-controller-evaluation-repetition.md) | 中 | 阶段 0 go 裁决的存活分支（B-3 模型自主选择）+ 并入的 preflight（manifest 记 git revision） | 待人批预算与成本边界（≈69 次 live 执行 + 人工评审）；最佳时机：controller 面要动之前或对外声明质量之前 |
+| （无活跃 todo——最后一张 DONE-010 于 2026-09-27 深夜关闭） | | | | |
 
 ---
 
@@ -57,7 +57,7 @@ flowchart LR
 
 | 顺序 | 项 | 为什么 |
 |------|-----|--------|
-| 1 | [todo-controller-evaluation-repetition.md](todo-controller-evaluation-repetition.md) | 唯一活跃项（需人批预算）；含并入的 preflight（manifest 记 git revision）；最佳时机是 controller 相关面（skill/prompt）要改动之前——首跑即基线，后续改动才有 before 可比 |
+| （无待排期项） | | |
 
 ---
 
