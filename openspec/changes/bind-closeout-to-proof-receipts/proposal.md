@@ -20,6 +20,13 @@ decides a change is done, so closeout is where a receipt must become binding.
 - A caller-declared claim never satisfies it, and every missing or stale receipt
   names the exact rerun command.
 
+## Order
+
+Depends on `add-evidence-receipts-and-proof-lanes` landing first (registry and
+receipt format). Do not start this change's checker before that one is applied;
+until then there is nothing to verify and the checker would only add noise to
+closeout.
+
 ## Capabilities
 
 ### New Capabilities

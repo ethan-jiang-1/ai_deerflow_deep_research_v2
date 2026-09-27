@@ -2,8 +2,8 @@
 
 ## 1. Checker
 
-- [ ] 1.1 Implement `openspec/governance/check_proof_receipts.py`: compute the change's touched files, intersect them with the lane registry's surfaces, and require a valid runner-produced receipt per required lane (exit zero, clean tree, revision still covering the surfaces, matching transcript digest, success sentinel present). Verify: focused tests pass a fresh receipt, fail a stale one, fail a missing one, fail a hand-written claim, and fail a transcript whose digest or sentinel does not match.
-- [ ] 1.2 Emit the exact rerun command (`make proof LANE=<lane>`) for every failure, and stay silent when no registered surface is touched. Verify: a change touching only uncovered files exits zero.
+- [ ] 1.1 Implement `openspec/governance/check_proof_receipts.py` over the `selected-change-closeout.py` attestation (`git diff --name-only <base_commit>..<head_commit>`): intersect the touched files with the lane registry's surfaces, and require a valid runner-produced receipt per required lane (exit zero, clean tree, revision still covering the surfaces, matching transcript digest, success sentinel present). Verify: focused tests pass a fresh receipt, fail a stale one, fail a missing one, fail a hand-written claim, and fail a transcript whose digest or sentinel does not match.
+- [ ] 1.2 Support `--mode warn|enforce` (warn is the default for the measured window) and always print the active mode; exit zero with `no selected change` when no attestation or active change is present. Emit the exact rerun command (`make proof LANE=<lane>`) for every failure, and stay silent when no registered surface is touched. Verify: a change touching only uncovered files exits zero.
 - [ ] 1.3 Provide `--self-test` planted-violation coverage for each rule, including a receipt whose recorded surfaces were narrowed after the fact.
 
 ## 2. Aggregate registration

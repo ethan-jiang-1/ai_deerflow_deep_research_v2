@@ -58,7 +58,8 @@ documents SHALL remain synchronized. Repository-root `AGENTS.md` and
 as a component checker of the same aggregate. When a change's touched files intersect a
 registered lane's declared surfaces, `closeout` SHALL require, for that lane, a receipt
 that a runner produced: exit code zero, recorded on a clean tree, at a revision whose
-diff to the delivered revision is empty for those surfaces, with a transcript that exists,
+diff to the delivered revision (the attestation's head commit) is empty for those
+surfaces, with a transcript that exists,
 whose digest matches the receipt, and whose text carries the lane's registered success
 sentinel. A caller-declared or hand-written claim SHALL NOT satisfy this requirement, and
 the checker SHALL name the exact rerun command for every missing or stale receipt.

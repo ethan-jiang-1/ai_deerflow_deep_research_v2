@@ -42,6 +42,12 @@ exited zero on a revision that still covers the delivered files.
   bind the lanes to their commands (the guidance principle and table landed
   already with the charter work).
 
+## Order
+
+This change lands before `bind-closeout-to-proof-receipts`: the closeout checker
+reads the lane registry and the receipt format defined here, so enforcing receipts
+before they can be produced would block every closeout.
+
 ## Capabilities
 
 ### New Capabilities
