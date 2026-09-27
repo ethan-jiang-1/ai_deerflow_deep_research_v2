@@ -11,6 +11,7 @@ recovery, and the topology guard. Driving composes the existing lifecycle and
 executor; it never becomes a second lifecycle authority.
 
 ## Requirements
+
 ### Requirement: Closed debug commands drive one exact Bundle at-most-once
 
 The debug driver SHALL expose a closed command set — `advance_one`,
@@ -24,7 +25,12 @@ the existing typed human-response correlation; `cancel` SHALL reuse lifecycle
 cancel; `pause_request` SHALL take effect only at the next committed boundary
 and never claim a model/tool call was interrupted. Session snapshots SHALL
 report exact bundle, generation, cursor, drive mode, stop policy, pause state,
-and control ownership. (`LDD-001`)
+and control ownership. A session snapshot SHALL also report the Bundle's pending human request as a
+bounded projection carried from the Bundle's own checkpoint interrupt - the
+request id, phase, mode, node-authored title and guidance, and advertised
+options - so an operator can see exactly what a HITL stop is asking without
+the caller rebuilding a prompt.
+(`LDD-001`)
 
 #### Scenario: Double-submit commits one boundary
 - **WHEN** the same `advance_one` command id, or two commands sharing one

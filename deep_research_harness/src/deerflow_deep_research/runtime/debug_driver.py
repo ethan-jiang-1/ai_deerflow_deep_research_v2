@@ -93,6 +93,23 @@ async def publish_lifecycle_observation(
         return
 
 
+def _pending_request_view(pending: Any) -> Any:
+    """Project a checkpoint interrupt into the bounded request view (never rebuilt)."""
+    if pending is None:
+        return None
+    from deerflow_deep_research.domain.debug_driving import PendingOptionView, PendingRequestView
+
+    request = pending.request
+    return PendingRequestView(
+        request_id=request.request_id,
+        phase=pending.phase,
+        mode=request.mode.value,
+        title=request.title,
+        context=request.context,
+        options=tuple(PendingOptionView(option_id=str(option.id), label=option.label) for option in request.options),
+    )
+
+
 class DebugRunDriver:
     """Drives the one real graph boundary-by-boundary for a local operator."""
 
@@ -189,6 +206,7 @@ class DebugRunDriver:
             "owner": request.owner,
             "mode": "step",
             "pause_requested": False,
+            "pending_request": await self._read_pending_request(bundle),
             "lease": lease,
             "ledger": DebugCommandLedger(lease_root / "debug-commands.json"),
             "stop_policy": StopPolicy(),
@@ -247,6 +265,7 @@ class DebugRunDriver:
 
         if command.kind == "cancel":
             session["ledger"].mark(command.command_id)
+            session["pending_request"] = None
             await self._lifecycle.cancel(
                 scope=self._scope,
                 bundle_id=__import__("deerflow_deep_research.domain.bundle", fromlist=["BundleId"]).BundleId(
@@ -286,6 +305,28 @@ class DebugRunDriver:
         return DebugSessionUpdate(command_id=command.command_id, denied="invalid")
 
     # -- internals -------------------------------------------------------------
+
+    async def _read_pending_request(self, bundle) -> Any:
+        """Read the pending human request from the Bundle's own checkpoint.
+
+        The read-only counterpart of the invocation path: attaching to a paused
+        Bundle must still tell the operator what it is waiting for. A read
+        failure never blocks the attach - it just leaves the request unknown.
+        """
+        from deerflow_deep_research.runtime.human_input import HumanInputError, pending_from_snapshot
+
+        try:
+            async with self._lifecycle.open_graph_checkpoint(bundle) as saver:
+                graph = self._executor._recipe.builder.compile(checkpointer=saver)
+                snapshot = await graph.aget_state(self._executor._config(bundle))
+        except asyncio.CancelledError:
+            raise
+        except (OSError, RuntimeError, ValueError):
+            return None
+        try:
+            return _pending_request_view(pending_from_snapshot(snapshot) if snapshot else None)
+        except (HumanInputError, TypeError, ValueError):
+            return None
 
     async def _publish_observation(self, bundle, *, action: str, trace_delta: tuple[str, ...] = ()) -> None:
         """Publish this command's lifecycle observation (see the module helper)."""
@@ -328,13 +369,22 @@ class DebugRunDriver:
         policy: StopPolicy = session["stop_policy"]
         last: DebugSessionUpdate | None = None
         for _ in range(64):
-            if session["pause_requested"]:
-                break
+            # A pause takes effect at the next committed boundary (LDD-002), so a
+            # pending request makes this drive advance exactly one boundary and
+            # stop - it never refuses to advance and never returns nothing.
+            pause_pending = bool(session["pause_requested"])
             last = await self._advance(command, session, bundle, lease, single=False)
             if last.snapshot is None:
                 return last
+            pause_pending = pause_pending or bool(session["pause_requested"])
+            session["pause_requested"] = False
+            posture = last.snapshot.posture
             cursor = last.snapshot.cursor
-            if policy.stop_on_terminal and last.snapshot.posture == "terminal":
+            if posture == "terminal":
+                break
+            if posture == "awaiting_hitl" and policy.stop_on_hitl:
+                break
+            if pause_pending:
                 break
             if (
                 policy.breakpoint_after
@@ -409,6 +459,9 @@ class DebugRunDriver:
                 post = await graph.aget_state(config)
                 post_values = post.values if isinstance(post.values, dict) else {}
                 pending = pending_from_snapshot(post)
+                # The operator must not guess what a HITL stop is asking: carry the
+                # node-authored request itself (title/guidance/mode/options).
+                session["pending_request"] = _pending_request_view(pending)
                 await self._lifecycle.sync_graph_progress(
                     bundle=bundle,
                     values=dict(post_values),
@@ -416,7 +469,8 @@ class DebugRunDriver:
                 )
                 committed = post_values.get("execution_trace") or ()
                 committed_node = committed[-1] if committed else None
-                session["pause_requested"] = False
+                # A pause requested while this boundary was in flight is honored
+                # by the drive loop at this boundary, so it is not cleared here.
                 lease.heartbeat(session["owner"])
                 snapshot = await self._snapshot(
                     bundle,
@@ -529,6 +583,7 @@ class DebugRunDriver:
             posture = "pause_requested"
         else:
             posture = "running" if page.active_visit is not None else "paused_at_boundary"
+        session = self._sessions.get(bundle.bundle_id.value) or {}
         return DebugSessionSnapshot(
             bundle_id=bundle.bundle_id.value,
             cursor=cursor,
@@ -538,4 +593,5 @@ class DebugRunDriver:
             pause_requested=pause_requested,
             lease=lease,
             pending_request_id=pending_request_id,
+            pending_request=session.get("pending_request"),
         )

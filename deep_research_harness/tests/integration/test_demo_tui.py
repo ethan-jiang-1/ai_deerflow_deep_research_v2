@@ -1719,3 +1719,120 @@ async def test_cancel_recovery_without_a_local_session_refreshes_the_summary(
         assert "姿态: 无调试会话" in second.query_one("#inspect").render().plain
 
     assert summary_status(bundle_id) == "cancelled", "the operator report would call this bundle resumable"
+
+
+@pytest.mark.asyncio
+async def test_hitl_stop_shows_the_request_and_the_legal_actions(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The operator must never guess what a HITL stop asks or what they may do.
+
+    Regression for the reported dead end: the log ended at '✓ bootstrap 提交'
+    with a generic 'type an answer', so neither the request nor the available
+    actions were visible.
+    """
+    _install_isolated_fixture_adapter(monkeypatch, bundle_root=tmp_path / "demo-runs")
+    app = DeepResearchDemoTUI(mode="fixture", debug_mode=True)
+    async with app.run_test(size=(110, 34)) as pilot:
+        await _wait_for(app, pilot, demo_tui.Ready)
+        composer = app.query_one("#composer", demo_tui.Input)
+        composer.value = "你能干什么"
+        await pilot.pause()
+        await pilot.press("enter")
+        for _ in range(120):
+            await pilot.pause()
+            if app._debug_driver is not None:
+                break
+            await asyncio.sleep(0.05)
+        await asyncio.sleep(1.4)
+        await pilot.pause()
+
+        log = app._rich_log_text()
+        assert "→ 等待 hitl1 输入" in log, log[-400:]
+        # The node-authored request content itself, not a rebuilt prompt.
+        assert "Deep Research input - fixture composition" in log, log[-400:]
+        assert "输入后按 Enter" in log
+        inspect = app.query_one("#inspect").render().plain
+        assert "姿态: awaiting_hitl" in inspect and "等待: " in inspect, inspect
+        prompt = app.query_one("#prompt").render().plain
+        assert "HITL 等待输入" in prompt and "/help" in prompt, prompt
+
+        # The same pending request is what the driver carried (never re-derived).
+        session = await app._debug_driver.session_snapshot(app._debug_bundle_id)
+        assert session is not None and session.pending_request is not None
+        assert session.pending_request.title in log
+
+
+@pytest.mark.asyncio
+async def test_help_lists_every_capability(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """`/help` exposes the whole surface: entries, stepping, run, pause, panes, exits."""
+    _install_isolated_fixture_adapter(monkeypatch, bundle_root=tmp_path / "demo-runs")
+    app = DeepResearchDemoTUI(mode="fixture", debug_mode=True)
+    async with app.run_test(size=(110, 34)) as pilot:
+        await _wait_for(app, pilot, demo_tui.Ready)
+        app.query_one("#composer", demo_tui.Input).value = "/help"
+        await pilot.pause()
+        await pilot.press("enter")
+        await pilot.pause()
+        # The log wraps at the pane width, so compare against unwrapped text.
+        help_text = app._rich_log_text().replace("\n", "")
+        for capability in (
+            "New Run(Start Step)",
+            "/run [节点]=Start Run",
+            "/pause=请求在下一节点边界暂停",
+            "/context=节点上下文与 coverage strip",
+            "/files [路径]=工作区",
+            "/detach=退出会话",
+            "/cancel=放弃活跃 bundle",
+            "Ctrl+P 命令面板",
+        ):
+            assert capability in help_text, f"/help omits {capability!r}"
+
+
+@pytest.mark.asyncio
+async def test_run_drives_and_pause_requests_a_boundary_stop(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """`/run` uses drive_until, `/pause` uses pause_request, and both say what they did."""
+    _install_isolated_fixture_adapter(monkeypatch, bundle_root=tmp_path / "demo-runs")
+    app = DeepResearchDemoTUI(mode="fixture", debug_mode=True)
+    async with app.run_test(size=(110, 34)) as pilot:
+        await _wait_for(app, pilot, demo_tui.Ready)
+        composer = app.query_one("#composer", demo_tui.Input)
+
+        # Start Run from scratch (Start Run flavour of New Run).
+        composer.value = "Compare storage approaches"
+        await pilot.pause()
+        app.run_worker(app._debug_new_run(mode="run"), exclusive=True, group="debug")
+        for _ in range(160):
+            await pilot.pause()
+            if app._debug_driver is not None and "Start Run" in app._rich_log_text().replace("\n", ""):
+                break
+            await asyncio.sleep(0.05)
+        assert "Start Run" in app._rich_log_text().replace("\n", ""), "the run entry must say which flavour it used"
+        assert "姿态: awaiting_hitl" in app.query_one("#inspect").render().plain, "the run stops at HITL"
+
+        # Answer, then continue continuously to the next stop.
+        composer.value = "depth: standard"
+        await pilot.pause()
+        await pilot.press("enter")
+        for _ in range(80):
+            await pilot.pause()
+            if "paused_at_boundary" in app.query_one("#inspect").render().plain:
+                break
+            await asyncio.sleep(0.05)
+        composer.value = "/run"
+        await pilot.pause()
+        await pilot.press("enter")
+        for _ in range(160):
+            await pilot.pause()
+            if "姿态: terminal" in app.query_one("#inspect").render().plain:
+                break
+            await asyncio.sleep(0.05)
+        assert "姿态: terminal" in app.query_one("#inspect").render().plain, "drive_until must run to the next stop"
+
+        # A pause at a terminal session is refused honestly, not promised.
+        composer.value = "/pause"
+        await pilot.pause()
+        await pilot.press("enter")
+        await asyncio.sleep(0.4)
+        await pilot.pause()
+        assert "没有下一个节点边界可暂停" in app._rich_log_text().replace("\n", "")

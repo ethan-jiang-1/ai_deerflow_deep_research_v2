@@ -611,3 +611,164 @@ async def test_accepted_commands_keep_the_run_summary_truthful(tmp_path: Path) -
     )
     assert cancelled.denied is None
     assert summary_status(bundle_id) == "cancelled", "the operator report would call this bundle resumable"
+
+
+@pytest.mark.asyncio
+async def test_hitl_stop_carries_the_node_authored_request(tmp_path: Path) -> None:
+    """The operator must not guess what a HITL stop asks: carry the request itself."""
+    driver, _lifecycle = _make_driver(tmp_path, owner="op-1")
+    opened = await driver.open_start(
+        StartRequest(question="Compare storage", mode="step", owner="op-1", command_id="start-00000001")
+    )
+    bundle_id = opened.snapshot.bundle_id
+    session = await driver.session_snapshot(bundle_id)
+    assert session is not None
+    stepped = await driver.execute(
+        DebugCommand(
+            kind="advance_one",
+            bundle_id=bundle_id,
+            command_id="advance-00000001",
+            expected_cursor=session.cursor.token(),
+        )
+    )
+    assert stepped.snapshot is not None
+    assert stepped.snapshot.posture == "awaiting_hitl"
+    request = stepped.snapshot.pending_request
+    assert request is not None, "a HITL stop without the request leaves the operator guessing"
+    assert request.request_id == stepped.snapshot.pending_request_id
+    assert request.mode in {"text", "choice"}
+    assert request.title and request.context
+
+
+@pytest.mark.asyncio
+async def test_attach_reads_the_pending_request_from_the_own_checkpoint(tmp_path: Path) -> None:
+    """Attaching to a paused Bundle must still say what it waits for (read-only)."""
+    driver, _lifecycle = _make_driver(tmp_path, owner="op-1")
+    opened = await driver.open_start(
+        StartRequest(question="Compare storage", mode="step", owner="op-1", command_id="start-00000001")
+    )
+    bundle_id = opened.snapshot.bundle_id
+    session = await driver.session_snapshot(bundle_id)
+    assert session is not None
+    stepped = await driver.execute(
+        DebugCommand(
+            kind="advance_one",
+            bundle_id=bundle_id,
+            command_id="advance-00000001",
+            expected_cursor=session.cursor.token(),
+        )
+    )
+    # The previous operator leaves (detach keeps the Bundle paused but releases
+    # the lease), which is exactly when the next operator attaches.
+    after = await driver.session_snapshot(bundle_id)
+    assert after is not None
+    detached = await driver.execute(
+        DebugCommand(
+            kind="detach",
+            bundle_id=bundle_id,
+            command_id="detach-00000001",
+            expected_cursor=after.cursor.token(),
+        )
+    )
+    assert detached.denied is None
+    assert stepped.snapshot is not None and stepped.snapshot.posture == "awaiting_hitl"
+
+    other, _lifecycle2 = _make_driver(tmp_path, owner="op-2")
+    attached = await other.open_attach(AttachRequest(bundle_id=bundle_id, owner="op-2", expected_lease_generation=None))
+    assert attached.denied is None, attached.denied
+    assert attached.snapshot is not None
+    assert attached.snapshot.pending_request is not None, "attach lost the pending request"
+    assert attached.snapshot.pending_request.request_id == attached.snapshot.pending_request_id
+
+
+@pytest.mark.asyncio
+async def test_drive_until_stops_at_the_hitl_boundary_once(tmp_path: Path) -> None:
+    """`stop_on_hitl` must break at the boundary, not re-enter the interrupted node.
+
+    Regression: the drive loop had no HITL check, so one command re-advanced
+    until the 64-iteration cap and re-entered the waiting node each time.
+    """
+    driver, _lifecycle = _make_driver(tmp_path, owner="op-1")
+    opened = await driver.open_start(
+        StartRequest(question="Compare storage", mode="step", owner="op-1", command_id="start-00000001")
+    )
+    bundle_id = opened.snapshot.bundle_id
+    session = await driver.session_snapshot(bundle_id)
+    assert session is not None
+
+    calls = {"n": 0}
+    real_advance = driver._advance
+
+    async def counted(*args, **kwargs):
+        calls["n"] += 1
+        return await real_advance(*args, **kwargs)
+
+    driver._advance = counted  # type: ignore[method-assign]
+    result = await driver.execute(
+        DebugCommand(
+            kind="drive_until",
+            bundle_id=bundle_id,
+            command_id="run-00000001",
+            expected_cursor=session.cursor.token(),
+        )
+    )
+    assert result.snapshot is not None
+    assert calls["n"] == 1, f"the drive advanced {calls['n']} times instead of stopping at the HITL"
+    assert result.snapshot.posture == "awaiting_hitl"
+    assert result.snapshot.cursor.next_nodes == ("hitl1",)
+
+
+@pytest.mark.asyncio
+async def test_a_pending_pause_makes_the_next_drive_advance_one_boundary(tmp_path: Path) -> None:
+    """A pause takes effect at the next committed boundary (LDD-002), not before it."""
+    driver, _lifecycle = _make_driver(tmp_path, owner="op-1")
+    opened = await driver.open_start(
+        StartRequest(question="Compare storage", mode="step", owner="op-1", command_id="start-00000001")
+    )
+    bundle_id = opened.snapshot.bundle_id
+
+    # Reach the post-HITL boundary, then ask for a pause.
+    session = await driver.session_snapshot(bundle_id)
+    assert session is not None
+    await driver.execute(
+        DebugCommand(
+            kind="advance_one",
+            bundle_id=bundle_id,
+            command_id="advance-00000001",
+            expected_cursor=session.cursor.token(),
+        )
+    )
+    answered = await driver.execute(
+        DebugCommand(
+            kind="answer",
+            bundle_id=bundle_id,
+            command_id="answer-00000001",
+            expected_cursor=(await driver.session_snapshot(bundle_id)).cursor.token(),  # type: ignore[union-attr]
+            answer_text="depth: standard",
+        )
+    )
+    assert answered.snapshot is not None
+    assert answered.snapshot.posture == "paused_at_boundary"
+
+    paused = await driver.execute(
+        DebugCommand(
+            kind="pause_request",
+            bundle_id=bundle_id,
+            command_id="pause-00000001",
+            expected_cursor=answered.snapshot.cursor.token(),
+        )
+    )
+    assert paused.snapshot is not None and paused.snapshot.pause_requested is True
+
+    driven = await driver.execute(
+        DebugCommand(
+            kind="drive_until",
+            bundle_id=bundle_id,
+            command_id="run-00000001",
+            expected_cursor=paused.snapshot.cursor.token(),
+        )
+    )
+    assert driven.snapshot is not None, "a pending pause must never make the drive return nothing"
+    assert driven.committed_node == "topic_planning", "the pause boundary is the next committed node"
+    assert driven.snapshot.posture == "paused_at_boundary"
+    assert driven.snapshot.pause_requested is False, "an honored pause request must be cleared"

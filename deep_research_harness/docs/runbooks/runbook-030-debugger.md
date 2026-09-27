@@ -14,6 +14,11 @@
 > 工具（需要 `.env` 三变量 + 网络），且 `/context` 能看到捕获的调用上下文。见
 > [runbook-031](runbook-031-debugger-embedded.md)。
 >
+> **工作台的原则是"不让你猜"**：任何时刻都明确 (a) 它在等什么（HITL 时给出节点自己写的
+> title/说明/选项）、(b) 此刻你还能做什么（提示行列出该姿态下的合法动作），以及 (c) 全部
+> 能力清单（`/help`）。驱动支持的能力都有入口：单步、连续推进（`/run`）、暂停
+> （`/pause`）、附加、只读回放、节点上下文、工作区浏览、恢复取消、干净退出。
+>
 > **本手册的每条步骤都由 `scripts/tui_journey_probe.py`（`make tui-journey`）在真机等价
 > 环境下断言**：它执行真实脚本、逐步驱动下面整条流程，并在每个检查点做 ≥1.3s 真实停留后
 > 校验姿态、分栏与提交；布局与尺寸档位由
@@ -30,7 +35,9 @@ TUI 打开后即为可操作的首屏（fixture composition，无凭证要求）
 
 - 面板：`姿态: 无调试会话 · 输入研究问题开始调试（或 /attach <id>、/replay <id>）`
 - 提示行：`输入研究问题开始调试会话 · /attach <id> 附加保留 bundle · /replay <id> 只读回放`
-- 按钮行（调试专用）：`[New Run] [Attach] [Replay]`；共享入口按钮在调试器里**隐藏**
+- 提示行同时列出**此刻合法的全部动作**（如 `Enter=单步 · /run [节点]=连续跑到下一停点 ·
+  /pause · /context · /files · /detach · /cancel · /help`）
+- 按钮行（调试专用）：`[New Run] [Start Run] [Attach] [Replay]`；共享入口按钮在调试器里**隐藏**
   （它们在调试器中无作用，隐藏而非移除——共享渲染路径仍会查询它们）
 - composer 已聚焦，可直接输入
 
@@ -41,8 +48,16 @@ TUI 打开后即为可操作的首屏（fixture composition，无凭证要求）
 
 预期：
 - 日志区出现 `你: <问题>`、`调试会话: b_XXXX… (Start Step)`，随后 `✓ bootstrap 提交（帧 N）`
-- 面板显示 `姿态: awaiting_hitl · 下一节点: hitl1 · 等待输入（直接输入回答）`
-- **提示行变为 `HITL 等待输入：直接输入回答后按 Enter`**
+- **日志紧接着给出 HITL 在问什么**（节点自己写的请求，不是工作台重建的）：
+  ```
+  → 等待 hitl1 输入（text）：Deep Research input - fixture composition
+     <节点写的说明，最多 400 字，超出标"已截断">
+     选项: <choice 模式下逐项列出 id — 标签>
+     输入后按 Enter · /help 看全部能力 · /context、/files 可查状态
+  ```
+- 面板显示 `姿态: awaiting_hitl · 下一节点: hitl1 · 等待: <请求标题>（text）`
+- 提示行给出该姿态的合法动作：`HITL 等待输入（text）：<标题> · 直接输入回答后按 Enter ·
+  /context · /files · /detach · /cancel · /help`
 
 说明：Start Step 在全新 bundle 上会一路跑到第一个 interrupt（driver 在 fresh 状态下没有
 已知的下一个节点，故 `interrupt_after` 为空），所以第一步就停在 hitl1 的提问处。
@@ -96,6 +111,24 @@ topic_planning → wave0 → wave1 → wave2_synthesis → hitl2 → readiness �
   加内容（超长会标"已截断"）
 - `/files ../../etc/passwd` → `不可读（path_escape）`；不存在的路径 → `不可读（not_found）`
 - 分栏只渲染 alias 与相对路径，**绝不出现 host 绝对路径**
+
+## 6b. 连续推进与暂停（/run、/pause、Start Run）
+
+- **Start Run**：把问题填进 composer 后点 `Start Run`（或命令面板 `Start Run`），
+  等价于 `open_start(mode="run")` + `drive_until`——一路推进到下一个停点（HITL、
+  终态或你指定的节点），日志会写 `(Start Run)` 以便与 Start Step 区分。
+- **`/run`**：会话已存在时继续连续推进；`/run <节点名>` 表示"跑到该节点提交后停下"
+  （breakpoint）。没有会话时 `/run` 会告诉你该如何开始（不留死路）。
+- **`/pause`**：请求在**下一个提交的节点边界**停下（`pause_request`）——它不会假装
+  中断正在执行的节点；在已终态的会话上会明确回答"没有下一个节点边界可暂停"。
+- 语义由 `StopPolicy` 决定：默认 `stop_on_hitl` / `stop_on_terminal` 为真，所以
+  `/run` 遇到 HITL 会停下等你输入，不会冲过去。
+
+## 6c. 看清全部能力（/help）
+
+输入 `/help` 列出工作台全部能力与入口（New Run/Start Run、单步、`/run`、`/pause`、
+HITL 回答、`/context`、`/files`、`/attach`、`/replay`、`/detach`、`/cancel`、
+命令面板、Copy details、Ctrl+C）。hint 行也常驻提示关键命令。
 
 ## 7. 干净退出
 

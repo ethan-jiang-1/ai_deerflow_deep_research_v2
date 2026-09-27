@@ -778,9 +778,12 @@ class WorkbenchCommands(Provider):
 
     async def search(self, query: str) -> Hits:
         entries = (
-            ("New Run", "Start a debug session from the composer question", self._new_run),
+            ("New Run", "Start a debug session from the composer question (Start Step)", self._new_run),
+            ("Start Run", "Start a debug session that advances continuously (Start Run)", self._start_run),
             ("Attach", "Attach to the composer bundle id (lifecycle-validated)", self._attach),
             ("Replay", "Read-only replay of the composer bundle id", self._replay),
+            ("Pause", "Request a pause at the next committed boundary", self._pause),
+            ("Help", "List every workbench capability", self._help),
         )
         lowered = query.lower().strip()
         for name, help_text, action in entries:
@@ -790,6 +793,18 @@ class WorkbenchCommands(Provider):
     def _new_run(self) -> None:
         app = self.app
         app.run_worker(app._debug_new_run(), exclusive=True, group="debug")
+
+    def _start_run(self) -> None:
+        app = self.app
+        app.run_worker(app._debug_new_run(mode="run"), exclusive=True, group="debug")
+
+    def _pause(self) -> None:
+        app = self.app
+        app.run_worker(app._debug_pause(), exclusive=True, group="debug")
+
+    def _help(self) -> None:
+        app = self.app
+        app._debug_help()
 
     def _attach(self) -> None:
         app = self.app
@@ -900,6 +915,7 @@ class DeepResearchDemoTUI(App[None]):
         self._recoverable_bundle_id: str | None = None
         self._recoverable_phase = "unknown"
         self._last_typed = ""
+        self._last_debug_hint = ""
         self._pending_timer: Any | None = None
         self._pending_started = 0.0
         self._feed_watermark = 0
@@ -935,6 +951,7 @@ class DeepResearchDemoTUI(App[None]):
         if self.debug_mode:
             with Horizontal(id="debug-controls"):
                 yield Button("New Run", id="debug-new-run")
+                yield Button("Start Run", id="debug-start-run")
                 yield Button("Attach", id="debug-attach")
                 yield Button("Replay", id="debug-replay")
             # The panes are on demand: they stay hidden until asked for, so the
@@ -1321,6 +1338,29 @@ class DeepResearchDemoTUI(App[None]):
             # session left paused blocks every new Start Step as busy.
             self.query_one("#composer", Input).value = ""
             self.run_worker(self._debug_cancel_active(), exclusive=True, group="debug")
+            return
+        if self.debug_mode and value.startswith("/help"):
+            self.query_one("#composer", Input).value = ""
+            self._debug_help()
+            return
+        if self.debug_mode and value.startswith("/pause"):
+            self.query_one("#composer", Input).value = ""
+            self.run_worker(self._debug_pause(), exclusive=True, group="debug")
+            return
+        if self.debug_mode and value.startswith("/run"):
+            # /run [node]: continue to the next stop (breakpoint after <node>).
+            _, _, target = value.partition(" ")
+            self.query_one("#composer", Input).value = ""
+            if self._debug_driver is not None and self._debug_bundle_id:
+                self.run_worker(self._debug_drive(target.strip() or None), exclusive=True, group="debug")
+            else:
+                self.query_one("#log", RichLog).write(
+                    Text(
+                        "没有进行中的调试会话：把研究问题填进 composer 后按 Enter=Start Step，"
+                        "或点 Start Run（命令面板亦可）连续推进；/help 看全部能力。",
+                        style="yellow",
+                    )
+                )
             return
         if self.debug_mode and value.startswith("/files"):
             # RED-014 Files pane: read-only typed pages, no host paths.
@@ -1857,6 +1897,7 @@ class DeepResearchDemoTUI(App[None]):
             draft = self.query_one("#composer", Input).value.strip()
             action = {
                 "debug-new-run": self._debug_new_run,
+                "debug-start-run": lambda: self._debug_new_run(mode="run"),
                 "debug-attach": lambda: self._debug_attach(draft),
                 "debug-replay": lambda: self._debug_replay(draft),
             }.get(button_id)
@@ -2238,7 +2279,7 @@ class DeepResearchDemoTUI(App[None]):
             log.write(Text("  " + " · ".join(parts), style="dim"))
         self._render_inspect((f"只读回放: {bundle_id[:20]}…（帧 {len(page.frames)}，无调试会话）",))
 
-    async def _debug_new_run(self) -> None:
+    async def _debug_new_run(self, *, mode: str = "step") -> None:
         """Start a new session from the composer draft (RED-014 New Run entry)."""
         log = self.query_one("#log", RichLog)
         if self._debug_driver is not None:
@@ -2250,10 +2291,10 @@ class DeepResearchDemoTUI(App[None]):
         if not question:
             log.write(Text("用法: 在 composer 输入研究问题后按 New Run（或直接按 Enter）。", style="yellow"))
             return
-        await self._debug_start(question)
+        await self._debug_start(question, mode=mode)
 
-    async def _debug_start(self, question: str) -> None:
-        """Open a debug session on the one real graph and perform Start Step."""
+    async def _debug_start(self, question: str, *, mode: str = "step") -> None:
+        """Open a debug session on the one real graph and perform Start Step or Start Run."""
         import time as _time
 
         from deerflow_deep_research.domain.debug_driving import StartRequest
@@ -2267,7 +2308,7 @@ class DeepResearchDemoTUI(App[None]):
         opened = await driver.open_start(
             StartRequest(
                 question=question,
-                mode="step",
+                mode=mode,  # type: ignore[arg-type]
                 owner="workbench",
                 command_id=f"start-{int(_time.time() * 1000)}",
             )
@@ -2289,8 +2330,78 @@ class DeepResearchDemoTUI(App[None]):
         self._debug_driver = driver
         self._debug_bundle_id = bundle_id
         await self._bind_node_context(adapter, bundle_id)
-        self.query_one("#log", RichLog).write(Text(f"调试会话: {bundle_id[:20]}… (Start Step)", style="cyan"))
-        await self._debug_advance()
+        label = "Start Run" if mode == "run" else "Start Step"
+        self.query_one("#log", RichLog).write(Text(f"调试会话: {bundle_id[:20]}… ({label})", style="cyan"))
+        if mode == "run":
+            await self._debug_drive()
+        else:
+            await self._debug_advance()
+
+    def _debug_help(self) -> None:
+        """List every capability of the workbench (nothing hidden)."""
+        self.query_one("#log", RichLog).write(
+            Text(
+                "调试工作台能力（fixture 与 embedded 组合一致）：\n"
+                "  入口: 输入问题+Enter=New Run(Start Step) · /run [节点]=Start Run(连续推进) · "
+                "Attach 按钮或 /attach <id> · Replay 按钮或 /replay <id> · Ctrl+P 命令面板\n"
+                "  推进: Enter(可留空)=单步(advance_one) · /run [节点]=drive_until 到下一停点"
+                "(HITL/终态/指定节点) · /pause=请求在下一节点边界暂停\n"
+                "  回答: HITL 停止时直接输入文本（choice 模式输入选项 id）后按 Enter\n"
+                "  观察: /context=节点上下文与 coverage strip · /files [路径]=工作区(目录进入/文件预览)\n"
+                "  收尾: /detach=退出会话(保留 bundle) · /cancel=放弃活跃 bundle(释放 scope 后可重开)\n"
+                "  其他: Copy details=复制日志 · Ctrl+C=退出",
+                style="cyan",
+            )
+        )
+
+    async def _debug_drive(self, breakpoint: str | None = None) -> None:
+        """Start Run / continue: drive_until to the next stop (optionally after a node)."""
+        from deerflow_deep_research.domain.debug_driving import DebugCommand, StopPolicy
+
+        driver = self._debug_driver
+        if driver is None or self._debug_bundle_id is None:
+            return
+        session = await driver.session_snapshot(self._debug_bundle_id)
+        if session is None:
+            return
+        result = await driver.execute(
+            DebugCommand(
+                kind="drive_until",
+                bundle_id=self._debug_bundle_id,
+                command_id=f"run-{int(time.time() * 1000)}",
+                expected_cursor=session.cursor.token(),
+                breakpoint=StopPolicy(breakpoint_after=breakpoint) if breakpoint else None,
+            )
+        )
+        await self._render_debug_result(result)
+
+    async def _debug_pause(self) -> None:
+        """Request a pause at the next committed boundary (driver pause_request)."""
+        from deerflow_deep_research.domain.debug_driving import DebugCommand
+
+        driver = self._debug_driver
+        log = self.query_one("#log", RichLog)
+        if driver is None or self._debug_bundle_id is None:
+            log.write(Text("当前没有调试会话可暂停（/run 开始连续推进）。", style="yellow"))
+            return
+        session = await driver.session_snapshot(self._debug_bundle_id)
+        if session is None:
+            return
+        if session.posture == "terminal":
+            # There is no next boundary to pause at; say so instead of claiming it.
+            log.write(Text("会话已终态：没有下一个节点边界可暂停。", style="yellow"))
+            return
+        result = await driver.execute(
+            DebugCommand(
+                kind="pause_request",
+                bundle_id=self._debug_bundle_id,
+                command_id=f"pause-{int(time.time() * 1000)}",
+                expected_cursor=session.cursor.token(),
+            )
+        )
+        await self._render_debug_result(result)
+        if result.denied is None:
+            log.write(Text("已请求暂停：将在下一个提交的节点边界停下。", style="cyan"))
 
     async def _debug_advance(self) -> None:
         """Advance one node boundary (Start Step semantics)."""
@@ -2373,9 +2484,9 @@ class DeepResearchDemoTUI(App[None]):
     # the operator is told, instead of silently clipping or squeezing the log.
     _MIN_DEBUG_SIZE = (100, 30)
     _DEBUG_HINT = (
-        "调试工作台: 输入问题=New Run · Enter(可留空)=推进边界 · HITL 直接输入回答 · "
-        "/context=节点上下文 · /files=工作区 · /attach=附加 · /cancel=放弃活跃 bundle · "
-        "双击日志=复制全文 · Ctrl-C 退出"
+        "调试工作台: 问题+Enter=Start Step · Start Run 按钮=连续 · Enter(可留空)=单步 · "
+        "/run [节点]=跑到停点 · /pause=暂停 · HITL 直接输入回答 · /context · /files · "
+        "/attach · /cancel · /help=全部能力 · Ctrl-C 退出"
     )
 
     def _debug_size_notice(self) -> str | None:
@@ -2399,21 +2510,73 @@ class DeepResearchDemoTUI(App[None]):
         if self.debug_mode:
             self._refresh_debug_hint()
 
+    def _log_debug_action(self, posture: str, next_nodes: tuple[str, ...], request: Any | None = None) -> None:
+        """Write what the session waits for into the log, once per request.
+
+        The log is the pane operators read, so a HITL stop states the node's own
+        request (title, guidance, advertised options) rather than a generic
+        "type an answer" - the operator must never guess what is being asked.
+        """
+        node = next_nodes[0] if next_nodes else None
+        if posture == "awaiting_hitl" and node is not None:
+            key = f"hitl:{request.request_id if request is not None else node}"
+            title = request.title if request is not None else "等待输入"
+            mode = request.mode if request is not None else "text"
+            lines = [f"→ 等待 {node} 输入（{mode}）：{title}"]
+            if request is not None and request.context:
+                bounded = "\n".join(line for line in request.context.splitlines() if line.strip())
+                if len(bounded) > 400:
+                    bounded = bounded[:400] + "…（已截断）"
+                lines.extend(f"   {line}" for line in bounded.splitlines())
+            if request is not None and request.options:
+                lines.append(
+                    "   选项: " + " · ".join(f"{option.option_id} — {option.label}" for option in request.options)
+                )
+            lines.append("   输入后按 Enter · /help 看全部能力 · /context、/files 可查状态")
+            text = "\n".join(lines)
+        elif posture == "terminal":
+            key = "terminal"
+            text = "→ 会话终态：输入新问题开始新会话，或用 /detach 退出、/attach <id> 回看"
+        else:
+            return
+        if self._last_debug_hint == key:
+            return
+        self._last_debug_hint = key
+        self.query_one("#log", RichLog).write(Text(text, style="yellow"))
+
     def _render_no_debug_session(self) -> None:
         """Honest operator state when no debug session is live (never stale)."""
+        self._last_debug_hint = ""
         self._render_inspect(("姿态: 无调试会话 · 输入研究问题开始调试（或 /attach <id>、/replay <id>）",))
         self.query_one("#prompt", Static).update(
             "输入研究问题开始调试会话 · /attach <id> 附加保留 bundle · /replay <id> 只读回放"
         )
 
-    def _render_debug_prompt(self, posture: str) -> None:
-        """Tell the operator what the composer will do for the current posture."""
-        text = {
-            "awaiting_hitl": "HITL 等待输入：直接输入回答后按 Enter",
-            "paused_at_boundary": "Enter（可留空）推进一个边界 · /context · /files · /detach · /cancel",
-            "terminal": "会话已终态 · 输入新问题开始，或 /attach <id> 回看该 bundle",
-        }.get(posture, "Enter 推进 / 直接输入回答 · /context · /files · /detach · /cancel")
-        self.query_one("#prompt", Static).update(text)
+    # What the operator may do at each posture; never leaves them guessing.
+    _DEBUG_ASK = {
+        "awaiting_hitl": "HITL 等待你的输入",
+        "paused_at_boundary": "边界已停：Enter=单步推进",
+        "running": "正在连续推进（drive_until）",
+        "pause_requested": "已在下一节点边界请求暂停",
+        "terminal": "会话已到终态",
+    }
+    _DEBUG_LEGAL_ACTIONS = {
+        "awaiting_hitl": "直接输入回答后按 Enter · /context · /files · /detach · /cancel · /help",
+        "paused_at_boundary": (
+            "Enter=单步 · /run [节点]=连续跑到下一停点 · /pause · /context · /files · /detach · /cancel · /help"
+        ),
+        "running": "/pause=在下一节点边界暂停 · /help",
+        "pause_requested": "等待下一边界暂停 · /help",
+        "terminal": "输入新问题=New Run · /run · /attach <id> · /replay <id> · /detach · /help",
+    }
+
+    def _render_debug_prompt(self, posture: str, request: Any | None = None) -> None:
+        """State the current ask and every action legal here (no guessing)."""
+        ask = self._DEBUG_ASK.get(posture, "调试会话")
+        if posture == "awaiting_hitl" and request is not None:
+            ask = f"HITL 等待输入（{request.mode}）：{request.title}"
+        actions = self._DEBUG_LEGAL_ACTIONS.get(posture, "/help 查看全部能力")
+        self.query_one("#prompt", Static).update(f"{ask} · {actions}")
 
     async def _debug_render_context(self) -> None:
         """Render the captured node-context page with its coverage strip.
@@ -2477,9 +2640,13 @@ class DeepResearchDemoTUI(App[None]):
         cursor = snapshot.cursor
         if result.committed_node:
             log.write(Text(f"✓ {result.committed_node} 提交（帧 {cursor.frame_sequence}）", style="cyan"))
-        self._render_debug_prompt(snapshot.posture)
+        request = snapshot.pending_request
+        self._render_debug_prompt(snapshot.posture, request)
+        self._log_debug_action(snapshot.posture, tuple(cursor.next_nodes or ()), request)
         line = f"姿态: {snapshot.posture} · 下一节点: {', '.join(cursor.next_nodes) or '—'}"
-        if snapshot.pending_request_id:
+        if request is not None:
+            line += f" · 等待: {request.title}（{request.mode}）"
+        elif snapshot.pending_request_id:
             line += " · 等待输入（直接输入回答）"
         if snapshot.pause_requested:
             line += " · 暂停已请求"

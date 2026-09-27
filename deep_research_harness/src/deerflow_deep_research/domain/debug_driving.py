@@ -83,6 +83,30 @@ class LeasePosture(FrozenContract):
     expires_in_seconds: float | None = None
 
 
+class PendingOptionView(FrozenContract):
+    """One advertised option of a pending choice request."""
+
+    option_id: str = Field(min_length=1, max_length=64)
+    label: str = Field(min_length=1, max_length=128)
+
+
+class PendingRequestView(FrozenContract):
+    """Bounded projection of the Bundle's pending human request.
+
+    The request is *carried*, never rebuilt: the driver reads the node-authored
+    descriptor from the Bundle's own checkpoint interrupt, so the workbench can
+    tell the operator exactly what is being asked (title, guidance, mode,
+    advertised options) without re-deriving a prompt (`RED-014`).
+    """
+
+    request_id: str = Field(min_length=1, max_length=128)
+    phase: str = Field(min_length=1, max_length=32)
+    mode: Literal["text", "choice"]
+    title: str = Field(min_length=1, max_length=256)
+    context: str = Field(min_length=1, max_length=2_048)
+    options: tuple[PendingOptionView, ...] = ()
+
+
 class DebugSessionSnapshot(FrozenContract):
     bundle_id: str = Field(min_length=1, max_length=64)
     cursor: BoundaryCursor
@@ -92,6 +116,7 @@ class DebugSessionSnapshot(FrozenContract):
     pause_requested: bool = False
     lease: LeasePosture
     pending_request_id: str | None = Field(default=None, min_length=1, max_length=128)
+    pending_request: PendingRequestView | None = None
 
 
 class DebugSessionUpdate(FrozenContract):

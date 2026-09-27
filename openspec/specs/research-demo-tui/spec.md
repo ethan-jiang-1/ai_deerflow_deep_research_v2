@@ -414,6 +414,11 @@ the operator; on a smaller terminal it SHALL state the limitation and keep the
 three entries, the composer, and the log usable. Opening the Node Context or
 Files pane SHALL not clip pane content or reduce the log below a readable
 height.
+The workbench SHALL state, for the current posture, what the session is waiting for
+(including the pending human request's own title, guidance, and advertised options)
+and which actions are legal at that moment; it SHALL expose both start compositions -
+Start Step and Start Run over one validated question draft - and the driver's pause
+request, and SHALL offer a capability listing that names every workbench action.
 (`RED-014`)
 
 #### Scenario: Three entries are explicit and equivalently reachable
@@ -444,3 +449,13 @@ height.
 - **WHEN** the terminal is smaller than the declared supported minimum
 - **THEN** the workbench reports that minimum and the limitation, keeps the
   entries and the composer usable, and clips no content
+
+#### Scenario: A HITL stop says what it asks and what may follow
+- **WHEN** a session stops at a human-input request
+- **THEN** the workbench states the request's own title, guidance, mode and
+  advertised options together with the actions legal at that posture
+
+#### Scenario: Both start compositions and pause are reachable
+- **WHEN** an operator supplies one validated question draft
+- **THEN** Start Step and Start Run are both reachable over that draft, and a
+  running session can request a pause at its next committed boundary

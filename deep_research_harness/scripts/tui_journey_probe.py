@@ -158,6 +158,12 @@ async def _fixture_debugger_journey(app: Any, pilot: Any) -> None:
         _require(len(app.query(entry)) == 1, "entries", f"workbench entry {entry} is missing")
     _log("  [1] Ready + New Run/Attach/Replay entries .............. ok")
 
+    # [1a] No dead ends: /run without a session says how to start one.
+    await _submit(app, pilot, "/run")
+    ok = await _wait(pilot, lambda: "没有进行中的调试会话" in _log_text(app))
+    _require(ok, "run-without-session", "a session-less /run must point at the start entries")
+    _log("  [1a] /run without a session explains how to start ...... ok")
+
     # 2. New Run button lands on the first interrupt (hitl1) ---------------
     app.query_one("#composer").value = "Compare renewable-energy storage approaches"
     await pilot.pause()
@@ -170,7 +176,26 @@ async def _fixture_debugger_journey(app: Any, pilot: Any) -> None:
     inspect = _inspect_text(app)
     _require("awaiting_hitl" in inspect, "start-posture", f"expected the hitl1 prompt: {inspect!r}")
     _require("下一节点: hitl1" in inspect, "start-next-node", f"next node not projected: {inspect!r}")
-    await _assert_pane_stable(app, pilot, "start-dwell", expects=("awaiting_hitl", "hitl1", "等待输入"))
+    await _assert_pane_stable(app, pilot, "start-dwell", expects=("awaiting_hitl", "hitl1", "等待: "))
+
+    # [2a] The operator must not guess: the log carries the node's own request and
+    #      the prompt lists every action legal at this posture.
+    _require(
+        "→ 等待 hitl1 输入" in _log_text(app) and "输入后按 Enter" in _log_text(app),
+        "hitl-request-in-log",
+        f"the HITL stop did not state what it waits for; log tail:\n{_log_text(app)[-300:]}",
+    )
+    _require(
+        "Deep Research input - fixture composition" in _log_text(app),
+        "hitl-request-content",
+        "the log shows a generic answer request instead of the node-authored one",
+    )
+    _require(
+        "/help" in _prompt_text(app) and "HITL 等待输入" in _prompt_text(app),
+        "legal-actions",
+        f"the prompt does not state the ask and the legal actions: {_prompt_text(app)!r}",
+    )
+    _log("  [2a] HITL states its request + the legal actions ....... ok")
 
     # 2b. Empty Enter at a HITL prompt must not advance; it must say so.
     commits_before = _log_text(app).count("提交（帧")
@@ -353,6 +378,47 @@ async def _fixture_debugger_journey(app: Any, pilot: Any) -> None:
     ok = await _wait(pilot, lambda: app._debug_driver is None, deadline_seconds=30)
     _require(ok, "final-detach", "final detach did not clear the session")
     _log("  [11] /detach clears the session ......................... ok")
+
+    # [12] Start Run (drive_until) stops at the HITL boundary ---------------
+    # Start Run takes the same validated draft as Start Step, so the draft stays
+    # in the composer and the button (or the palette action) picks the flavour.
+    app.query_one("#composer").value = "Compare storage approaches"
+    await pilot.pause()
+    await _click(app, pilot, "#debug-start-run")
+    ok = await _wait(pilot, lambda: "Start Run" in _log_text(app) and "awaiting_hitl" in _inspect_text(app))
+    _require(ok, "start-run-stops-at-hitl", f"Start Run did not stop at the HITL: {_inspect_text(app)!r}")
+    _log("  [12] Start Run button stops at the HITL boundary ..... ok")
+
+    # [13] Answer, then /run drives to the next stop (terminal) -------------
+    await _submit(app, pilot, "depth: standard")
+    ok = await _wait(pilot, lambda: "paused_at_boundary" in _inspect_text(app))
+    _require(ok, "answer-then-boundary", f"the answer did not land on a boundary: {_inspect_text(app)!r}")
+    await _submit(app, pilot, "/run")
+    ok = await _wait(pilot, lambda: "姿态: terminal" in _inspect_text(app), deadline_seconds=60)
+    _require(ok, "run-to-terminal", f"/run did not reach the terminal: {_inspect_text(app)!r}")
+    _log("  [13] /run drives to the next stop (terminal) ........... ok")
+
+    # [14] /pause at a terminal session is refused honestly ----------------
+    await _submit(app, pilot, "/pause")
+    ok = await _wait(pilot, lambda: "没有下一个节点边界可暂停" in _log_text(app))
+    _require(ok, "pause-at-terminal", "a terminal session must not promise a pause point")
+    _log("  [14] /pause at terminal answers honestly ............... ok")
+
+    # [15] /help lists the whole capability surface ------------------------
+    await _submit(app, pilot, "/help")
+    ok = await _wait(pilot, lambda: "/pause=请求在下一节点边界暂停" in _log_text(app).replace("\n", ""))
+    _require(ok, "help-lists-capabilities", "the workbench capability list is incomplete")
+    for capability in ("New Run(Start Step)", "/run [节点]=Start Run", "/detach=退出会话", "Ctrl+P 命令面板"):
+        _require(
+            capability in _log_text(app).replace("\n", ""),
+            "help-lists-capabilities",
+            f"/help omits {capability!r}",
+        )
+    _log("  [15] /help lists every capability ...................... ok")
+    await _submit(app, pilot, "/detach")
+    ok = await _wait(pilot, lambda: "姿态: 无调试会话" in _inspect_text(app))
+    _require(ok, "final-detach", "the final detach did not return to the no-session posture")
+    _log("  [16] final /detach ..................................... ok")
 
 
 async def _drive_cancel(app: Any, pilot: Any) -> None:
