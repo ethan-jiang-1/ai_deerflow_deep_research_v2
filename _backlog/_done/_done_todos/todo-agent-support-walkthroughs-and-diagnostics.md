@@ -1,7 +1,20 @@
 # TODO: agent-support walkthroughs and local diagnosis
 
-> 状态: 待排期 | 优先级: 中 | 更新: 2026-09-27
-> 上游: 已关闭 plan [`deerflow-harness-agent-support-improvement.md`](../_done/_closed_plans/deerflow-harness-agent-support-improvement.md)（其阶段 0–3 未启动，关闭原因是"证据纪律那一半已被 change 链吸收"） | 下游: 各自独立的 change
+> 状态: 已完成（2026-09-27，DONE-008；阶段 0 走查由 change `run-agent-support-evidence-walkthroughs` 交付） | 优先级: 中 | 更新: 2026-09-27
+> 上游: 已关闭 plan [`deerflow-harness-agent-support-improvement.md`](../_done/_closed_plans/deerflow-harness-agent-support-improvement.md)（其阶段 0–3 未启动，关闭原因是"证据纪律那一半已被 change 链吸收"） | 下游: `todo-controller-evaluation-repetition`（阶段 2 的存活分支）
+
+## 完成结论（2026-09-27，证据见 change `run-agent-support-evidence-walkthroughs` 的 `evidence/`）
+
+- **阶段 0 完成**：两条只读走查 + 一页证据表（输入/期望实际/权威结果/证明强度/缺口 owner/最低红灯 seam）。
+  走查 A（BUG-072 重放）实测卡点：LDD-003 无路由且义务仅为蕴含（A-2）、ADR 树零入链（A-3）、
+  make 外 uv 缓存陷阱（A-4）、CI 治理步骤静默坏掉（A-5，本次已修 f51c8d2）。
+  走查 B（direction-loop 案例）实测：typed result 闭合且诚实、禁止动作有运行时强制层，
+  未测得语义失败;模型自主选择 UNVERIFIED（B-3）。
+- **阶段 1（本地诊断 JSON）: no-go**——前提"Coding Agent 卡在文本解析"未获证实;重启条件:未来实测卡在解析。
+- **阶段 2（controller/节点认知评测重复）: go**——非因失败,而是 B-3 是走查留下的唯一开放证据问题;
+  需人批预算与排期,另立 `todo-controller-evaluation-repetition`。
+- **阶段 3（公共 tool 读诊断）: no-go**——未测得 typed result + legal_next_action 不足;维持现状,默认仍需人裁决。
+- 路由类小修（A-2/A-3/A-4）已记录在证据表,属可另行排期的文档路由修复,未随本 todo 展开。
 
 ## Why
 

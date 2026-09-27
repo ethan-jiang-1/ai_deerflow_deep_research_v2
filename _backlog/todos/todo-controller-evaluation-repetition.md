@@ -1,0 +1,41 @@
+# TODO: controller-evaluation-repetition
+
+> 状态: 待排期（需人批预算与成本边界） | 优先级: 中 | 更新: 2026-09-27
+> 上游: [`todo-agent-support-walkthroughs-and-diagnostics.md`](../_done/_done_todos/todo-agent-support-walkthroughs-and-diagnostics.md) 阶段 0 的 go 裁决（证据表 B-3 行） | 下游: 若证实失败 → 独立 change 下沉最窄 deterministic regression
+
+## Why
+
+阶段 0 走查（change `run-agent-support-evidence-walkthroughs`）确认:专用 Agent 路径的
+typed surface 闭合、诚实、禁止动作有运行时强制层,**未测得语义失败**;唯一留下的开放
+证据问题是 B-3——"模型在已提交 skill 约束下是否自己选对意图"在本地无任何已记录证据
+（`evals/runs/` 为空;案例契约要求 live 外部模型）。这恰是已关闭 plan 阶段 2 的命题,
+且其评测路线（注册案例 + fail-closed runner + review protocol）已全部就位。
+
+## Current Direction
+
+- 先做 controller：复用 `public-controller-direction-loop@v1` 与
+  `topic-planning-direction-loop@v1` 的真实 loader/受控模型重复评审;覆盖案例声明的
+  17+ 场景（新请求、相关答复、同 Run 方向、status、明确 cancel、歧义停手、
+  blocked/unavailable 诚实告知）。
+- 每次执行记录案例/控制 digest、模型/配置版本、样本数、预算、实际动作、误选/拒绝/
+  澄清、失败与未知;评审用现有 `pass/limited/inconclusive/failed`。
+- 可复现失效才下沉最窄 deterministic regression,对照改动前后同一案例。
+- selected-live ≠ full-real release 证明;不以样本少强设质量阈值,基线不足报 `limited`。
+
+## Design Questions
+
+- 预算与成本边界:17 场景 × repeat 3 × 两案例的 live 成本,由人批准后才排期。
+- 与 [`todo-adopt-framework-engineering-protocols.md`](todo-adopt-framework-engineering-protocols.md)
+  的"评测可复现协议"相交:dataset 钉住/禁静默下载/版本化记录谁拥有——先定 owner 与去重
+  （候选:本 todo 拥有"跑什么",protocols todo 拥有"怎么钉住与记录"）。
+- 研究节点质量（wave0/1/2）是否本轮纳入:默认不纳入,除非 controller 层先出结论。
+
+## Non-Goals
+
+- 不重写 prompt、gate 或评测系统;不把 deterministic green 当认知质量;
+- 不为"全维度"扩案例;不默跑全链路或输出密钥。
+
+## Next Step
+
+人批准预算与来源边界后,开一个以现有评测路线为唯一 owner 的 OpenSpec change
+（先 `openspec explore` 定上述相交 owner 去重）。

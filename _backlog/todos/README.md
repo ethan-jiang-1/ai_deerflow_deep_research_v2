@@ -1,6 +1,6 @@
 # Active Todos — 活跃 todo + 依赖链 + 执行顺序
 
-> 最后更新: 2026-09-27（DONE-006 wave2 预算对齐、DONE-007 手动 TUI 验收退役；活跃 todo 清零） | `_backlog/todos/` — 活跃 todo 在此，做完移入 [`../_done/_done_todos/`](../_done/_done_todos/)。
+> 最后更新: 2026-09-27（DONE-008 agent 支持阶段 0 走查完成，阶段 2 另立 controller-evaluation-repetition；活跃 todo 2 项） | `_backlog/todos/` — 活跃 todo 在此，做完移入 [`../_done/_done_todos/`](../_done/_done_todos/)。
 >
 > **本文件是所有活跃工作的中枢。** todo 没有编号，文件名即标识（`todo-<name>.md`）。完成后文件名不变，位置即状态。
 
@@ -20,6 +20,7 @@
 | # | 文件 | 优先级 | 简述 | 阻塞 / 备注 |
 |---|------|--------|------|-------------|
 | 1 | [todo-adopt-framework-engineering-protocols.md](todo-adopt-framework-engineering-protocols.md) | 中 | 借力审计余下的机制级三项：bounded-run `stop_reason`、评测可复现协议、waiver 内容哈希 | 需先判定 owning 层与"适用/不适用"，再拆 change 排期 |
+| 2 | [todo-controller-evaluation-repetition.md](todo-controller-evaluation-repetition.md) | 中 | 阶段 0 go 裁决的存活分支：用现有评测路线重复评审 controller 自主选择（B-3 唯一开放证据问题） | 需人批预算与成本边界；与 protocols todo 的"评测可复现"先定 owner 去重 |
 
 ---
 
@@ -57,8 +58,8 @@ flowchart LR
 
 | 顺序 | 项 | 为什么 |
 |------|-----|--------|
-| 1 | adopt-framework-engineering-protocols | 唯一活跃 todo；机制级、非用户可见，排在 BUG-071 工作台 conformance 之后 |
-| 2 | [todo-agent-support-walkthroughs-and-diagnostics.md](todo-agent-support-walkthroughs-and-diagnostics.md) | 中 | agent 支持的阶段 0–3：两条路径只读走查 → 本地诊断 JSON（待证）→ controller 认知评测 → 公共 tool 诊断（待裁决） | 由已关闭 plan 的未启动阶段落账，防止孤儿；每阶段可独立停止 |
+| 1 | adopt-framework-engineering-protocols | 机制级三项先判定 owning 层；其中"评测可复现协议"与 controller 评测重复相交，先做可免去重复设计 |
+| 2 | [todo-controller-evaluation-repetition.md](todo-controller-evaluation-repetition.md) | 阶段 0 走查（DONE-008）留下的唯一开放证据问题（B-3 模型自主选择）；需人批预算后才能排期 |
 
 ---
 
