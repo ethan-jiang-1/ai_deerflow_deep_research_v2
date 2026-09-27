@@ -1274,3 +1274,14 @@ async def test_tui_rolling_feed_appends_new_events_incrementally(
         text = app._rich_log_text()
         assert text.count("wave0 完成") == 1
         assert "wave1 完成" in text
+
+
+def test_build_app_wires_debug_flag_into_the_workbench() -> None:
+    """`--debug` must reach the app: the C4b CLI wiring was dropped in main()."""
+    parser = demo_tui._build_parser()
+    debug_app = demo_tui._build_app(parser.parse_args(["--fixture", "--debug"]))
+    assert debug_app.mode == "fixture"
+    assert debug_app.debug_mode is True
+    plain_app = demo_tui._build_app(parser.parse_args(["--fixture"]))
+    assert plain_app.mode == "fixture"
+    assert plain_app.debug_mode is False

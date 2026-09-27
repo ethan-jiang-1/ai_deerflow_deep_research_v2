@@ -60,3 +60,60 @@ def test_launcher_contains_no_workspace_scan_or_lifecycle_logic() -> None:
     text = LAUNCHER.read_text(encoding="utf-8")
     for forbidden in ("scopes", "run-summary", "events.jsonl", "graph.sqlite", "discover()"):
         assert forbidden not in text
+
+
+_PROBE_CHILD = """
+import asyncio, sys
+sys.path.insert(0, "scripts")
+import demo_tui
+
+async def main():
+    app = demo_tui.DeepResearchDemoTUI(mode="fixture")
+    async with app.run_test(size=(100, 40)) as pilot:
+        for _ in range(60):
+            await pilot.pause()
+            update = getattr(app, "last_update", None)
+            name = type(update).__name__
+            if name in ("Fault", "Ready"):
+                print("RESULT:", name)
+                failure = getattr(update, "failure", None)
+                if failure is not None:
+                    print("MESSAGE:", failure.message)
+                return
+            await asyncio.sleep(0.1)
+    print("RESULT: TIMEOUT")
+
+asyncio.run(main())
+"""
+
+
+def test_fixture_workbench_reaches_ready_without_caller_pythonpath() -> None:
+    """The fixture entry is self-sufficient: no caller-side path contract.
+
+    Regression for the operator-reported startup fault: the launcher's child
+    process used to die on a hidden `src_fixtures` import contract and render
+    the generic presentation fault instead of the workbench.
+    """
+    import os
+    import sys
+
+    env = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"}
+    result = subprocess.run(
+        [sys.executable, "-c", _PROBE_CHILD],
+        capture_output=True,
+        text=True,
+        timeout=60,
+        cwd=Path(__file__).resolve().parents[2],
+        env=env,
+    )
+    assert "RESULT: Ready" in result.stdout, (
+        f"fixture entry did not reach Ready without caller PYTHONPATH: "
+        f"{result.stdout.strip()[-400:] or result.stderr.strip()[-400:]}"
+    )
+
+
+def test_launcher_enables_fixture_source_and_injects_debug_for_fixture() -> None:
+    """Launcher contract: enable src_fixtures for the child; --fixture means debugger."""
+    text = LAUNCHER.read_text(encoding="utf-8")
+    assert "src_fixtures" in text, "launcher must enable the fixture source for its child"
+    assert "--debug" in text, "launcher must inject --debug for the fixture composition"

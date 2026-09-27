@@ -15,6 +15,7 @@ import argparse
 import asyncio
 import json
 import os
+import sys
 import time
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
@@ -923,6 +924,20 @@ class DeepResearchDemoTUI(App[None]):
         adapter, self._adapter = self._adapter, None
         adapter.close()
 
+    @staticmethod
+    def _enable_fixture_source() -> None:
+        """Make the harness fixture source importable for this fixture run.
+
+        The fixture composition lives under ``src_fixtures/``, which only a
+        caller-provided ``PYTHONPATH`` would expose (the Makefile demo targets
+        set it). The entry self-enables it so a fixture run cannot die on a
+        caller-side path contract; real modes never insert the path, keeping
+        fixture source undiscovered outside fixture runs.
+        """
+        fixture_root = Path(__file__).resolve().parents[1] / "src_fixtures"
+        if fixture_root.is_dir() and str(fixture_root) not in sys.path:
+            sys.path.insert(0, str(fixture_root))
+
     @work(group=_WORKER_GROUP, exclusive=True, exit_on_error=False)
     async def _initialize(self) -> None:
         report = await self._experience.preflight()
@@ -938,6 +953,7 @@ class DeepResearchDemoTUI(App[None]):
             if self.mode == "embedded_smoke":
                 self._transport.bind(runtime=build_demo_runtime(mode="real", adapter=adapter))
             else:
+                self._enable_fixture_source()
                 self._transport.bind(runtime=build_demo_runtime(mode="fixture_graph", adapter=adapter))
             if hasattr(self._experience, "set_observation_publisher"):
                 self._experience.set_observation_publisher(adapter.observation_publisher)
@@ -1792,10 +1808,8 @@ def _validate_args(parser: argparse.ArgumentParser, args: argparse.Namespace) ->
         parser.error("--debug applies only with --fixture")
 
 
-def main() -> None:
-    parser = _build_parser()
-    args = parser.parse_args()
-    _validate_args(parser, args)
+def _build_app(args: argparse.Namespace) -> DeepResearchDemoTUI:
+    """Construct the TUI from parsed CLI arguments (pure; no event loop)."""
     mode: Literal["fixture", "gateway", "embedded_smoke"]
     if args.fixture:
         mode = "fixture"
@@ -1803,13 +1817,21 @@ def main() -> None:
         mode = "embedded_smoke"
     else:
         mode = "gateway"
-    app = DeepResearchDemoTUI(
+    return DeepResearchDemoTUI(
         mode=mode,
         profile=args.profile,
         auto=args.auto,
         attach_intent=args.attach,
         replay_intent=args.replay,
+        debug_mode=args.debug,
     )
+
+
+def main() -> None:
+    parser = _build_parser()
+    args = parser.parse_args()
+    _validate_args(parser, args)
+    app = _build_app(args)
     try:
         app.run()
     finally:
