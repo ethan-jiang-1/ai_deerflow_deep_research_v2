@@ -305,3 +305,65 @@ def test_embedded_smoke_reaches_ready_from_env_file_alone(tmp_path: Path) -> Non
     assert "RESULT: Ready" in result.stdout, (
         f"embedded-smoke entry ignored the .env file: {result.stdout.strip()[-400:] or result.stderr.strip()[-400:]}"
     )
+
+
+_EMBEDDED_DEBUG_MOUNT_CHILD = """
+import asyncio, sys
+sys.path.insert(0, "scripts")
+import demo_tui
+
+async def main():
+    app = demo_tui.DeepResearchDemoTUI(mode="embedded_smoke", debug_mode=True)
+    async with app.run_test(size=(100, 40)) as pilot:
+        for _ in range(30):
+            await pilot.pause()
+        placeholder = app.query_one("#composer", demo_tui.Input).placeholder
+        print("ONBOARDING:", app._onboarding)
+        print("PLACEHOLDER:", placeholder)
+        return
+
+asyncio.run(main())
+"""
+
+
+def test_embedded_debugger_mounts_the_workbench_not_recon(tmp_path: Path) -> None:
+    """BUG-077 regression: the launcher's --embedded-smoke composition starts
+    the debugger workbench (the launcher injects --debug and runbook-031
+    promises it), so the mount must not clobber the workbench first screen
+    with the 020 recon screen nor route composer input to the recon chat.
+    """
+    import os
+    import sys
+
+    env_file = tmp_path / "harness-env"
+    env_file.write_text(
+        "DEEPSEEK_API_KEY=dummy-key-not-real\n"
+        "DEERFLOW_DEMO_MODEL=deepseek-v4-pro\n"
+        "TAVILY_API_KEY=dummy-tavily-not-real\n",
+        encoding="utf-8",
+    )
+    child_dir = tmp_path / "wd"
+    child_dir.mkdir()
+    child_file = child_dir / "embedded_debug_mount_child.py"
+    child_file.write_text(_EMBEDDED_DEBUG_MOUNT_CHILD, encoding="utf-8")
+    env = {
+        key: value
+        for key, value in os.environ.items()
+        if key not in ("DEEPSEEK_API_KEY", "DEERFLOW_DEMO_MODEL", "TAVILY_API_KEY", "PYTHONPATH")
+    }
+    env["DEMO_ENV_FILE"] = str(env_file)
+    result = subprocess.run(
+        [sys.executable, str(child_file)],
+        capture_output=True,
+        text=True,
+        timeout=60,
+        cwd=Path(__file__).resolve().parents[2],
+        env=env,
+    )
+    assert "ONBOARDING: False" in result.stdout, (
+        f"embedded debugger mount fell through to recon mode: "
+        f"{result.stdout.strip()[-400:] or result.stderr.strip()[-400:]}"
+    )
+    assert "随便聊" not in result.stdout, (
+        f"the 020 recon screen clobbered the workbench first screen: {result.stdout.strip()[-400:]}"
+    )

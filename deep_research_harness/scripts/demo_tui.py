@@ -456,6 +456,61 @@ def _recon_tools(workspace: Path) -> list[Any]:
     return [list_workspace, read_workspace_file, inspect_bundle]
 
 
+async def _stream_chat_turn(model: Any, messages: list[Any], tools: list[Any], *, on_text) -> str:
+    """Stream one chat turn; tool calls are executed inline as they arrive.
+
+    Extracted from the app so the streaming contract is unit-testable with a
+    scripted model. Every content chunk is surfaced through ``on_text``
+    immediately (no waiting for the full answer), while tool-call chunks are
+    accumulated, executed, fed back as ToolMessages, and the stream continues.
+
+    BUG-076 (observed live on DeepSeek 2026-09-28): the provider streams an
+    empty trailing tool_call delta (``name: ""``, ``id: None``) on the same
+    index after the real call. A delta with neither a name nor an id must
+    never clobber the accumulated call, and a missing tool_call_id degrades
+    to "" instead of failing ToolMessage validation.
+    """
+    from langchain_core.messages import AIMessage, ToolMessage
+
+    tools_map = {tool.name: tool for tool in tools}
+    text_parts: list[str] = []
+    tool_calls: dict[int, dict[str, Any]] = {}
+    for _round in range(3):
+        async for chunk in model.astream(messages):
+            content = getattr(chunk, "content", chunk)
+            if isinstance(content, str) and content:
+                text_parts.append(content)
+                on_text("".join(text_parts))
+            for call in getattr(chunk, "tool_calls", None) or ():
+                if not call.get("name") and not call.get("id"):
+                    continue
+                index = call.get("index", 0)
+                tool_calls[index] = call
+        if not tool_calls:
+            return "".join(text_parts)
+        messages.append(
+            AIMessage(
+                content="".join(text_parts),
+                tool_calls=[
+                    {k: v for k, v in call.items() if k not in {"index", "type", "extras"}}
+                    for call in tool_calls.values()
+                ],
+            )
+        )
+        for call in tool_calls.values():
+            result = "（未知工具）"
+            tool = tools_map.get(call.get("name") or "")
+            if tool is not None:
+                try:
+                    result = tool.invoke(call.get("args") or {})
+                except Exception as exc:
+                    result = f"工具调用失败: {type(exc).__name__}: {exc}"
+            messages.append(ToolMessage(content=str(result), tool_call_id=call.get("id") or ""))
+        text_parts = []
+        tool_calls = {}
+    return "".join(text_parts)
+
+
 def _event_to_feed_line(event: dict[str, object]) -> str | None:
     """One journal event -> one rolling feed line (or None to skip)."""
     category = event.get("category")
@@ -1074,10 +1129,14 @@ class DeepResearchDemoTUI(App[None]):
                 # default product path (no profile_intent). Graph-owned policy
                 # answers HITL1/HITL2; the human never types.
                 self._dispatch(StartRun(question=self.AUTO_QUESTION, scripted=True, profile_intent=None))
-            elif self.mode == "embedded_smoke":
+            elif self.mode == "embedded_smoke" and not self.debug_mode:
                 # 020 manual TUI: start in recon mode. The operator may inspect
                 # the environment and chat freely; only an explicit
                 # research-start phrase dispatches the fixed question.
+                # BUG-077: this branch is NOT for the debugger — with --debug
+                # the workbench first screen above is the landing state, and
+                # clobbering it here (plus setting _onboarding) used to route
+                # composer input into the recon chat instead of the driver.
                 self._onboarding = True
                 await self._scan_recoverable_run()
                 self._render_recon()
@@ -1707,7 +1766,9 @@ class DeepResearchDemoTUI(App[None]):
             self._chat_history.append(("assistant", text))
             log.write(Text(f"AI: {text}", style="cyan"))
         except Exception as exc:
-            log.write(Text(f"（侦察对话调用失败: {type(exc).__name__}）", style="red"))
+            detail = str(exc).strip().splitlines()[0][:200] if str(exc).strip() else ""
+            suffix = f": {detail}" if detail else ""
+            log.write(Text(f"（侦察对话调用失败: {type(exc).__name__}{suffix}）", style="red"))
 
     async def _stream_turn(
         self,
@@ -1717,50 +1778,12 @@ class DeepResearchDemoTUI(App[None]):
         *,
         echo: str,
     ) -> str:
-        """Stream one chat turn; tool calls are executed inline as they arrive.
+        """Stream one chat turn, rendering every partial into the #inspect pane."""
 
-        Every content chunk is rendered into the persistent #inspect panel
-        immediately (no waiting for the full answer), while tool-call chunks
-        are accumulated, executed, fed back as ToolMessages, and the stream
-        continues.
-        """
-        from langchain_core.messages import AIMessage, ToolMessage
+        def on_text(partial: str) -> None:
+            self._render_inspect((echo, f"AI: {partial}"))
 
-        tools_map = {tool.name: tool for tool in tools}
-        text_parts: list[str] = []
-        tool_calls: dict[int, dict[str, Any]] = {}
-        for _round in range(3):
-            async for chunk in model.astream(messages):
-                content = getattr(chunk, "content", chunk)
-                if isinstance(content, str) and content:
-                    text_parts.append(content)
-                    self._render_inspect((echo, f"AI: {''.join(text_parts)}"))
-                for call in getattr(chunk, "tool_calls", None) or ():
-                    index = call.get("index", 0)
-                    tool_calls[index] = call
-            if not tool_calls:
-                return "".join(text_parts)
-            messages.append(
-                AIMessage(
-                    content="".join(text_parts),
-                    tool_calls=[
-                        {k: v for k, v in call.items() if k not in {"index", "type", "extras"}}
-                        for call in tool_calls.values()
-                    ],
-                )
-            )
-            for call in tool_calls.values():
-                result = "（未知工具）"
-                tool = tools_map.get(call.get("name", ""))
-                if tool is not None:
-                    try:
-                        result = tool.invoke(call.get("args") or {})
-                    except Exception as exc:
-                        result = f"工具调用失败: {type(exc).__name__}: {exc}"
-                messages.append(ToolMessage(content=str(result), tool_call_id=call.get("id", "")))
-            text_parts = []
-            tool_calls = {}
-        return "".join(text_parts)
+        return await _stream_chat_turn(model, messages, tools, on_text=on_text)
 
     def _render_live_activity(self) -> None:
         """Roll research activity like a coding-agent terminal.
