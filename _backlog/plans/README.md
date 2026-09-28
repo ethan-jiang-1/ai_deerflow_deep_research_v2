@@ -1,6 +1,6 @@
 # Plans — plan/分析文档索引
 
-> 最后更新: 2026-09-27（新增活跃 plan：DSH 精神借鉴三 GAP 落地计划） | `_backlog/plans/` — 活跃 plan 在此（顶层），
+> 最后更新: 2026-09-28（CLS-063 dsh-spirit-three-gap-closure 已归档，活跃 plan 清零） | `_backlog/plans/` — 活跃 plan 在此（顶层），
 > 完成的普通 plan 移入 [`../_done/_closed_plans/`](../_done/_closed_plans/)。
 >
 > **plan 没有编号，文件名即标识。完成后文件名不变，位置即状态。**
@@ -20,9 +20,8 @@
 
 | Plan | 一句话 |
 |------|--------|
-| [dsh-spirit-three-gap-closure.md](dsh-spirit-three-gap-closure.md) | DSH harness 精神借鉴的三个文档层 GAP 落地计划：影响半径阶梯（AGENTS.md）/ 持久层四层地图（runtime-architecture）/ runbook 写法对照单；含产物草稿、预算核算、验收与不做清单 |
 
-**Next available plan ID: CLS-062**（移入 `_closed_plans/` 时分配）
+**Next available plan ID: CLS-064**（移入 `_closed_plans/` 时分配）
 
 ## 已归档（移至 `_done/_closed_plans/`）
 

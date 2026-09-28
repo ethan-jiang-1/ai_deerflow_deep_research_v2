@@ -1,6 +1,6 @@
 # Closed Plans Index — 已完成 plan 归档
 
- > 最后更新: 2026-09-26（登记 CLS-060 demo-real Gateway 收尾、CLS-061 harness 技术债清理；活跃 plan 清零） | `_backlog/_done/_closed_plans/` — 已完成 plan 的归档目录。
+ > 最后更新: 2026-09-28（登记 CLS-063 dsh-spirit-three-gap-closure 经 change close-agent-guidance-doc-gaps 归档） | `_backlog/_done/_closed_plans/` — 已完成 plan 的归档目录。
 > 接收来自 [`../../plans/`](../../plans/) 的 plan。`_` 前缀 = coding agent 默认忽略。
 >
 > **plan 完成后文件名不变，位置即状态。** 移入时分配 `CLS-NNN` 序号（Closed），按完成时间递增。
@@ -83,5 +83,6 @@ plan 完成后从 `_backlog/plans/` 通过 `git mv` 移入本目录：
 | CLS-060 | 2026-09-26 | [demo-real-gateway-closeout.md](demo-real-gateway-closeout.md) | demo-real Gateway 路线收尾完成：wave2 `candidate_invalid` 根因（pydantic ValidationError 裸逃逸）经 G1 schema 反馈闭环修复（c43fd49）、G2 final_delivery 基数对齐（3e142ef，change `admit-full-plan-cardinality-in-final-delivery` 归档 462c2d9）；`make demo-real` 端到端通过（DEMO_EXIT=0），G3 验收四项全过（verify 全绿、live 49/50 等效、TUI 分诊、提交清账）；遗留 2 条 todo（wave2 timeout 预算评估、手动 TUI 真人验收） |
 | CLS-061 | 2026-09-26 | [harness-tech-debt-cleanup.md](harness-tech-debt-cleanup.md) | 四路审计后的技术债清理四阶段全部落地：P0 gitlink/README/CNI-001 经 `finalize-v210-governance-sync`（closeout 门绿后归档）+ launcher 死链与 runtime/README 三行（ae279b1）；P1 infra_probe 文档家/术语消歧/阅读顺序（92009cc）+ refine 补录/互链/双 builder 注释/命令表收敛/AGENTS.md 123→119 行；P2 契约速查（e424e43）/账面刷新/skills 落地 1.13.1（1c8ab70）；P3 治理门进 CI + 锚点单一权威（03fdff2）+ 索引新鲜度 tripwire（test_reader_index_freshness）+ config.yaml closeout 版本对齐惯例 |
 | CLS-062 | 2026-09-27 | [deerflow-harness-agent-support-improvement.md](deerflow-harness-agent-support-improvement.md) | agent 支持与证据反馈：**已关闭（部分吸收）**——其证据纪律一半被两个 change 吸收并落地归档（`add-evidence-receipts-and-proof-lanes`：lane 登记表 + 回执 runner + 变异 lane；`bind-closeout-to-proof-receipts`：第七个组件 checker 使关账要求 runner 回执；PRS-009 delta 已同步）；阶段 0–3 从未启动，已落成 [`todo-agent-support-walkthroughs-and-diagnostics.md`](../../todos/todo-agent-support-walkthroughs-and-diagnostics.md) 以免成为孤儿 |
+| CLS-063 | 2026-09-28 | [dsh-spirit-three-gap-closure.md](dsh-spirit-three-gap-closure.md) | DSH harness FAQ 十维对照的三个文档层 GAP 落地——经 change `close-agent-guidance-doc-gaps`（skip_specs 纯指引内容，零 delta，2026-09-28 归档）实施：GAP 1 Application Focus 折叠"Try first; escalate when"列（草稿独立表因 guide 119 行预算改折叠列，0 新行）、GAP 2 runtime-architecture 持久层四层链接地图、GAP 3 runbook 写法对照单；含投资方向纠偏执行纪律（harness 层优先）；门禁全绿（hygiene/self-test、change-guidance、closeout gate、make verify） |
 
-**Next available plan ID: CLS-063**
+**Next available plan ID: CLS-064**

@@ -6,6 +6,14 @@
 > **定位**：plan = 分析与取舍记录。三项实施均为 docs/guidance 改动，不走 OpenSpec change（判据见 §过程判定）；
 > 结论被吸收后按 `_backlog/plans/README.md` ritual 关闭。
 >
+> **落地记录（2026-09-28）**：经用户拍板改走 OpenSpec 主干，载体 change `close-agent-guidance-doc-gaps`
+> （skip_specs：纯指引内容，零 delta），已归档于
+> `openspec/changes/archive/2026-09-28-close-agent-guidance-doc-gaps/`。GAP 1 相对草稿有一处偏离：
+> 独立 `## Mechanism Ladder` 表改为 Application Focus 折叠列——module guide 行数预算 `>=120` 行即
+> 常驻告警而现值 119 行，零新行折叠列达成同一验收；理由与备选取舍见该 change 的 design.md。
+> 三个产物已落地并过全部门禁（hygiene/self-test、change-guidance、closeout gate、`make verify`），结论被
+> change 吸收，本 plan 关闭。
+>
 > **边界铁律**：`deerflow/` 是 submodule，只 import、绝不修改；本计划任何一环都不触碰它
 > （仓库 AGENTS.md 不可谈判 #2）。三项改动全部落在应用侧自有文件。
 
