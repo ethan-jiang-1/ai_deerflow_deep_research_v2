@@ -1,6 +1,6 @@
 # Fixed Bugs Index — 已修复 bug 归档
 
-> 最后更新: 2026-09-27（关闭 BUG-070 调试工作台下一节点投影） | `_backlog/_done/_fixed_bugs/` — 已修复 bug 的归档目录。
+> 最后更新: 2026-09-28（关闭 BUG-075 调试器入口链 .env 加载） | `_backlog/_done/_fixed_bugs/` — 已修复 bug 的归档目录。
 > 接收来自 [`../../bugs/`](../../bugs/) 的 bug。`_` 前缀 = coding agent 默认忽略。
 >
 > **本目录是 bug 编号的唯一权威来源——新 bug 的编号 = 已分配的最大编号 + 1（已修复目录 ∪ 活跃目录）。**
@@ -97,7 +97,9 @@ bug 修完后从 `_backlog/bugs/` 通过 `git mv` 移入本目录：
 
 | BUG-074 | 2026-09-28 | [BUG-074-periodic-entry-scenario-fails-on-credential-free-machines.md](BUG-074-periodic-entry-scenario-fails-on-credential-free-machines.md) | periodic 入口环境场景的 launcher 断言不可能状态(清凭据却断言就绪);经 change `fix-periodic-launcher-credential-bounded` 修复——方案 A(假凭据)被实测否决(topic_planning 真打 API 401),落方案 B(诚实 not-ready 断言);entry-environment workflow 取得史上首个绿灯。 |
 
-**Next available bug ID: BUG-075**
+| BUG-075 | 2026-09-28 | 调试器入口链不加载 .env，embedded-smoke 前置检查对 .env 用户失效——file 模式下框架 `find_dotenv` 锚进子模块树只捞到仓库根 `.env`（缺模型名）；`load_local_environment()`（override=False，DEMO_ENV_FILE seam）+ app 构造首行调用，file 模式子进程探针红转绿（change `repair-debugger-entry-env-conformance`） |
+
+**Next available bug ID: BUG-076**
 
 ---
 
