@@ -1504,6 +1504,15 @@ class DeepResearchDemoTUI(App[None]):
             self.query_one("#composer", Input).value = ""
             self.run_worker(self._shell_escape(value.strip()[1:].strip()), exclusive=True, group="debug")
             return
+        if self.debug_mode and (value.startswith("?") or value.startswith("？")) and len(value.strip()) > 1:
+            # Operator side-chat: one conversational turn with the operator's
+            # own chat model (recon machinery, read-only tools). Never consumed
+            # as a research answer, never touches a pending HITL request, and
+            # no graph state is derived from it — the answer channel stays with
+            # unprefixed lines.
+            self.query_one("#composer", Input).value = ""
+            self.run_worker(self._chat_reply(value.strip()[1:].strip()), exclusive=True, group="debug")
+            return
         if self.debug_mode and value.startswith("/files"):
             # RED-014 Files pane: read-only typed pages, no host paths.
             _, _, path_argument = value.partition(" ")
@@ -1816,7 +1825,12 @@ class DeepResearchDemoTUI(App[None]):
             workspace = self._inspect_workspace_root()
             tools = _recon_tools(workspace) if workspace is not None else []
             model = self._chat_model.bind_tools(tools) if tools else self._chat_model
-            text = await self._stream_turn(model, messages, tools, echo=f"你: {value}")
+            if self.debug_mode:
+                # The workbench owns #inspect for its posture line: stream
+                # nothing there; the final answer lands in the log below.
+                text = await _stream_chat_turn(model, messages, tools, on_text=lambda _partial: None)
+            else:
+                text = await self._stream_turn(model, messages, tools, echo=f"你: {value}")
             self._chat_history.append(("assistant", text))
             log.write(Text(f"AI: {text}", style="cyan"))
         except Exception as exc:
@@ -2668,6 +2682,7 @@ class DeepResearchDemoTUI(App[None]):
                 "/targets=可调试对象 · /inspect <id>=对象内部\n"
                 "  收尾: /detach=退出会话(保留 bundle) · /cancel=放弃活跃 bundle(释放 scope 后可重开)\n"
                 "  逃生: !<命令>=有界 shell 转义(操作者权限 · cwd 锚到当前 bundle · 非工作台投影)\n"
+                "  闲聊: ?<文字>=和模型聊一句(不消费 HITL 回答 · 只读工具看工作区)\n"
                 "  其他: Copy details=复制日志 · Ctrl+C=退出",
                 style="cyan",
             )
@@ -2831,7 +2846,7 @@ class DeepResearchDemoTUI(App[None]):
     _DEBUG_HINT = (
         "调试工作台: 问题+Enter=Start Step · Start Run=连续 · Enter=单步 · /run [节点] · /pause · "
         "/context · /files · /harness · /targets · /inspect <id> · /attach · /replay · /cancel · "
-        "/help=全部能力 · !命令=shell 转义 · Ctrl-C 退出"
+        "/help=全部能力 · !命令=shell · ?文字=闲聊 · Ctrl-C 退出"
     )
 
     def _debug_size_notice(self) -> str | None:

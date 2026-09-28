@@ -438,3 +438,71 @@ def test_shell_escape_runs_from_the_composer(tmp_path: Path) -> None:
         f"`!` composer input was not routed to the shell escape: "
         f"{result.stdout.strip()[-400:] or result.stderr.strip()[-400:]}"
     )
+
+
+_SIDE_CHAT_CHILD = """
+import asyncio, sys
+sys.path.insert(0, "scripts")
+import demo_tui
+from textual.widgets import Input
+
+async def main():
+    app = demo_tui.DeepResearchDemoTUI(mode="embedded_smoke", debug_mode=True)
+    async with app.run_test(size=(100, 40)) as pilot:
+        for _ in range(30):
+            await pilot.pause()
+        composer = app.query_one("#composer", Input)
+        composer.value = "?随便聊聊怎么样"
+        await pilot.press("enter")
+        seen = False
+        for _ in range(60):
+            await pilot.pause()
+            if app._chat_history:
+                seen = True
+                break
+            await asyncio.sleep(0.1)
+        print("CHAT_SEEN:", seen)
+        print("HISTORY_LEN:", len(app._chat_history))
+        return
+
+asyncio.run(main())
+"""
+
+
+def test_side_chat_from_the_composer_does_not_consume_the_answer_channel(tmp_path: Path) -> None:
+    """`?`-prefixed composer input routes to the operator's chat model instead
+    of being consumed as a research answer or a debug command — the pending
+    HITL request and the answer channel stay untouched.
+    """
+    import os
+    import sys
+
+    env_file = tmp_path / "harness-env"
+    env_file.write_text(
+        "DEEPSEEK_API_KEY=dummy-key-not-real\n"
+        "DEERFLOW_DEMO_MODEL=deepseek-v4-pro\n"
+        "TAVILY_API_KEY=dummy-tavily-not-real\n",
+        encoding="utf-8",
+    )
+    child_dir = tmp_path / "wd"
+    child_dir.mkdir()
+    child_file = child_dir / "side_chat_child.py"
+    child_file.write_text(_SIDE_CHAT_CHILD, encoding="utf-8")
+    env = {
+        key: value
+        for key, value in os.environ.items()
+        if key not in ("DEEPSEEK_API_KEY", "DEERFLOW_DEMO_MODEL", "TAVILY_API_KEY", "PYTHONPATH")
+    }
+    env["DEMO_ENV_FILE"] = str(env_file)
+    result = subprocess.run(
+        [sys.executable, str(child_file)],
+        capture_output=True,
+        text=True,
+        timeout=90,
+        cwd=Path(__file__).resolve().parents[2],
+        env=env,
+    )
+    assert "CHAT_SEEN: True" in result.stdout, (
+        f"`?` composer input was not routed to the side chat: "
+        f"{result.stdout.strip()[-400:] or result.stderr.strip()[-400:]}"
+    )
