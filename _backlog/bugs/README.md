@@ -17,7 +17,7 @@
 | Bug | 标题 | 发现 | 状态 |
 |-----|------|------|------|
 
-**Next available bug ID: BUG-076**
+**Next available bug ID: BUG-078**
 
 ---
 

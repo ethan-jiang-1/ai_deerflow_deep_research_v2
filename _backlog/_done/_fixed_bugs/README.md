@@ -1,6 +1,6 @@
 # Fixed Bugs Index — 已修复 bug 归档
 
-> 最后更新: 2026-09-28（关闭 BUG-075 调试器入口链 .env 加载） | `_backlog/_done/_fixed_bugs/` — 已修复 bug 的归档目录。
+> 最后更新: 2026-09-28（关闭 BUG-076/077——embedded 真实 TUI 首个 live 窗口暴露的两个缺陷） | `_backlog/_done/_fixed_bugs/` — 已修复 bug 的归档目录。
 > 接收来自 [`../../bugs/`](../../bugs/) 的 bug。`_` 前缀 = coding agent 默认忽略。
 >
 > **本目录是 bug 编号的唯一权威来源——新 bug 的编号 = 已分配的最大编号 + 1（已修复目录 ∪ 活跃目录）。**
@@ -99,7 +99,11 @@ bug 修完后从 `_backlog/bugs/` 通过 `git mv` 移入本目录：
 
 | BUG-075 | 2026-09-28 | 调试器入口链不加载 .env，embedded-smoke 前置检查对 .env 用户失效——file 模式下框架 `find_dotenv` 锚进子模块树只捞到仓库根 `.env`（缺模型名）；`load_local_environment()`（override=False，DEMO_ENV_FILE seam）+ app 构造首行调用，file 模式子进程探针红转绿（change `repair-debugger-entry-env-conformance`） |
 
-**Next available bug ID: BUG-076**
+| BUG-076 | 2026-09-28 | 侦察聊天首个工具调用轮次死于 ValidationError——DeepSeek 流式在同一 index 追加空尾部增量 `{name:"", id:None}`，按 index 累积被覆盖后 `ToolMessage(tool_call_id=call.get("id",""))` 拿到 None；提取 `_stream_chat_turn`（假模型逐字重放真实 chunk 形状，零网络）+ 跳过空增量 + None 降级，失败行带消息（change `repair-embedded-tui-first-live-defects`） |
+
+| BUG-077 | 2026-09-28 | 调试器组合的 embedded 首屏被 020 侦察屏覆盖——`_initialize` 的 `elif embedded_smoke:` 无 debug_mode 守卫，覆盖工作台首屏并置 `_onboarding=True` 把 composer Enter 路由进侦察聊天；recon 分支加 `not self.debug_mode`，mount 探针 `ONBOARDING: True→False` 红转绿（change `repair-embedded-tui-first-live-defects`） |
+
+**Next available bug ID: BUG-078**
 
 ---
 
