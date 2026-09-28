@@ -150,6 +150,29 @@ validated, including after a Bundle is gone. They remain read-only and cannot lo
 authorize, resume, cancel, refine, recreate, or reconstruct a Bundle. Local operator
 routes are documented in [local operations](local-operations.md).
 
+## Persistence Layers
+
+Four layers by change speed; each faster layer derives from the slower one and never
+writes back except through the owner's explicit action. This is a map, not a second
+authority — each row links to its owner.
+
+| Layer | Change speed | Owner / authority | Boundary |
+| --- | --- | --- | --- |
+| Rule/map | per PR | repo guides and [ADRs](adr/README.md) | not mutable during a run |
+| Config | deploy time | root `config.yaml` + `profiles/` | explicit profile check; mismatch fails loud |
+| Fact source | append-only | Run Bundle: State, checkpoints, journal (single-writer) | see Harness And Run Bundles above |
+| Derived | per read | reports, projections, diagnostics | rebuildable; no second truth |
+
+Disciplines, each already enforced elsewhere:
+
+- Derived observations stay read-only and cannot authorize, resume, or reconstruct a
+  Bundle (see Projections And Observations above).
+- Model-visible ⟺ reconstructable: Node Context Snapshots and `make prompt-dump-check`
+  pin what a node actually received; the debugger replays from checkpoint and journal
+  without inference (runbooks 030/031).
+- Durable facts chosen mid-session return to their owner — Bundle State, config, or a
+  new ADR; a session log is never an authority.
+
 ## Source And Structural Contract
 
 Production source lives under `deep_research_harness/src/deerflow_deep_research/`,

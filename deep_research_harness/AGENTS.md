@@ -11,14 +11,14 @@ Select one primary causal owner. Start with its closest implementation and lowes
 responsible test seam; widen only for a named interface, authority, compatibility, or
 observed-failure question. A possible future use is not enough to expand scope.
 
-| Changed decision | Primary application owner |
-| --- | --- |
-| Typed meaning, invariant, or pure data contract | `src/deerflow_deep_research/domain/` |
-| Deterministic validation, gate, or retry policy | `src/deerflow_deep_research/engine/` |
-| Bounded model role, prompt, context, middleware, or candidate | `src/deerflow_deep_research/agents/` |
-| Phase composition, routing, or capability injection | `src/deerflow_deep_research/graph/` |
-| DeerFlow binding, trusted I/O, persistence, or lifecycle adapter | `src/deerflow_deep_research/runtime/` |
-| Presentation-only behavior | Its adapter/doc and the named owning result contract |
+| Changed decision | Primary application owner | Try first; escalate when |
+| --- | --- | --- |
+| Typed meaning, invariant, or pure data contract | `src/deerflow_deep_research/domain/` | Config/profile expression first; escalate only when the typed contract itself must change |
+| Deterministic validation, gate, or retry policy | `src/deerflow_deep_research/engine/` | Config knobs (`timeout`, `max_retries`, toggles) first; escalate when config cannot express the admission |
+| Bounded model role, prompt, context, middleware, or candidate | `src/deerflow_deep_research/agents/` | Model/tool posture in `config.yaml` first; escalate when a bounded policy or middleware change is required |
+| Phase composition, routing, or capability injection | `src/deerflow_deep_research/graph/` | Existing profile/composition knobs first; escalate when routing needs a new node or `NODE_SPEC` change |
+| DeerFlow binding, trusted I/O, persistence, or lifecycle adapter | `src/deerflow_deep_research/runtime/` | Config/profile binding first; escalate when a trusted adapter or lifecycle seam must change |
+| Presentation-only behavior | Its adapter/doc and the named owning result contract | Existing result projection first; escalate when a new observable fact must be owned |
 
 ## LLM-Node Authoring Gate
 
