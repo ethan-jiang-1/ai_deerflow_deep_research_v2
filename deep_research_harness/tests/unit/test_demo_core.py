@@ -775,3 +775,65 @@ def test_demo_tavily_fetch_only_policy_fails_closed(_scripts_path, monkeypatch):
 
     with pytest.raises(NodeAgentConfigurationError, match="tools_unavailable"):
         bridge.tools_resolver(object(), policy)
+
+
+class TestLoadLocalEnvironment:
+    """BUG-075: the demo entry chain must load the documented harness .env file."""
+
+    def test_explicit_environment_wins_over_file(self, _scripts_path, tmp_path, monkeypatch):
+        import os
+
+        from _demo_core import load_local_environment
+
+        env_file = tmp_path / ".env"
+        env_file.write_text("DEMO_ENV_LOADER_PROBE=from-file\n", encoding="utf-8")
+        monkeypatch.setenv("DEMO_ENV_FILE", str(env_file))
+        monkeypatch.setenv("DEMO_ENV_LOADER_PROBE", "from-shell")
+        try:
+            assert load_local_environment() is True
+            assert os.environ["DEMO_ENV_LOADER_PROBE"] == "from-shell"
+        finally:
+            os.environ.pop("DEMO_ENV_LOADER_PROBE", None)
+
+    def test_missing_file_is_a_noop(self, _scripts_path, tmp_path, monkeypatch):
+        import os
+
+        from _demo_core import load_local_environment
+
+        monkeypatch.setenv("DEMO_ENV_FILE", str(tmp_path / "absent.env"))
+        try:
+            assert load_local_environment() is False
+            assert "DEMO_ENV_LOADER_PROBE" not in os.environ
+        finally:
+            os.environ.pop("DEMO_ENV_LOADER_PROBE", None)
+
+    def test_seam_replaces_the_default_harness_path(self, _scripts_path, tmp_path, monkeypatch):
+        """DEMO_ENV_FILE replaces the default so tests never read the operator's real .env."""
+        import os
+
+        from _demo_core import load_local_environment
+
+        env_file = tmp_path / "custom.env"
+        env_file.write_text("DEMO_ENV_LOADER_PROBE=from-seam\n", encoding="utf-8")
+        monkeypatch.setenv("DEMO_ENV_FILE", str(env_file))
+        monkeypatch.delenv("DEERFLOW_DEMO_MODEL", raising=False)
+        try:
+            assert load_local_environment() is True
+            assert os.environ.get("DEMO_ENV_LOADER_PROBE") == "from-seam"
+            assert "DEERFLOW_DEMO_MODEL" not in os.environ
+        finally:
+            os.environ.pop("DEMO_ENV_LOADER_PROBE", None)
+
+    def test_explicit_argument_names_the_file(self, _scripts_path, tmp_path, monkeypatch):
+        import os
+
+        from _demo_core import load_local_environment
+
+        env_file = tmp_path / "explicit.env"
+        env_file.write_text("DEMO_ENV_LOADER_PROBE=from-arg\n", encoding="utf-8")
+        monkeypatch.delenv("DEMO_ENV_FILE", raising=False)
+        try:
+            assert load_local_environment(env_file) is True
+            assert os.environ.get("DEMO_ENV_LOADER_PROBE") == "from-arg"
+        finally:
+            os.environ.pop("DEMO_ENV_LOADER_PROBE", None)

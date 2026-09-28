@@ -29,6 +29,7 @@ from _demo_core import (
     DemoLifecycleTransport,
     build_demo_runtime,
     demo_readiness_report,
+    load_local_environment,
 )
 from _terminal_failure_presentation import (
     ProviderTerminalDetails,
@@ -865,6 +866,11 @@ class DeepResearchDemoTUI(App[None]):
         debug_mode: bool = False,
     ) -> None:
         super().__init__()
+        # BUG-075: every construction path (launcher main(), headless probes,
+        # tests) funnels here, before the readiness gate reads the process
+        # environment. Entries outside make never see the documented .env
+        # otherwise.
+        load_local_environment()
         self.mode = mode
         self.profile = profile
         self.auto = auto

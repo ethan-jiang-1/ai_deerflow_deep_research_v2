@@ -152,6 +152,32 @@ def _nonblank_environment_value(name: str, environ: Mapping[str, str] | None = N
     return stripped or None
 
 
+_HARNESS_ROOT = Path(__file__).resolve().parents[1]
+
+
+def load_local_environment(environ_path: str | Path | None = None) -> bool:
+    """Load the documented harness ``.env`` into the process environment.
+
+    Demo entries launched outside make (the canonical debugger launcher, bare
+    ``python scripts/demo_tui.py``) never pass through ``uv run --env-file
+    .env``, so the documented three-variable preflight silently failed there
+    (BUG-075). An explicit call-site path or the ``DEMO_ENV_FILE`` seam
+    replaces the default harness-root path. ``override=False`` keeps the
+    precedence the other demo entries already have: an explicitly exported
+    variable always wins, and a missing file is a no-op.
+
+    @impl repair-debugger-entry-env-conformance
+    """
+    from dotenv import load_dotenv
+
+    if environ_path is not None:
+        path = Path(environ_path)
+    else:
+        seam = os.environ.get("DEMO_ENV_FILE")
+        path = Path(seam) if seam else _HARNESS_ROOT / ".env"
+    return load_dotenv(path, override=False)
+
+
 class DemoPrerequisiteError(ValueError):
     """Raised when the standalone real demo lacks a required credential."""
 

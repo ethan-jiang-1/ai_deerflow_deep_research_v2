@@ -229,3 +229,79 @@ def test_launcher_injects_the_fixture_debugger_for_every_entry_spelling(tmp_path
     embedded = _launcher_forwarded_argv("--embedded-smoke", tmp_path=tmp_path)
     assert "--debug" in embedded, "the debugger launcher debugs the composition it was given"
     assert "--fixture" not in embedded, "a real composition must not gain the fixture composition"
+
+
+_EMBEDDED_PROBE_CHILD = """
+import asyncio, sys
+sys.path.insert(0, "scripts")
+import demo_tui
+
+async def main():
+    app = demo_tui.DeepResearchDemoTUI(mode="embedded_smoke")
+    async with app.run_test(size=(100, 40)) as pilot:
+        for _ in range(80):
+            await pilot.pause()
+            update = getattr(app, "last_update", None)
+            name = type(update).__name__
+            if name in ("Fault", "Ready"):
+                print("RESULT:", name)
+                failure = getattr(update, "failure", None)
+                if failure is not None:
+                    print("CODE:", getattr(failure, "code", None))
+                    print("MESSAGE:", failure.message)
+                return
+            await asyncio.sleep(0.1)
+    print("RESULT: TIMEOUT")
+
+asyncio.run(main()
+)
+"""
+
+
+def test_embedded_smoke_reaches_ready_from_env_file_alone(tmp_path: Path) -> None:
+    """BUG-075 regression: the entry chain must see the documented .env file.
+
+    runbook-031 promises the `.env` three-variable preflight, but the launcher
+    chain (and bare python) bypasses make's ``--env-file``, so an operator
+    with a correct `.env` hit ``configuration.model_missing`` before any
+    bundle. The three variables arrive only through a temp env file named by
+    the ``DEMO_ENV_FILE`` seam; the child environment has them stripped.
+
+    The child runs in FILE mode (like the launcher's ``python demo_tui.py``),
+    not ``-c``: the framework's implicit ``find_dotenv`` anchors differently
+    across invocation modes, and only file mode reproduces the operator's
+    entry chain. The child script lives one directory below the env file and
+    the env file is not named ``.env``, so no ambient ``find_dotenv`` walk can
+    find any env file — the loader under test is the only path to Ready.
+    """
+    import os
+    import sys
+
+    env_file = tmp_path / "harness-env"
+    env_file.write_text(
+        "DEEPSEEK_API_KEY=dummy-key-not-real\n"
+        "DEERFLOW_DEMO_MODEL=deepseek-v4-pro\n"
+        "TAVILY_API_KEY=dummy-tavily-not-real\n",
+        encoding="utf-8",
+    )
+    child_dir = tmp_path / "wd"
+    child_dir.mkdir()
+    child_file = child_dir / "embedded_probe_child.py"
+    child_file.write_text(_EMBEDDED_PROBE_CHILD, encoding="utf-8")
+    env = {
+        key: value
+        for key, value in os.environ.items()
+        if key not in ("DEEPSEEK_API_KEY", "DEERFLOW_DEMO_MODEL", "TAVILY_API_KEY", "PYTHONPATH")
+    }
+    env["DEMO_ENV_FILE"] = str(env_file)
+    result = subprocess.run(
+        [sys.executable, str(child_file)],
+        capture_output=True,
+        text=True,
+        timeout=60,
+        cwd=Path(__file__).resolve().parents[2],
+        env=env,
+    )
+    assert "RESULT: Ready" in result.stdout, (
+        f"embedded-smoke entry ignored the .env file: {result.stdout.strip()[-400:] or result.stderr.strip()[-400:]}"
+    )
