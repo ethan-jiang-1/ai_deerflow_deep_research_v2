@@ -511,6 +511,51 @@ async def _stream_chat_turn(model: Any, messages: list[Any], tools: list[Any], *
     return "".join(text_parts)
 
 
+_SHELL_ESCAPE_TIMEOUT_S = 15
+_SHELL_ESCAPE_MAX_CHARS = 4000
+
+
+def _capture_shell_output(
+    command: str,
+    cwd: Path | None,
+    *,
+    timeout_s: int = _SHELL_ESCAPE_TIMEOUT_S,
+    max_chars: int = _SHELL_ESCAPE_MAX_CHARS,
+) -> str:
+    """Run one bounded operator shell escape and return its rendered text.
+
+    The workbench runs on the operator's own machine, so the escape grants no
+    authority the operator lacks; its value is cwd anchoring (the live
+    session's Bundle directory) plus bounded capture. Non-interactive by
+    contract: stdin is /dev/null, an overrunning command is terminated, and
+    oversized output is truncated with the truncation stated.
+    """
+    import subprocess
+
+    try:
+        completed = subprocess.run(
+            command,
+            shell=True,
+            executable="/bin/bash",
+            cwd=str(cwd) if cwd is not None else None,
+            capture_output=True,
+            text=True,
+            stdin=subprocess.DEVNULL,
+            timeout=timeout_s,
+        )
+    except subprocess.TimeoutExpired:
+        return f"(timeout: 命令在 {timeout_s}s 内未结束，已终止)"
+    combined = completed.stdout or ""
+    if (completed.stderr or "").strip():
+        combined += f"\n[stderr]\n{completed.stderr}"
+    if len(combined) > max_chars:
+        combined = combined[:max_chars] + f"\n…（输出已截断，原始长度 {len(combined)} 字符）"
+    combined = combined.rstrip()
+    if completed.returncode != 0:
+        combined += f"\n[exit {completed.returncode}]"
+    return combined
+
+
 def _event_to_feed_line(event: dict[str, object]) -> str | None:
     """One journal event -> one rolling feed line (or None to skip)."""
     category = event.get("category")
@@ -1449,6 +1494,15 @@ class DeepResearchDemoTUI(App[None]):
                         style="yellow",
                     )
                 )
+            return
+        if self.debug_mode and value.startswith("!") and len(value.strip()) > 1:
+            # Operator shell escape: bounded one-shot command on the operator's
+            # own machine (no new authority), cwd anchored to the live
+            # session's Bundle directory. Operator-invoked content — never a
+            # projection, and no graph state is derived from it. Routed before
+            # answer/debug routing so it works at every paused posture.
+            self.query_one("#composer", Input).value = ""
+            self.run_worker(self._shell_escape(value.strip()[1:].strip()), exclusive=True, group="debug")
             return
         if self.debug_mode and value.startswith("/files"):
             # RED-014 Files pane: read-only typed pages, no host paths.
@@ -2611,8 +2665,9 @@ class DeepResearchDemoTUI(App[None]):
                 "  回答: HITL 停止时直接输入文本（choice 模式输入选项 id）后按 Enter\n"
                 "  观察: /context=节点上下文与 coverage strip · /files [路径]=工作区(目录进入/文件预览)\n"
                 "  探索: /harness=harness 自身解剖(组合/executor/节点/根/可读投影) · "
-                "/targets=所有可调试对象 · /inspect <id>=单个对象内部\n"
+                "/targets=可调试对象 · /inspect <id>=对象内部\n"
                 "  收尾: /detach=退出会话(保留 bundle) · /cancel=放弃活跃 bundle(释放 scope 后可重开)\n"
+                "  逃生: !<命令>=有界 shell 转义(操作者权限 · cwd 锚到当前 bundle · 非工作台投影)\n"
                 "  其他: Copy details=复制日志 · Ctrl+C=退出",
                 style="cyan",
             )
@@ -2638,6 +2693,32 @@ class DeepResearchDemoTUI(App[None]):
             )
         )
         await self._render_debug_result(result)
+
+    async def _shell_escape(self, command: str) -> None:
+        """One bounded operator shell escape, rendered into the log.
+
+        The workbench runs on the operator's own machine, so the escape grants
+        no authority the operator lacks; its value is cwd anchoring (the live
+        session's Bundle directory when one is open) and bounded capture
+        without leaving the workbench. Output is operator-invoked content,
+        rendered verbatim in the log — not a workbench projection, and no
+        graph state, admission decision, or tool authority is derived from it.
+        """
+        log = self.query_one("#log", RichLog)
+        cwd: Path | None = None
+        adapter = self._adapter
+        if adapter is not None and self._debug_bundle_id:
+            cwd = find_bundle_dir(adapter.bundle_root, self._debug_bundle_id)
+        if cwd is None and adapter is not None:
+            cwd = getattr(adapter, "bundle_root", None)
+        loop = asyncio.get_running_loop()
+        try:
+            output = await loop.run_in_executor(None, lambda: _capture_shell_output(command, cwd))
+        except Exception as exc:
+            log.write(Text(f"! {command}\n（shell 转义失败: {type(exc).__name__}: {exc}）", style="red"))
+            return
+        where = f"cwd: {cwd}" if cwd is not None else "cwd: 进程当前目录"
+        log.write(Text(f"! {command}  [{where}]\n{output}", style="cyan"))
 
     async def _debug_pause(self) -> None:
         """Request a pause at the next committed boundary (driver pause_request)."""
@@ -2750,7 +2831,7 @@ class DeepResearchDemoTUI(App[None]):
     _DEBUG_HINT = (
         "调试工作台: 问题+Enter=Start Step · Start Run=连续 · Enter=单步 · /run [节点] · /pause · "
         "/context · /files · /harness · /targets · /inspect <id> · /attach · /replay · /cancel · "
-        "/help=全部能力 · Ctrl-C 退出"
+        "/help=全部能力 · !命令=shell 转义 · Ctrl-C 退出"
     )
 
     def _debug_size_notice(self) -> str | None:
