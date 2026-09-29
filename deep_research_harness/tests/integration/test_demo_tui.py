@@ -7,6 +7,7 @@
 @impl RED-005
 @impl RED-006
 @impl RED-008
+@impl RED-015
 @impl RDO-001
 @impl RDO-004
 @impl REC-006
@@ -30,6 +31,7 @@ from deerflow_deep_research.domain.run_experience import (
     AwaitingInput,
     FailureCertainty,
     Fault,
+    PromptView,
     ReadinessCheck,
     ReadinessReport,
     RunFailure,
@@ -1862,3 +1864,137 @@ async def test_run_drives_and_pause_requests_a_boundary_stop(monkeypatch: pytest
         await asyncio.sleep(0.4)
         await pilot.pause()
         assert "没有下一个节点边界可暂停" in app._rich_log_text().replace("\n", "")
+
+
+async def _drive_fixture_debugger_to_hitl(app: DeepResearchDemoTUI, pilot: Any) -> None:
+    """Start a fixture debug session with a question and stop at the hitl1 interrupt."""
+    await _wait_for(app, pilot, demo_tui.Ready)
+    await _type_composer(app, pilot, "Compare storage approaches")
+    await pilot.press("enter")
+    for _ in range(160):
+        await pilot.pause()
+        if app._debug_driver is not None and "awaiting_hitl" in app.query_one("#inspect").render().plain:
+            break
+        await asyncio.sleep(0.05)
+    assert "awaiting_hitl" in app.query_one("#inspect").render().plain, "the session must reach the hitl1 stop"
+
+
+@pytest.mark.asyncio
+async def test_debug_plain_submit_clears_the_composer(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """BUG-078: a plain-text debug submit clears the composer, so a repeated
+    Enter cannot resubmit the same text as another answer or as an advance."""
+    _install_isolated_fixture_adapter(monkeypatch, bundle_root=tmp_path / "demo-runs")
+    app = DeepResearchDemoTUI(mode="fixture", debug_mode=True)
+    async with app.run_test(size=(110, 34)) as pilot:
+        await _drive_fixture_debugger_to_hitl(app, pilot)
+        composer = app.query_one("#composer", demo_tui.Input)
+
+        await _type_composer(app, pilot, "depth: standard")
+        await pilot.press("enter")
+        for _ in range(80):
+            await pilot.pause()
+            if composer.value == "":
+                break
+            await asyncio.sleep(0.05)
+        assert composer.value == "", "BUG-078: a plain-text debug submit must clear the composer"
+
+        # The cleared composer makes a repeated Enter harmless: no second echo
+        # of the same text and no second consumption of the same answer.
+        await pilot.press("enter")
+        await asyncio.sleep(0.6)
+        await pilot.pause()
+        log = app._rich_log_text()
+        assert log.count("你: depth: standard") == 1, log[-400:]
+        assert log.count("✓ hitl1 提交") == 1, log[-400:]
+
+
+@pytest.mark.asyncio
+async def test_debug_hitl_stop_renders_card_not_payload(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """RED-015: a HITL stop never dumps the raw node context payload; it renders
+    the typed card when the projection carries one and an honest bounded note
+    when it does not."""
+    _install_isolated_fixture_adapter(monkeypatch, bundle_root=tmp_path / "demo-runs")
+    app = DeepResearchDemoTUI(mode="fixture", debug_mode=True)
+    async with app.run_test(size=(110, 34)) as pilot:
+        await _drive_fixture_debugger_to_hitl(app, pilot)
+        log = app._rich_log_text()
+        assert "→ 等待 hitl1 输入" in log, log[-400:]
+        # The fixture context is not the published schema, so no card exists:
+        # the stop states that honestly instead of dumping the raw payload.
+        assert "Deterministic fixture scenario" not in log, "raw node context payload must not be dumped"
+        assert "未解析" in log, "an unparsed context must degrade to a bounded honest note"
+
+
+@pytest.mark.asyncio
+async def test_debug_hitl_feedback_and_consumption_visible(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """RED-015: the node's reply to the last answer and the consumption outcome
+    render at the stop, from the typed projection only (never machine JSON)."""
+    from deerflow_deep_research.domain.debug_driving import (
+        BoundaryCursor,
+        DebugSessionSnapshot,
+        DebugSessionUpdate,
+        LeasePosture,
+        PendingRequestView,
+        StopPolicy,
+    )
+
+    _install_isolated_fixture_adapter(monkeypatch, bundle_root=tmp_path / "demo-runs")
+    app = DeepResearchDemoTUI(mode="fixture", debug_mode=True)
+    async with app.run_test(size=(110, 34)) as pilot:
+        await _wait_for(app, pilot, demo_tui.Ready)
+        feedback = InteractionFeedback(
+            kind=InteractionFeedbackKind.CLARIFICATION,
+            message="你输入的是「一个一个节点调，怎么个调法」，我还没能把它理解成研究配置。",
+        )
+        view = PendingRequestView(
+            request_id="drh_card_00000001",
+            phase="hitl1",
+            mode="text",
+            title="Deep Research profile",
+            context='{"context_schema_version":1,"brief_summary":"研究配置建议已准备好，等待确认。"}',
+            prompt=PromptView(
+                phase="hitl1",
+                request_id="drh_card_00000001",
+                mode="text",
+                heading="确认研究配置",
+                goal="研究配置建议已准备好，等待确认。",
+                proposed_scope=("depth: standard",),
+                accepted_rounds_remaining=2,
+            ),
+            last_feedback=feedback,
+        )
+        app._log_debug_action("awaiting_hitl", ("hitl1",), view)
+        log = app._rich_log_text()
+        assert "研究配置建议已准备好，等待确认。" in log, "the card goal must render"
+        assert "depth: standard" in log, "the card proposed scope must render"
+        assert "剩余" in log, "the card remaining rounds must render"
+        assert "hitl1 回复:" in log and "我还没能把它理解成研究配置" in log, "the node reply must render"
+        assert "context_schema_version" not in log, "machine JSON must never render"
+
+        bundle_id = "b_" + "A" * 43
+        snapshot = DebugSessionSnapshot(
+            bundle_id=bundle_id,
+            cursor=BoundaryCursor(bundle_id=bundle_id, generation=0, frame_sequence=3),
+            mode="step",
+            posture="awaiting_hitl",
+            stop_policy=StopPolicy(),
+            lease=LeasePosture(owner="workbench", generation=0, live=True),
+            pending_request_id="drh_card_00000001",
+            pending_request=view,
+        )
+        await app._render_debug_result(
+            DebugSessionUpdate(snapshot=snapshot, command_id="answer-00000001", committed_node="hitl1"),
+            consumed_answer=True,
+        )
+        log = app._rich_log_text()
+        assert "回答已消费" in log and "未被接受" in log, "the consumption outcome must render"
+        assert "剩余 2 轮" in log, "the remaining rounds must ride the consumption line"

@@ -93,13 +93,33 @@ async def publish_lifecycle_observation(
         return
 
 
-def _pending_request_view(pending: Any) -> Any:
-    """Project a checkpoint interrupt into the bounded request view (never rebuilt)."""
+def _pending_request_view(pending: Any, *, state_feedback: Any = None) -> Any:
+    """Project a checkpoint interrupt into the bounded request view (never rebuilt).
+
+    RED-015/LDD-006: the view also carries the parsed hitl1 prompt card (one
+    shared parsing authority; None when the context is not the published
+    schema) and the node's last feedback — the interrupt's own interaction
+    projection first, the Bundle's durable-state feedback second. Both are
+    carried projections; neither is lifecycle authority.
+    """
     if pending is None:
         return None
     from deerflow_deep_research.domain.debug_driving import PendingOptionView, PendingRequestView
+    from deerflow_deep_research.domain.human_interaction import InteractionFeedback
+    from deerflow_deep_research.runtime.run_experience import hitl1_prompt_card
 
     request = pending.request
+    prompt = hitl1_prompt_card(request, request_id=request.request_id) if pending.phase == "hitl1" else None
+    feedback = None if request.interaction is None else request.interaction.feedback
+    if feedback is None and state_feedback is not None:
+        try:
+            feedback = (
+                state_feedback
+                if isinstance(state_feedback, InteractionFeedback)
+                else InteractionFeedback.model_validate(state_feedback)
+            )
+        except (TypeError, ValueError):
+            feedback = None
     return PendingRequestView(
         request_id=request.request_id,
         phase=pending.phase,
@@ -107,7 +127,31 @@ def _pending_request_view(pending: Any) -> Any:
         title=request.title,
         context=request.context,
         options=tuple(PendingOptionView(option_id=str(option.id), label=option.label) for option in request.options),
+        prompt=prompt,
+        last_feedback=feedback,
     )
+
+
+def _view_with_state_feedback(view: Any, state_feedback: Any) -> Any:
+    """Fill a carried view's missing last_feedback from the durable state.
+
+    LDD-006 fallback channel: a re-prompt without an interaction projection
+    (an incomplete proposal) leaves the node's reply to the operator's last
+    answer only in the Bundle's durable state. Carried projection only.
+    """
+    if view is None or view.last_feedback is not None or state_feedback is None:
+        return view
+    from deerflow_deep_research.domain.human_interaction import InteractionFeedback
+
+    try:
+        feedback = (
+            state_feedback
+            if isinstance(state_feedback, InteractionFeedback)
+            else InteractionFeedback.model_validate(state_feedback)
+        )
+    except (TypeError, ValueError):
+        return view
+    return view.model_copy(update={"last_feedback": feedback})
 
 
 class DebugRunDriver:
@@ -593,5 +637,5 @@ class DebugRunDriver:
             pause_requested=pause_requested,
             lease=lease,
             pending_request_id=pending_request_id,
-            pending_request=session.get("pending_request"),
+            pending_request=_view_with_state_feedback(session.get("pending_request"), state.interaction_feedback),
         )

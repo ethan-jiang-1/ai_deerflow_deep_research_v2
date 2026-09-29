@@ -772,3 +772,61 @@ async def test_a_pending_pause_makes_the_next_drive_advance_one_boundary(tmp_pat
     assert driven.committed_node == "topic_planning", "the pause boundary is the next committed node"
     assert driven.snapshot.posture == "paused_at_boundary"
     assert driven.snapshot.pause_requested is False, "an honored pause request must be cleared"
+
+
+def test_pending_view_carries_card_and_state_feedback() -> None:
+    """LDD-006: a schema-following context parses into the carried prompt card,
+    and the node's last feedback prefers the interaction projection with a
+    durable-state fallback; an unparsed context stays card-free."""
+
+    from deerflow_deep_research.domain.lifecycle import HumanInputMode, HumanInputRequest
+    from deerflow_deep_research.runtime.debug_driver import _pending_request_view
+
+    context = json.dumps(
+        {
+            "context_schema_version": 1,
+            "brief_summary": "研究配置建议已准备好，等待确认。",
+            "proposed_dimensions": {"depth": "standard"},
+            "required_dimensions": ["depth"],
+            "missing_dimensions": [],
+            "valid_options": {},
+            "accepted_rounds_remaining": 3,
+            "rejection_retries_remaining": 3,
+            "instructions": "请确认当前配置、提出聚焦问题，或说明需要修改的内容。",
+        },
+        ensure_ascii=False,
+    )
+    pending = SimpleNamespace(
+        request=HumanInputRequest(
+            request_id="drh_card_00000001",
+            mode=HumanInputMode.TEXT,
+            title="Deep Research profile",
+            context=context,
+        ),
+        phase="hitl1",
+    )
+    view = _pending_request_view(
+        pending,
+        state_feedback={"kind": "clarification", "message": "请补充一个具体研究主题。"},
+    )
+    assert view is not None
+    assert view.prompt is not None, "a schema-following context must yield a parsed card"
+    assert view.prompt.goal == "研究配置建议已准备好，等待确认。"
+    assert view.prompt.accepted_rounds_remaining == 3
+    assert view.last_feedback is not None
+    assert view.last_feedback.message == "请补充一个具体研究主题。", "state feedback is the fallback channel"
+
+    plain = SimpleNamespace(
+        request=HumanInputRequest(
+            request_id="drh_plain_00000001",
+            mode=HumanInputMode.TEXT,
+            title="Deep Research input - fixture composition",
+            context="Deterministic fixture scenario; this does not represent completed research.",
+        ),
+        phase="hitl1",
+    )
+    plain_view = _pending_request_view(plain)
+    assert plain_view is not None
+    assert plain_view.prompt is None, "an unparsed context must not fabricate a card"
+    assert plain_view.last_feedback is None
+    assert plain_view.title and plain_view.mode == "text", "carried fields remain unchanged"

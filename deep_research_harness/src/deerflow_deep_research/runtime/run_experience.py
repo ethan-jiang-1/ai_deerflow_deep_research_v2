@@ -155,6 +155,148 @@ _FAILURE_COPY: dict[RunFailureCode, tuple[str, str, bool]] = {
 }
 
 
+def _safe_text(value: object, *, limit: int) -> str:
+    if not isinstance(value, str):
+        return ""
+    compact = " ".join("".join(char if char.isprintable() else " " for char in value).split())
+    return compact[:limit]
+
+
+def _bounded_count(value: object) -> int:
+    return value if isinstance(value, int) and 0 <= value <= 3 else 0
+
+
+def _typed_text(value: str) -> str:
+    return " ".join("".join(character if character.isprintable() else " " for character in value).split())
+
+
+def _scope_lines(value: object) -> tuple[str, ...]:
+    if not isinstance(value, Mapping):
+        return ()
+    lines: list[str] = []
+    for name in ("depth", "audience", "format", "cost_tolerance", "time_budget"):
+        item = _safe_text(value.get(name), limit=96)
+        if item:
+            lines.append(f"{name}: {item}")
+    return tuple(lines)
+
+
+def _proposal_lines(dimensions: object, must_answer: object) -> tuple[str, ...]:
+    lines = list(_scope_lines(dimensions))
+    if isinstance(must_answer, Sequence) and not isinstance(must_answer, (str, bytes, bytearray)):
+        questions = tuple(_safe_text(question, limit=256) for question in must_answer)
+        lines.extend(f"must_answer: {question}" for question in questions if question)
+    return tuple(lines[:8])
+
+
+def _interaction_proposal_lines(interaction: InteractionProjection) -> tuple[str, ...]:
+    """Render all material values from the typed current proposal before acceptance."""
+
+    proposal = interaction.subject.proposal
+    lines = [
+        f"depth: {proposal.depth}",
+        f"audience: {proposal.audience}",
+        f"format: {proposal.format}",
+        f"cost_tolerance: {proposal.cost_tolerance}",
+        f"time_budget: {proposal.time_budget}",
+    ]
+    lines.extend(
+        f"must_answer[{index}]: {_typed_text(question)}" for index, question in enumerate(proposal.must_answer, start=1)
+    )
+    scope_boundaries = _typed_text(proposal.scope_boundaries)
+    if scope_boundaries:
+        lines.append(f"scope_boundaries: {scope_boundaries}")
+    custom_notes = _typed_text(proposal.custom_notes)
+    if custom_notes:
+        lines.append(f"custom_notes: {custom_notes}")
+    if proposal.comparison_required and proposal.comparison_subjects is not None:
+        first, second = (_typed_text(subject) for subject in proposal.comparison_subjects)
+        lines.append(f"comparison_subjects: {first} | {second}")
+    if proposal.output_language is not None:
+        lines.append(f"output_language: {proposal.output_language}")
+    return tuple(lines)
+
+
+def _named_values(value: object) -> tuple[str, ...]:
+    if not isinstance(value, Sequence) or isinstance(value, (str, bytes, bytearray)):
+        return ()
+    values = tuple(item for item in value if isinstance(item, str) and item in _HITL1_DIMENSIONS)
+    return values[:8]
+
+
+def _supported_lines(value: object) -> tuple[str, ...]:
+    if not isinstance(value, Mapping):
+        return ()
+    lines: list[str] = []
+    for name in sorted(_HITL1_DIMENSIONS):
+        options = value.get(name)
+        if not isinstance(options, Sequence) or isinstance(options, (str, bytes, bytearray)):
+            continue
+        safe_options = tuple(_safe_text(item, limit=48) for item in options if _safe_text(item, limit=48))
+        if safe_options:
+            lines.append(f"{name}: {', '.join(safe_options[:6])}")
+    return tuple(lines[:12])
+
+
+def hitl1_prompt_card(request: HumanInputRequest | None, *, request_id: str) -> PromptView | None:
+    """Parse the node-authored hitl1 request into the typed card, or None.
+
+    Single parsing authority for the published hitl1 context schema and the
+    request's own interaction projection (RED-015/LDD-006). None means "no
+    card" — the caller decides its honest fallback; a card is never fabricated
+    from an unparsed context. The interaction projection wins when present
+    because it is typed at the node instead of serialized JSON.
+    """
+    if request is None:
+        return None
+    if request.interaction is not None:
+        interaction = request.interaction
+        return PromptView(
+            phase="hitl1",
+            request_id=request_id,
+            mode="text",
+            heading="确认研究配置",
+            goal=interaction.subject.goal,
+            proposed_scope=_interaction_proposal_lines(interaction),
+            interaction=interaction,
+            visible_controls=interaction.controls,
+            body_lines=(
+                "三种合法输入：直接确认（输入 confirm）、用 `字段: 值` 修订单个字段"
+                "（如 `depth: deep dive`）、或提供完整 JSON。",
+            ),
+            answer_example=_HITL1_JSON_EXAMPLE,
+        )
+    try:
+        payload = json.loads(request.context)
+        if not isinstance(payload, Mapping) or payload.get("context_schema_version") != 1:
+            return None
+        goal = _safe_text(payload.get("brief_summary"), limit=768)
+        if not goal:
+            return None
+        return PromptView(
+            phase="hitl1",
+            request_id=request_id,
+            mode="text",
+            heading="确认研究配置",
+            goal=goal,
+            proposed_scope=_proposal_lines(payload.get("proposed_dimensions"), payload.get("must_answer")),
+            missing_fields=_named_values(payload.get("missing_dimensions")),
+            supported_values=_supported_lines(payload.get("valid_options")),
+            recognized_fields=_named_values(payload.get("recognized_fields")),
+            rejection_category=(
+                "profile_input_unrecognized"
+                if payload.get("rejection_category") == "profile_input_unrecognized"
+                else None
+            ),
+            accepted_rounds_remaining=_bounded_count(payload.get("accepted_rounds_remaining")),
+            rejection_retries_remaining=_bounded_count(payload.get("rejection_retries_remaining")),
+            body_lines=("请确认或修正研究配置（深度/受众/格式/预算/时间），并补充缺失的偏好。",),
+            answer_example=_HITL1_JSON_EXAMPLE,
+        )
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return None
+
+
 class ResearchRunExperience:
     """Own lifecycle wire parsing, safe prompts, and response correlation."""
 
@@ -780,57 +922,11 @@ class ResearchRunExperience:
         )
         if request is None:
             return generic
-        if request.interaction is not None:
-            interaction = request.interaction
-            return PromptView(
-                phase="hitl1",
-                request_id=pending.request_id,
-                mode="text",
-                heading="确认研究配置",
-                goal=interaction.subject.goal,
-                proposed_scope=self._interaction_proposal_lines(interaction),
-                interaction=interaction,
-                visible_controls=interaction.controls,
-                body_lines=(
-                    "三种合法输入：直接确认（输入 confirm）、用 `字段: 值` 修订单个字段"
-                    "（如 `depth: deep dive`）、或提供完整 JSON。",
-                ),
-                answer_example=_HITL1_JSON_EXAMPLE,
-            )
-        try:
-            payload = json.loads(request.context)
-            if not isinstance(payload, Mapping) or payload.get("context_schema_version") != 1:
-                return generic
-            goal = self._safe_text(payload.get("brief_summary"), limit=768)
-            if not goal:
-                return generic
-            scope = self._proposal_lines(payload.get("proposed_dimensions"), payload.get("must_answer"))
-            missing = self._named_values(payload.get("missing_dimensions"))
-            supported = self._supported_lines(payload.get("valid_options"))
-            recognized = self._named_values(payload.get("recognized_fields"))
-            rejection_category = (
-                "profile_input_unrecognized"
-                if payload.get("rejection_category") == "profile_input_unrecognized"
-                else None
-            )
-            return PromptView(
-                phase="hitl1",
-                request_id=pending.request_id,
-                mode="text",
-                heading="确认研究配置",
-                goal=goal,
-                proposed_scope=scope,
-                missing_fields=missing,
-                supported_values=supported,
-                recognized_fields=recognized,
-                rejection_category=rejection_category,
-                accepted_rounds_remaining=self._bounded_count(payload.get("accepted_rounds_remaining")),
-                rejection_retries_remaining=self._bounded_count(payload.get("rejection_retries_remaining")),
-                body_lines=("请确认或修正研究配置（深度/受众/格式/预算/时间），并补充缺失的偏好。",),
-                answer_example=_HITL1_JSON_EXAMPLE,
-            )
-        except (TypeError, ValueError, json.JSONDecodeError):
-            return generic
+        # RED-015: one parsing authority serves the shared experience and the
+        # debug driver's carried card; the generic view remains this surface's
+        # honest fallback when the request yields no card.
+        card = hitl1_prompt_card(request, request_id=pending.request_id)
+        return generic if card is None else card
 
     def _hitl2_prompt(self, request: HumanInputRequest | None, pending: PendingInputProjection) -> PromptView:
         if request is not None and request.mode is not HumanInputMode.CHOICE:
@@ -850,85 +946,6 @@ class ResearchRunExperience:
                 for option in advertised
             ),
         )
-
-    @staticmethod
-    def _safe_text(value: object, *, limit: int) -> str:
-        if not isinstance(value, str):
-            return ""
-        compact = " ".join("".join(char if char.isprintable() else " " for char in value).split())
-        return compact[:limit]
-
-    @staticmethod
-    def _bounded_count(value: object) -> int:
-        return value if isinstance(value, int) and 0 <= value <= 3 else 0
-
-    def _scope_lines(self, value: object) -> tuple[str, ...]:
-        if not isinstance(value, Mapping):
-            return ()
-        lines: list[str] = []
-        for name in ("depth", "audience", "format", "cost_tolerance", "time_budget"):
-            item = self._safe_text(value.get(name), limit=96)
-            if item:
-                lines.append(f"{name}: {item}")
-        return tuple(lines)
-
-    def _proposal_lines(self, dimensions: object, must_answer: object) -> tuple[str, ...]:
-        lines = list(self._scope_lines(dimensions))
-        if isinstance(must_answer, Sequence) and not isinstance(must_answer, (str, bytes, bytearray)):
-            questions = tuple(self._safe_text(question, limit=256) for question in must_answer)
-            lines.extend(f"must_answer: {question}" for question in questions if question)
-        return tuple(lines[:8])
-
-    def _interaction_proposal_lines(self, interaction: InteractionProjection) -> tuple[str, ...]:
-        """Render all material values from the typed current proposal before acceptance."""
-
-        proposal = interaction.subject.proposal
-        lines = [
-            f"depth: {proposal.depth}",
-            f"audience: {proposal.audience}",
-            f"format: {proposal.format}",
-            f"cost_tolerance: {proposal.cost_tolerance}",
-            f"time_budget: {proposal.time_budget}",
-        ]
-        lines.extend(
-            f"must_answer[{index}]: {self._typed_text(question)}"
-            for index, question in enumerate(proposal.must_answer, start=1)
-        )
-        scope_boundaries = self._typed_text(proposal.scope_boundaries)
-        if scope_boundaries:
-            lines.append(f"scope_boundaries: {scope_boundaries}")
-        custom_notes = self._typed_text(proposal.custom_notes)
-        if custom_notes:
-            lines.append(f"custom_notes: {custom_notes}")
-        if proposal.comparison_required and proposal.comparison_subjects is not None:
-            first, second = (self._typed_text(subject) for subject in proposal.comparison_subjects)
-            lines.append(f"comparison_subjects: {first} | {second}")
-        if proposal.output_language is not None:
-            lines.append(f"output_language: {proposal.output_language}")
-        return tuple(lines)
-
-    @staticmethod
-    def _typed_text(value: str) -> str:
-        return " ".join("".join(character if character.isprintable() else " " for character in value).split())
-
-    def _named_values(self, value: object) -> tuple[str, ...]:
-        if not isinstance(value, Sequence) or isinstance(value, (str, bytes, bytearray)):
-            return ()
-        values = tuple(item for item in value if isinstance(item, str) and item in _HITL1_DIMENSIONS)
-        return values[:8]
-
-    def _supported_lines(self, value: object) -> tuple[str, ...]:
-        if not isinstance(value, Mapping):
-            return ()
-        lines: list[str] = []
-        for name in sorted(_HITL1_DIMENSIONS):
-            options = value.get(name)
-            if not isinstance(options, Sequence) or isinstance(options, (str, bytes, bytearray)):
-                continue
-            safe_options = tuple(self._safe_text(item, limit=48) for item in options if self._safe_text(item, limit=48))
-            if safe_options:
-                lines.append(f"{name}: {', '.join(safe_options[:6])}")
-        return tuple(lines[:12])
 
     def _snapshot(
         self,

@@ -11,7 +11,9 @@ from typing import Literal
 
 from pydantic import Field
 
+from deerflow_deep_research.domain.human_interaction import InteractionFeedback
 from deerflow_deep_research.domain.lifecycle import FrozenContract
+from deerflow_deep_research.domain.run_experience import PromptView
 
 DebugCommandKind = Literal[
     "advance_one",
@@ -96,7 +98,13 @@ class PendingRequestView(FrozenContract):
     The request is *carried*, never rebuilt: the driver reads the node-authored
     descriptor from the Bundle's own checkpoint interrupt, so the workbench can
     tell the operator exactly what is being asked (title, guidance, mode,
-    advertised options) without re-deriving a prompt (`RED-014`).
+    advertised options) without re-deriving a prompt (`RED-014`). The parsed
+    ``prompt`` card and the node's ``last_feedback`` are carried projections of
+    the same node-authored facts (`RED-015`/`LDD-006`): the card parses the
+    published hitl1 context schema through the one shared parsing authority and
+    stays None when the context does not follow it; the feedback prefers the
+    interrupt's own interaction projection and falls back to the Bundle's
+    durable state. Neither field is lifecycle authority.
     """
 
     request_id: str = Field(min_length=1, max_length=128)
@@ -105,6 +113,8 @@ class PendingRequestView(FrozenContract):
     title: str = Field(min_length=1, max_length=256)
     context: str = Field(min_length=1, max_length=2_048)
     options: tuple[PendingOptionView, ...] = ()
+    prompt: PromptView | None = None
+    last_feedback: InteractionFeedback | None = None
 
 
 class DebugSessionSnapshot(FrozenContract):

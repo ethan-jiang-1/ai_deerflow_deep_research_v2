@@ -1551,6 +1551,11 @@ class DeepResearchDemoTUI(App[None]):
             self._stop_pending_timer()
             self._last_typed = ""
             self.query_one("#log", RichLog).write(Text(f"你: {value}"))
+            # BUG-078: a submitted answer must not linger in the composer — a
+            # repeated Enter would otherwise resubmit the same text as another
+            # answer or as an unintended advance. Every slash path already
+            # clears; the plain-text path now does too.
+            self.query_one("#composer", Input).value = ""
         else:
             self._echo_input(value)
         if self._onboarding:
@@ -2676,7 +2681,10 @@ class DeepResearchDemoTUI(App[None]):
                 "Attach 按钮或 /attach <id> · Replay 按钮或 /replay <id> · Ctrl+P 命令面板\n"
                 "  推进: Enter(可留空)=单步(advance_one) · /run [节点]=drive_until 到下一停点"
                 "(HITL/终态/指定节点) · /pause=请求在下一节点边界暂停\n"
-                "  回答: HITL 停止时直接输入文本（choice 模式输入选项 id）后按 Enter\n"
+                "  回答: HITL 停止时直接输入文本（choice 模式输入选项 id）后按 Enter · "
+                "最快确认: 确认 / confirm · 修订单项: 字段: 值（如 depth: quick overview）\n"
+                "  对话: 普通文本会作为 HITL 回答被消费（节点会回复并显示剩余轮次）· "
+                "?<文字>=纯聊天不消费 · 想问工作台本身用 ? 开头\n"
                 "  观察: /context=节点上下文与 coverage strip · /files [路径]=工作区(目录进入/文件预览)\n"
                 "  探索: /harness=harness 自身解剖(组合/executor/节点/根/可读投影) · "
                 "/targets=可调试对象 · /inspect <id>=对象内部\n"
@@ -2820,7 +2828,7 @@ class DeepResearchDemoTUI(App[None]):
             await self._render_debug_result(result)
             self._render_no_debug_session()
             return
-        await self._render_debug_result(result)
+        await self._render_debug_result(result, consumed_answer=kind == "answer")
 
     @staticmethod
     def _node_context_strip(view: Any) -> str:
@@ -2874,8 +2882,10 @@ class DeepResearchDemoTUI(App[None]):
         """Write what the session waits for into the log, once per request.
 
         The log is the pane operators read, so a HITL stop states the node's own
-        request (title, guidance, advertised options) rather than a generic
-        "type an answer" - the operator must never guess what is being asked.
+        request as a typed conversation card (RED-015): what is being asked,
+        what the node replied to the last answer, and how to answer. The raw
+        node context payload is machine JSON and never appears here; an
+        unparsed context degrades to an honest bounded note.
         """
         node = next_nodes[0] if next_nodes else None
         if posture == "awaiting_hitl" and node is not None:
@@ -2883,11 +2893,23 @@ class DeepResearchDemoTUI(App[None]):
             title = request.title if request is not None else "等待输入"
             mode = request.mode if request is not None else "text"
             lines = [f"→ 等待 {node} 输入（{mode}）：{title}"]
-            if request is not None and request.context:
-                bounded = "\n".join(line for line in request.context.splitlines() if line.strip())
-                if len(bounded) > 400:
-                    bounded = bounded[:400] + "…（已截断）"
-                lines.extend(f"   {line}" for line in bounded.splitlines())
+            card = getattr(request, "prompt", None) if request is not None else None
+            if card is not None:
+                lines.append(f"   {card.goal}")
+                lines.extend(f"   {scope_line}" for scope_line in card.proposed_scope[:6])
+                if card.missing_fields:
+                    lines.append("   缺少: " + "、".join(card.missing_fields))
+                if card.recognized_fields:
+                    lines.append("   已识别: " + "、".join(card.recognized_fields))
+                if card.accepted_rounds_remaining:
+                    lines.append(f"   剩余可接受轮次: {card.accepted_rounds_remaining}")
+                lines.extend(f"   {body}" for body in card.body_lines[:3])
+            else:
+                lines.append("   （节点上下文未解析为卡片：直接输入回答，或 /context 查看捕获详情）")
+            feedback = getattr(request, "last_feedback", None) if request is not None else None
+            if feedback is not None:
+                lines.append(f"   {node} 回复: {feedback.message}")
+            lines.append("   最快确认: 输入 确认 或 confirm · 修订单项: 字段: 值（如 depth: quick overview）")
             if request is not None and request.options:
                 lines.append(
                     "   选项: " + " · ".join(f"{option.option_id} — {option.label}" for option in request.options)
@@ -3065,7 +3087,7 @@ class DeepResearchDemoTUI(App[None]):
         lines.append(f"  raw provider histories: {view.raw_provider_history}")
         return lines
 
-    async def _render_debug_result(self, result) -> None:
+    async def _render_debug_result(self, result, *, consumed_answer: bool = False) -> None:
         """Render one DebugSessionUpdate into the panels (bounded safe facts)."""
         from deerflow_deep_research.domain.debug_driving import DebugSessionUpdate
 
@@ -3078,9 +3100,15 @@ class DeepResearchDemoTUI(App[None]):
         if snapshot is None:
             return
         cursor = snapshot.cursor
+        request = snapshot.pending_request
+        if consumed_answer and snapshot.posture == "awaiting_hitl" and request is not None:
+            # RED-015: the answer was consumed but the node re-asks — say so,
+            # or the operator cannot tell consumption from silence.
+            rounds = getattr(request.prompt, "accepted_rounds_remaining", 0) if request.prompt is not None else 0
+            suffix = f" · 剩余 {rounds} 轮" if rounds else ""
+            log.write(Text(f"↩ 回答已消费 · 未被接受{suffix}", style="yellow"))
         if result.committed_node:
             log.write(Text(f"✓ {result.committed_node} 提交（帧 {cursor.frame_sequence}）", style="cyan"))
-        request = snapshot.pending_request
         self._render_debug_prompt(snapshot.posture, request)
         self._log_debug_action(snapshot.posture, tuple(cursor.next_nodes or ()), request)
         line = f"姿态: {snapshot.posture} · 下一节点: {', '.join(cursor.next_nodes) or '—'}"
