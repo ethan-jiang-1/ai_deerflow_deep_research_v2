@@ -1041,3 +1041,37 @@ async def test_drive_typed_at_hitl_stop_never_blind_advances(tmp_path: Path) -> 
     assert answered_through.snapshot is not None
     assert answered_through.snapshot.posture == "terminal"
     assert len(answered_through.snapshot.auto_hitl_answers) >= 1
+
+
+@pytest.mark.asyncio
+async def test_open_start_carries_the_operator_question_into_the_graph(tmp_path: Path) -> None:
+    """BUG-079: the graph's fresh start must ask what the operator asked - the
+    checkpointed request_text carries the operator's question, never a
+    fallback placeholder."""
+    driver, _lifecycle = _make_driver(tmp_path, owner="op-1")
+    question = "Compare renewable energy storage technologies for grid-scale deployment."
+    opened = await driver.open_start(
+        StartRequest(question=question, mode="step", owner="op-1", command_id="start-00000001")
+    )
+    bundle_id = opened.snapshot.bundle_id
+    await driver.execute(
+        DebugCommand(
+            kind="advance_one",
+            bundle_id=bundle_id,
+            command_id="advance-00000001",
+            expected_cursor=opened.snapshot.cursor.token(),
+        )
+    )
+    lifecycle = _lifecycle
+    from deerflow_deep_research.domain.bundle import BundleId as _BundleId
+
+    bundle = await lifecycle.resolve(
+        scope=(driver._envelope.effective_user_id, driver._envelope.outer_thread_id), bundle_id=_BundleId(bundle_id)
+    )
+    async with lifecycle.open_graph_checkpoint(bundle) as saver:
+        graph = driver._executor._recipe.builder.compile(checkpointer=saver)
+        snapshot = await graph.aget_state(driver._executor._config(bundle))
+    values = snapshot.values if snapshot else {}
+    assert values.get("request_text") == question, (
+        f"the graph must run the operator's question, got {values.get('request_text')!r}"
+    )

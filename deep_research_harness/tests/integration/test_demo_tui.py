@@ -2059,3 +2059,30 @@ async def test_debug_new_run_button_writes_once_per_click(
         await asyncio.sleep(0.3)
         await pilot.pause()
         assert app._rich_log_text().count("已有活跃调试会话") == 1, app._rich_log_text()[-300:]
+
+
+@pytest.mark.asyncio
+async def test_debugger_wiring_hands_the_node_context_holder_to_the_runtime(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """BUG-080: both runtime builds must receive the workbench's node-context
+    holder dict - the recorder bound at session start is otherwise disconnected
+    from every bridge, and embedded /context can never show a capture."""
+    _install_isolated_fixture_adapter(monkeypatch, bundle_root=tmp_path / "demo-runs")
+    seen: list[dict[str, Any] | None] = []
+    real_build = demo_tui.build_demo_runtime
+
+    def _spy_build(**kwargs: Any) -> Any:
+        seen.append(kwargs.get("node_context_recorder_holder"))
+        return real_build(**kwargs)
+
+    monkeypatch.setattr(demo_tui, "build_demo_runtime", _spy_build)
+    app = DeepResearchDemoTUI(mode="fixture", debug_mode=True)
+    async with app.run_test(size=(110, 34)) as pilot:
+        await _wait_for(app, pilot, demo_tui.Ready)
+    assert seen, "the app must build its runtime at mount"
+    assert app._node_context_holder is not None
+    assert all(handed is app._node_context_holder for handed in seen), (
+        f"the runtime builds must carry the workbench holder, got {seen!r}"
+    )

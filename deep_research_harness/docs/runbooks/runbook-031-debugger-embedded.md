@@ -1,6 +1,6 @@
 # Runbook 031 — 调试工作台（embedded 真实图，逐边界 step + Node Context）
 
-> **状态（2026-09-27）：已落地。** 调试驱动是组合无关的：`--embedded-smoke` 现在起的是
+> **状态（2026-09-29）：已落地，且真图全流程已由 live 自证探针验证。** 调试驱动是组合无关的：`--embedded-smoke` 现在起的是
 > **全真实图（ALL_REAL）上的调试工作台**——launcher 会为该组合注入 `--debug`，driver 以
 > `ImplementationMode.ALL_REAL` 建 bundle，step/continue、`/context`、`/files`、`/attach`、
 > `/replay` 与 fixture 路线完全一致；`/context` 此时能看到 LLM-bearing node 的捕获上下文，
@@ -10,9 +10,10 @@
 >
 > 前置：同 003 的 `.env` 三变量（`DEEPSEEK_API_KEY`、`TAVILY_API_KEY`、
 > `DEERFLOW_DEMO_MODEL`）+ `make install` + 网络——真实节点真的要调模型与网页工具。
-> **诚实边界**：本路线的*接线*（组合、实现模式、入口旗标）已由无头测试与 harness 断言
-> 锁住；真实模型下的逐边界实跑需要凭证与网络窗口，我无法在无头环境验证，需在你的真机
-> 或一次 live 窗口确认。
+> **诚实边界（2026-09-29 更新）**：真图全流程（真问题驱动 → 真提案卡片 → `/rerun` 再生 →
+> auto-hitl 代答 → wave0 真实捕获 → terminal）已由
+> `tests/live/test_debugger_embedded_live.py` 在本机真凭证下自证通过（并顺带暴露并修复
+> BUG-079/080）；**人眼层面的体验**（排版、节奏、你自己的研究问题）仍属操作者窗口。
 >
 > 入口：`./run/tui-workflow-debugger.sh --embedded-smoke`（等价：
 > `DEBUGGER_COMPOSITION=embedded-smoke ./run/tui-workflow-debugger.sh`）。
@@ -83,22 +84,18 @@ terminal 姿态下直接输入新问题 = 结束当前会话并开新跑（2026-
 | 凭证 | 零 | `.env` 三变量 + 网络 |
 | 费用 | 免费 | 消耗 API 额度 |
 
-## 7. Live 验证清单（只有操作者能做：凭证 + 网络窗口）
+## 7. Live 验证（自证探针 + 操作者窗口）
 
 无头门禁已锁住接线与渲染（`make tui-journey`、`make debugger-proof`、
-`UV_OFFLINE=1 make verify` 全绿），以下是**必须在真机 live 窗口确认**的项，
-过了之后本 runbook 顶部的诚实边界注记应更新：
+`UV_OFFLINE=1 make verify` 全绿）。live 自证探针（真凭证 + 真图 + 真工作台渲染，
+单次全流程，**会消耗真实 API 额度**）：
 
-1. **Start Step 到 hitl1 卡片**：真实问题（例：`Compare renewable energy storage
-   technologies`）+ Enter → 停点应显示 goal/proposed_scope/剩余轮次，无原始 JSON。
-2. **对话往返**：故意输入一句闲聊（如 `你都能干什么`）→ 应看到
-   `↩ 回答已消费 · 未被接受 · 剩余 N 轮` + `hitl1 回复: …`（节点会解释并给建议短语）；
-   再输入 `确认`（或 `confirm`）→ hitl1 接受、flow 进入 topic_planning。
-3. **wave0 真跑**：`/run`（或逐步 Enter）到 wave0，分钟级等待后 `/context` 应有
-   真实捕获（exact prompt / enforced tools / budget / mounts）。
-4. **`/files`、`/targets`、`/inspect`** 在真实 bundle 上的表现；推进到 terminal 后
-   `/detach` → `--attach <id>` 恢复。
-5. **卡住会话的恢复**：上次 live 遗留的 paused bundle 可 `--attach b_EHlhgNio-gZLv82ZpzTd9MvGzlPca4if8__w-AvDfHI`
-   接回，直接输 `确认` 让它继续（RED-015 后你能看清它还在问什么）；不需要就 `/cancel`。
+```bash
+cd deep_research_harness
+UV_OFFLINE=1 .venv/bin/python -m pytest tests/live/test_debugger_embedded_live.py --no-header -q
+```
 
-观察到的任何缺陷：截图/复制日志窗（Copy details）+ bundle id，现场立卡。
+探针覆盖：真实提案卡片（无机器 JSON）→ `/rerun` 真重跑再生提案 → `/run` 默认
+auto-hitl 代答（日志明示）→ 真实 wave0 捕获（Node Context）→ terminal（真图若有
+HITL2 由探针按人答 `proceed`）。人眼层面的体验（排版、节奏、自己的研究问题）仍属
+操作者窗口；观察到的缺陷带日志（Copy details）+ bundle id 回来立卡。

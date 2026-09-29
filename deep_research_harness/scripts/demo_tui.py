@@ -1034,7 +1034,21 @@ class DeepResearchDemoTUI(App[None]):
         self._last_debug_hint = ""
         self._pending_timer: Any | None = None
         self._pending_started = 0.0
+        self._drive_pulse_timer: Any | None = None
+        self._drive_started = 0.0
+        self._drive_pulse_auto = False
         self._feed_watermark = 0
+
+    def _node_context_wiring(self) -> dict[str, Any]:
+        """BUG-080: the recorder-holder wiring, present exactly when it exists.
+
+        The workbench creates its holder only in debug mode; handing it to the
+        runtime is what connects the session-bound recorder to every bridge.
+        Without a holder there is nothing to wire and the kwarg stays absent.
+        """
+        if self._node_context_holder is None:
+            return {}
+        return {"node_context_recorder_holder": self._node_context_holder}
 
     def compose(self) -> ComposeResult:
         yield Static(id="banner")
@@ -1153,10 +1167,22 @@ class DeepResearchDemoTUI(App[None]):
         try:
             adapter = DemoAdapter.for_real() if self.mode == "embedded_smoke" else DemoAdapter()
             if self.mode == "embedded_smoke":
-                self._transport.bind(runtime=build_demo_runtime(mode="real", adapter=adapter))
+                self._transport.bind(
+                    runtime=build_demo_runtime(
+                        mode="real",
+                        adapter=adapter,
+                        **self._node_context_wiring(),
+                    )
+                )
             else:
                 self._enable_fixture_source()
-                self._transport.bind(runtime=build_demo_runtime(mode="fixture_graph", adapter=adapter))
+                self._transport.bind(
+                    runtime=build_demo_runtime(
+                        mode="fixture_graph",
+                        adapter=adapter,
+                        **self._node_context_wiring(),
+                    )
+                )
             if hasattr(self._experience, "set_observation_publisher"):
                 self._experience.set_observation_publisher(adapter.observation_publisher)
             self._adapter = adapter
@@ -2715,6 +2741,8 @@ class DeepResearchDemoTUI(App[None]):
         LDD-008: continuous drives default to the operator's auto-HITL policy
         (hitl1 profile confirmations are answered 确认 as operator policy);
         ``/run --no-auto-hitl`` opts out and single steps never auto-answer.
+        While the drive runs, the posture pane pulses honest liveness - a long
+        drive must never masquerade as a frozen HITL stop.
         """
         from deerflow_deep_research.domain.debug_driving import DebugCommand, StopPolicy
 
@@ -2729,16 +2757,38 @@ class DeepResearchDemoTUI(App[None]):
             if breakpoint
             else StopPolicy(auto_hitl=auto_hitl)
         )
-        result = await driver.execute(
-            DebugCommand(
-                kind="drive_until",
-                bundle_id=self._debug_bundle_id,
-                command_id=f"run-{int(time.time() * 1000)}",
-                expected_cursor=session.cursor.token(),
-                breakpoint=policy,
+        self._start_drive_pulse(auto_hitl)
+        try:
+            result = await driver.execute(
+                DebugCommand(
+                    kind="drive_until",
+                    bundle_id=self._debug_bundle_id,
+                    command_id=f"run-{int(time.time() * 1000)}",
+                    expected_cursor=session.cursor.token(),
+                    breakpoint=policy,
+                )
             )
-        )
+        finally:
+            self._stop_drive_pulse()
         await self._render_debug_result(result)
+
+    def _start_drive_pulse(self, auto_hitl: bool) -> None:
+        """Pulse honest liveness while a continuous drive is in flight."""
+        self._drive_started = time.monotonic()
+        self._drive_pulse_auto = auto_hitl
+        if self._drive_pulse_timer is None:
+            self._drive_pulse_timer = self.set_interval(2.0, self._tick_drive_pulse)
+        self._tick_drive_pulse()
+
+    def _tick_drive_pulse(self) -> None:
+        seconds = int(time.monotonic() - self._drive_started)
+        policy = "auto-hitl 开启" if self._drive_pulse_auto else "auto-hitl 关闭"
+        self._render_inspect((f"姿态: running · 连续推进中… 已 {seconds}s（{policy} · /pause=下一边界停）",))
+
+    def _stop_drive_pulse(self) -> None:
+        if self._drive_pulse_timer is not None:
+            self._drive_pulse_timer.stop()
+            self._drive_pulse_timer = None
 
     async def _debug_rerun(self) -> None:
         """LDD-007/RED-016: re-run the last committed node at a stopped boundary."""

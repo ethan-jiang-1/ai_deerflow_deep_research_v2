@@ -221,6 +221,10 @@ class DebugRunDriver:
         ledger.mark(request.command_id)
         self._sessions[bundle.bundle_id.value] = {
             "owner": request.owner,
+            # BUG-079: the graph's fresh start reads the question from this
+            # session carrier; without it the run silently executes on the
+            # "Research" fallback instead of the operator's question.
+            "question": request.question,
             "mode": request.mode,
             "pause_requested": False,
             "lease": lease,
@@ -542,6 +546,14 @@ class DebugRunDriver:
                 command_id=command.command_id, denied="invalid", message="nothing committed to rerun"
             )
         tail = trace[-1]
+        waiting_for = getattr(state, "waiting_for", None)
+        if waiting_for and tail == waiting_for and len(trace) > 1:
+            # The pending node's own visit sits at the trace tail on graphs that
+            # record a visit while interrupted; the rerun target is the last
+            # COMMITTED node before it, so the stop regenerates through a real
+            # commit (fresh frame, rewritten card) instead of re-interrupting
+            # in place.
+            tail = trace[-2]
         fork_id = await self._find_rewind_point(bundle, tail)
         if fork_id is None:
             return DebugSessionUpdate(
