@@ -138,6 +138,7 @@ class DebugSessionSnapshot(FrozenContract):
     pending_request_id: str | None = Field(default=None, min_length=1, max_length=128)
     pending_request: PendingRequestView | None = None
     auto_hitl_answers: tuple[str, ...] = Field(default=(), max_length=16)
+    watch_hits: tuple[str, ...] = Field(default=(), max_length=8)
 
 
 class DebugSessionUpdate(FrozenContract):

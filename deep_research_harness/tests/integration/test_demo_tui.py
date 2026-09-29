@@ -2204,3 +2204,52 @@ async def test_debug_advance_pulses_liveness_while_running(
                 break
             await asyncio.sleep(0.05)
         assert "✓ hitl1 提交" in app._rich_log_text(), "the step must still complete"
+
+
+@pytest.mark.asyncio
+async def test_debug_bt_state_and_watch_commands_render(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """RED-017: /bt states the walked path, /state answers a single typed
+    field and rejects unknown names, /watch registers and /run stops on the
+    hit with the changed fields named."""
+    _install_isolated_fixture_adapter(monkeypatch, bundle_root=tmp_path / "demo-runs")
+    app = DeepResearchDemoTUI(mode="fixture", debug_mode=True)
+    async with app.run_test(size=(110, 34)) as pilot:
+        await _drive_fixture_debugger_to_hitl(app, pilot)
+        composer = app.query_one("#composer", demo_tui.Input)
+
+        async def _submit_and_collect(text: str, marker: str, deadline: float = 20.0) -> str:
+            composer.value = text
+            await pilot.pause()
+            await pilot.press("enter")
+            for _ in range(int(deadline / 0.05)):
+                await pilot.pause()
+                log = app._rich_log_text()
+                if marker in log:
+                    return log
+                await asyncio.sleep(0.05)
+            return app._rich_log_text()
+
+        log = await _submit_and_collect("/bt", "轨迹: bootstrap")
+        assert "轨迹:" in log, "the walked path must render"
+
+        log = await _submit_and_collect("/state research_depth", "research_depth =")
+        assert "未知字段" not in log.split("research_depth =")[0][-80:], "a typed field must resolve"
+
+        log = await _submit_and_collect("/state no_such_field", "未知字段: no_such_field")
+        assert "未知字段: no_such_field" in log
+
+        log = await _submit_and_collect("/watch research_depth", "观察点已更新: research_depth")
+        assert "观察点已更新" in log
+
+        # The drive stops on the real graph's field change... on the fixture the
+        # depth does not change, so drive with the phase watch instead.
+        await _submit_and_collect("/unwatch research_depth", "观察点已更新")
+        log = await _submit_and_collect("/watch phase", "观察点已更新: phase")
+        log = await _submit_and_collect("/run", "⚑ 观察点触发: phase", deadline=40)
+        assert "⚑ 观察点触发: phase" in log, "a watch hit must be stated, never silent"
+        assert "姿态: terminal" not in app.query_one("#inspect").render().plain, (
+            "the watch must stop the drive, not run to terminal"
+        )

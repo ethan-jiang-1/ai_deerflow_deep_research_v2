@@ -1108,3 +1108,43 @@ async def test_drive_until_stops_after_every_named_node(tmp_path: Path, node: st
     )
     state = await _lifecycle.read_state(bundle)
     assert node in tuple(state.execution_trace or ()), f"the drive must have visited {node}: {state.execution_trace!r}"
+
+
+@pytest.mark.asyncio
+async def test_watch_field_stops_the_drive_and_advances_its_baseline(tmp_path: Path) -> None:
+    """LDD-009: a watch on a typed State field stops the drive when that field
+    changes, carries the hit on the snapshot, and advances its baseline so the
+    same value does not re-trip; unknown field names are rejected."""
+    driver, _lifecycle = _make_driver(tmp_path, owner="op-1")
+    opened = await driver.open_start(
+        StartRequest(question="Compare storage", mode="step", owner="op-1", command_id="start-00000001")
+    )
+    bundle_id = opened.snapshot.bundle_id
+
+    accepted = driver.set_watch_fields(bundle_id, ("phase", "not_a_state_field"))
+    assert accepted == ("phase",), "an unknown field name must be rejected"
+
+    driven = await driver.execute(
+        DebugCommand(
+            kind="drive_until",
+            bundle_id=bundle_id,
+            command_id="drive-00000001",
+            expected_cursor=opened.snapshot.cursor.token(),
+            breakpoint=StopPolicy(auto_hitl=True),
+        )
+    )
+    assert driven.denied is None
+    assert driven.snapshot is not None
+    assert "phase" in driven.snapshot.watch_hits, (
+        f"the phase changes at the first boundary - the watch must stop the drive: {driven.snapshot.watch_hits!r}"
+    )
+    assert driven.snapshot.posture != "terminal", "the watch hit must stop the drive"
+
+    # The baseline advanced to the current value at the hit.
+    bundle = await _lifecycle.resolve(
+        scope=(driver._envelope.effective_user_id, driver._envelope.outer_thread_id),
+        bundle_id=__import__("deerflow_deep_research.domain.bundle", fromlist=["BundleId"]).BundleId(bundle_id),
+    )
+    state_now = await _lifecycle.read_state(bundle)
+    baseline = driver._sessions[bundle_id]["watch_baseline"]
+    assert baseline.get("phase") == state_now.phase.value, "the baseline must advance after a hit"

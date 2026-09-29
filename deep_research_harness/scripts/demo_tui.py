@@ -1514,6 +1514,21 @@ class DeepResearchDemoTUI(App[None]):
             else:
                 self.query_one("#log", RichLog).write(Text("没有进行中的调试会话，无可重跑节点。", style="yellow"))
             return
+        if self.debug_mode and value.startswith("/bt"):
+            self.query_one("#composer", Input).value = ""
+            self.run_worker(self._debug_backtrace(), exclusive=True, group="debug")
+            return
+        if self.debug_mode and value.startswith("/state"):
+            self.query_one("#composer", Input).value = ""
+            _, _, field = value.partition(" ")
+            self.run_worker(self._debug_state(field.strip()), exclusive=True, group="debug")
+            return
+        if self.debug_mode and (value.startswith("/watch") or value.startswith("/unwatch")):
+            self.query_one("#composer", Input).value = ""
+            _, _, field = value.partition(" ")
+            off = value.startswith("/unwatch")
+            self.run_worker(self._debug_watch(field.strip(), remove=off), exclusive=True, group="debug")
+            return
         if self.debug_mode and value.startswith("/run"):
             # /run [--no-auto-hitl] [node]: continue to the next stop. Continuous
             # drives default to the operator's auto-HITL policy (LDD-008); the
@@ -2720,6 +2735,7 @@ class DeepResearchDemoTUI(App[None]):
                 "  推进: Enter(可留空)=单步(advance_one) · /run [--no-auto-hitl] [节点]=连续推进"
                 "(默认 auto-hitl: hitl1 提案自动代答「确认」· 单步永不代答) · /pause=请求在下一节点边界暂停\n"
                 "  重跑: /rerun=重跑刚提交的节点(重抽该节点结果 · embedded 下真实调用再次计费)\n"
+                "  内省: /bt=节点轨迹 · /state [字段]=单字段 · /watch [字段]=观察点(字段变化即停)\n"
                 "  回答: HITL 停止时直接输入文本（choice 模式输入选项 id）后按 Enter · "
                 "最快确认: 确认 / confirm · 修订单项: 字段: 值（如 depth: quick overview）\n"
                 "  对话: 普通文本会作为 HITL 回答被消费（节点会回复并显示剩余轮次）· "
@@ -2733,6 +2749,97 @@ class DeepResearchDemoTUI(App[None]):
                 "  其他: Copy details=复制日志 · Ctrl+C=退出",
                 style="cyan",
             )
+        )
+
+    async def _debug_backtrace(self) -> None:
+        """/bt (RED-017): the walked node path with revisit counts, plus the
+        node currently awaited, if any - derived from the durable trace."""
+        from collections import Counter
+
+        from deerflow_deep_research.domain.bundle import BundleId
+
+        driver = self._debug_driver
+        log = self.query_one("#log", RichLog)
+        if driver is None or self._debug_bundle_id is None:
+            log.write(Text("当前没有调试会话，尚无轨迹。", style="yellow"))
+            return
+        adapter = self._adapter
+        bundle = await adapter._bundle_lifecycle.resolve(
+            scope=self._debug_scope(adapter), bundle_id=BundleId(self._debug_bundle_id)
+        )
+        if bundle is None:
+            log.write(Text("bundle 不可解析。", style="red"))
+            return
+        state = await adapter._bundle_lifecycle.read_state(bundle)
+        trace = tuple(state.execution_trace or ())
+        if not trace:
+            log.write(Text("轨迹: （尚无已提交边界）", style="dim"))
+            return
+        groups: list[str] = []
+        for node, count in Counter(trace).items():
+            groups.append(f"{node}×{count}" if count > 1 else node)
+        current = f" · 当前: {state.waiting_for}（等待）" if state.waiting_for else ""
+        log.write(Text("轨迹: " + " → ".join(groups) + current, style="cyan"))
+
+    async def _debug_state(self, field: str) -> None:
+        """/state [field] (RED-017): one typed State field's bounded value, or
+        the field-name list when no field is given."""
+        import dataclasses
+
+        from deerflow_deep_research.domain.bundle import BundleId
+        from deerflow_deep_research.runtime.bundle_lifecycle import BundleLocalState
+
+        driver = self._debug_driver
+        log = self.query_one("#log", RichLog)
+        if driver is None or self._debug_bundle_id is None:
+            log.write(Text("当前没有调试会话。", style="yellow"))
+            return
+        adapter = self._adapter
+        bundle = await adapter._bundle_lifecycle.resolve(
+            scope=self._debug_scope(adapter), bundle_id=BundleId(self._debug_bundle_id)
+        )
+        if bundle is None:
+            log.write(Text("bundle 不可解析。", style="red"))
+            return
+        state = await adapter._bundle_lifecycle.read_state(bundle)
+        names = tuple(f.name for f in dataclasses.fields(BundleLocalState))
+        if not field:
+            log.write(Text("字段（/state <字段> 看单个）: " + ", ".join(names), style="cyan"))
+            return
+        if field not in names:
+            log.write(Text(f"未知字段: {field}（/state 看字段清单）", style="yellow"))
+            return
+        value = getattr(state, field, None)
+        text = " ".join(str(value).split())
+        if len(text) > 160:
+            text = text[:160] + "…（已截断）"
+        log.write(Text(f"{field} = {text}", style="cyan"))
+
+    async def _debug_watch(self, field: str, *, remove: bool = False) -> None:
+        """/watch [field] · /unwatch <field> (RED-017): manage the session's
+        watch set; a drive stops when a watched field changes."""
+        import dataclasses
+
+        from deerflow_deep_research.runtime.bundle_lifecycle import BundleLocalState
+
+        driver = self._debug_driver
+        log = self.query_one("#log", RichLog)
+        if driver is None or self._debug_bundle_id is None:
+            log.write(Text("当前没有调试会话。", style="yellow"))
+            return
+        known = {f.name for f in dataclasses.fields(BundleLocalState)}
+        current = driver.watch_fields(self._debug_bundle_id)
+        if not field:
+            listing = ", ".join(current) or "（无）"
+            log.write(Text(f"观察点: {listing} · /watch <字段>=添加 · /unwatch <字段>=移除", style="cyan"))
+            return
+        if field not in known:
+            log.write(Text(f"未知字段: {field}（只能观察 BundleLocalState 的类型化字段）", style="yellow"))
+            return
+        updated = tuple(f for f in current if f != field) if remove else tuple(dict.fromkeys((*current, field)))
+        accepted = driver.set_watch_fields(self._debug_bundle_id, updated)
+        log.write(
+            Text(f"观察点已更新: {', '.join(accepted) or '（无）'}（驱动启动时取基线，字段变化即停）", style="cyan")
         )
 
     async def _debug_drive(self, breakpoint: str | None = None, *, auto_hitl: bool = True) -> None:
@@ -3286,6 +3393,11 @@ class DeepResearchDemoTUI(App[None]):
             # silent, and never styled as a human answer.
             count = len(snapshot.auto_hitl_answers)
             log.write(Text(f"⚙ drive 策略代答: 确认 ×{count}（auto-hitl · 操作者策略）", style="yellow"))
+        if snapshot.watch_hits:
+            # LDD-009/RED-017: a watchpoint tripped - name the changed fields.
+            log.write(
+                Text(f"⚑ 观察点触发: {', '.join(snapshot.watch_hits)}（字段已变化 · 基线已推进）", style="yellow")
+            )
         if consumed_answer and snapshot.posture == "awaiting_hitl" and request is not None:
             # RED-015: the answer was consumed but the node re-asks — say so,
             # or the operator cannot tell consumption from silence.

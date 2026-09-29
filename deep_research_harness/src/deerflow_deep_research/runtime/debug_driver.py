@@ -446,6 +446,11 @@ class DebugRunDriver:
         # per-drive; a fresh drive starts with a clean bound.
         session["auto_hitl_streak"] = 0
         session["auto_hitl_answers"] = ()
+        session["watch_hits"] = ()
+        watches = self._watch_fields_of(session)
+        if watches:
+            baseline_state = await self._lifecycle.read_state(bundle)
+            session["watch_baseline"] = {name: str(getattr(baseline_state, name, None)) for name in watches}
 
         async def _settle_hitl(update: DebugSessionUpdate, pause_pending: bool) -> tuple[DebugSessionUpdate, bool]:
             """Answer eligible hitl1 stops under the explicit policy (bounded).
@@ -505,13 +510,29 @@ class DebugRunDriver:
                 break
             if pause_pending:
                 break
-            if policy.breakpoint_after:
+            state_now = await self._lifecycle.read_state(bundle)
+            trace_now = tuple(getattr(state_now, "execution_trace", None) or ())
+            if policy.breakpoint_after and policy.breakpoint_after in trace_now:
                 # A single advance may span several node visits (a committed
                 # node followed by an interrupting one), so the breakpoint
                 # matches when the named node has VISITED per the durable
                 # trace - never only when it happens to be the last visit.
-                state_now = await self._lifecycle.read_state(bundle)
-                if policy.breakpoint_after in tuple(getattr(state_now, "execution_trace", None) or ()):
+                break
+            watches = self._watch_fields_of(session)
+            if watches:
+                baseline = dict(session.get("watch_baseline") or {})
+                hits = tuple(
+                    name
+                    for name in watches
+                    if name in baseline and str(getattr(state_now, name, None)) != str(baseline.get(name))
+                )
+                if hits:
+                    session["watch_hits"] = hits
+                    session["watch_baseline"] = {name: str(getattr(state_now, name, None)) for name in watches}
+                    # The returned snapshot was built inside _invoke_once,
+                    # before the hit - refresh it so the caller sees the hits.
+                    refreshed = last.snapshot.model_copy(update={"watch_hits": hits})
+                    last = last.model_copy(update={"snapshot": refreshed})
                     break
         return last  # type: ignore[return-value]
 
@@ -528,6 +549,31 @@ class DebugRunDriver:
             response_kind=ResponseKind.TEXT,
         )
         return await self._invoke_once(bundle, lease, session, resume_payload=response.model_dump(mode="json"))
+
+    def _watch_fields_of(self, session) -> tuple[str, ...]:
+        return tuple(session.get("watch_fields") or ())
+
+    def set_watch_fields(self, bundle_id: str, fields: tuple[str, ...]) -> tuple[str, ...]:
+        """LDD-009: replace the session's watch set with the typed-field names
+        in ``fields``; unknown names are rejected (not silently ignored). The
+        accepted set is returned so the caller can state rejections."""
+        session = self._sessions.get(bundle_id)
+        if session is None:
+            raise DebugDriverError("no_session")
+        import dataclasses
+
+        from deerflow_deep_research.runtime.bundle_lifecycle import BundleLocalState
+
+        known = {field.name for field in dataclasses.fields(BundleLocalState)}
+        accepted = tuple(dict.fromkeys(name for name in fields if name in known))
+        session["watch_fields"] = accepted
+        session["watch_baseline"] = {}
+        session["watch_hits"] = ()
+        return accepted
+
+    def watch_fields(self, bundle_id: str) -> tuple[str, ...]:
+        session = self._sessions.get(bundle_id)
+        return self._watch_fields_of(session) if session is not None else ()
 
     async def _rerun(self, command: DebugCommand, session, bundle, lease: ControlLease) -> DebugSessionUpdate:
         """LDD-007: rewind to just before the last committed node, re-execute it,
@@ -807,4 +853,5 @@ class DebugRunDriver:
             pending_request_id=pending_request_id,
             pending_request=_view_with_state_feedback(session.get("pending_request"), state.interaction_feedback),
             auto_hitl_answers=tuple(session.get("auto_hitl_answers") or ()),
+            watch_hits=tuple(session.get("watch_hits") or ()),
         )

@@ -314,6 +314,7 @@ RED-013: research-demo-tui — Canonical executable run/tui-workflow-debugger.sh
 RED-014: research-demo-tui — The debugger workbench opens with three explicit entries (New Run over a validated draft, lifecycle-verified Attach with busy/takeover postures, read-only Replay) plus a Node Context pane over the C3 inspectors with the fixed coverage strip, all normalized to typed adapter actions
 RED-015: research-demo-tui — The debugger workbench renders HITL stops as a typed conversation card (never raw machine context JSON) with the node's reply, the answer-consumption outcome, an advertised fastest confirm input, and a cleared composer after every plain-text submit
 RED-016: research-demo-tui — The debugger workbench exposes node rerun at a stopped boundary with an honest embedded cost note and states every drive-policy auto-answer as operator-policy content, never silently
+RED-017: research-demo-tui — The debugger workbench answers /bt (walked node path with revisit counts), /state (single typed State field, bounded), and /watch//unwatch (session watch management), and names changed fields when a drive stops on a watch hit
 
 # research-cli-onboarding
 REC-001: research-cli-onboarding — The standalone real CLI asks for or clearly confirms a non-blank research question before a model call and gives a first-time user a bounded explanation of the two graph-owned human-input checkpoint types
@@ -684,3 +685,4 @@ LDD-005: local-workflow-debug-driving — A topology guard pins at most one logi
 LDD-006: local-workflow-debug-driving — Session snapshots carry the parsed hitl1 prompt card from the published context schema plus the node's last feedback (interrupt interaction projection first, durable-state fallback), with no fabricated card for unparsed contexts
 LDD-007: local-workflow-debug-driving — rerun_node at a stopped boundary re-executes the last committed node via checkpoint-history fork with all rollback admitted through the lifecycle projection and at-most-once cursor discipline; a refused rewind leaves the boundary intact
 LDD-008: local-workflow-debug-driving — drive_until carries an explicit auto-HITL policy that answers only hitl1 text confirmations as bounded operator policy (stated per answer, two unaccepted answers fall back to the human, HITL2 and single steps never auto-answer)
+LDD-009: local-workflow-debug-driving — session watchpoints on typed State fields stop a continuous drive when a watched field changes (baseline captured at drive start and advanced after a hit), rejecting unknown field names
