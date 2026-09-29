@@ -379,24 +379,36 @@ async def _fixture_debugger_journey(app: Any, pilot: Any) -> None:
     _require(ok, "final-detach", "final detach did not clear the session")
     _log("  [11] /detach clears the session ......................... ok")
 
-    # [12] Start Run (drive_until) stops at the HITL boundary ---------------
-    # Start Run takes the same validated draft as Start Step, so the draft stays
-    # in the composer and the button (or the palette action) picks the flavour.
+    # [12] Start Run answers the profile proposal as operator policy (auto-hitl)
+    # and runs to the terminal - never silently (LDD-008/RED-016).
     app.query_one("#composer").value = "Compare storage approaches"
     await pilot.pause()
     await _click(app, pilot, "#debug-start-run")
-    ok = await _wait(pilot, lambda: "Start Run" in _log_text(app) and "awaiting_hitl" in _inspect_text(app))
-    _require(ok, "start-run-stops-at-hitl", f"Start Run did not stop at the HITL: {_inspect_text(app)!r}")
-    _log("  [12] Start Run button stops at the HITL boundary ..... ok")
+    ok = await _wait(
+        pilot,
+        lambda: "Start Run" in _log_text(app) and "姿态: terminal" in _inspect_text(app),
+        deadline_seconds=90,
+    )
+    _require(ok, "start-run-auto-hitl-terminal", f"Start Run did not reach the terminal: {_inspect_text(app)!r}")
+    _require("drive 策略代答" in _log_text(app), "start-run-auto-hitl-stated", "the auto-answer must be stated")
+    _log("  [12] Start Run auto-answers the proposal, runs to terminal ok")
 
-    # [13] Answer, then /run drives to the next stop (terminal) -------------
+    # [13] The opt-out holds the stop for a human: a fresh Start Step reaches
+    # the hitl1 request, /run --no-auto-hitl keeps it pending, and a manual
+    # answer then drives to the terminal.
+    ok = await _submit_and_settle(app, pilot, "Compare renewable energy storage technologies", deadline_seconds=60)
+    ok = ok and "awaiting_hitl" in _inspect_text(app)
+    _require(ok, "step-to-hitl", f"the fresh step did not reach hitl1: {_inspect_text(app)!r}")
+    await _submit(app, pilot, "/run --no-auto-hitl")
+    await _wait(pilot, lambda: True)
+    _require("awaiting_hitl" in _inspect_text(app), "opt-out-holds", "the opt-out must hold the HITL stop")
     await _submit(app, pilot, "depth: standard")
-    ok = await _wait(pilot, lambda: "paused_at_boundary" in _inspect_text(app))
+    ok = await _wait(pilot, lambda: "paused_at_boundary" in _inspect_text(app), deadline_seconds=60)
     _require(ok, "answer-then-boundary", f"the answer did not land on a boundary: {_inspect_text(app)!r}")
     await _submit(app, pilot, "/run")
-    ok = await _wait(pilot, lambda: "姿态: terminal" in _inspect_text(app), deadline_seconds=60)
-    _require(ok, "run-to-terminal", f"/run did not reach the terminal: {_inspect_text(app)!r}")
-    _log("  [13] /run drives to the next stop (terminal) ........... ok")
+    ok = await _wait(pilot, lambda: "姿态: terminal" in _inspect_text(app), deadline_seconds=90)
+    _require(ok, "answer-then-terminal", f"the answer did not reach the terminal: {_inspect_text(app)!r}")
+    _log("  [13] /run --no-auto-hitl holds the stop; answer reaches terminal ok")
 
     # [14] /pause at a terminal session is refused honestly ----------------
     await _submit(app, pilot, "/pause")
@@ -408,7 +420,14 @@ async def _fixture_debugger_journey(app: Any, pilot: Any) -> None:
     await _submit(app, pilot, "/help")
     ok = await _wait(pilot, lambda: "/pause=请求在下一节点边界暂停" in _log_text(app).replace("\n", ""))
     _require(ok, "help-lists-capabilities", "the workbench capability list is incomplete")
-    for capability in ("New Run(Start Step)", "/run [节点]=Start Run", "/detach=退出会话", "Ctrl+P 命令面板"):
+    capabilities = (
+        "New Run(Start Step)",
+        "/run [--no-auto-hitl] [节点]=连续推进",
+        "/rerun=重跑刚提交的节点",
+        "/detach=退出会话",
+        "Ctrl+P 命令面板",
+    )
+    for capability in capabilities:
         _require(
             capability in _log_text(app).replace("\n", ""),
             "help-lists-capabilities",

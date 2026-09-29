@@ -154,6 +154,24 @@ def _view_with_state_feedback(view: Any, state_feedback: Any) -> Any:
     return view.model_copy(update={"last_feedback": feedback})
 
 
+_AUTO_HITL_MAX_STREAK = 2
+
+
+def auto_hitl_eligible(pending: Any) -> bool:
+    """LDD-008: only hitl1 text requests are auto-answerable by a drive policy.
+
+    HITL2 direction decisions and choice prompts always wait for a human,
+    regardless of the drive policy.
+    """
+    return pending is not None and pending.phase == "hitl1" and pending.mode == "text"
+
+
+def auto_hitl_should_stop(streak: int) -> bool:
+    """LDD-008 bound: after this many consecutive unaccepted auto-answers the
+    drive stops and surfaces the node's reply for a human answer."""
+    return streak >= _AUTO_HITL_MAX_STREAK
+
+
 class DebugRunDriver:
     """Drives the one real graph boundary-by-boundary for a local operator."""
 
@@ -333,6 +351,15 @@ class DebugRunDriver:
                 bundle, await self._answer(command, session, bundle, lease), action="resume"
             )
 
+        if command.kind == "rerun_node":
+            if session.get("in_flight"):
+                session["ledger"].mark(command.command_id)
+                return DebugSessionUpdate(command_id=command.command_id, denied="in_flight")
+            session["ledger"].mark(command.command_id)
+            return await self._with_observation(
+                bundle, await self._rerun(command, session, bundle, lease), action="rerun"
+            )
+
         if command.breakpoint is not None:
             session["stop_policy"] = command.breakpoint
 
@@ -411,22 +438,67 @@ class DebugRunDriver:
         if command.breakpoint is not None:
             session["stop_policy"] = command.breakpoint
         policy: StopPolicy = session["stop_policy"]
+        # LDD-008: the auto-answer streak and the answered-request facts are
+        # per-drive; a fresh drive starts with a clean bound.
+        session["auto_hitl_streak"] = 0
+        session["auto_hitl_answers"] = ()
+
+        async def _settle_hitl(update: DebugSessionUpdate, pause_pending: bool) -> tuple[DebugSessionUpdate, bool]:
+            """Answer eligible hitl1 stops under the explicit policy (bounded).
+
+            HITL2, choice prompts, and the unaccepted-answer bound always fall
+            back to the human.
+            """
+            while (
+                update.snapshot.posture == "awaiting_hitl"
+                and policy.auto_hitl
+                and auto_hitl_eligible(update.snapshot.pending_request)
+                and not auto_hitl_should_stop(int(session.get("auto_hitl_streak", 0) or 0))
+            ):
+                streak = int(session.get("auto_hitl_streak", 0) or 0) + 1
+                session["auto_hitl_streak"] = streak
+                answers = tuple(session.get("auto_hitl_answers") or ()) + ((update.snapshot.pending_request_id or ""),)
+                session["auto_hitl_answers"] = answers
+                update = await self._auto_answer(
+                    session, bundle, lease, request_id=update.snapshot.pending_request_id, ordinal=len(answers)
+                )
+                if update.snapshot is None:
+                    return update, pause_pending
+                pause_pending = pause_pending or bool(session["pause_requested"])
+                session["pause_requested"] = False
+            return update, pause_pending
+
+        # Seed: a drive typed at a HITL stop answers it (if the policy allows)
+        # or stops - it never blind-advances a pending interrupt.
+        pause_pending = bool(session["pause_requested"])
+        session["pause_requested"] = False
+        current = await self.session_snapshot(bundle.bundle_id.value)
+        if current is not None and current.posture == "awaiting_hitl":
+            last, pause_pending = await _settle_hitl(
+                DebugSessionUpdate(snapshot=current, command_id=command.command_id), pause_pending
+            )
+            if last.snapshot is None:
+                return last
+            if last.snapshot.posture in {"awaiting_hitl", "terminal"}:
+                return last
         last: DebugSessionUpdate | None = None
         for _ in range(64):
-            # A pause takes effect at the next committed boundary (LDD-002), so a
-            # pending request makes this drive advance exactly one boundary and
+            # A pause takes effect at the next committed boundary (LDD-002), so
+            # a pending pause makes this drive advance exactly one boundary and
             # stop - it never refuses to advance and never returns nothing.
-            pause_pending = bool(session["pause_requested"])
+            pause_pending = pause_pending or bool(session["pause_requested"])
+            session["pause_requested"] = False
             last = await self._advance(command, session, bundle, lease, single=False)
             if last.snapshot is None:
                 return last
-            pause_pending = pause_pending or bool(session["pause_requested"])
-            session["pause_requested"] = False
+            last, pause_pending = await _settle_hitl(last, pause_pending)
+            if last.snapshot is None:
+                return last
             posture = last.snapshot.posture
             cursor = last.snapshot.cursor
             if posture == "terminal":
                 break
-            if posture == "awaiting_hitl" and policy.stop_on_hitl:
+            if posture == "awaiting_hitl":
                 break
             if pause_pending:
                 break
@@ -440,6 +512,77 @@ class DebugRunDriver:
                 break
         return last  # type: ignore[return-value]
 
+    async def _auto_answer(
+        self, session, bundle, lease: ControlLease, *, request_id: str | None, ordinal: int
+    ) -> DebugSessionUpdate:
+        """Submit 确认 as an operator-policy answer (LDD-008); never silent."""
+        if not request_id:
+            return DebugSessionUpdate(command_id=f"auto-hitl-{ordinal}", denied="invalid")
+        response = AcceptedHumanResponse(
+            request_id=request_id,
+            message_id=f"msg-auto-hitl-{ordinal}-{int(self._clock())}",
+            value="确认",
+            response_kind=ResponseKind.TEXT,
+        )
+        return await self._invoke_once(bundle, lease, session, resume_payload=response.model_dump(mode="json"))
+
+    async def _rerun(self, command: DebugCommand, session, bundle, lease: ControlLease) -> DebugSessionUpdate:
+        """LDD-007: rewind to just before the last committed node, re-execute it,
+        and stop at the next stop (HITL/terminal).
+
+        The rewind is expressed as a graph drive through the same executor and
+        saver (checkpoint history fork); durable State follows through the
+        controller's own projection sync. The driver writes no state directly,
+        and the journal gains the rerun observation via the command action.
+        """
+        state = await self._lifecycle.read_state(bundle)
+        trace = tuple(getattr(state, "execution_trace", None) or ())
+        if not trace:
+            return DebugSessionUpdate(
+                command_id=command.command_id, denied="invalid", message="nothing committed to rerun"
+            )
+        tail = trace[-1]
+        fork_id = await self._find_rewind_point(bundle, tail)
+        if fork_id is None:
+            return DebugSessionUpdate(
+                command_id=command.command_id, denied="invalid", message=f"no rewind point before {tail}"
+            )
+        session["in_flight"] = True
+        try:
+            update = await self._invoke_once(bundle, lease, session, resume_payload=None, fork_checkpoint_id=fork_id)
+            if update.snapshot is None:
+                return update
+            # Run to the next stop so the operator faces the fresh result of
+            # the rerun node (a regenerated HITL request, or the terminal), not
+            # an intermediate pause.
+            for _ in range(8):
+                posture = update.snapshot.posture
+                if posture in {"awaiting_hitl", "terminal"} or bool(session["pause_requested"]):
+                    break
+                update = await self._invoke_once(bundle, lease, session, resume_payload=None)
+            return update
+        finally:
+            session["in_flight"] = False
+
+    async def _find_rewind_point(self, bundle, tail: str) -> str | None:
+        """Locate the checkpoint just before ``tail`` last committed (read-only).
+
+        History is newest-first, so the first snapshot whose pending node is the
+        rerun target is the latest state that had not yet executed it.
+        """
+        try:
+            async with self._lifecycle.open_graph_checkpoint(bundle) as saver:
+                graph = self._executor._recipe.builder.compile(checkpointer=saver)
+                config = self._executor._config(bundle)
+                async for historical in graph.aget_state_history(config):
+                    if tuple(historical.next or ()) == (tail,):
+                        return historical.config["configurable"]["checkpoint_id"]
+        except asyncio.CancelledError:
+            raise
+        except (OSError, RuntimeError, ValueError):
+            return None
+        return None
+
     async def _advance(
         self, command: DebugCommand, session, bundle, lease: ControlLease, *, single: bool
     ) -> DebugSessionUpdate:
@@ -450,13 +593,27 @@ class DebugRunDriver:
             session["in_flight"] = False
 
     async def _invoke_once(
-        self, bundle, lease: ControlLease, session, *, resume_payload: dict[str, Any] | None
+        self,
+        bundle,
+        lease: ControlLease,
+        session,
+        *,
+        resume_payload: dict[str, Any] | None,
+        fork_checkpoint_id: str | None = None,
     ) -> DebugSessionUpdate:
         async with self._lifecycle.execution_exclusion(bundle) as execution_lease:
             execution_lease.ensure_live()
             async with self._lifecycle.open_graph_checkpoint(bundle) as saver:
                 graph = self._executor._recipe.builder.compile(checkpointer=saver)
                 config = self._executor._config(bundle)
+                if fork_checkpoint_id is not None:
+                    # LDD-007 rewind drive: resume the thread from the pinned
+                    # historical checkpoint (the state just before the node
+                    # last committed) so the invocation re-executes that node.
+                    config = {
+                        **config,
+                        "configurable": {**config["configurable"], "checkpoint_id": fork_checkpoint_id},
+                    }
                 snapshot = await graph.aget_state(config)
                 fresh = not (snapshot and snapshot.values)
                 next_nodes = tuple(snapshot.next or ()) if snapshot else ()
@@ -638,4 +795,5 @@ class DebugRunDriver:
             lease=lease,
             pending_request_id=pending_request_id,
             pending_request=_view_with_state_feedback(session.get("pending_request"), state.interaction_feedback),
+            auto_hitl_answers=tuple(session.get("auto_hitl_answers") or ()),
         )

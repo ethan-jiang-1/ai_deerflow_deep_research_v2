@@ -1480,12 +1480,24 @@ class DeepResearchDemoTUI(App[None]):
             self.query_one("#composer", Input).value = ""
             self.run_worker(self._debug_pause(), exclusive=True, group="debug")
             return
-        if self.debug_mode and value.startswith("/run"):
-            # /run [node]: continue to the next stop (breakpoint after <node>).
-            _, _, target = value.partition(" ")
+        if self.debug_mode and value.startswith("/rerun"):
+            # /rerun: re-run the last committed node at this boundary (LDD-007).
             self.query_one("#composer", Input).value = ""
             if self._debug_driver is not None and self._debug_bundle_id:
-                self.run_worker(self._debug_drive(target.strip() or None), exclusive=True, group="debug")
+                self.run_worker(self._debug_rerun(), exclusive=True, group="debug")
+            else:
+                self.query_one("#log", RichLog).write(Text("没有进行中的调试会话，无可重跑节点。", style="yellow"))
+            return
+        if self.debug_mode and value.startswith("/run"):
+            # /run [--no-auto-hitl] [node]: continue to the next stop. Continuous
+            # drives default to the operator's auto-HITL policy (LDD-008); the
+            # flag opts out and single steps never auto-answer.
+            _, _, arguments = value.partition(" ")
+            auto_hitl = "--no-auto-hitl" not in arguments
+            target = arguments.replace("--no-auto-hitl", "").strip()
+            self.query_one("#composer", Input).value = ""
+            if self._debug_driver is not None and self._debug_bundle_id:
+                self.run_worker(self._debug_drive(target or None, auto_hitl=auto_hitl), exclusive=True, group="debug")
             else:
                 self.query_one("#log", RichLog).write(
                     Text(
@@ -2679,8 +2691,9 @@ class DeepResearchDemoTUI(App[None]):
                 "调试工作台能力（fixture 与 embedded 组合一致）：\n"
                 "  入口: 输入问题+Enter=New Run(Start Step) · /run [节点]=Start Run(连续推进) · "
                 "Attach 按钮或 /attach <id> · Replay 按钮或 /replay <id> · Ctrl+P 命令面板\n"
-                "  推进: Enter(可留空)=单步(advance_one) · /run [节点]=drive_until 到下一停点"
-                "(HITL/终态/指定节点) · /pause=请求在下一节点边界暂停\n"
+                "  推进: Enter(可留空)=单步(advance_one) · /run [--no-auto-hitl] [节点]=连续推进"
+                "(默认 auto-hitl: hitl1 提案自动代答「确认」· 单步永不代答) · /pause=请求在下一节点边界暂停\n"
+                "  重跑: /rerun=重跑刚提交的节点(重抽该节点结果 · embedded 下真实调用再次计费)\n"
                 "  回答: HITL 停止时直接输入文本（choice 模式输入选项 id）后按 Enter · "
                 "最快确认: 确认 / confirm · 修订单项: 字段: 值（如 depth: quick overview）\n"
                 "  对话: 普通文本会作为 HITL 回答被消费（节点会回复并显示剩余轮次）· "
@@ -2696,8 +2709,13 @@ class DeepResearchDemoTUI(App[None]):
             )
         )
 
-    async def _debug_drive(self, breakpoint: str | None = None) -> None:
-        """Start Run / continue: drive_until to the next stop (optionally after a node)."""
+    async def _debug_drive(self, breakpoint: str | None = None, *, auto_hitl: bool = True) -> None:
+        """Start Run / continue: drive_until to the next stop (optionally after a node).
+
+        LDD-008: continuous drives default to the operator's auto-HITL policy
+        (hitl1 profile confirmations are answered 确认 as operator policy);
+        ``/run --no-auto-hitl`` opts out and single steps never auto-answer.
+        """
         from deerflow_deep_research.domain.debug_driving import DebugCommand, StopPolicy
 
         driver = self._debug_driver
@@ -2706,13 +2724,42 @@ class DeepResearchDemoTUI(App[None]):
         session = await driver.session_snapshot(self._debug_bundle_id)
         if session is None:
             return
+        policy = (
+            StopPolicy(breakpoint_after=breakpoint, auto_hitl=auto_hitl)
+            if breakpoint
+            else StopPolicy(auto_hitl=auto_hitl)
+        )
         result = await driver.execute(
             DebugCommand(
                 kind="drive_until",
                 bundle_id=self._debug_bundle_id,
                 command_id=f"run-{int(time.time() * 1000)}",
                 expected_cursor=session.cursor.token(),
-                breakpoint=StopPolicy(breakpoint_after=breakpoint) if breakpoint else None,
+                breakpoint=policy,
+            )
+        )
+        await self._render_debug_result(result)
+
+    async def _debug_rerun(self) -> None:
+        """LDD-007/RED-016: re-run the last committed node at a stopped boundary."""
+        from deerflow_deep_research.domain.debug_driving import DebugCommand
+
+        driver = self._debug_driver
+        if driver is None or self._debug_bundle_id is None:
+            return
+        session = await driver.session_snapshot(self._debug_bundle_id)
+        if session is None:
+            return
+        if self.mode == "embedded_smoke":
+            self.query_one("#log", RichLog).write(
+                Text("↻ 重跑该节点（embedded 组合：真实模型调用将再次计费）", style="yellow")
+            )
+        result = await driver.execute(
+            DebugCommand(
+                kind="rerun_node",
+                bundle_id=self._debug_bundle_id,
+                command_id=f"rerun-{int(time.time() * 1000)}",
+                expected_cursor=session.cursor.token(),
             )
         )
         await self._render_debug_result(result)
@@ -2801,6 +2848,23 @@ class DeepResearchDemoTUI(App[None]):
         session = await driver.session_snapshot(self._debug_bundle_id)
         if session is None:
             return
+        if session.posture == "terminal" and not value.startswith("/"):
+            # The documented terminal action: a new question starts a new run.
+            # Release the finished session cleanly, then start over the draft.
+            await driver.execute(
+                DebugCommand(
+                    kind="detach",
+                    bundle_id=self._debug_bundle_id,
+                    command_id=f"detach-{int(time.time() * 1000)}",
+                    expected_cursor=session.cursor.token(),
+                )
+            )
+            self._debug_driver = None
+            self._debug_bundle_id = None
+            self.query_one("#composer", Input).value = ""
+            self._render_no_debug_session()
+            await self._debug_start(value)
+            return
         kind: str
         answer_text = None
         if value.startswith("/detach"):
@@ -2878,18 +2942,22 @@ class DeepResearchDemoTUI(App[None]):
         if self.debug_mode:
             self._refresh_debug_hint()
 
-    def _log_debug_action(self, posture: str, next_nodes: tuple[str, ...], request: Any | None = None) -> None:
-        """Write what the session waits for into the log, once per request.
+    def _log_debug_action(
+        self, posture: str, next_nodes: tuple[str, ...], request: Any | None = None, *, frame: int = -1
+    ) -> None:
+        """Write what the session waits for into the log, once per request stop.
 
         The log is the pane operators read, so a HITL stop states the node's own
         request as a typed conversation card (RED-015): what is being asked,
         what the node replied to the last answer, and how to answer. The raw
         node context payload is machine JSON and never appears here; an
-        unparsed context degrades to an honest bounded note.
+        unparsed context degrades to an honest bounded note. The dedup key
+        carries the frame so a rerun's regenerated request (same deterministic
+        request id, later frame) still rewrites the card.
         """
         node = next_nodes[0] if next_nodes else None
         if posture == "awaiting_hitl" and node is not None:
-            key = f"hitl:{request.request_id if request is not None else node}"
+            key = f"hitl:{request.request_id if request is not None else node}:{frame}"
             title = request.title if request is not None else "等待输入"
             mode = request.mode if request is not None else "text"
             lines = [f"→ 等待 {node} 输入（{mode}）：{title}"]
@@ -3101,6 +3169,11 @@ class DeepResearchDemoTUI(App[None]):
             return
         cursor = snapshot.cursor
         request = snapshot.pending_request
+        if snapshot.auto_hitl_answers:
+            # LDD-008/RED-016: a drive policy answered for the operator - never
+            # silent, and never styled as a human answer.
+            count = len(snapshot.auto_hitl_answers)
+            log.write(Text(f"⚙ drive 策略代答: 确认 ×{count}（auto-hitl · 操作者策略）", style="yellow"))
         if consumed_answer and snapshot.posture == "awaiting_hitl" and request is not None:
             # RED-015: the answer was consumed but the node re-asks — say so,
             # or the operator cannot tell consumption from silence.
@@ -3110,7 +3183,7 @@ class DeepResearchDemoTUI(App[None]):
         if result.committed_node:
             log.write(Text(f"✓ {result.committed_node} 提交（帧 {cursor.frame_sequence}）", style="cyan"))
         self._render_debug_prompt(snapshot.posture, request)
-        self._log_debug_action(snapshot.posture, tuple(cursor.next_nodes or ()), request)
+        self._log_debug_action(snapshot.posture, tuple(cursor.next_nodes or ()), request, frame=cursor.frame_sequence)
         line = f"姿态: {snapshot.posture} · 下一节点: {', '.join(cursor.next_nodes) or '—'}"
         if request is not None:
             line += f" · 等待: {request.title}（{request.mode}）"

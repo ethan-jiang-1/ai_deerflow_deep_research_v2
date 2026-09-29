@@ -22,18 +22,28 @@ DebugCommandKind = Literal[
     "answer",
     "cancel",
     "detach",
+    "rerun_node",
 ]
 DriveMode = Literal["step", "run"]
 SessionPosture = Literal["running", "pause_requested", "paused_at_boundary", "awaiting_hitl", "terminal"]
 
 
 class StopPolicy(FrozenContract):
-    """Where drive_until stops; breakpoint names a node's post-commit."""
+    """Where drive_until stops; breakpoint names a node's post-commit.
+
+    ``auto_hitl`` is an explicit operator drive policy (`LDD-008`): when the
+    drive meets a hitl1 profile-confirmation request it may submit 确认 (confirm)
+    as an operator-policy answer through the existing semantic intake and run
+    on. The contract default is False (a drive stops for a human); the
+    workbench turns it on for continuous drives and never for single steps.
+    HITL2 direction decisions always wait regardless of this policy.
+    """
 
     breakpoint_after: str | None = Field(default=None, min_length=1, max_length=32)
     stop_on_hitl: bool = True
     stop_on_failure: bool = True
     stop_on_terminal: bool = True
+    auto_hitl: bool = False
 
 
 class DebugCommand(FrozenContract):
@@ -127,6 +137,7 @@ class DebugSessionSnapshot(FrozenContract):
     lease: LeasePosture
     pending_request_id: str | None = Field(default=None, min_length=1, max_length=128)
     pending_request: PendingRequestView | None = None
+    auto_hitl_answers: tuple[str, ...] = Field(default=(), max_length=16)
 
 
 class DebugSessionUpdate(FrozenContract):

@@ -1806,8 +1806,9 @@ async def test_help_lists_every_capability(monkeypatch: pytest.MonkeyPatch, tmp_
         help_text = app._rich_log_text().replace("\n", "")
         for capability in (
             "New Run(Start Step)",
-            "/run [节点]=Start Run",
+            "/run [--no-auto-hitl] [节点]=连续推进",
             "/pause=请求在下一节点边界暂停",
+            "/rerun=重跑刚提交的节点",
             "/context=节点上下文与 coverage strip",
             "/files [路径]=工作区",
             "/detach=退出会话",
@@ -1826,44 +1827,78 @@ async def test_run_drives_and_pause_requests_a_boundary_stop(monkeypatch: pytest
         await _wait_for(app, pilot, demo_tui.Ready)
         composer = app.query_one("#composer", demo_tui.Input)
 
-        # Start Run from scratch (Start Run flavour of New Run).
+        # Start Run from scratch (Start Run flavour of New Run). LDD-008: the
+        # continuous drive defaults to the operator's auto-HITL policy, so it
+        # answers the hitl1 proposal as operator policy and runs to terminal.
         composer.value = "Compare storage approaches"
         await pilot.pause()
         app.run_worker(app._debug_new_run(mode="run"), exclusive=True, group="debug")
-        for _ in range(160):
-            await pilot.pause()
-            if app._debug_driver is not None and "Start Run" in app._rich_log_text().replace("\n", ""):
-                break
-            await asyncio.sleep(0.05)
-        assert "Start Run" in app._rich_log_text().replace("\n", ""), "the run entry must say which flavour it used"
-        assert "姿态: awaiting_hitl" in app.query_one("#inspect").render().plain, "the run stops at HITL"
-
-        # Answer, then continue continuously to the next stop.
-        composer.value = "depth: standard"
-        await pilot.pause()
-        await pilot.press("enter")
-        for _ in range(80):
-            await pilot.pause()
-            if "paused_at_boundary" in app.query_one("#inspect").render().plain:
-                break
-            await asyncio.sleep(0.05)
-        composer.value = "/run"
-        await pilot.pause()
-        await pilot.press("enter")
-        for _ in range(160):
+        for _ in range(240):
             await pilot.pause()
             if "姿态: terminal" in app.query_one("#inspect").render().plain:
                 break
             await asyncio.sleep(0.05)
-        assert "姿态: terminal" in app.query_one("#inspect").render().plain, "drive_until must run to the next stop"
+        assert "Start Run" in app._rich_log_text().replace("\n", ""), "the run entry must say which flavour it used"
+        assert "姿态: terminal" in app.query_one("#inspect").render().plain, "the auto drive must run to terminal"
+        assert "drive 策略代答" in app._rich_log_text().replace("\n", ""), "the auto-answer must never be silent"
 
-        # A pause at a terminal session is refused honestly, not promised.
+        # /pause at that terminal session is refused honestly.
         composer.value = "/pause"
         await pilot.pause()
         await pilot.press("enter")
         await asyncio.sleep(0.4)
         await pilot.pause()
         assert "没有下一个节点边界可暂停" in app._rich_log_text().replace("\n", "")
+
+
+@pytest.mark.asyncio
+async def test_run_no_auto_hitl_holds_the_stop(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """LDD-008: /run --no-auto-hitl at a HITL stop holds it for a human, and the
+    /rerun entry re-executes the last committed node (RED-016)."""
+    _install_isolated_fixture_adapter(monkeypatch, bundle_root=tmp_path / "demo-runs")
+    app = DeepResearchDemoTUI(mode="fixture", debug_mode=True)
+    async with app.run_test(size=(110, 34)) as pilot:
+        await _drive_fixture_debugger_to_hitl(app, pilot)
+
+        # /rerun re-executes bootstrap and lands back at a fresh hitl request.
+        frames_before = app._rich_log_text().count("✓ bootstrap 提交")
+        await _submit_and_wait(
+            app, pilot, "/rerun", lambda: app._rich_log_text().count("✓ bootstrap 提交") > frames_before
+        )
+        assert "姿态: awaiting_hitl" in app.query_one("#inspect").render().plain, (
+            app.query_one("#inspect").render().plain
+        )
+
+        # /run --no-auto-hitl holds the stop: no policy answer is submitted.
+        log_before = app._rich_log_text().replace("\n", "").count("drive 策略代答")
+        await _submit_and_wait(app, pilot, "/run --no-auto-hitl", lambda: True)
+        await asyncio.sleep(0.4)
+        await pilot.pause()
+        assert "姿态: awaiting_hitl" in app.query_one("#inspect").render().plain, "the opt-out must hold the stop"
+        assert app._rich_log_text().replace("\n", "").count("drive 策略代答") == log_before, "no silent policy answer"
+
+        # /run at the stop with the default policy answers and runs to terminal.
+        await _submit_and_wait(
+            app, pilot, "/run", lambda: "姿态: terminal" in app.query_one("#inspect").render().plain, deadline=60
+        )
+        assert "drive 策略代答" in app._rich_log_text().replace("\n", ""), "the auto-answer must never be silent"
+
+
+async def _submit_and_wait(app: DeepResearchDemoTUI, pilot: Any, text: str, condition, deadline: float = 30.0) -> None:
+    """Submit composer text and wait for a condition (or assert nothing crashed)."""
+    app.query_one("#composer", demo_tui.Input).value = text
+    await pilot.pause()
+    await pilot.press("enter")
+    elapsed = 0.0
+    while elapsed < deadline:
+        await pilot.pause()
+        try:
+            if condition():
+                return
+        except AssertionError:
+            pass
+        await asyncio.sleep(0.05)
+        elapsed += 0.05
 
 
 async def _drive_fixture_debugger_to_hitl(app: DeepResearchDemoTUI, pilot: Any) -> None:

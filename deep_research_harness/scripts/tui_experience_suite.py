@@ -205,16 +205,13 @@ async def _answer_then_step(d: Driver) -> None:
 
 
 async def _start_run_and_continue(d: Driver) -> None:
-    """E4: Start Run stops at the next stop; /run continues to the terminal."""
+    """E4: Start Run auto-answers the profile proposal (stated, never silent) and runs to the terminal."""
     d.app.query_one("#composer").value = "Compare storage approaches"
     await d.pilot.pause()
     await d.click("#debug-start-run")
-    ok = await d.wait(lambda: "Start Run" in d.flat_log and "awaiting_hitl" in d.inspect)
-    d.expect(ok, f"Start Run must say which flavour ran and stop at HITL: {d.inspect!r}")
-    await d.answer()
-    await d.submit("/run")
-    ok = await d.wait(lambda: "姿态: terminal" in d.inspect, seconds=60)
-    d.expect(ok, f"/run must reach the next stop (terminal): {d.inspect!r}")
+    ok = await d.wait(lambda: "Start Run" in d.flat_log and "姿态: terminal" in d.inspect, seconds=90)
+    d.expect(ok, f"Start Run must drive to terminal under the default auto-hitl policy: {d.inspect!r}")
+    d.expect("drive 策略代答" in d.flat_log, "the auto-answer must be stated, never silent")
     d.expect("会话终态" in d.log, "the terminal stop must be stated in the log")
     await d.settle()
 

@@ -59,6 +59,19 @@ wave0 完成后，输入 `/context` 查看 Node Context：
 ## 5. 到 terminal / Detach
 
 继续推进到 terminal，或随时 `/detach` 干净退出。detach 后可用 `--attach <bundle_id>` 恢复。
+terminal 姿态下直接输入新问题 = 结束当前会话并开新跑（2026-09-29 起兑现文档承诺）。
+
+## 5b. 重跑节点与 auto-hitl（LDD-007/008，RED-016）
+
+- **`/rerun`**：重跑刚提交的节点（重抽该节点结果），落到下一个停点（新提案或终态）。
+  embedded 组合下**真实模型调用再次计费**——命令前有黄色成本提示。
+- **`/run` 默认 auto-hitl**：连续推进撞上 hitl1 提案确认时，以操作者策略自动代答
+  「确认」继续跑（日志明示 `⚙ drive 策略代答: 确认 ×N（auto-hitl · 操作者策略）`）。
+  **`/run --no-auto-hitl`** 关闭代答；单步 Enter 永不代答；HITL2 方向决策永远停下等
+  人；同一提案连续 2 次代答未被接受即停回人工并渲染节点回复。
+- 经典 debugger 概念对照：断点=`/pause`+停点、单步=Enter、继续=`/run`、跑到指定节点
+  =`/run <节点>`、观察窗=`/context` `/files` `/inspect`、回放=`/replay`、重执行帧=
+  `/rerun`、断点处对话=HITL 卡片 + `?` 侧聊。
 
 ## 6. 与 030 的区别
 

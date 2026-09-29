@@ -830,3 +830,214 @@ def test_pending_view_carries_card_and_state_feedback() -> None:
     assert plain_view.prompt is None, "an unparsed context must not fabricate a card"
     assert plain_view.last_feedback is None
     assert plain_view.title and plain_view.mode == "text", "carried fields remain unchanged"
+
+
+def test_auto_hitl_predicate_gates_hitl1_text_only() -> None:
+    """LDD-008: the auto-answer predicate admits only hitl1 text requests;
+    HITL2 direction decisions and choice prompts always wait for a human."""
+    from deerflow_deep_research.domain.debug_driving import PendingOptionView, PendingRequestView
+    from deerflow_deep_research.runtime.debug_driver import auto_hitl_eligible, auto_hitl_should_stop
+
+    hitl1 = PendingRequestView(
+        request_id="drh_a_000000000000001", phase="hitl1", mode="text", title="profile", context="c"
+    )
+    hitl2 = PendingRequestView(
+        request_id="drh_b_000000000000001",
+        phase="hitl2",
+        mode="choice",
+        title="next step",
+        context="c",
+        options=(PendingOptionView(option_id="proceed", label="继续"),),
+    )
+    assert auto_hitl_eligible(hitl1) is True
+    assert auto_hitl_eligible(hitl2) is False
+    assert auto_hitl_should_stop(0) is False
+    assert auto_hitl_should_stop(1) is False
+    assert auto_hitl_should_stop(2) is True, "two consecutive unaccepted auto-answers must fall back to the human"
+
+
+@pytest.mark.asyncio
+async def test_rerun_node_reexecutes_last_commit(tmp_path: Path) -> None:
+    """LDD-007: rerun_node forks to the pre-commit checkpoint and re-executes the
+    same node; the journal gains fresh frames and the session stays drivable."""
+    driver, _lifecycle = _make_driver(tmp_path, owner="op-1")
+    opened = await driver.open_start(
+        StartRequest(question="Compare storage", mode="step", owner="op-1", command_id="start-00000001")
+    )
+    bundle_id = opened.snapshot.bundle_id
+    cursor = opened.snapshot.cursor.token()
+
+    step1 = await driver.execute(
+        DebugCommand(kind="advance_one", bundle_id=bundle_id, command_id="advance-00000001", expected_cursor=cursor)
+    )
+    assert step1.snapshot is not None and step1.committed_node == "bootstrap"
+    pre_rerun_frames = step1.snapshot.cursor.frame_sequence
+
+    rerun = await driver.execute(
+        DebugCommand(
+            kind="rerun_node",
+            bundle_id=bundle_id,
+            command_id="rerun-00000001",
+            expected_cursor=step1.snapshot.cursor.token(),
+        )
+    )
+    assert rerun.denied is None, rerun.message
+    assert rerun.committed_node == "bootstrap", "the rerun must re-execute the last committed node"
+    assert rerun.snapshot is not None
+    assert rerun.snapshot.cursor.frame_sequence > pre_rerun_frames, "the rerun must produce fresh frames"
+    assert rerun.snapshot.posture in {"paused_at_boundary", "awaiting_hitl"}
+
+    # The session stays drivable: the next advance reaches the hitl stop.
+    nxt = await driver.execute(
+        DebugCommand(
+            kind="advance_one",
+            bundle_id=bundle_id,
+            command_id="advance-00000002",
+            expected_cursor=rerun.snapshot.cursor.token(),
+        )
+    )
+    assert nxt.snapshot is not None and nxt.snapshot.posture == "awaiting_hitl"
+
+
+@pytest.mark.asyncio
+async def test_rerun_node_at_hitl_regenerates_the_stop(tmp_path: Path) -> None:
+    """LDD-007: rerunning at a HITL stop re-executes the last committed node and
+    lands back at a fresh HITL request on a later frame."""
+    driver, _lifecycle = _make_driver(tmp_path, owner="op-1")
+    opened = await driver.open_start(
+        StartRequest(question="Compare storage", mode="step", owner="op-1", command_id="start-00000001")
+    )
+    bundle_id = opened.snapshot.bundle_id
+    step1 = await driver.execute(
+        DebugCommand(
+            kind="advance_one",
+            bundle_id=bundle_id,
+            command_id="advance-00000001",
+            expected_cursor=opened.snapshot.cursor.token(),
+        )
+    )
+    assert step1.snapshot is not None and step1.snapshot.posture == "awaiting_hitl"
+
+    rerun = await driver.execute(
+        DebugCommand(
+            kind="rerun_node",
+            bundle_id=bundle_id,
+            command_id="rerun-00000001",
+            expected_cursor=step1.snapshot.cursor.token(),
+        )
+    )
+    assert rerun.denied is None, rerun.message
+    assert rerun.snapshot is not None
+    assert rerun.snapshot.posture == "awaiting_hitl", "a rerun before the pending node re-asks it"
+    assert rerun.snapshot.pending_request_id is not None
+    assert rerun.snapshot.cursor.frame_sequence > step1.snapshot.cursor.frame_sequence
+
+
+@pytest.mark.asyncio
+async def test_rerun_node_denials(tmp_path: Path) -> None:
+    """LDD-007: a fresh session with no committed node and a terminal session
+    both refuse rerun_node with typed denials instead of advancing."""
+    driver, _lifecycle = _make_driver(tmp_path, owner="op-1")
+    opened = await driver.open_start(
+        StartRequest(question="Compare storage", mode="step", owner="op-1", command_id="start-00000001")
+    )
+    bundle_id = opened.snapshot.bundle_id
+    fresh = await driver.execute(
+        DebugCommand(
+            kind="rerun_node",
+            bundle_id=bundle_id,
+            command_id="rerun-00000001",
+            expected_cursor=opened.snapshot.cursor.token(),
+        )
+    )
+    assert fresh.denied == "invalid", "nothing has committed yet, so there is nothing to rerun"
+
+
+@pytest.mark.asyncio
+async def test_drive_until_auto_hitl_passes_the_proposal(tmp_path: Path) -> None:
+    """LDD-008: the default drive stops at the hitl1 request for a human; an
+    explicit auto-HITL drive submits the confirm answer as operator policy and
+    runs on to terminal, carrying the answered-request facts."""
+    driver, _lifecycle = _make_driver(tmp_path, owner="op-1")
+    opened = await driver.open_start(
+        StartRequest(question="Compare storage", mode="run", owner="op-1", command_id="start-00000001")
+    )
+    bundle_id = opened.snapshot.bundle_id
+
+    # Default policy: the drive stops at the hitl1 request for a human.
+    human_drive = await driver.execute(
+        DebugCommand(
+            kind="drive_until",
+            bundle_id=bundle_id,
+            command_id="drive-00000001",
+            expected_cursor=opened.snapshot.cursor.token(),
+        )
+    )
+    assert human_drive.denied is None, human_drive.message
+    assert human_drive.snapshot is not None
+    assert human_drive.snapshot.posture == "awaiting_hitl"
+    assert human_drive.snapshot.pending_request is not None
+    assert human_drive.snapshot.pending_request.phase == "hitl1"
+    assert human_drive.snapshot.auto_hitl_answers == (), "the default drive never auto-answers"
+
+    # Auto policy: confirm is submitted as operator policy and the drive runs on.
+    auto_drive = await driver.execute(
+        DebugCommand(
+            kind="drive_until",
+            bundle_id=bundle_id,
+            command_id="drive-00000002",
+            expected_cursor=human_drive.snapshot.cursor.token(),
+            breakpoint=StopPolicy(auto_hitl=True),
+        )
+    )
+    assert auto_drive.denied is None, auto_drive.message
+    assert auto_drive.snapshot is not None
+    assert auto_drive.snapshot.posture == "terminal", "the auto drive must pass hitl1 and run to terminal"
+    assert len(auto_drive.snapshot.auto_hitl_answers) >= 1, "the auto-answer fact must be carried for the operator"
+
+
+@pytest.mark.asyncio
+async def test_drive_typed_at_hitl_stop_never_blind_advances(tmp_path: Path) -> None:
+    """LDD-008: a drive command typed while a HITL request is pending answers it
+    only under the explicit auto policy (then runs on); without the policy it
+    stops honestly without consuming the request."""
+    driver, _lifecycle = _make_driver(tmp_path, owner="op-1")
+    opened = await driver.open_start(
+        StartRequest(question="Compare storage", mode="step", owner="op-1", command_id="start-00000001")
+    )
+    bundle_id = opened.snapshot.bundle_id
+    step1 = await driver.execute(
+        DebugCommand(
+            kind="advance_one",
+            bundle_id=bundle_id,
+            command_id="advance-00000001",
+            expected_cursor=opened.snapshot.cursor.token(),
+        )
+    )
+    assert step1.snapshot is not None and step1.snapshot.posture == "awaiting_hitl"
+
+    held = await driver.execute(
+        DebugCommand(
+            kind="drive_until",
+            bundle_id=bundle_id,
+            command_id="drive-00000001",
+            expected_cursor=step1.snapshot.cursor.token(),
+        )
+    )
+    assert held.snapshot is not None
+    assert held.snapshot.posture == "awaiting_hitl", "the default policy must hold the stop for a human"
+    assert held.snapshot.auto_hitl_answers == ()
+    assert held.snapshot.pending_request_id == step1.snapshot.pending_request_id
+
+    answered_through = await driver.execute(
+        DebugCommand(
+            kind="drive_until",
+            bundle_id=bundle_id,
+            command_id="drive-00000002",
+            expected_cursor=held.snapshot.cursor.token(),
+            breakpoint=StopPolicy(auto_hitl=True),
+        )
+    )
+    assert answered_through.snapshot is not None
+    assert answered_through.snapshot.posture == "terminal"
+    assert len(answered_through.snapshot.auto_hitl_answers) >= 1
