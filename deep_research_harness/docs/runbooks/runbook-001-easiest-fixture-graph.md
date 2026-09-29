@@ -36,13 +36,19 @@ non_goals:
 
 ## 0. 前置
 
-- 零前置：不联网、不需要 Gateway，花费少。
+- 零凭证：不联网、不需要 Gateway、不需要 `.env`，花费少。
+- 环境前置：入口自带 `entry-preflight` 硬门——环境未备好会 `exit 2` 并提示先跑
+  `cd deep_research_harness && make install`（新 clone 必做一次）。
 - 只需在 `deep_research_harness/` 下执行。
 - 全程自动：固定问题下 HITL1/HITL2 都由系统自动回答，不需要人工输入。
 
 ## 1. 创建 soft bundle 并跑 001
 
-> 每次 `run` 都会先自动清理之前的 run bundle 内容，保证从干净状态开始。
+> `run` **不是只读操作**：它先把 `.deep-research-demo-runs/workspace/` 下的**整个**
+> `deep-research` 与 `scripted-real` 子树 rename 进 `archive/`（**workspace 全局**，不只本 root），
+> 每个名字只保留最近 3 份 archive，更老的 `shutil.rmtree`（`scripts/soft_bundle.py:159-181`）。
+> 即旧 bundle 会被整体移出现场、最老的 archive 会被真删——在意现场证据就先做快照
+> （[`COMMANDS.md`](../../COMMANDS.md) §3 的"bundle 历史是证据"同样适用）。
 > 也可以手动执行：`UV_NO_CACHE=1 make soft-bundle DEMO_ARGS="clean"`。
 
 ```bash
@@ -50,7 +56,7 @@ cd deep_research_harness
 
 # 创建 soft bundle（不指定 --root 会自动生成；研究问题固定为极简单问题）
 ROOT=$(UV_NO_CACHE=1 make soft-bundle DEMO_ARGS="create --name 001-demo" | sed -n 's/^soft_bundle_root=//p')
-echo "ROOT=$ROOT"
+echo "ROOT=$ROOT"          # 空值 = preflight 失败（缺依赖会 exit 2 并提示先 make install）
 
 # 跑 001
 UV_NO_CACHE=1 make soft-bundle DEMO_ARGS="run $ROOT --mode 001"

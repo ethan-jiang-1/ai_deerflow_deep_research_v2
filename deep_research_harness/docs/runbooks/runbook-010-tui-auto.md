@@ -10,11 +10,13 @@ prerequisites:
   - "DEERFLOW_DEMO_MODEL（非空模型 selector）"
   - "与 selector 匹配的模型凭证（如 DEEPSEEK_API_KEY）"
   - "TAVILY_API_KEY"
-  - "demo-tui extra 已安装（make install）"
+  - "make install 已跑（含 operations / demo-tui / demo-real 三个 extras——目标走 --embedded-smoke）"
 purpose: "在同一固定例子（003 短问题）下，用 TUI 自动全跑一次真实 Deep Research：真人零按键，hitl1/hitl2 由 graph 拥有的 scripted 策略自动补（auto_profile + auto_proceed，默认产品路径无 profile_intent）。验证'TUI 一层真实图能自主到终态'。020 是同一例子的手动孪生（交互由真人补）。"
 how_to_run: |
   cd deep_research_harness && make demo-tui-real-auto
-  # 或双击 RUN-010.command（自动起 TUI，什么都不用按）
+  # 或双击 RUN-010.command（该启动器另需两次回车：开窗一次、关窗一次）
+  # 收尾：TUI 没有自动退出路径——看到 Research complete (Terminal) 后按一次 Ctrl-C 才回到 shell
+  #（"真人零操作"指研究流程零按键，不含进程退出这一步）
 expected_result: "exact bundle（启动前记录目录集合、退出后唯一新增）+ terminal_status=completed + request/profile.json 存在 + final/report.md 真实内容。全程零人工输入；若出现 AwaitingInput（hitl1/hitl2 interrupt）= 偏离契约，照实记录。"
 non_goals:
   - "不做真人 HITL1 交互（那是 020：runbook-020-tui-manual.md，同一例子由真人补交互）。"

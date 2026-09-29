@@ -21,6 +21,7 @@ Current behavior, operations, and policy. Kept in sync with the code.
 | How do I prove a change ran (lanes, receipts) and which guards can fail? | [Testing and evaluation](testing-and-evaluation.md) |
 | How are live or release defects classified and descended to deterministic regressions? | [Regression descent](regression-descent.md) |
 | How do I prepare, run, and review a manually selected cognitive case? | [Cognitive Evaluation Suite](cognitive-evaluation-suite.md) |
+| Which entry command do I run for a CLI / TUI / debugger ladder rung? | [Command cheat sheet](../COMMANDS.md) |
 | How do I run the local demo ladder end to end (001–004 / 010 / 020 / 030 / 031)? | [Local runbooks](runbooks/README.md) |
 
 ## Generated

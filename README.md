@@ -38,7 +38,7 @@ _backlog/                 任务账本
 
 ```bash
 cd deep_research_harness
-make install                              # 准备本地运行环境（等价于 uv sync + editable 装框架）
+make install                              # 准备 harness 环境（uv sync + extras；Gateway 观察路线另需 make profile-setup）
 UV_OFFLINE=1 make verify                  # 跑确定性测试 gate
 ```
 
@@ -48,11 +48,12 @@ UV_OFFLINE=1 make verify                  # 跑确定性测试 gate
 
 | 想看什么 | 去哪 |
 | --- | --- |
+| 想跑哪个入口 → 用哪条命令（CLI/TUI/调试阶梯速查） | [`deep_research_harness/COMMANDS.md`](deep_research_harness/COMMANDS.md) + [runbooks](deep_research_harness/docs/runbooks/README.md) |
 | 有哪些入口、各自是什么（Entry Surfaces 表） | [`deep_research_harness/README.md`](deep_research_harness/README.md) |
 | 每条命令怎么跑、环境怎么准备 | [`deep_research_harness/docs/local-operations.md`](deep_research_harness/docs/local-operations.md) |
 | 入口背后的架构与 composition | [`deep_research_harness/docs/runtime-architecture.md`](deep_research_harness/docs/runtime-architecture.md) |
 
-常用示例：`cd deep_research_harness && make demo`（零凭据演示）、`make demo-real-scripted`（嵌入式 smoke 校准）、`make demo-tui`（TUI 可视化）。环境未就绪时先 `make install`。
+常用示例：`cd deep_research_harness && make demo-tui-fixture`（零凭据 TUI）、`make demo-tui-real-auto`（010 自动 TUI，真人零操作）、`make demo-real-scripted`（嵌入式 smoke 校准）。注意 `make demo` 与不带 `--fixture`/`--auto` 的 `make demo-tui` 默认**交互读 stdin**，agent/非交互环境会立刻 EOF 退出——非交互零凭据跑法见 [`COMMANDS.md`](deep_research_harness/COMMANDS.md) 的 001 阶梯或 `make demo-scripted`。环境未就绪时先 `make install`。
 
 ## 给 Coding Agent
 

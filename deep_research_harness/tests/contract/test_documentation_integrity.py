@@ -78,3 +78,41 @@ def test_backlog_paths_are_checkout_relative() -> None:
     assert "deerflow/backend" in backlog
     assert "deerflow/frontend" in backlog
     assert "deerflow/_digest" not in backlog
+
+
+def test_cold_start_routing_reaches_the_entry_command_chooser() -> None:
+    """A cold start reaches the entry-command chooser from resident guidance, not by guessing.
+
+    Root AGENTS.md is the file every agent host loads before any work, so it must name the
+    cheat sheet; otherwise the caller has to infer which of several "CLI"/"TUI" surfaces is
+    meant. It must also route environment setup through the Makefile entry: a bare `uv sync`
+    installs no demo extras and touches the global uv cache the Makefile deliberately avoids.
+    """
+    agents = _text(ROOT_AGENTS)
+    assert "deep_research_harness/COMMANDS.md" in agents, (
+        "root AGENTS.md must link the entry-command chooser so a cold start can pick a command"
+    )
+    assert "make install" in agents, "root AGENTS.md must route environment setup through make install"
+    assert "uv sync" not in agents, (
+        "root AGENTS.md must not present a bare uv sync recipe: it installs no demo extras and "
+        "bypasses the Makefile's workspace uv cache"
+    )
+    assert "deep_research_harness/COMMANDS.md" in _text(ROOT_README), (
+        "the product entry page must also route to the entry-command chooser"
+    )
+    commands = _text(AGENT_ROOT / "COMMANDS.md")
+    assert "make demo-tui-real-auto" in commands, "the 010 auto-TUI entry must stay indexed in the chooser"
+    assert "demo-tui-real-auto:" in _text(MAKEFILE), "the indexed 010 auto-TUI entry must remain a real target"
+
+
+def test_commands_cheatsheet_make_targets_exist() -> None:
+    """Every backticked `make <target>` the cheat sheet hands an operator is a real target."""
+    makefile = _text(MAKEFILE)
+    targets = set(re.findall(r"^([A-Za-z0-9_.-]+):", makefile, re.MULTILINE))
+    referenced = {
+        match.group(1)
+        for span in re.findall(r"`([^`]+)`", _text(AGENT_ROOT / "COMMANDS.md"))
+        for match in re.finditer(r"\bmake\s+([a-z][a-z0-9-]*)", span)
+    }
+    missing = sorted(target for target in referenced if target not in targets)
+    assert not missing, f"COMMANDS.md names make targets that do not exist: {missing}"

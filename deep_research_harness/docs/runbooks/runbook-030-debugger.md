@@ -2,7 +2,12 @@
 
 > 前置：`make install` 已跑（含 demo-tui extra）；零凭证、零网络。
 > 入口：`./run/tui-workflow-debugger.sh --fixture`（或 `make tui-debugger DEBUGGER_ARGS="--fixture"`）。
-> 裸跑 `./run/tui-workflow-debugger.sh` 会给组合选择器（fixture / embedded / gateway）。
+> 裸跑 `./run/tui-workflow-debugger.sh` 会给组合选择器（fixture / embedded / gateway）；
+> 经 `make` 调用且 stdin 非 TTY 时不出菜单，直接取默认 fixture。
+>
+> **先看 scope 是否已被占用**：若上次是 `/detach` 走的、或会话被中断，本 scope 仍有活跃
+> bundle，第一条 `Start Step` 会被拒为 `busy`——**先输入 `/cancel` 再开始**（这是 §8 的正常
+> 第一步，不是故障）。
 > 本质：用 `DebugRunDriver` 逐边界推进同一张 fixture StateGraph，实时看 timeline 与 Node Context。
 >
 > **支持的终端尺寸：100×30**。更小的终端（例如 80×24）不会静默裁切或挤压：工作台在
@@ -128,14 +133,19 @@ topic_planning → wave0 → wave1 → wave2_synthesis → hitl2 → readiness �
   （breakpoint）。没有会话时 `/run` 会告诉你该如何开始（不留死路）。
 - **`/pause`**：请求在**下一个提交的节点边界**停下（`pause_request`）——它不会假装
   中断正在执行的节点；在已终态的会话上会明确回答"没有下一个节点边界可暂停"。
-- 语义由 `StopPolicy` 决定：默认 `stop_on_hitl` / `stop_on_terminal` 为真，所以
-  `/run` 遇到 HITL 会停下等你输入，不会冲过去。
+- 语义分两层：`StopPolicy` 的契约默认是 `stop_on_hitl` / `stop_on_terminal` 为真、
+  **`auto_hitl` 为假**（drive 会停下等人）；但**工作台的 `/run` 是连续推进，会显式打开
+  auto-hitl（LDD-008）**——撞上 hitl1 提案确认时代答「确认」继续跑，日志写
+  `⚙ drive 策略代答: 确认 ×N（auto-hitl · 操作者策略）`。要亲眼看提案：用**空 Enter 单步**
+  （advance_one 永不代答）或 `/run --no-auto-hitl`。HITL2 方向决策永远停下等人；
+  同一提案连续两次代答未被接受即停回人工。
 
 ## 6c. 看清全部能力（/help）
 
 输入 `/help` 列出工作台全部能力与入口（New Run/Start Run、单步、`/run`、`/pause`、
-HITL 回答、`/context`、`/files`、`/attach`、`/replay`、`/detach`、`/cancel`、
-命令面板、Copy details、Ctrl+C）。hint 行也常驻提示关键命令。
+HITL 回答、`/context`、`/files`、`/harness`、`/targets`、`/inspect`、`/attach`、
+`/replay`、`/detach`、`/cancel`、`!` 与 `?`（侧聊，需要侦察模型）、命令面板、
+Copy details、Ctrl+C）。hint 行也常驻提示关键命令。
 
 ## 6d. 探索 harness 与可调试对象（/harness、/targets、/inspect）
 

@@ -44,8 +44,9 @@ and the end-to-end vocabulary.
 | --- | --- | --- | --- | --- |
 | Dedicated Agent + reflected `deep_research` tool | Primary User | Current product route for a research question | The reflected public tool is fixed to all real; see [runtime architecture](docs/runtime-architecture.md) | Not an operator CLI or a fixture/demo route selector |
 | Standalone operator CLI | Contributor/operator | Local Gateway observation and explicit embedded smoke; see [local operations](docs/local-operations.md) for exact commands | `make demo-real PROFILE=<name>` uses the selected local public Gateway; embedded smoke is a separately labelled direct all-real graph | Not a versioned product CLI |
-| Demo TUI visualizer | Contributor/operator | Visualize shared lifecycle results through Gateway, embedded smoke, or fixture-graph mode | `make demo-tui PROFILE=<name>` uses the public Gateway; `make demo-tui-fixture` is a fixed fixture graph | Not a current Primary User TUI |
-| Fixture-graph demonstrations | Contributor/maintainer | Zero-credential deterministic fixture-graph proof; see [local operations](docs/local-operations.md) and [testing and evaluation](docs/testing-and-evaluation.md) | `make demo`, `make demo-scripted`, and `make demo-tui-fixture` execute a fixed fixture recipe and graph executor | Not a product result or a mode selector |
+| Demo TUI visualizer | Contributor/operator | Visualize shared lifecycle results through Gateway, embedded smoke, auto-run, or fixture-graph mode | `make demo-tui PROFILE=<name>` uses the public Gateway; `make demo-tui-real-auto` is the 010 zero-operator embedded run; `make demo-tui-fixture` is a fixed fixture graph | Not a current Primary User TUI |
+| Fixture-graph demonstrations | Contributor/maintainer | Zero-credential deterministic fixture-graph proof; see [local operations](docs/local-operations.md) and [testing and evaluation](docs/testing-and-evaluation.md) | `make demo` (interactive: reads stdin unless `--scripted`), `make demo-scripted`, and `make demo-tui-fixture` execute a fixed fixture recipe and graph executor | Not a product result or a mode selector |
+| Operator soft-bundle CLI | Contributor/operator | Zero-credential 001–004 ladder plus retained-bundle inspection; ladder authority in [COMMANDS.md](COMMANDS.md) | `make soft-bundle DEMO_ARGS="create …"` then `run`/`status`/`verify`; 001–002 zero-credential, 003–004 need credentials and network | Not a product lifecycle surface |
 | Configured-fixture local workbench | Local operator | Inspect bounded Run Bundle projections; see [local operations](docs/local-operations.md) | `make session-workbench` uses the configured fixture demo profile | Not a generic product UI or recovery client |
 | Debugger workbench | Contributor/operator | Step/continue the real graph at node boundaries, inspect captured node context and bounded workspace, attach/replay exact bundles | `run/tui-workflow-debugger.sh` (or `make tui-debugger`); `--fixture` zero-credential, `--attach <id>`/`--replay <id>` lifecycle-validated | Local operator debugger; not a current Primary User TUI |
 
@@ -97,7 +98,10 @@ used by project configuration scripts; runtime code does not acquire it implicit
 `make install` is the one explicit local environment setup command: it prepares the
 operations, demo TUI, and real-demo extras. Demo, retained-observation, workbench, and
 prepared launcher entries do not synchronize dependencies; when that prepared
-environment is absent or incomplete, run `make install`. Use `make lock-check`
+environment is absent or incomplete, run `make install`. The profile-launched Gateway
+observer route (`make demo-real PROFILE=<name>`, `make demo-tui PROFILE=<name>`)
+additionally needs `make profile-setup` and, on a fresh clone, `make profile-init
+PROFILE=<name>`. Use `make lock-check`
 separately to verify that dependency metadata matches `uv.lock`.
 
 ## Running Tests From The CLI

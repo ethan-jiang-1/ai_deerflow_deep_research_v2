@@ -5,29 +5,51 @@
 > 操作细节的权威是各 runbook 与 [`docs/local-operations.md`](docs/local-operations.md)；
 > 那里变了这里必须同一 PR 跟着改。
 >
-> 最后核对: 2026-09-12（对应当日 Makefile 形态）| 阶梯语义: [`docs/runbooks/README.md`](docs/runbooks/README.md)
+> 最后核对: 2026-09-29（对应当日 Makefile 形态）| 阶梯语义: [`docs/runbooks/README.md`](docs/runbooks/README.md)
 
 ## 0. 环境准备（一次）
 
 | 命令 | 作用 |
 | --- | --- |
-| `make install` | `uv sync`（含 operations / demo-tui / demo-real extras） |
+| `make install` | harness 侧 `uv sync`（含 operations / demo-tui / demo-real extras） |
 | `make entry-preflight` | 检查入口命令环境是否就绪（缺依赖会提示先 install） |
+| `make profile-setup` | **仅 Gateway 观察路线需要**：额外装 sibling 框架（`make -C ../deerflow install`）——`make install` 不含这一步 |
 
-真实跑需要 `.env` 三要素：`DEERFLOW_DEMO_MODEL`（非空 selector）+ 匹配模型凭证
-（如 `DEEPSEEK_API_KEY`）+ `TAVILY_API_KEY`。**不在终端检查/打印值**；各真实入口
-自带 safe preflight，只报缺失类别。
+**凭证/前置按路线分两种，别混**（细节见 [docs/local-operations.md](docs/local-operations.md)）：
+
+- **embedded / soft-bundle 路线**（001~004、010、020、031、`demo-real-embedded-smoke`、
+  `demo-real-scripted`、`run/real-research.sh`——这些目标**不带 `PROFILE=`**）：需要
+  `deep_research_harness/.env` 三要素 `DEERFLOW_DEMO_MODEL`（非空 selector）+ 匹配模型凭证
+  （如 `DEEPSEEK_API_KEY`）+ `TAVILY_API_KEY`。
+- **Gateway 观察路线**（只认**带 `PROFILE=<name>` 的两个目标**：`make demo-real PROFILE=`、
+  `make demo-tui PROFILE=`）：先 `make profile-setup` → `make profile-init PROFILE=<name>`（新 clone 才有）→
+  `make profile-dev PROFILE=<name>`。CLI/TUI 进程本身不读那三要素，**但被起的 Gateway 仍需要**
+  模型/Tavily 凭证（来自仓库根 `.env`）。profile 还必须过 observer 门，含 JSON enhanced logging
+  ——`make profile-check` **不查**这条。
+
+**不在终端检查/打印值**；各真实入口自带 safe preflight，只报缺失类别。
 
 ## 1. 跑法阶梯（选一个跑）
 
 > 命名轴：**001~004 = CLI 全自动**；**01x = 自动简化（真人零操作）/ 02x = 手动**，
 > 同 `x` 同例子。原则：从上往下，能过再下一格。
 >
+> **术语消歧（冷启动必读）**：仓库里至少有四个东西会被叫作「CLI」，**本页只用第一个**：
+> ① **001~004 的 `soft-bundle` 阶梯**（载体就是 `make soft-bundle DEMO_ARGS=…`，本页的用法）；
+> ② `make demo-real PROFILE=<name>`——harness README 的 "Standalone operator CLI"，Gateway
+> 观察路线（要凭证，且先起 profile）；③ `run/real-research.sh`——名字最像真实研究，实为
+> embedded smoke（无 Gateway 观察）；④ `CONTEXT.md` 的 Operator Interface（不点名脚本）。
+> 「TUI」也有两种：010/020 演示壳（走 `ResearchRunExperience`）与 030/031 调试工作台
+> （走 `DebugRunDriver`），互补不替代。
+>
+> **010 的「零操作」只覆盖研究流程**：TUI 没有自动退出路径——看到 `Research complete (Terminal)`
+> 后需按一次 Ctrl-C 才能回到 shell，`RUN-010.command` 还另需两次回车。这不是 bug，是当前交互面。
+>
 > 「双击入口」列的 `RUN-*.command` 是**本地 gitignored 便利件**，新 clone 中不存在；同行列出的 make 目标才是权威入口，launcher 可按 runbook 自建。
 
 | 想跑什么 | 命令 | 双击入口 | 凭证 | 详细操作单 |
 | --- | --- | --- | --- | --- |
-| 001 图通路 smoke（假数据） | `make soft-bundle DEMO_ARGS="create --name 001-demo --mode 001"` → `… run $ROOT --mode 001` | — | 无 | [runbook-001](docs/runbooks/runbook-001-easiest-fixture-graph.md) |
+| 001 图通路 smoke（假数据） | `make soft-bundle DEMO_ARGS="create --name 001-demo"` → `… run $ROOT --mode 001`（`--mode` 缺省即 001） | — | 无 | [runbook-001](docs/runbooks/runbook-001-easiest-fixture-graph.md) |
 | 002 scripted 真实链路 | 同上，`--mode 002` | — | 无 | [runbook-002](docs/runbooks/runbook-002-easy-scripted-real.md) |
 | 003 真实图全自动（minimal 意图） | 同上，`--mode 003` | — | 三要素+网络 | [runbook-003](docs/runbooks/runbook-003-medium-real-auto.md) |
 | 004 真实图全自动（默认意图，找茬用） | 同上，`--mode 004` | — | 三要素+网络 | [runbook-004](docs/runbooks/runbook-004-hard-real-auto.md) |
@@ -38,7 +60,7 @@
 | Gateway 观察路线（CLI/TUI） | 先 `make profile-dev PROFILE=demo`，再 `make demo-real PROFILE=demo` 或 `make demo-tui PROFILE=demo` | — | profile 体系 | local-operations.md |
 | 调试工作台（节点边界 step/continue + 节点上下文检查） | `./run/tui-workflow-debugger.sh`（或 `make tui-debugger`）；`--fixture` 零凭证、`--attach <id>`/`--replay <id>` 经 lifecycle 校验 | — | 无（fixture） | [runbook-030](docs/runbooks/runbook-030-debugger.md) / [runbook-031](docs/runbooks/runbook-031-debugger-embedded.md) |
 
-soft-bundle 辅助动词：`inspect` / `phases` / `status` / `verify`（对同一 `$ROOT`）。
+soft-bundle 子命令：`create` / `run` / `bind` / `clean` / `verify` / `status` / `path` / `inspect` / `phases` / `list` / `workspace-report` / `workspace-clean`（对同一 `$ROOT`；以 `--help` 为准）。
 
 ## 2. 观察与检查
 

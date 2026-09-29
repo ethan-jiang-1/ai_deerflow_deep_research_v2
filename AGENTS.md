@@ -17,6 +17,7 @@
 | 设计/准入一个变更（原则、profile、本地绑定、预算） | [`openspec/change-guidance/README.md`](openspec/change-guidance/README.md) |
 | 证据 / 门禁 / 测试资产政策 | [`openspec/governance/`](openspec/governance/)（`test-evidence-policy.md` + 组件 checker） |
 | 账本 ritual（编号、索引、计数三处一致） | [`_backlog/README.md`](_backlog/README.md) |
+| 启动某个入口（CLI 001–004 / TUI 010·020 / 调试 030·031）该用哪条命令 | harness [`COMMANDS.md`](deep_research_harness/COMMANDS.md) |
 | 运行/运维、测试与评测 | harness [`docs/README.md`](deep_research_harness/docs/README.md) |
 | 操作者手册阶梯（001–031） | harness [`docs/runbooks/README.md`](deep_research_harness/docs/runbooks/README.md) |
 | 产品方向与快速上手 | [`openspec/product/README.md`](openspec/product/README.md) |
@@ -48,9 +49,8 @@ heredoc）或单引号；`make`/`git` 之外的长消息同理。
 
 ```bash
 cd deep_research_harness
-uv sync
-.venv/bin/pip install -e ../deerflow/backend/packages/harness
-.venv/bin/python -m pytest tests/
+make install              # 环境准备（含 operations / demo-tui / demo-real extras）
+UV_OFFLINE=1 make verify  # 完整确定性门；窄 lane 看下表路由
 ```
 
 ## 边界铁律

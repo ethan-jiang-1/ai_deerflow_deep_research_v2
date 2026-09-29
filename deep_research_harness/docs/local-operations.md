@@ -37,7 +37,10 @@ Bundle, validate a Handle, or provide a lifecycle action.
 
 Run `make install` before any local demo, retained-observation, workbench, or prepared
 all-real launcher entry. It prepares the complete local optional dependency set; these
-ordinary entries never synchronize it themselves. Run `make lock-check` separately
+ordinary entries never synchronize it themselves. The profile-launched Gateway observer
+route additionally needs `make profile-setup` — it installs the sibling framework
+environment that `make install` does not touch — and `make profile-init PROFILE=<name>`
+on a fresh clone (`profiles/` is not committed). Run `make lock-check` separately
 when checking that dependency metadata agrees with the tracked lockfile.
 
 `make debug-scripted-real-workflow` is an operator-only local debug command, not a
@@ -162,14 +165,27 @@ real observer routes. Start the selected profile Gateway first with
 `make profile-dev PROFILE=<name>`. The observer profile must pass its JSON logging,
 durable SQLite history, public entry, and direct local Gateway health checks before it
 creates a thread. Model and web credentials belong to that launched Gateway profile;
-the CLI and TUI do not require local `DEERFLOW_DEMO_MODEL` or `TAVILY_API_KEY` values.
+the CLI and TUI processes do not read local `DEERFLOW_DEMO_MODEL` or `TAVILY_API_KEY`
+values themselves — the launched Gateway still needs those credentials, from the root
+`.env`.
 They use only public Gateway turns and returned typed lifecycle results, so assistant
 text, heartbeat, gaps, and stream end do not create a result or a second controller.
+
+Observer JSON logging is a **manual prerequisite that `profile-init` does not write**:
+profile configuration is copied from the root `config.yaml`, whose shipped template has
+`logging.enhance.enabled: false` / `format: text`, while the observer gate requires
+`enabled: true` / `format: json`. Until that profile value is corrected and the Gateway
+restarted, the observer route is refused with a generic "the selected local Gateway
+profile is not ready" — and `make profile-check PROFILE=<name>` does **not** check
+logging, so a green check does not cover this gate. Fix the profile before debugging
+anything else.
 
 For example:
 
 ```bash
-make profile-dev PROFILE=demo
+make profile-init PROFILE=demo      # fresh clone: profiles/ is not committed
+# edit profiles/demo/config.yaml: logging.enhance -> enabled: true, format: json
+make profile-dev PROFILE=demo       # terminal A: launch the Gateway (foreground)
 make demo-real PROFILE=demo DEMO_ARGS='--question "Compare battery storage costs"'
 ```
 

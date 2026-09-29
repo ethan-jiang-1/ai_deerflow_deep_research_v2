@@ -46,7 +46,7 @@
 | 002 | [`runbook-002-easy-scripted-real.md`](runbook-002-easy-scripted-real.md) | 花（少） | 无 | 稍难：用脚本化的真实控制链路跑一遍，验证“真适配器+门+持久化通不通”，且会产出 Markdown report | `What is one bounded fact about grid energy storage?` |
 | 003 | [`runbook-003-medium-real-auto.md`](runbook-003-medium-real-auto.md) | 花（中） | `.env` 三个变量（`DEEPSEEK_API_KEY`、`TAVILY_API_KEY`、`DEERFLOW_DEMO_MODEL`）+ 网络 | 更难：接真实模型和网页工具，全自动跑完，不等人（声明 minimal 意图 → 单 topic / 每 wave 1 work unit） | `What is one bounded fact about China's EV battery market in 2024?` |
 | 004 | [`runbook-004-hard-real-auto.md`](runbook-004-hard-real-auto.md) | 花（多） | 同 003 的 `.env` 三变量 + 网络 | 最难：真机全自动跑**默认意图**（不声明 minimal），固定比较题压多 topic 链路，专门用来找茬 | `Compare China and US EV battery market in 2024.` |
-| 010 | [`runbook-010-tui-auto.md`](runbook-010-tui-auto.md) + `RUN-010.command` | 花（中） | 同 003 的 `.env` 三变量 + `make install`（含 demo-tui extra）+ 网络（**真人零操作**） | **同一例子的 TUI 自动全跑**——真人只看不动手，hitl1/hitl2 全自动（scripted 默认产品路径），验证"TUI 一层真实图能自主到终态"。入口 `make demo-tui-real-auto`（BUG-061 → change `add-demo-tui-auto-entry`，2026-08-25 归档） | 同 003：`What is one bounded fact about China's EV battery market in 2024?` |
+| 010 | [`runbook-010-tui-auto.md`](runbook-010-tui-auto.md) + `RUN-010.command` | 花（中） | 同 003 的 `.env` 三变量 + `make install`（含 demo-tui extra）+ 网络（**真人零操作**指研究流程零按键；TUI 无自动退出，看到 `Research complete (Terminal)` 后需按一次 Ctrl-C 收尾） | **同一例子的 TUI 自动全跑**——真人只看不动手，hitl1/hitl2 全自动（scripted 默认产品路径），验证"TUI 一层真实图能自主到终态"。入口 `make demo-tui-real-auto`（BUG-061 → change `add-demo-tui-auto-entry`，2026-08-25 归档） | 同 003：`What is one bounded fact about China's EV battery market in 2024?` |
 | 020 | [`runbook-020-tui-manual.md`](runbook-020-tui-manual.md) + `RUN-020.command` | 花（中） | 同 003 的 `.env` 三变量 + `make install`（含 demo-tui extra）+ 网络 + **真人坐镇** | 手动 TUI：**与 010 同一例子**，真人 HITL1 交互——**启动后先进侦察模式**（看环境/闲聊，不触发研究），点「Start Deep Research」或说触发语才启动；hitl1 里有快捷修订按钮/输入回显/修订确认，修订 profile proposal 并显式确认（semantic intake 真模型分类你的自由文本）；HITL2 是自主 continuation 不需要人。启动器不再提供 Stage A 选择（010 已覆盖通路）。language CHOICE 不在本 run（条件性 B2，前置 BUG-060） | 同 003：`What is one bounded fact about China's EV battery market in 2024?` |
 | **030** | [`runbook-030-debugger.md`](runbook-030-debugger.md) | 无 | **调试工作台（fixture 零凭证）**——用 `DebugRunDriver` 逐边界推进 fixture 图：每次 Enter 恰好提交一个逻辑节点（**支持终端尺寸 100×30**，更小则折叠分栏并明确告知）；`/context` 在专门分栏查看 Node Context（fixture 模式下 deterministic node 无 LLM 调用所以为空，属预期）；`/cancel` 放弃活跃 bundle 以便重开，`/detach` 干净退出不触发 cancel；每一步由 `make tui-journey` 断言。面板始终给出**当前姿态 + 下一节点 + 下一步合法动作**（无会话时明确「无调试会话」，不留旧姿态）；新会话/附加/回放各有按钮、slash、启动参数、命令面板**四条等价入口**；上下文与工作区为**按需分栏**（`/files` 消费 `OperatorWorkspaceReader` typed pages，只渲染 alias 与相对路径）；**与 010/020 的本质区别**：010/020 走 shared experience 的 start/resume 路径；030 走独立 `DebugRunDriver`，每帧来自 checkpoint + journal，不含推断。用途：定位"哪一层出了问题"，修复后 New Bundle 重跑验证。详见 §03x 章节 | 自定义问题 |
 | **031** | [`runbook-031-debugger-embedded.md`](runbook-031-debugger-embedded.md) | 花（中） | 同 003 的 `.env` 三变量 + 网络 | **调试工作台（embedded 真实图）**——与 030 相同的逐边界推进，但跑在**真实模型和 Tavily**上。wave0 等 LLM-bearing node 在 `agent.ainvoke` 前捕获 **Node Context Snapshot**（exact initial prompt、runtime MD bytes、enforced tool names/budget、mount roots），`/context` 可逐步查看。raw provider histories 标 `NOT RETAINED`。**用途**：调试真实图的 prompt/tool/budget 问题——看模型"到底收到了什么指令、允许用什么工具" | 自定义问题 |
@@ -307,7 +307,7 @@ inspect 手段（看 workspace 结构 / 查 bundle / 拿日志），runbook 里�
 
 ## 前置
 
-- 001 / 002：零前置，不联网，花费少。
+- 001 / 002：零凭证、零网络，花费少（环境需先 `make install` 过一次——入口带 `entry-preflight` 硬门）。
 - 003：需要本地有真实模型/Tavily 凭据（不需要 Gateway）。
 - 004：同 003 的凭据前置（`.env` 三变量 + 网络）。入口已定为 embedded
   smoke（`soft-bundle run <root> --mode 004`，显式 `--profile-intent none`
@@ -315,7 +315,8 @@ inspect 手段（看 workspace 结构 / 查 bundle / 拿日志），runbook 里�
 
 ```bash
 cd deep_research_harness
-make profile-dev PROFILE=demo
+make profile-dev PROFILE=demo          # 终端 A：起 Gateway（前台阻塞）
+make demo-real PROFILE=demo            # 终端 B：观察路线 CLI
 ```
 
 ## 避坑
