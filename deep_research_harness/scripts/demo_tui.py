@@ -1034,9 +1034,9 @@ class DeepResearchDemoTUI(App[None]):
         self._last_debug_hint = ""
         self._pending_timer: Any | None = None
         self._pending_started = 0.0
-        self._drive_pulse_timer: Any | None = None
-        self._drive_started = 0.0
-        self._drive_pulse_auto = False
+        self._liveness_timer: Any | None = None
+        self._liveness_started = 0.0
+        self._liveness_label = ""
         self._feed_watermark = 0
 
     def _node_context_wiring(self) -> dict[str, Any]:
@@ -2757,38 +2757,91 @@ class DeepResearchDemoTUI(App[None]):
             if breakpoint
             else StopPolicy(auto_hitl=auto_hitl)
         )
-        self._start_drive_pulse(auto_hitl)
+        result = await self._execute_debug(
+            DebugCommand(
+                kind="drive_until",
+                bundle_id=self._debug_bundle_id,
+                command_id=f"run-{int(time.time() * 1000)}",
+                expected_cursor=session.cursor.token(),
+                breakpoint=policy,
+            ),
+            liveness=f"连续推进中（auto-hitl {'开启' if auto_hitl else '关闭'}）",
+        )
+        if result is not None:
+            await self._render_debug_result(result)
+
+    def _start_liveness(self, label: str) -> None:
+        """Honest liveness while any debug command is in flight.
+
+        A long real-model operation must never masquerade as a frozen stop:
+        the posture pane pulses the label, the elapsed time, and the bound
+        Bundle's own journal-backed progress lines (a mini watch window).
+        """
+        self._liveness_started = time.monotonic()
+        self._liveness_label = label
+        if self._liveness_timer is None:
+            self._liveness_timer = self.set_interval(2.0, self._tick_liveness)
+        # The first pulse must render immediately - the interval alone would
+        # leave the pre-command posture visible for up to two seconds.
+        asyncio.create_task(self._tick_liveness())
+
+    async def _tick_liveness(self) -> None:
+        seconds = int(time.monotonic() - self._liveness_started)
+        lines = [f"姿态: running · {self._liveness_label}… 已 {seconds}s（/pause=下一边界停）"]
+        adapter = self._adapter
+        root = getattr(adapter, "bundle_root", None) if adapter is not None else None
+        if root is not None and self._debug_bundle_id:
+            try:
+                progress = await asyncio.to_thread(live_progress_lines, root, bundle_id=self._debug_bundle_id)
+            except (OSError, ValueError):
+                progress = ()
+            lines.extend(f"   {line}" for line in progress[-3:])
+        self._render_inspect(tuple(lines))
+
+    def _stop_liveness(self) -> None:
+        if self._liveness_timer is not None:
+            self._liveness_timer.stop()
+            self._liveness_timer = None
+
+    async def _execute_debug(self, command: Any, *, liveness: str) -> Any | None:
+        """Run one debug command with honest liveness and a rendered failure.
+
+        A node that raises inside the graph must surface in the workbench - a
+        silent worker death would leave the operator staring at a stale stop.
+        """
+        driver = self._debug_driver
+        if driver is None or self._debug_bundle_id is None:
+            return None
+        self._start_liveness(liveness)
         try:
-            result = await driver.execute(
-                DebugCommand(
-                    kind="drive_until",
-                    bundle_id=self._debug_bundle_id,
-                    command_id=f"run-{int(time.time() * 1000)}",
-                    expected_cursor=session.cursor.token(),
-                    breakpoint=policy,
-                )
-            )
+            return await driver.execute(command)
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:  # noqa: BLE001 - every failure must render
+            await self._render_debug_failure(exc)
+            return None
         finally:
-            self._stop_drive_pulse()
-        await self._render_debug_result(result)
+            self._stop_liveness()
 
-    def _start_drive_pulse(self, auto_hitl: bool) -> None:
-        """Pulse honest liveness while a continuous drive is in flight."""
-        self._drive_started = time.monotonic()
-        self._drive_pulse_auto = auto_hitl
-        if self._drive_pulse_timer is None:
-            self._drive_pulse_timer = self.set_interval(2.0, self._tick_drive_pulse)
-        self._tick_drive_pulse()
-
-    def _tick_drive_pulse(self) -> None:
-        seconds = int(time.monotonic() - self._drive_started)
-        policy = "auto-hitl 开启" if self._drive_pulse_auto else "auto-hitl 关闭"
-        self._render_inspect((f"姿态: running · 连续推进中… 已 {seconds}s（{policy} · /pause=下一边界停）",))
-
-    def _stop_drive_pulse(self) -> None:
-        if self._drive_pulse_timer is not None:
-            self._drive_pulse_timer.stop()
-            self._drive_pulse_timer = None
+    async def _render_debug_failure(self, exc: Exception) -> None:
+        """Render one debug-command failure with the typed reason and the real
+        post-failure posture, so recovery actions are readable."""
+        log = self.query_one("#log", RichLog)
+        log.write(Text(f"✗ 调试命令执行失败: {type(exc).__name__}: {exc}", style="red"))
+        log.write(
+            Text(
+                "  会话保持原姿态；/cancel=放弃 bundle 释放 scope · /detach=干净退出 · /help 看恢复动作。",
+                style="red",
+            )
+        )
+        try:
+            driver = self._debug_driver
+            if driver is not None and self._debug_bundle_id is not None:
+                session = await driver.session_snapshot(self._debug_bundle_id)
+                if session is not None:
+                    self._render_inspect((f"姿态: {session.posture}（命令失败后的真实姿态）",))
+        except (OSError, RuntimeError, ValueError):
+            pass
 
     async def _debug_rerun(self) -> None:
         """LDD-007/RED-016: re-run the last committed node at a stopped boundary."""
@@ -2804,13 +2857,14 @@ class DeepResearchDemoTUI(App[None]):
             self.query_one("#log", RichLog).write(
                 Text("↻ 重跑该节点（embedded 组合：真实模型调用将再次计费）", style="yellow")
             )
-        result = await driver.execute(
+        result = await self._execute_debug(
             DebugCommand(
                 kind="rerun_node",
                 bundle_id=self._debug_bundle_id,
                 command_id=f"rerun-{int(time.time() * 1000)}",
                 expected_cursor=session.cursor.token(),
-            )
+            ),
+            liveness="重跑节点中",
         )
         await self._render_debug_result(result)
 
@@ -2856,15 +2910,17 @@ class DeepResearchDemoTUI(App[None]):
             # There is no next boundary to pause at; say so instead of claiming it.
             log.write(Text("会话已终态：没有下一个节点边界可暂停。", style="yellow"))
             return
-        result = await driver.execute(
+        result = await self._execute_debug(
             DebugCommand(
                 kind="pause_request",
                 bundle_id=self._debug_bundle_id,
                 command_id=f"pause-{int(time.time() * 1000)}",
                 expected_cursor=session.cursor.token(),
-            )
+            ),
+            liveness="请求暂停中",
         )
-        await self._render_debug_result(result)
+        if result is not None:
+            await self._render_debug_result(result)
         if result.denied is None:
             log.write(Text("已请求暂停：将在下一个提交的节点边界停下。", style="cyan"))
 
@@ -2878,15 +2934,17 @@ class DeepResearchDemoTUI(App[None]):
         session = await driver.session_snapshot(self._debug_bundle_id)
         if session is None:
             return
-        result = await driver.execute(
+        result = await self._execute_debug(
             DebugCommand(
                 kind="advance_one",
                 bundle_id=self._debug_bundle_id,
                 command_id=f"advance-{int(time.time() * 1000)}",
                 expected_cursor=session.cursor.token(),
-            )
+            ),
+            liveness="单步推进中",
         )
-        await self._render_debug_result(result)
+        if result is not None:
+            await self._render_debug_result(result)
 
     async def _debug_command(self, value: str) -> None:
         """Map composer input to the debug session's current posture."""
@@ -2901,13 +2959,14 @@ class DeepResearchDemoTUI(App[None]):
         if session.posture == "terminal" and not value.startswith("/"):
             # The documented terminal action: a new question starts a new run.
             # Release the finished session cleanly, then start over the draft.
-            await driver.execute(
+            await self._execute_debug(
                 DebugCommand(
                     kind="detach",
                     bundle_id=self._debug_bundle_id,
                     command_id=f"detach-{int(time.time() * 1000)}",
                     expected_cursor=session.cursor.token(),
-                )
+                ),
+                liveness="收尾中",
             )
             self._debug_driver = None
             self._debug_bundle_id = None
@@ -2927,15 +2986,18 @@ class DeepResearchDemoTUI(App[None]):
             answer_text = value
         else:
             kind = "advance_one"
-        result = await driver.execute(
+        result = await self._execute_debug(
             DebugCommand(
                 kind=kind,  # type: ignore[arg-type]
                 bundle_id=self._debug_bundle_id,
                 command_id=f"{kind}-{int(time.time() * 1000)}",
                 expected_cursor=session.cursor.token(),
                 answer_text=answer_text,
-            )
+            ),
+            liveness="回答提交中" if kind == "answer" else "单步推进中",
         )
+        if result is None:
+            return
         if kind == "detach" and result.denied is None:
             self._debug_driver = None
             self._debug_bundle_id = None

@@ -2086,3 +2086,121 @@ async def test_debugger_wiring_hands_the_node_context_holder_to_the_runtime(
     assert all(handed is app._node_context_holder for handed in seen), (
         f"the runtime builds must carry the workbench holder, got {seen!r}"
     )
+
+
+@pytest.mark.asyncio
+async def test_debugger_steps_through_every_fixture_node(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """The debugger can walk the WHOLE graph one boundary at a time: every
+    committed node renders and every stop is steppable, ending at terminal."""
+    _install_isolated_fixture_adapter(monkeypatch, bundle_root=tmp_path / "demo-runs")
+    app = DeepResearchDemoTUI(mode="fixture", debug_mode=True)
+    async with app.run_test(size=(110, 34)) as pilot:
+        await _drive_fixture_debugger_to_hitl(app, pilot)
+        composer = app.query_one("#composer", demo_tui.Input)
+        composer.value = "depth: standard"
+        await pilot.pause()
+        await pilot.press("enter")
+        for _ in range(80):
+            await pilot.pause()
+            if "paused_at_boundary" in app.query_one("#inspect").render().plain:
+                break
+            await asyncio.sleep(0.05)
+        for _ in range(40):
+            await pilot.pause()
+            if "姿态: terminal" in app.query_one("#inspect").render().plain:
+                break
+            composer.value = ""
+            await pilot.pause()
+            await pilot.press("enter")
+            for _ in range(120):
+                await pilot.pause()
+                if "姿态: terminal" in app.query_one("#inspect").render().plain:
+                    break
+                await asyncio.sleep(0.05)
+        assert "姿态: terminal" in app.query_one("#inspect").render().plain, "the walk must reach terminal"
+        walked = app._rich_log_text()
+        for node in (
+            "bootstrap",
+            "hitl1",
+            "topic_planning",
+            "wave0",
+            "wave1",
+            "wave2_synthesis",
+            "readiness",
+            "final_delivery",
+        ):
+            assert f"✓ {node} 提交" in walked, f"the walk must commit {node}"
+
+
+@pytest.mark.asyncio
+async def test_debug_failure_renders_and_keeps_the_posture(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """A debug command whose execution raises must render in the workbench -
+    a silent worker death would leave the operator staring at a stale stop."""
+    _install_isolated_fixture_adapter(monkeypatch, bundle_root=tmp_path / "demo-runs")
+    app = DeepResearchDemoTUI(mode="fixture", debug_mode=True)
+    async with app.run_test(size=(110, 34)) as pilot:
+        await _drive_fixture_debugger_to_hitl(app, pilot)
+        driver = app._debug_driver
+        assert driver is not None
+
+        async def _explode(command):
+            raise RuntimeError("provider exploded mid-node")
+
+        monkeypatch.setattr(driver, "execute", _explode)
+        composer = app.query_one("#composer", demo_tui.Input)
+        composer.value = "depth: standard"
+        await pilot.pause()
+        await pilot.press("enter")
+        for _ in range(60):
+            await pilot.pause()
+            if "✗ 调试命令执行失败" in app._rich_log_text():
+                break
+            await asyncio.sleep(0.05)
+        log = app._rich_log_text()
+        assert "✗ 调试命令执行失败" in log, "the failure must render"
+        assert "provider exploded mid-node" in log, "the typed reason must render"
+        assert "姿态: awaiting_hitl" in app.query_one("#inspect").render().plain, (
+            "the failure must refresh the real posture, not leave it stale"
+        )
+
+
+@pytest.mark.asyncio
+async def test_debug_advance_pulses_liveness_while_running(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """A slow single step must pulse honest liveness - a long real-model node
+    can never masquerade as a frozen stop."""
+    _install_isolated_fixture_adapter(monkeypatch, bundle_root=tmp_path / "demo-runs")
+    app = DeepResearchDemoTUI(mode="fixture", debug_mode=True)
+    async with app.run_test(size=(110, 34)) as pilot:
+        await _drive_fixture_debugger_to_hitl(app, pilot)
+        driver = app._debug_driver
+        assert driver is not None
+        original = driver.execute
+
+        async def _slow_then_real(command):
+            await asyncio.sleep(2.5)
+            return await original(command)
+
+        monkeypatch.setattr(driver, "execute", _slow_then_real)
+        composer = app.query_one("#composer", demo_tui.Input)
+        composer.value = "depth: standard"
+        await pilot.pause()
+        await pilot.press("enter")
+        await asyncio.sleep(0.8)
+        assert "回答提交中" in app.query_one("#inspect").render().plain, (
+            f"the slow answer must pulse liveness: {app.query_one('#inspect').render().plain!r}"
+        )
+        for _ in range(120):
+            await pilot.pause()
+            if "✓ hitl1 提交" in app._rich_log_text():
+                break
+            await asyncio.sleep(0.05)
+        assert "✓ hitl1 提交" in app._rich_log_text(), "the step must still complete"

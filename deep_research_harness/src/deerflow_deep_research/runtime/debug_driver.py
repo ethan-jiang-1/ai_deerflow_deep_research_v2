@@ -499,21 +499,20 @@ class DebugRunDriver:
             if last.snapshot is None:
                 return last
             posture = last.snapshot.posture
-            cursor = last.snapshot.cursor
             if posture == "terminal":
                 break
             if posture == "awaiting_hitl":
                 break
             if pause_pending:
                 break
-            if (
-                policy.breakpoint_after
-                and cursor.next_nodes
-                and policy.breakpoint_after in (node for node in cursor.next_nodes)
-            ):
-                break
-            if policy.breakpoint_after and last.committed_node == policy.breakpoint_after:
-                break
+            if policy.breakpoint_after:
+                # A single advance may span several node visits (a committed
+                # node followed by an interrupting one), so the breakpoint
+                # matches when the named node has VISITED per the durable
+                # trace - never only when it happens to be the last visit.
+                state_now = await self._lifecycle.read_state(bundle)
+                if policy.breakpoint_after in tuple(getattr(state_now, "execution_trace", None) or ()):
+                    break
         return last  # type: ignore[return-value]
 
     async def _auto_answer(

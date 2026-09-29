@@ -99,3 +99,25 @@ UV_OFFLINE=1 .venv/bin/python -m pytest tests/live/test_debugger_embedded_live.p
 auto-hitl 代答（日志明示）→ 真实 wave0 捕获（Node Context）→ terminal（真图若有
 HITL2 由探针按人答 `proceed`）。人眼层面的体验（排版、节奏、自己的研究问题）仍属
 操作者窗口；观察到的缺陷带日志（Copy details）+ bundle id 回来立卡。
+
+## 8. 经典 debugger 概念对照与已知边界
+
+| 经典概念 | 工作台对应 | 状态 |
+|---|---|---|
+| 断点 | `/pause` + HITL 天然停点 | ✅ |
+| 单步 | Enter（空 composer = advance_one） | ✅ |
+| 继续 | `/run`（默认 auto-hitl 代答，`--no-auto-hitl` 关） | ✅ |
+| 跑到指定节点 | `/run <节点>`（11 个逻辑节点全部可作目标；含中断型节点=停在其请求处） | ✅ |
+| 重执行帧 | `/rerun`（重跑最后已提交节点，落到下一停点） | ✅ |
+| 观察窗 | `/context`（真实快照+下钻）· `/files` · `/inspect` · `/harness` · `/targets` | ✅ |
+| 断点处对话 | HITL 类型化卡片 + `?` 侧聊 | ✅ |
+| 回放 | `/replay` 只读帧回放 | ✅ |
+| 恢复 | `--attach <id>` 接回暂停 bundle · 失败渲染真实姿态与恢复动作 | ✅ |
+| 长操作不装死 | 所有调试命令执行期间姿态栏脉搏（已耗时 + journal 进度行） | ✅ |
+| 条件断点 | — | ❌ Stage 3 |
+| 改输入重跑（edit-and-continue） | — | ❌ Stage 3 |
+| 注入/状态手术 | — | ❌ Stage 3 |
+
+**已知粒度边界**：单步/断点的粒度是**逻辑节点**（wave0 内部多个并行 work unit 作为
+一个边界一次提交；其内部进度由执行期脉搏行与提交后的 `/inspect` work-unit 记录呈现）。
+按 work-unit 逐步进需要引擎级改动，属 Stage 3，未立项。

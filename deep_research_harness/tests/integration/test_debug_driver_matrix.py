@@ -1075,3 +1075,36 @@ async def test_open_start_carries_the_operator_question_into_the_graph(tmp_path:
     assert values.get("request_text") == question, (
         f"the graph must run the operator's question, got {values.get('request_text')!r}"
     )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "node",
+    ["bootstrap", "topic_planning", "wave0", "wave1", "wave2_synthesis", "hitl2", "readiness", "final_delivery"],
+)
+async def test_drive_until_stops_after_every_named_node(tmp_path: Path, node: str) -> None:
+    """LDD-003: every logical node of the composition is a legal breakpoint
+    target - drive_until stops right after that node commits."""
+    driver, _lifecycle = _make_driver(tmp_path, owner="op-1")
+    opened = await driver.open_start(
+        StartRequest(question="Compare storage", mode="step", owner="op-1", command_id="start-00000001")
+    )
+    bundle_id = opened.snapshot.bundle_id
+    driven = await driver.execute(
+        DebugCommand(
+            kind="drive_until",
+            bundle_id=bundle_id,
+            command_id=f"drive-{node}",
+            expected_cursor=opened.snapshot.cursor.token(),
+            breakpoint=StopPolicy(breakpoint_after=node, auto_hitl=True),
+        )
+    )
+    assert driven.denied is None, driven.message
+    assert driven.snapshot is not None
+    assert driven.snapshot.posture in {"paused_at_boundary", "awaiting_hitl", "terminal"}
+    bundle = await _lifecycle.resolve(
+        scope=(driver._envelope.effective_user_id, driver._envelope.outer_thread_id),
+        bundle_id=__import__("deerflow_deep_research.domain.bundle", fromlist=["BundleId"]).BundleId(bundle_id),
+    )
+    state = await _lifecycle.read_state(bundle)
+    assert node in tuple(state.execution_trace or ()), f"the drive must have visited {node}: {state.execution_trace!r}"
