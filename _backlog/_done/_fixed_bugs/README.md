@@ -104,7 +104,9 @@ bug 修完后从 `_backlog/bugs/` 通过 `git mv` 移入本目录：
 | BUG-077 | 2026-09-28 | 调试器组合的 embedded 首屏被 020 侦察屏覆盖——`_initialize` 的 `elif embedded_smoke:` 无 debug_mode 守卫，覆盖工作台首屏并置 `_onboarding=True` 把 composer Enter 路由进侦察聊天；recon 分支加 `not self.debug_mode`，mount 探针 `ONBOARDING: True→False` 红转绿（change `repair-embedded-tui-first-live-defects`） |
 | BUG-078 | 2026-09-29 | debug 工作台纯文本提交后 composer 不清空——第二次 Enter 把同一段文字再消费一轮答案或静默推进节点；纯文本路径补上与 slash 路径一致的清空，pilot 断言提交后 `composer.value == ""` 且重复 Enter 无二次回显/提交（change `debugger-hitl-conversation-visibility`） |
 
-**Next available bug ID: BUG-079**
+| BUG-079 | 2026-09-29 | 调试器启动的真图研究一直跑在回退问题 "Research" 上——open_start 不存 question，图的 start_message 回退；session 补存 question，checkpoint values 的 request_text 以唯一标记问题红绿锁定（live 自证探针发现） |
+| BUG-080 | 2026-09-29 | embedded 调试工作台 Node Context 恒空——build_demo_runtime 两个调用点都没传 recorder holder，real 路线 bridge 无 recorder；调用点补传 holder，live 探针断言 page.total>=1 锁定 |
+**Next available bug ID: BUG-081**
 
 ---
 
