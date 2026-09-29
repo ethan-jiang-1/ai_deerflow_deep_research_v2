@@ -1998,3 +1998,29 @@ async def test_debug_hitl_feedback_and_consumption_visible(
         log = app._rich_log_text()
         assert "回答已消费" in log and "未被接受" in log, "the consumption outcome must render"
         assert "剩余 2 轮" in log, "the remaining rounds must ride the consumption line"
+
+
+@pytest.mark.asyncio
+async def test_debug_new_run_button_writes_once_per_click(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """The live window's paired "已有活跃调试会话/用法" lines came from two
+    invocations, not a double write: one click dispatches exactly one worker
+    and each refusal message is written once (guards against event double-fire
+    regressing into phantom duplicates)."""
+    _install_isolated_fixture_adapter(monkeypatch, bundle_root=tmp_path / "demo-runs")
+    app = DeepResearchDemoTUI(mode="fixture", debug_mode=True)
+    async with app.run_test(size=(110, 34)) as pilot:
+        await _drive_fixture_debugger_to_hitl(app, pilot)
+        # One press of the New Run button against the live session: the refusal
+        # must appear exactly once in the log.
+        await pilot.click("#debug-new-run")
+        for _ in range(40):
+            await pilot.pause()
+            if "已有活跃调试会话" in app._rich_log_text():
+                break
+            await asyncio.sleep(0.05)
+        await asyncio.sleep(0.3)
+        await pilot.pause()
+        assert app._rich_log_text().count("已有活跃调试会话") == 1, app._rich_log_text()[-300:]

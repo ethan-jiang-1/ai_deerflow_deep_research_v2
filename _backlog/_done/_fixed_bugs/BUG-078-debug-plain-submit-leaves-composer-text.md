@@ -38,5 +38,6 @@ composer 输入回答 + Enter，断言 `composer.value == ""`；修复前残留�
 ## 修复关联
 
 change `debugger-hitl-conversation-visibility`（Stage 1）一并交付；同场的
-"已有活跃调试会话/用法"成对消息经无头单击验证为操作者连点（每路径每调用只写
-一次），不在本卡范围。
+"已有活跃调试会话/用法"成对消息经守卫测试
+`test_debug_new_run_button_writes_once_per_click` 锁定为操作者连点（一次点击恰好
+派发一个 worker、每条拒绝消息只写一次——成对只能来自两次触发），不在本卡范围。
