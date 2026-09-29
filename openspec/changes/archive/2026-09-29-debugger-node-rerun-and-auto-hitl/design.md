@@ -33,22 +33,31 @@
 
 ## Decisions
 
-1. **节点重跑走 lifecycle 准入的新控制路径（路线 a）**，不直接用 langgraph
-   time-travel（路线 c 违反字段所有权），不伪装成 generation rerun（路线 b 粒度
-   错误：会重跑整图一代）。形态：controller 提供 node 级 `retry_last_boundary`
-   准入——回滚该节点本次 visit 的 committed 产出（execution_trace 尾帧、work
-   unit attempt 记账、相关 evidence 指针），重入该节点 superstep。**本 change
-   的第一个任务是可行性 spike**：controller 是否能以事务方式回滚尾帧而不破坏
-   journal/evidence 不变量；不能则降级为"显式说明的整代 rerun 快捷方式"并回报
-   用户重审范围。
-2. **auto_hitl 是 drive 策略不是命令**：`StopPolicy.auto_hitl: bool = True`
-   （加法默认值；单步 advance_one 永不代答）。代答 = 驱动以操作者名义提交
-   `answer(「确认」)`，走既有 semantic intake 与轮次会计；日志逐条写
-   `⚙ drive 策略代答: 确认（auto-hitl）`。停止条件：同一 request 连续 2 次
-   代答未被接受（提案不完整/语义拒绝）→ 停回人工停点并渲染 hitl1 回复。
+1. **节点重跑走 lifecycle 准入（路线 a，spike 已裁决可行，2026-09-29）**。机制全部
+   落实：(a) `state.json` 的 phase/trace/terminal 是**图值的镜像投影**
+   （`sync_graph_progress` 只拷贝）→ 回滚 = checkpoint fork + 重新投影，无独立
+   权威需要外科手术；(b) checkpointer 是 `AsyncSqliteSaver`（完整历史）且
+   `RootBoundedCheckpointSaver.__getattr__` 全委托 → `aget_state_history` 可用；
+   (c) attempt 序号在图值（`next_attempt_ordinal_by_work_id`）→ fork 自然回退，
+   重跑同 id 重写 work 目录（容忍度由红测试实证）。形态：lifecycle 新增
+   `rewind_last_boundary` 准入——校验停点姿态后 fork 到最后已提交节点之前的
+   checkpoint、重投影 state、追加一条 rewind journal fact（append-only 不删除）；
+   驱动 `rerun_node` = 该准入 + 同一租约内重新执行同一节点。已知细节：hitl1 重跑
+   复用确定性 request_id（序号 fork 回退）→ 工作台卡片去重键带帧号，durable
+   pending 由重投影自然回退。
+2. **auto_hitl 是显式 drive 策略**：`StopPolicy.auto_hitl: bool = False`（驱动契约
+   默认显式关）；工作台 `/run` 与 Start Run **默认传 True**（用户拍板"默认自动+
+   可停"），`/run --no-auto-hitl` 显式关。单步 advance_one 永不代答；HITL2 方向
+   决策永不代答。代答 = 驱动以操作者名义提交 `answer(「确认」)` 走既有 semantic
+   intake；驱动快照携带代答事实供工作台逐条明示。停止条件（纯函数
+   `auto_hitl_should_stop` 便于单元锁）：同一 drive 内连续 2 次代答未被接受
+   （feedback kind ∈ {clarification, semantic_invalid, semantic_unavailable}）
+   → 停回人工停点并渲染 hitl1 回复。
 3. **authority 台账**：重跑与代答都经既有 lease + cursor 幂等（expected_cursor
-   携带、command_id 去重）；代答不产生新的写权限，重跑的回滚写入全部由
-   controller 在准入内完成。
+   携带、command_id 去重）；fork/重投影/rewind fact 全部发生在 lifecycle 准入内，
+   驱动不获得任何新写权限。
+4. **REQ 登记**：新 req id `LDD-007`、`LDD-008`、`RED-016` 在 apply 时写入
+   `openspec/governance/req-registry.yaml`（一行式条目，跟 RED-015/LDD-006 同格式）。
 
 ## Control Placement Review
 
