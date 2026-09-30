@@ -506,6 +506,7 @@ class BundleLifecycle:
 
         from deerflow_deep_research.runtime.checkpoint import build_deep_research_checkpoint_serde
 
+        body_entered = False
         try:
             async with AsyncSqliteSaver.from_conn_string(str(database_path)) as saver:
                 # The Bundle-contained graph store crosses the same explicit
@@ -520,7 +521,12 @@ class BundleLifecycle:
                 # scoped out by the wrapper (REG-008 + real-run conversations).
                 from deerflow_deep_research.runtime.checkpoint import RootBoundedCheckpointSaver
 
+                body_entered = True
+                # A caller-body failure (graph execution, node guards) crosses
+                # the yield as the caller's own causal fact; the availability
+                # wrapping below owns setup only (BUG-081).
                 yield RootBoundedCheckpointSaver(saver)
+                body_entered = False
         except asyncio.CancelledError:
             raise
         except BundleLifecycleError:
@@ -528,6 +534,8 @@ class BundleLifecycle:
         except CheckpointStateBoundExceeded as exc:
             raise BundleLifecycleError("bundle_graph_over_bound") from exc
         except (OSError, RuntimeError, ValueError) as exc:
+            if body_entered:
+                raise
             raise BundleLifecycleError("bundle_unavailable") from exc
 
     async def set_pending_request(
