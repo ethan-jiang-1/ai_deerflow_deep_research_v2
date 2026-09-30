@@ -35,3 +35,10 @@ body）的异常原样穿透，不再改写归属。`CheckpointStateBoundExceede
 bundle_graph_over_bound` 的映射保持不变（存储越界是 store 事实，REG-008 语义）。
 setup 侧可用性行为由既有 `tests/unit/test_state_persistence.py::test_bundle_graph_
 checkpoint_is_contained_and_cannot_reopen_after_bundle_loss` 继续锁定（修复后保持绿）。
+
+## 同类清剿（2026-09-29，同日复核）
+
+runtime 全部 5 个 `@asynccontextmanager` 复查：`transition` / `scope_exclusion` /
+`execution_exclusion` / `hold` 只捕 `BundleTransitionError`——该类型仅由租约/协调
+机制自身抛出（`ensure_live` 失效=真实可用性事实），不会误捕 body 的异质异常。
+**掩蔽类缺陷全仓仅 BUG-081 一个实例。**
