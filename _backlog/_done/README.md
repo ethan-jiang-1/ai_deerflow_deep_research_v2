@@ -1,6 +1,6 @@
 # _done — 已完成/暂停的归档记录
 
-> 最后更新: 2026-09-29（关闭 BUG-081 图检查点 body 异常掩蔽） | `_backlog/_done/` — 已完成内容与明确暂停项的归档根目录。
+> 最后更新: 2026-09-29（关闭 BUG-081 图检查点 body 异常掩蔽、BUG-082 变异 lane 陈旧锚） | `_backlog/_done/` — 已完成内容与明确暂停项的归档根目录。
 > **`_done/` = 归档工作件，coding agent 默认忽略，除非显式点名要读**（`_` 前缀的两类语义见 [`../README.md`](../README.md)）。
 >
 > 状态总览和查阅指南在本文件。活跃工作的 PENDING 表、依赖链、执行顺序 → 见 [`../todos/README.md`](../todos/README.md)。
@@ -25,7 +25,7 @@ _done/
 
 | 归档目录 | 数量 | Next ID |
 |---------|------|---------|
-| `_fixed_bugs/` | 81 | BUG-082 |
+| `_fixed_bugs/` | 82 | BUG-083 |
 | `_done_todos/` | 10 | DONE-011 |
 | `_closed_plans/` | 62 | CLS-064 |
 
