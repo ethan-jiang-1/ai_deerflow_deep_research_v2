@@ -1148,3 +1148,171 @@ async def test_watch_field_stops_the_drive_and_advances_its_baseline(tmp_path: P
     state_now = await _lifecycle.read_state(bundle)
     baseline = driver._sessions[bundle_id]["watch_baseline"]
     assert baseline.get("phase") == state_now.phase.value, "the baseline must advance after a hit"
+
+
+@pytest.mark.asyncio
+async def test_a_target_free_condition_stops_at_the_first_satisfying_boundary(tmp_path: Path) -> None:
+    """LDD-010: a drive carrying only a condition stops at the first committed
+    boundary where the condition holds on the durable State."""
+    from deerflow_deep_research.domain.debug_driving import parse_breakpoint_condition
+
+    driver, _lifecycle = _make_driver(tmp_path, owner="op-1")
+    opened = await driver.open_start(
+        StartRequest(question="Compare storage", mode="step", owner="op-1", command_id="start-00000001")
+    )
+    bundle_id = opened.snapshot.bundle_id
+    driven = await driver.execute(
+        DebugCommand(
+            kind="drive_until",
+            bundle_id=bundle_id,
+            command_id="drive-00000001",
+            expected_cursor=opened.snapshot.cursor.token(),
+            breakpoint=StopPolicy(condition=parse_breakpoint_condition("phase == wave0"), auto_hitl=True),
+        )
+    )
+    assert driven.denied is None, driven.message
+    assert driven.snapshot is not None
+    assert driven.snapshot.posture == "paused_at_boundary", (
+        f"a satisfying boundary must stop the drive: {driven.snapshot.posture}"
+    )
+    assert driven.committed_node == "wave0", (
+        f"the first phase == wave0 boundary is the wave0 commit: {driven.committed_node!r}"
+    )
+
+
+@pytest.mark.asyncio
+async def test_a_target_with_a_true_condition_stops_at_the_target(tmp_path: Path) -> None:
+    """LDD-010: target visited AND condition holds -> stop right there."""
+    from deerflow_deep_research.domain.debug_driving import parse_breakpoint_condition
+
+    driver, _lifecycle = _make_driver(tmp_path, owner="op-1")
+    opened = await driver.open_start(
+        StartRequest(question="Compare storage", mode="step", owner="op-1", command_id="start-00000001")
+    )
+    bundle_id = opened.snapshot.bundle_id
+    driven = await driver.execute(
+        DebugCommand(
+            kind="drive_until",
+            bundle_id=bundle_id,
+            command_id="drive-00000001",
+            expected_cursor=opened.snapshot.cursor.token(),
+            breakpoint=StopPolicy(
+                breakpoint_after="wave0",
+                condition=parse_breakpoint_condition("phase == wave0"),
+                auto_hitl=True,
+            ),
+        )
+    )
+    assert driven.denied is None, driven.message
+    assert driven.snapshot is not None
+    assert driven.committed_node == "wave0"
+
+
+@pytest.mark.asyncio
+async def test_a_target_with_a_false_condition_runs_on_to_the_satisfying_boundary(tmp_path: Path) -> None:
+    """LDD-010: when the target commits while the condition does not hold, the
+    drive passes that boundary and stops at the first later one that satisfies
+    it (the target stays in the trace, so the condition decides)."""
+    from deerflow_deep_research.domain.debug_driving import parse_breakpoint_condition
+
+    driver, _lifecycle = _make_driver(tmp_path, owner="op-1")
+    opened = await driver.open_start(
+        StartRequest(question="Compare storage", mode="step", owner="op-1", command_id="start-00000001")
+    )
+    bundle_id = opened.snapshot.bundle_id
+    driven = await driver.execute(
+        DebugCommand(
+            kind="drive_until",
+            bundle_id=bundle_id,
+            command_id="drive-00000001",
+            expected_cursor=opened.snapshot.cursor.token(),
+            breakpoint=StopPolicy(
+                breakpoint_after="bootstrap",
+                condition=parse_breakpoint_condition("phase == wave0"),
+                auto_hitl=True,
+            ),
+        )
+    )
+    assert driven.denied is None, driven.message
+    assert driven.snapshot is not None
+    assert driven.snapshot.posture == "paused_at_boundary"
+    assert driven.committed_node == "wave0", (
+        "the bootstrap boundary must be passed (phase != wave0 there); the stop is the wave0 boundary: "
+        f"{driven.committed_node!r}"
+    )
+
+
+@pytest.mark.asyncio
+async def test_a_never_satisfying_condition_never_stops_the_drive(tmp_path: Path) -> None:
+    """LDD-010: a condition no boundary satisfies never adds a stop; the drive
+    ends at its natural terminal (the existing bound stays the safety net)."""
+    from deerflow_deep_research.domain.debug_driving import parse_breakpoint_condition
+
+    driver, _lifecycle = _make_driver(tmp_path, owner="op-1")
+    opened = await driver.open_start(
+        StartRequest(question="Compare storage", mode="step", owner="op-1", command_id="start-00000001")
+    )
+    bundle_id = opened.snapshot.bundle_id
+    driven = await driver.execute(
+        DebugCommand(
+            kind="drive_until",
+            bundle_id=bundle_id,
+            command_id="drive-00000001",
+            expected_cursor=opened.snapshot.cursor.token(),
+            breakpoint=StopPolicy(
+                breakpoint_after="bootstrap",
+                condition=parse_breakpoint_condition("phase == targeted_evidence"),
+                auto_hitl=True,
+            ),
+        )
+    )
+    assert driven.denied is None, driven.message
+    assert driven.snapshot is not None
+    assert driven.snapshot.posture == "terminal", (
+        f"an unsatisfiable condition must not stop the drive early: {driven.snapshot.posture}"
+    )
+    bundle = await _lifecycle.resolve(
+        scope=(driver._envelope.effective_user_id, driver._envelope.outer_thread_id),
+        bundle_id=__import__("deerflow_deep_research.domain.bundle", fromlist=["BundleId"]).BundleId(bundle_id),
+    )
+    state = await _lifecycle.read_state(bundle)
+    trace = tuple(state.execution_trace or ())
+    assert "bootstrap" in trace and "final_delivery" in trace, (
+        f"the drive must have run past its target to the terminal: {trace!r}"
+    )
+
+
+@pytest.mark.asyncio
+async def test_a_condition_holding_before_the_target_visits_does_not_stop(tmp_path: Path) -> None:
+    """LDD-010: with a target, a stop needs the target VISITED and the
+    condition holding at the same boundary - a condition that holds only
+    before the target is reached must not stop the drive early."""
+    from deerflow_deep_research.domain.debug_driving import parse_breakpoint_condition
+
+    driver, _lifecycle = _make_driver(tmp_path, owner="op-1")
+    opened = await driver.open_start(
+        StartRequest(question="Compare storage", mode="step", owner="op-1", command_id="start-00000001")
+    )
+    bundle_id = opened.snapshot.bundle_id
+    driven = await driver.execute(
+        DebugCommand(
+            kind="drive_until",
+            bundle_id=bundle_id,
+            command_id="drive-00000001",
+            expected_cursor=opened.snapshot.cursor.token(),
+            # phase == wave0 holds at the wave0 boundary, long before readiness
+            # visits; after readiness visits, phase has moved on - the
+            # conjunction never lines up, so the drive must run to terminal.
+            breakpoint=StopPolicy(
+                breakpoint_after="readiness",
+                condition=parse_breakpoint_condition("phase == wave0"),
+                auto_hitl=True,
+            ),
+        )
+    )
+    assert driven.denied is None, driven.message
+    assert driven.snapshot is not None
+    assert driven.snapshot.posture == "terminal", (
+        f"a pre-target condition hit must not stop the drive: {driven.snapshot.posture} "
+        f"(committed {driven.committed_node!r})"
+    )

@@ -27,6 +27,7 @@ from deerflow_deep_research.domain.debug_driving import (
     SessionPosture,
     StartRequest,
     StopPolicy,
+    evaluate_breakpoint_condition,
 )
 from deerflow_deep_research.domain.lifecycle import (
     AcceptedHumanResponse,
@@ -512,11 +513,25 @@ class DebugRunDriver:
                 break
             state_now = await self._lifecycle.read_state(bundle)
             trace_now = tuple(getattr(state_now, "execution_trace", None) or ())
-            if policy.breakpoint_after and policy.breakpoint_after in trace_now:
+            # LDD-010: the condition is total - a boolean or None (absent).
+            condition_holds = (
+                evaluate_breakpoint_condition(policy.condition, state_now) if policy.condition is not None else None
+            )
+            if policy.breakpoint_after is not None:
                 # A single advance may span several node visits (a committed
                 # node followed by an interrupting one), so the breakpoint
                 # matches when the named node has VISITED per the durable
                 # trace - never only when it happens to be the last visit.
+                # LDD-010: the stop needs the target VISITED and the condition
+                # holding at the SAME boundary - a condition that holds only
+                # before the target visits must not stop the drive, and one
+                # that does not hold at the target's boundary is passed while
+                # trace membership keeps the target eligible later.
+                if policy.breakpoint_after in trace_now and condition_holds is not False:
+                    break
+            elif condition_holds:
+                # LDD-010: a target-free condition stops at the first
+                # boundary whose durable State satisfies it.
                 break
             watches = self._watch_fields_of(session)
             if watches:

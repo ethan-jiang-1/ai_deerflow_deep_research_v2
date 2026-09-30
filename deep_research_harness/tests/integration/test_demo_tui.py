@@ -2253,3 +2253,66 @@ async def test_debug_bt_state_and_watch_commands_render(
         assert "姿态: terminal" not in app.query_one("#inspect").render().plain, (
             "the watch must stop the drive, not run to terminal"
         )
+
+
+@pytest.mark.asyncio
+async def test_run_if_states_the_condition_and_stops_where_it_holds(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """RED-018: a valid conditional run states the accepted condition and stops
+    only at a boundary whose durable State satisfies it."""
+    _install_isolated_fixture_adapter(monkeypatch, bundle_root=tmp_path / "demo-runs")
+    app = DeepResearchDemoTUI(mode="fixture", debug_mode=True)
+    async with app.run_test(size=(110, 34)) as pilot:
+        await _drive_fixture_debugger_to_hitl(app, pilot)
+        await _submit_and_wait(
+            app,
+            pilot,
+            "/run wave0 if phase == wave0",
+            lambda: "paused_at_boundary" in app.query_one("#inspect").render().plain,
+            deadline=60,
+        )
+        log_text = app._rich_log_text().replace("\n", "")
+        assert "phase == wave0" in log_text, "the accepted condition must be stated back: " + log_text
+        posture = app.query_one("#inspect").render().plain
+        assert "paused_at_boundary" in posture, posture
+
+
+@pytest.mark.asyncio
+async def test_run_if_rejects_a_bad_condition_before_any_drive(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """RED-018: an unknown field is a typed parse-level denial - the problem and
+    the available fields are named, and no drive is started."""
+    _install_isolated_fixture_adapter(monkeypatch, bundle_root=tmp_path / "demo-runs")
+    app = DeepResearchDemoTUI(mode="fixture", debug_mode=True)
+    async with app.run_test(size=(110, 34)) as pilot:
+        await _drive_fixture_debugger_to_hitl(app, pilot)
+        await _submit_and_wait(app, pilot, "/run wave0 if not_a_field == 1", lambda: True)
+        await asyncio.sleep(0.4)
+        await pilot.pause()
+        log_text = app._rich_log_text().replace("\n", "")
+        assert "not_a_field" in log_text, "the rejection must name the bad field: " + log_text
+        assert "generation" in log_text, "the rejection must offer the available fields: " + log_text
+        posture = app.query_one("#inspect").render().plain
+        assert "awaiting_hitl" in posture, f"the stop must hold - no drive started: {posture}"
+
+
+@pytest.mark.asyncio
+async def test_help_lists_the_conditional_run_syntax(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """RED-018: /help documents the conditional run syntax."""
+    _install_isolated_fixture_adapter(monkeypatch, bundle_root=tmp_path / "demo-runs")
+    app = DeepResearchDemoTUI(mode="fixture", debug_mode=True)
+    async with app.run_test(size=(110, 34)) as pilot:
+        await _wait_for(app, pilot, demo_tui.Ready)
+        app.query_one("#composer", demo_tui.Input).value = "/help"
+        await pilot.pause()
+        await pilot.press("enter")
+        await pilot.pause()
+        help_text = app._rich_log_text().replace("\n", "")
+        assert "if 条件" in help_text, "the conditional run syntax must be listed: " + help_text

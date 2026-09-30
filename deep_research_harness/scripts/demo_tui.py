@@ -1530,15 +1530,25 @@ class DeepResearchDemoTUI(App[None]):
             self.run_worker(self._debug_watch(field.strip(), remove=off), exclusive=True, group="debug")
             return
         if self.debug_mode and value.startswith("/run"):
-            # /run [--no-auto-hitl] [node]: continue to the next stop. Continuous
-            # drives default to the operator's auto-HITL policy (LDD-008); the
-            # flag opts out and single steps never auto-answer.
+            # /run [--no-auto-hitl] [node] [if <condition>]: continue to the
+            # next stop. Continuous drives default to the operator's auto-HITL
+            # policy (LDD-008); the flag opts out and single steps never
+            # auto-answer. The optional typed condition (LDD-010) goes to the
+            # domain grammar verbatim - a parse denial never starts a drive.
             _, _, arguments = value.partition(" ")
             auto_hitl = "--no-auto-hitl" not in arguments
-            target = arguments.replace("--no-auto-hitl", "").strip()
+            arguments = arguments.replace("--no-auto-hitl", "").strip()
+            target, condition, error = self._parse_run_target(arguments)
             self.query_one("#composer", Input).value = ""
+            if error is not None:
+                self.query_one("#log", RichLog).write(Text(error, style="yellow"))
+                return
             if self._debug_driver is not None and self._debug_bundle_id:
-                self.run_worker(self._debug_drive(target or None, auto_hitl=auto_hitl), exclusive=True, group="debug")
+                self.run_worker(
+                    self._debug_drive(target, condition=condition, auto_hitl=auto_hitl),
+                    exclusive=True,
+                    group="debug",
+                )
             else:
                 self.query_one("#log", RichLog).write(
                     Text(
@@ -2733,7 +2743,8 @@ class DeepResearchDemoTUI(App[None]):
                 "  入口: 输入问题+Enter=New Run(Start Step) · /run [节点]=Start Run(连续推进) · "
                 "Attach 按钮或 /attach <id> · Replay 按钮或 /replay <id> · Ctrl+P 命令面板\n"
                 "  推进: Enter(可留空)=单步(advance_one) · /run [--no-auto-hitl] [节点]=连续推进"
-                "(默认 auto-hitl: hitl1 提案自动代答「确认」· 单步永不代答) · /pause=请求在下一节点边界暂停\n"
+                "(默认 auto-hitl: hitl1 提案自动代答「确认」· 单步永不代答) · /run [节点] if 条件=条件断点"
+                "(字段 运算符 值 的 and 合取 · 条件满足的边界才停) · /pause=请求在下一节点边界暂停\n"
                 "  重跑: /rerun=重跑刚提交的节点(重抽该节点结果 · embedded 下真实调用再次计费)\n"
                 "  内省: /bt=节点轨迹 · /state [字段]=单字段 · /watch [字段]=观察点(字段变化即停)\n"
                 "  回答: HITL 停止时直接输入文本（choice 模式输入选项 id）后按 Enter · "
@@ -2842,16 +2853,54 @@ class DeepResearchDemoTUI(App[None]):
             Text(f"观察点已更新: {', '.join(accepted) or '（无）'}（驱动启动时取基线，字段变化即停）", style="cyan")
         )
 
-    async def _debug_drive(self, breakpoint: str | None = None, *, auto_hitl: bool = True) -> None:
-        """Start Run / continue: drive_until to the next stop (optionally after a node).
+    def _parse_run_target(self, arguments: str) -> tuple[str | None, Any | None, str | None]:
+        """Split `/run` arguments into (node target, typed condition, error).
+
+        Grammar: ``[node] [if <field op value (and …)>]`` (LDD-010). The
+        condition substring is handed to the domain parser verbatim - the
+        workbench never owns a second grammar. A parse denial comes back as
+        the error string naming the problem and the available fields, and no
+        policy is built.
+        """
+        import re
+
+        from deerflow_deep_research.domain.debug_driving import (
+            breakpoint_condition_fields,
+            parse_breakpoint_condition,
+        )
+
+        match = re.match(r"^(?:(\S+)\s+)?if\s+(.+)$", arguments, flags=re.DOTALL)
+        if match is None:
+            return arguments.strip() or None, None, None
+        target, condition_text = match.group(1), match.group(2).strip()
+        try:
+            condition = parse_breakpoint_condition(condition_text)
+        except ValueError as exc:
+            fields = ", ".join(breakpoint_condition_fields())
+            return None, None, f"条件断点无效（{exc}）。可用字段: {fields}"
+        return target, condition, None
+
+    async def _debug_drive(
+        self,
+        breakpoint: str | None = None,
+        condition: Any | None = None,
+        *,
+        auto_hitl: bool = True,
+    ) -> None:
+        """Start Run / continue: drive_until to the next stop (optionally after
+        a node, optionally gated by a typed condition).
 
         LDD-008: continuous drives default to the operator's auto-HITL policy
         (hitl1 profile confirmations are answered 确认 as operator policy);
         ``/run --no-auto-hitl`` opts out and single steps never auto-answer.
-        While the drive runs, the posture pane pulses honest liveness - a long
-        drive must never masquerade as a frozen HITL stop.
+        LDD-010: a condition gates the stop - with a target the drive stops
+        only where the target has visited AND the condition holds, without one
+        at the first boundary where it holds. The accepted condition is stated
+        back so the operator sees exactly what the drive is watching. While
+        the drive runs, the posture pane pulses honest liveness - a long drive
+        must never masquerade as a frozen HITL stop.
         """
-        from deerflow_deep_research.domain.debug_driving import DebugCommand, StopPolicy
+        from deerflow_deep_research.domain.debug_driving import DebugCommand, StopPolicy, format_breakpoint_condition
 
         driver = self._debug_driver
         if driver is None or self._debug_bundle_id is None:
@@ -2859,11 +2908,12 @@ class DeepResearchDemoTUI(App[None]):
         session = await driver.session_snapshot(self._debug_bundle_id)
         if session is None:
             return
-        policy = (
-            StopPolicy(breakpoint_after=breakpoint, auto_hitl=auto_hitl)
-            if breakpoint
-            else StopPolicy(auto_hitl=auto_hitl)
-        )
+        policy = StopPolicy(breakpoint_after=breakpoint, auto_hitl=auto_hitl, condition=condition)
+        liveness = f"连续推进中（auto-hitl {'开启' if auto_hitl else '关闭'}）"
+        if condition is not None:
+            stated = format_breakpoint_condition(condition)
+            liveness = f"条件断点 {stated} 满足即停 · {liveness}"
+            self.query_one("#log", RichLog).write(Text(f"条件断点已受理: {stated}", style="cyan"))
         result = await self._execute_debug(
             DebugCommand(
                 kind="drive_until",
@@ -2872,7 +2922,7 @@ class DeepResearchDemoTUI(App[None]):
                 expected_cursor=session.cursor.token(),
                 breakpoint=policy,
             ),
-            liveness=f"连续推进中（auto-hitl {'开启' if auto_hitl else '关闭'}）",
+            liveness=liveness,
         )
         if result is not None:
             await self._render_debug_result(result)
